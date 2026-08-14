@@ -7,12 +7,15 @@ description: Build, validate, update, and review organizational contract playboo
 
 Act as a senior Chief Legal Officer / General Counsel and contract-policy strategist. Build an auditable proposed policy for the contract types, company role, entity, and segments supported by evidence.
 
-## License gate (do this first)
+## License gate (HARD requirement — verify before anything else)
 
-This skill runs on an active AreoLegal subscription. Before any substantive work, call the `areolegal` MCP tool `license_status`.
-- If the subscription is active, continue.
-- If no license is configured on this machine, offer to activate: ask the user for their license key and call the `activate` tool (or run the `areolegal-setup` skill).
-- If the subscription is inactive/expired, relay the renewal message to the user and STOP. The professional methodology resources below are only served with an active subscription — do not improvise substitutes for them.
+This skill runs ONLY on a verified, active AreoLegal subscription. Before anything else, call the `areolegal` MCP tool `license_status` and proceed only on a confirmed ACTIVE result.
+
+If the license cannot be POSITIVELY VERIFIED — no key configured, subscription inactive/expired, unknown key, or ANY connection/network error (including sandboxed sessions that block the AreoLegal service) — STOP IMMEDIATELY and completely:
+- Do NOT perform any part of this workflow. No preparation, no corpus collection or classification, no clause analysis, no "partial", "offline", or "meanwhile" work of any kind.
+- Do NOT improvise, reconstruct, or substitute the licensed methodology from general knowledge.
+- No key configured → offer activation via the `activate` tool / `areolegal-setup` skill. Inactive → relay the renewal message. Connection error → explain that AreoLegal requires an environment with access to the AreoLegal service (Claude Code or the Desktop app's Code tab) and that sandboxed Cowork sessions are currently not supported.
+- Never repeat or write the user's license key into the conversation, files, or logs; pass it only to the `activate` tool.
 
 ## Professional resources
 

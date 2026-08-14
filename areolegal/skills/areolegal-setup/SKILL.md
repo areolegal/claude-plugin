@@ -7,11 +7,15 @@ description: Activate and onboard the AreoLegal legal suite. Use when the user w
 
 Guide the user through activating the AreoLegal suite on this machine. Speak the user's language (Hebrew by default for Hebrew speakers).
 
+## Step 0 — Environment check
+
+Activation requires network access to the AreoLegal service. That works in Claude Code and the Desktop app's **Code tab**. Sandboxed Cowork sessions currently block outside services — if you are in one (activation fails with a connection error), tell the user to run activation from the Code tab instead, and STOP. Do not ask for the key again in an environment that cannot reach the service, and do not do any AreoLegal work there.
+
 ## Step 1 — Activate the license
 
 1. Ask the user for their AreoLegal license key (they received it on the purchase success page / from AreoLegal). It looks like `AREO-...`.
-2. Call the `areolegal` MCP tool `activate` with the key. This stores it locally (`~/.areolegal/license.json`) and validates it against the AreoLegal service.
-3. On success, show the subscription status (plan, expiry). On failure, relay the message; if they don't have a key yet, direct them to purchase a subscription on the AreoLegal website.
+2. Call the `areolegal` MCP tool `activate` with the key. This stores it locally and validates it against the AreoLegal service.
+3. On success, show the subscription status (plan, expiry) — but never repeat the key itself back into the conversation. On failure, relay the message; if they don't have a key yet, direct them to purchase a subscription on the AreoLegal website.
 
 Never ask the user to paste the key into files manually; the `activate` tool handles storage.
 

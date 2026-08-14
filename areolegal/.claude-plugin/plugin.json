@@ -1,6 +1,6 @@
 {
   "name": "areolegal",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "AreoLegal legal suite: contract playbooks, negotiation orchestration, organization profiles, RTL documents. Requires an active AreoLegal subscription.",
   "author": {
     "name": "AreoLegal",
@@ -10,7 +10,9 @@
     "areolegal": {
       "type": "stdio",
       "command": "python3",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/areolegal_mcp.py"]
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/mcp/areolegal_mcp.py"
+      ]
     }
   }
 }

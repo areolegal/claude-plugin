@@ -7,9 +7,9 @@ description: Create, verify, refresh, or reuse a public-web Organization Profile
 
 Act as a senior in-house lawyer, corporate researcher, and legal-operations architect. Build one reusable Organization Profile from current public evidence.
 
-## License gate (do this first)
+## License gate (HARD requirement — verify before anything else)
 
-This skill runs on an active AreoLegal subscription. Before any substantive work, call the `areolegal` MCP tool `license_status`. If no license is configured, offer to activate via the `activate` tool (or the `areolegal-setup` skill). If the subscription is inactive, relay the renewal message and stop — do not improvise substitutes for the licensed resources.
+This skill runs ONLY on a verified, active AreoLegal subscription. Call the `areolegal` MCP tool `license_status` first and proceed only on a confirmed ACTIVE result. If the license cannot be positively verified — no key, inactive subscription, or ANY connection error (including sandboxed sessions that block the AreoLegal service) — STOP completely: no research, no profile drafting, no partial or "meanwhile" work, and no improvised substitutes for the licensed resources. No key → offer activation via `activate` / `areolegal-setup`. Inactive → relay the renewal message. Connection error → explain that AreoLegal requires Claude Code or the Desktop app's Code tab (sandboxed Cowork sessions are currently not supported). Never repeat the user's license key back into the conversation or write it anywhere; pass it only to the `activate` tool.
 
 ## Professional resources
 
