@@ -1,0 +1,268 @@
+#!/usr/bin/env python3
+"""AreoLegal MCP proxy (stdio).
+
+A thin, dependency-free MCP server bundled with the AreoLegal plugin.
+It holds NO legal content. Every content request is forwarded over HTTPS
+to the AreoLegal backend, which validates the subscription license on
+each call. If the subscription is inactive, tool calls return a renewal
+message instead of content.
+
+License key resolution order:
+  1. env AREOLEGAL_LICENSE_KEY
+  2. ~/.areolegal/license.json  {"license_key": "...", "api_url": "..."}
+
+Backend URL resolution order:
+  1. env AREOLEGAL_API_URL
+  2. "api_url" in ~/.areolegal/license.json
+  3. DEFAULT_API_URL below
+"""
+
+import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+DEFAULT_API_URL = "https://areolegal-api-359931587856.me-west1.run.app"
+PROTOCOL_VERSION = "2024-11-05"
+SERVER_INFO = {"name": "areolegal", "version": "1.0.0"}
+CONFIG_PATH = Path.home() / ".areolegal" / "license.json"
+TIMEOUT = 60
+
+TOOLS = [
+    {
+        "name": "license_status",
+        "description": (
+            "Check the AreoLegal subscription status for this machine. "
+            "Call this first when any AreoLegal skill starts, and whenever another "
+            "AreoLegal tool reports a license problem."
+        ),
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "activate",
+        "description": (
+            "Activate AreoLegal on this machine by saving the customer's license key "
+            "locally and validating it against the AreoLegal service. "
+            "Use during setup/onboarding when the user provides their license key."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "license_key": {"type": "string", "description": "License key from areolegal purchase"}
+            },
+            "required": ["license_key"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "list_resources",
+        "description": (
+            "List the professional reference resources available for an AreoLegal skill. "
+            "skill is one of: contract-playbook-builder, contract-negotiation-orchestrator, "
+            "contract-setup-diagnostician. Requires an active subscription."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {"skill": {"type": "string"}},
+            "required": ["skill"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "get_resource",
+        "description": (
+            "Fetch one AreoLegal professional reference resource (methodology, taxonomy, "
+            "legal anchors, templates, schemas) by skill and resource name, e.g. "
+            "get_resource(skill='contract-negotiation-orchestrator', name='policy_taxonomy.md'). "
+            "Requires an active subscription. The content is licensed to the subscriber only."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "skill": {"type": "string"},
+                "name": {"type": "string"},
+            },
+            "required": ["skill", "name"],
+            "additionalProperties": False,
+        },
+    },
+]
+
+
+def read_config() -> dict:
+    try:
+        return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def license_key() -> str:
+    return os.environ.get("AREOLEGAL_LICENSE_KEY") or read_config().get("license_key", "")
+
+
+def api_url() -> str:
+    url = os.environ.get("AREOLEGAL_API_URL") or read_config().get("api_url") or DEFAULT_API_URL
+    return url.rstrip("/")
+
+
+def http_get(path: str, key: str) -> tuple[int, dict]:
+    req = urllib.request.Request(
+        api_url() + path,
+        headers={"Authorization": "Bearer " + key, "User-Agent": "areolegal-mcp/1.0"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            return resp.status, json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        try:
+            body = json.loads(e.read().decode("utf-8"))
+        except ValueError:
+            body = {}
+        return e.code, body
+    except (urllib.error.URLError, OSError) as e:
+        return 0, {"error": str(e)}
+
+
+NO_KEY_MSG = (
+    "לא נמצא רישיון AreoLegal במחשב הזה. "
+    "אם יש למשתמש מפתח רישיון, הפעל את הכלי activate עם המפתח. "
+    "אם אין, הפנה אותו לרכישת מנוי באתר AreoLegal.\n"
+    "(No AreoLegal license key found on this machine. If the user has a key, call the "
+    "'activate' tool with it; otherwise direct them to purchase a subscription.)"
+)
+
+CONN_ERR_MSG = (
+    "שירות AreoLegal אינו זמין כרגע (בעיית תקשורת). נסה שוב בעוד רגע. "
+    "אם הבעיה נמשכת, בדוק חיבור לאינטרנט או פנה לתמיכה.\n(Connection error: {err})"
+)
+
+
+def denial_text(status: int, body: dict) -> str:
+    msg = body.get("message") or body.get("detail") or ""
+    if status in (401, 403):
+        return (
+            "המנוי ל-AreoLegal אינו פעיל או שהמפתח שגוי. "
+            "יש לחדש את המנוי באתר AreoLegal ואז לנסות שוב. "
+            + (f"\nפרטים: {msg}" if msg else "")
+            + "\n(Subscription inactive or invalid key — the user must renew before this "
+            "skill can continue. Do not attempt to proceed without the licensed content.)"
+        )
+    if status == 404:
+        return f"Resource not found. פרטים: {msg or 'not found'}"
+    return f"AreoLegal service error (HTTP {status}). {msg}"
+
+
+def call_tool(name: str, args: dict) -> str:
+    if name == "activate":
+        key = (args.get("license_key") or "").strip()
+        if not key:
+            return "לא סופק מפתח רישיון. (No license key provided.)"
+        status, body = http_get("/v1/license/status", key)
+        if status == 0:
+            return CONN_ERR_MSG.format(err=body.get("error", "unknown"))
+        if status != 200 or body.get("status") not in ("active", "trialing"):
+            return denial_text(status if status != 200 else 403, body)
+        cfg = read_config()
+        cfg["license_key"] = key
+        CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        CONFIG_PATH.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+        try:
+            CONFIG_PATH.chmod(0o600)
+        except OSError:
+            pass
+        return (
+            "הרישיון הופעל בהצלחה במחשב הזה. סטטוס מנוי: "
+            + json.dumps(body, ensure_ascii=False)
+        )
+
+    key = license_key()
+    if not key:
+        return NO_KEY_MSG
+
+    if name == "license_status":
+        path = "/v1/license/status"
+    elif name == "list_resources":
+        path = f"/v1/resources/{urllib.parse.quote(str(args.get('skill', '')))}"
+    elif name == "get_resource":
+        skill = urllib.parse.quote(str(args.get("skill", "")))
+        res = urllib.parse.quote(str(args.get("name", "")))
+        path = f"/v1/resources/{skill}/{res}"
+    else:
+        return f"Unknown tool: {name}"
+
+    status, body = http_get(path, key)
+    if status == 0:
+        return CONN_ERR_MSG.format(err=body.get("error", "unknown"))
+    if status != 200:
+        return denial_text(status, body)
+    if name == "get_resource":
+        return body.get("content", "")
+    return json.dumps(body, ensure_ascii=False, indent=2)
+
+
+def handle(msg: dict):
+    method = msg.get("method")
+    msg_id = msg.get("id")
+    if method == "initialize":
+        client_ver = (msg.get("params") or {}).get("protocolVersion") or PROTOCOL_VERSION
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "result": {
+                "protocolVersion": client_ver,
+                "capabilities": {"tools": {}},
+                "serverInfo": SERVER_INFO,
+            },
+        }
+    if method == "notifications/initialized":
+        return None
+    if method == "ping":
+        return {"jsonrpc": "2.0", "id": msg_id, "result": {}}
+    if method == "tools/list":
+        return {"jsonrpc": "2.0", "id": msg_id, "result": {"tools": TOOLS}}
+    if method == "tools/call":
+        params = msg.get("params") or {}
+        text = call_tool(params.get("name", ""), params.get("arguments") or {})
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "result": {"content": [{"type": "text", "text": text}]},
+        }
+    if msg_id is not None:
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "error": {"code": -32601, "message": f"Method not found: {method}"},
+        }
+    return None
+
+
+def main():
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            msg = json.loads(line)
+        except ValueError:
+            continue
+        try:
+            reply = handle(msg)
+        except Exception as e:  # never crash the transport
+            reply = None
+            if msg.get("id") is not None:
+                reply = {
+                    "jsonrpc": "2.0",
+                    "id": msg.get("id"),
+                    "error": {"code": -32603, "message": f"Internal error: {e}"},
+                }
+        if reply is not None:
+            sys.stdout.write(json.dumps(reply, ensure_ascii=False) + "\n")
+            sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    main()
