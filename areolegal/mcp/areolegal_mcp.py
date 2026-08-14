@@ -27,9 +27,23 @@ from pathlib import Path
 
 DEFAULT_API_URL = "https://areolegal-api-359931587856.me-west1.run.app"
 PROTOCOL_VERSION = "2024-11-05"
-SERVER_INFO = {"name": "areolegal", "version": "1.0.0"}
-CONFIG_PATH = Path.home() / ".areolegal" / "license.json"
+SERVER_INFO = {"name": "areolegal", "version": "1.0.1"}
 TIMEOUT = 60
+
+
+def config_paths() -> list:
+    """License storage candidates, most-preferred first.
+
+    CLAUDE_PLUGIN_DATA (persistent per-plugin dir, survives updates and is the
+    durable location inside Cowork's managed VM) wins when available; the
+    home-directory path covers Claude Code CLI / Desktop Code tab on the host.
+    """
+    paths = []
+    data_dir = os.environ.get("CLAUDE_PLUGIN_DATA")
+    if data_dir:
+        paths.append(Path(data_dir) / "license.json")
+    paths.append(Path.home() / ".areolegal" / "license.json")
+    return paths
 
 TOOLS = [
     {
@@ -93,10 +107,12 @@ TOOLS = [
 
 
 def read_config() -> dict:
-    try:
-        return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
+    for path in config_paths():
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+    return {}
 
 
 def license_key() -> str:
@@ -167,12 +183,19 @@ def call_tool(name: str, args: dict) -> str:
             return denial_text(status if status != 200 else 403, body)
         cfg = read_config()
         cfg["license_key"] = key
-        CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-        CONFIG_PATH.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
-        try:
-            CONFIG_PATH.chmod(0o600)
-        except OSError:
-            pass
+        saved = False
+        for path in config_paths():
+            try:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(
+                    json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8"
+                )
+                path.chmod(0o600)
+                saved = True
+            except OSError:
+                continue
+        if not saved:
+            return "שגיאה בשמירת הרישיון מקומית. (Failed to persist the license locally.)"
         return (
             "הרישיון הופעל בהצלחה במחשב הזה. סטטוס מנוי: "
             + json.dumps(body, ensure_ascii=False)

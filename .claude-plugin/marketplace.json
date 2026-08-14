@@ -6,17 +6,26 @@
   },
   "metadata": {
     "description": "AreoLegal — סוויטת סקילים משפטית לניהול פלייבוקים חוזיים ומשא ומתן, בעברית",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "plugins": [
     {
       "name": "areolegal",
       "source": "./areolegal",
       "description": "פלייבוק חוזי, משא ומתן על הסכמים, פרופיל ארגוני ומסמכי RTL — דורש מנוי פעיל",
-      "version": "1.0.0",
-      "author": { "name": "AreoLegal" },
+      "version": "1.0.1",
+      "author": {
+        "name": "AreoLegal"
+      },
       "category": "legal",
-      "keywords": ["legal", "contracts", "playbook", "hebrew", "פלייבוק", "חוזים"]
+      "keywords": [
+        "legal",
+        "contracts",
+        "playbook",
+        "hebrew",
+        "פלייבוק",
+        "חוזים"
+      ]
     }
   ]
 }
