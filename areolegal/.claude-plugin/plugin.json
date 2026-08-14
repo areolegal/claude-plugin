@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "AreoLegal legal suite: contract playbooks, negotiation orchestration, organization profiles, RTL documents. Requires an active AreoLegal subscription.",
   "author": {
-    "name": "Neil Dahan",
+    "name": "AreoLegal",
     "email": "neildahan24@gmail.com"
   },
   "mcpServers": {

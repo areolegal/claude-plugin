@@ -7,7 +7,7 @@
 בתוך Claude Code (או טאב Code באפליקציית Claude Desktop) הריצו:
 
 ```
-/plugin marketplace add neildahan/areolegal-plugin
+/plugin marketplace add areolegal/claude-plugin
 /plugin install areolegal@areolegal
 ```
 
