@@ -25,9 +25,9 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-DEFAULT_API_URL = "https://areolegal-api-359931587856.me-west1.run.app"
+DEFAULT_API_URL = "https://areo.co.il"
 PROTOCOL_VERSION = "2024-11-05"
-SERVER_INFO = {"name": "areolegal", "version": "1.0.1"}
+SERVER_INFO = {"name": "areolegal", "version": "1.0.3"}
 TIMEOUT = 60
 
 
