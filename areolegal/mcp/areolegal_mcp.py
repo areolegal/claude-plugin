@@ -27,7 +27,7 @@ from pathlib import Path
 
 DEFAULT_API_URL = "https://areo.co.il"
 PROTOCOL_VERSION = "2024-11-05"
-SERVER_INFO = {"name": "areolegal", "version": "1.0.3"}
+SERVER_INFO = {"name": "areolegal", "version": "1.0.4"}
 TIMEOUT = 60
 
 
@@ -124,10 +124,36 @@ def api_url() -> str:
     return url.rstrip("/")
 
 
+def device_id() -> str:
+    """Stable anonymous per-machine id; persisted so hostname changes don't churn it."""
+    cfg = read_config()
+    if cfg.get("device_id"):
+        return cfg["device_id"]
+    import getpass
+    import hashlib
+    import platform
+
+    raw = f"{platform.node()}|{getpass.getuser()}|{Path.home()}"
+    did = hashlib.sha256(raw.encode()).hexdigest()[:16]
+    cfg["device_id"] = did
+    for path in config_paths():
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+            break
+        except OSError:
+            continue
+    return did
+
+
 def http_get(path: str, key: str) -> tuple[int, dict]:
     req = urllib.request.Request(
         api_url() + path,
-        headers={"Authorization": "Bearer " + key, "User-Agent": "areolegal-mcp/1.0"},
+        headers={
+            "Authorization": "Bearer " + key,
+            "User-Agent": "areolegal-mcp/1.0",
+            "X-Areo-Device": device_id(),
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
