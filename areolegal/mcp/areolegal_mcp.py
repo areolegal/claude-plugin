@@ -27,6 +27,7 @@ from pathlib import Path
 
 DEFAULT_API_URL = "https://areo.co.il"
 PROTOCOL_VERSION = "2024-11-05"
+PLUGIN_VERSION = "1.0.4"   # kept in step with plugin.json by release.sh
 SERVER_INFO = {"name": "areolegal", "version": "1.0.4"}
 TIMEOUT = 60
 
@@ -151,7 +152,7 @@ def http_get(path: str, key: str) -> tuple[int, dict]:
         api_url() + path,
         headers={
             "Authorization": "Bearer " + key,
-            "User-Agent": "areolegal-mcp/1.0",
+            "User-Agent": f"areolegal-mcp/{PLUGIN_VERSION}",
             "X-Areo-Device": device_id(),
         },
     )
