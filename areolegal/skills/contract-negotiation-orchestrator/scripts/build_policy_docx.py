@@ -19,13 +19,16 @@ from pathlib import Path
 # יבוא הפונקציות RTL מהסקיל - חובה
 # אם הסקיל לא טעון, ייכשל בכוונה
 try:
-    import pathlib as _pl
-    _candidates = [
-        _pl.Path(__file__).resolve().parents[2] / 'rtl-docx-enforcer',  # bundled in the same plugin
-        _pl.Path('/mnt/skills/user/rtl-docx-enforcer'),                  # claude.ai skill mount
-        _pl.Path.home() / '.claude' / 'skills' / 'rtl-docx-enforcer',    # manual install
+    # איתור rtl_helpers בלי נתיב קשיח: הפלאגין מותקן במקום אחר אצל כל לקוח,
+    # ונתיב קבוע כמו /mnt/skills/user/... פשוט אינו קיים שם והסקריפט קורס.
+    _here = Path(__file__).resolve()
+    _cands = [
+        _here.parent.parent.parent / 'rtl-docx-enforcer',   # רכיב אחות באותו פלאגין
+        _here.parent.parent / 'rtl-docx-enforcer',
+        Path('/mnt/skills/user/rtl-docx-enforcer'),
+        Path.home() / '.claude' / 'skills' / 'rtl-docx-enforcer',
     ]
-    for _c in _candidates:
+    for _c in _cands:
         if (_c / 'rtl_helpers.py').exists():
             sys.path.insert(0, str(_c))
             break
