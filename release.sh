@@ -54,6 +54,33 @@ for s in skills:
 print("   skills ok:", ", ".join(skills))
 PY
 
+echo "==> 1b/5 Verifying the commercial wrapper is intact"
+python3 - <<'PY'
+import pathlib, sys
+
+# Deliberately ungated: the activation skill (it IS the activation path) and the
+# RTL formatter (generic python-docx formatting, no protected content).
+UNGATED = {"areolegal-setup", "rtl-docx-enforcer"}
+bad = []
+for md in sorted(pathlib.Path("areolegal/skills").glob("*/SKILL.md")):
+    text = md.read_text(encoding="utf-8")
+    skill = md.parent.name
+    # A skill that lost its licence gate works without a subscription; one that
+    # reads local references/ needs the protected content shipped in this PUBLIC
+    # repo. Both have happened by accident when a skill was rewritten elsewhere.
+    if skill not in UNGATED and "license_status" not in text:
+        bad.append(f"{skill}: no licence gate (license_status missing)")
+    if "references/" in text and "get_resource" not in text:
+        bad.append(f"{skill}: reads local references/ instead of get_resource()")
+if bad:
+    print("   REFUSING TO RELEASE:")
+    for b in bad:
+        print("     -", b)
+    print("   Restore the licence gate and server fetching, then release again.")
+    sys.exit(1)
+print("   licence gate + server fetching present in every skill")
+PY
+
 echo "==> 2/5 Compiling bundled Python"
 find areolegal -name "*.py" -print0 | xargs -0 -n1 python3 -m py_compile
 echo "   all scripts compile"
