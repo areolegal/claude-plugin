@@ -28,6 +28,7 @@ ENUMS = {
     "precedent.direction": {"stricter", "easier", "neutral"},
     "finding.severity": {"high", "medium", "low"},
     "meta.status": {"Draft", "Approved", "Superseded"},
+    "rat.rationale_status": {"Draft", "Confirmed"},
     "reg.status": {"Performed", "NotPerformed", "Partial"},
 }
 
@@ -169,6 +170,13 @@ def validate(data):
                 r.err("%s.tl.%s" % (where, color), "crit חייב להיות מערך, ולא %s"
                       % type(crit).__name__)
         check_enum(r, where, "conf", rule.get("conf"), "rule.conf")
+        rat = rule.get("rat") or {}
+        rs = rat.get("rationale_status")
+        if rs is None:
+            r.warn(where, "אין rationale_status. הנושא יוצג כטיוטה בסביבת העבודה")
+        else:
+            check_enum(r, where + ".rat", "rationale_status", rs,
+                       "rat.rationale_status", required=False)
         check_enum(r, where, "reg", rule.get("reg"), "rule.reg", required=False)
         for j, e in enumerate(rule.get("ev") or []):
             ew = "%s.ev[%d]" % (where, j)
