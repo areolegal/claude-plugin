@@ -160,9 +160,9 @@ description: "ממפה את כל החשיפות בהסכם בשש עדשות (מ
 
 ## תוצרים, ממשק וחותמת תאריך
 
-1. Areo Workspace | סיכונים: דוח HTML אפליקטיבי הנבנה אך ורק מהתבנית הקנונית `get_resource(skill="contract-risk-assessor", name="risk-report-template.html")`, באמצעות `scripts/build_risk_report.py`, ובלי לקרוא את התבנית להקשר:
+1. Areo Workspace | סיכונים: דוח HTML אפליקטיבי הנבנה אך ורק מהתבנית הקנונית `risk-report-template.html`, באמצעות `scripts/build_risk_report.py`, ובלי לקרוא את התבנית להקשר:
    ```
-   python3 scripts/build_risk_report.py --data risk-register.json --template get_resource(skill="contract-risk-assessor", name="risk-report-template.html") \
+   python3 scripts/build_risk_report.py --data risk-register.json --template risk-report-template.html \
        --out "Areo Workspace - סיכונים.html" [--artifact artifact.html]
    ```
    הסקריפט מזריק את הנתונים, גוזר כתובות מסמכים במצב base בלבד, ומפיק בעת הצורך גם תוכן לעמוד משותף ללא מסלולי הורדה. שם הקובץ קבוע ואינו כולל תאריך, כדי שהקישור יישאר תקף בעדכון.
@@ -257,3 +257,13 @@ python3 scripts/validate_data.py --data <קובץ הנתונים>
 2. כובע הלקוח: תקציר המנהלים מאפשר הבנת חמשת הסיכונים המובילים בדקה; שלושת הרבדים הופקו ומטריצת הכיסוי מלאה לכל שש העדשות; המלצות הצמצום אופרטיביות בשלוש הרמות; היקף הבדיקה שנבחר מוצג בראש הדוח; שפת הממשק תואמת את display_language.
 3. כובע המפתח: הדוח נבנה מהתבנית הקנונית (לא מאפס) ונטען ללא שגיאות; מטריצת החום, הסינון, הלחיצות, כפתורי ההעתקה, ההחלטות והייצוא עובדים; מצבי ריק מוצגים כשאין נתונים; כיווניות לפי display_language; אין מקפים ארוכים; חותמת תאריך בכותרת; risk-register.json תקין ונטען בהצלחה, כולל mitigation_channel ו-decision.
 4. כובע אינטגרטור המערכת: risk-register.json נשמר לצד הדוח לפי הסכמה, כולל scope, transaction_id (במצב deal), source_ref, generated_at ו-last_updated; קובץ risk-decisions-export.json שנמסר מוזג וסומן .merged; סימוני טיוטה וחיסיון במקומם; היציאה לרשת תאמה את השכבה שהמשתמש אישר בשאלת היקף הבדיקה, ולכל ממצא מהרשת נרשמו המקור ותאריך האימות; במצב סקירה מהמסמכים בלבד לא בוצעה יציאה לרשת כלל; לא זלג מידע מחברה אחרת ולא הוחזרו התאמות לקוח לחבילת הפלאגין.
+
+## תבנית התוצר
+
+**התבנית היא חובה ואין לה תחליף.** תבנית ה-HTML של התוצר אינה מגיעה עם התוסף אלא מהשירות. לפני הבנייה:
+
+1. משוך אותה: `get_resource(skill="contract-risk-assessor", name="risk-report-template.html")`
+2. שמור את התוכן כקובץ בתיקיית העבודה, למשל `risk-report-template.html`
+3. העבר לסקריפט הבנייה את **הנתיב לקובץ ששמרת**, ולא את הקריאה עצמה
+
+**אם התבנית אינה נמשכת — עצור ואמור זאת למשתמש.** אין לבנות HTML משלך, אין "בנייה לפי המפרט", אין לשחזר את העיצוב מהזיכרון ואין להסתפק בקירוב. תוצר שנבנה בלי התבנית אינו התוצר של המערכת: הוא יוצא בעיצוב זר, בלי שפת המותג ובלי ההתנהגות שהלקוח מכיר.

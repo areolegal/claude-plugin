@@ -81,6 +81,39 @@ if bad:
 print("   licence gate + server fetching present in every skill")
 PY
 
+echo "==> 1c/5 Checking commands and referenced scripts are runnable"
+python3 - <<'PY'
+import pathlib, re, sys
+
+# A get_resource(...) call substituted into a shell command produces a command
+# line that cannot run. When that shipped, the skills could not execute their
+# documented build step and invented their own HTML, discarding the branded
+# template. Also catch scripts a skill tells the client to run but that are not
+# in the package -- those fail at the client with no useful message.
+FENCE = re.compile(r"```.*?```", re.S)
+bad = []
+for md in sorted(pathlib.Path("areolegal/skills").glob("*/SKILL.md")):
+    text, skill = md.read_text(encoding="utf-8"), md.parent.name
+    for fence in FENCE.findall(text):
+        if "get_resource(" in fence:
+            bad.append(f"{skill}: get_resource() inside a shell command -- not runnable")
+            break
+    # a reference may be the skill's own (scripts/x.py) or another skill's
+    # (other-skill/scripts/x.py); resolve each against the right folder
+    for owner, ref in sorted(set(re.findall(
+            r"(?:([a-z][\w-]*)/)?(scripts/[\w.-]+\.(?:py|js))", text))):
+        base = md.parent.parent / owner if owner else md.parent
+        if not (base / ref).exists():
+            where = f"{owner}/{ref}" if owner else ref
+            bad.append(f"{skill}: references {where}, which is not shipped")
+if bad:
+    print("   REFUSING TO RELEASE:")
+    for b in bad:
+        print("     -", b)
+    sys.exit(1)
+print("   every documented command is runnable and every script is present")
+PY
+
 echo "==> 2/5 Compiling bundled Python"
 find areolegal -name "*.py" -print0 | xargs -0 -n1 python3 -m py_compile
 echo "   all scripts compile"
