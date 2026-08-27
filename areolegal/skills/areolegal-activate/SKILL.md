@@ -7,11 +7,25 @@ description: Activate and onboard the AreoLegal legal suite. Use when the user w
 
 Guide the user through activating the AreoLegal suite on this machine. Speak the user's language (Hebrew by default for Hebrew speakers).
 
-## Step 0 — Environment check
+## Step 0 — Which path is this session on
 
-Activation requires network access to the AreoLegal service. That works in Claude Code and the Desktop app's **Code tab**. Sandboxed Cowork sessions currently block outside services — if you are in one (activation fails with a connection error), tell the user to run activation from the Code tab instead, and STOP. Do not ask for the key again in an environment that cannot reach the service, and do not do any AreoLegal work there.
+AreoLegal reaches its service two ways, and BOTH are fully supported. Never tell a user that their environment is unsupported.
+
+- **Code tab / Claude Code** — the plugin's own MCP server runs locally and calls the service directly. Activation happens here via the `activate` tool, below.
+- **Cowork (and any sandboxed chat session)** — the sandbox blocks the local server from reaching the network, so access comes from the **AreoLegal connector** instead, which runs outside the sandbox. The connector authenticates the user itself, so there is no `activate` step: once the connector is added, `license_status` and the content tools work.
+
+If the tools are missing or a call fails with a connection/network error in a chat session, do not ask for the licence key again. Walk the user through adding the connector:
+
+1. Settings → Connectors → Add custom connector
+2. URL: `https://areo.co.il/mcp`
+3. Connect → an AreoLegal sign-in page opens → paste the licence key (`AREO-…`) there → approve
+4. Return to the chat and retry — `license_status` should now report ACTIVE.
+
+The key is entered on AreoLegal's own sign-in page, never pasted into the chat.
 
 ## Step 1 — Activate the license
+
+Skip this step entirely when the connector is the access path (see Step 0) — the connector already authenticated the user, so ask for nothing and go straight to `license_status`.
 
 1. Ask the user for their AreoLegal license key (they received it on the purchase success page / from AreoLegal). It looks like `AREO-...`.
 2. Call the `areolegal` MCP tool `activate` with the key. This stores it locally and validates it against the AreoLegal service.
@@ -47,5 +61,6 @@ Explain that playbooks are delivered as interactive HTML dashboards (artifacts).
 ## Troubleshooting
 
 - "Subscription inactive": call `license_status` and show the message; renewal is on the AreoLegal website.
-- Connection errors: check internet access; the AreoLegal service must be reachable.
+- Connection errors in a chat/Cowork session: this is the sandbox, not a fault and not an unsupported environment — add the connector as described in Step 0.
+- Connection errors in the Code tab: check internet access; `https://areo.co.il` must be reachable.
 - Moving to a new machine: just run activation again with the same key.
