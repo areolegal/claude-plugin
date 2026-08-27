@@ -18,6 +18,7 @@ Backend URL resolution order:
 """
 
 import json
+import pathlib
 import os
 import sys
 import urllib.error
@@ -27,7 +28,7 @@ from pathlib import Path
 
 DEFAULT_API_URL = "https://areo.co.il"
 PROTOCOL_VERSION = "2024-11-05"
-PLUGIN_VERSION = "1.1.6"   # kept in step with plugin.json by release.sh
+PLUGIN_VERSION = "1.2.0"   # kept in step with plugin.json by release.sh
 SERVER_INFO = {"name": "areolegal", "version": "1.0.4"}
 TIMEOUT = 60
 
@@ -101,6 +102,31 @@ TOOLS = [
                 "name": {"type": "string"},
             },
             "required": ["skill", "name"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "save_resource",
+        "description": (
+            "Download one AreoLegal resource straight to a file on this machine and return "
+            "only the path and size -- the file's content is NEVER returned into the "
+            "conversation. ALWAYS use this instead of get_resource for deliverable HTML "
+            "templates and any other large file that is passed to a build script rather than "
+            "read: it avoids carrying tens of thousands of tokens of markup through the "
+            "conversation and re-writing them by hand. Use get_resource only for methodology "
+            "text you actually need to read. Requires an active subscription."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "skill": {"type": "string"},
+                "name": {"type": "string"},
+                "path": {
+                    "type": "string",
+                    "description": "Where to write the file, relative to the working directory.",
+                },
+            },
+            "required": ["skill", "name", "path"],
             "additionalProperties": False,
         },
     },
@@ -236,7 +262,7 @@ def call_tool(name: str, args: dict) -> str:
         path = "/v1/license/status"
     elif name == "list_resources":
         path = f"/v1/resources/{urllib.parse.quote(str(args.get('skill', '')))}"
-    elif name == "get_resource":
+    elif name in ("get_resource", "save_resource"):
         skill = urllib.parse.quote(str(args.get("skill", "")))
         res = urllib.parse.quote(str(args.get("name", "")))
         path = f"/v1/resources/{skill}/{res}"
@@ -250,7 +276,33 @@ def call_tool(name: str, args: dict) -> str:
         return denial_text(status, body)
     if name == "get_resource":
         return body.get("content", "")
+    if name == "save_resource":
+        return save_to_disk(body.get("content", ""), str(args.get("path", "")))
     return json.dumps(body, ensure_ascii=False, indent=2)
+
+
+def save_to_disk(content: str, dest: str) -> str:
+    """Write a fetched resource to a local file and report only path and size.
+
+    A deliverable template is ~114 KB of markup. Returning it as tool output puts
+    it in the conversation and then requires it to be written back out verbatim to
+    create the file -- roughly 33k tokens each way, and the write is serial, so it
+    dominates the wall-clock time of a build. Writing it here costs nothing.
+    """
+    if not dest:
+        return "Error: path is required."
+    target = pathlib.Path(dest).expanduser()
+    if target.is_absolute() or ".." in target.parts:
+        return ("Error: path must be relative to the working directory and may not "
+                "contain '..'. Received: %s" % dest)
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    except OSError as exc:
+        return "Error: could not write %s (%s)" % (dest, exc)
+    return json.dumps({"path": str(target), "bytes": len(content.encode("utf-8")),
+                       "note": "Saved. Pass this path to the build script; do not read the file."},
+                      ensure_ascii=False)
 
 
 def handle(msg: dict):
