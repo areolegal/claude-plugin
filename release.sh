@@ -60,7 +60,7 @@ import pathlib, sys
 
 # Deliberately ungated: the activation skill (it IS the activation path) and the
 # RTL formatter (generic python-docx formatting, no protected content).
-UNGATED = {"areolegal-setup", "rtl-docx-enforcer"}
+UNGATED = {"areolegal-activate", "rtl-docx-enforcer"}
 bad = []
 for md in sorted(pathlib.Path("areolegal/skills").glob("*/SKILL.md")):
     text = md.read_text(encoding="utf-8")

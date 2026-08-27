@@ -1,5 +1,5 @@
 ---
-name: areolegal-setup
+name: areolegal-activate
 description: Activate and onboard the AreoLegal legal suite. Use when the user wants to activate their AreoLegal subscription or license key, mentions "הפעלה", "רישיון", "מפתח רישיון", "activate areolegal", "setup areolegal", asks why AreoLegal skills say the subscription is inactive, or right after installing the AreoLegal plugin. Also use to set up recurring automated legal workflows (schedulers) and explain what the suite can do.
 ---
 
