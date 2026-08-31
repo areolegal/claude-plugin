@@ -109,7 +109,12 @@ def locate(paragraphs, decision):
         if len(hits) > 1:
             return None, "מספר הסעיף %s מופיע %d פעמים" % (want_clause, len(hits))
 
-    return None, "אין ציטוט ואין מספר סעיף שניתן לאתר"
+    if anchor and len(anchor) < 12:
+        return None, "הציטוט קצר מדי (%d תווים). נדרשים 12 לפחות" % len(anchor)
+    if anchor:
+        return None, "הציטוט לא נמצא בטיוטה. ודא שהוא הועתק מנוסח המקור ולא מתמצית"
+    return None, ("אין ציטוט. מספר סעיף לבדו אינו מספיק ברוב ההסכמים, "
+                  "מפני שהמספור נוצר אוטומטית ב-Word ואינו חלק מהטקסט")
 
 
 def apply_edit(par, decision, author):
@@ -123,6 +128,20 @@ def apply_edit(par, decision, author):
     tc.add_del(par, old, ltr=False)
     tc.add_ins(par, new, ltr=False)
     return True
+
+
+def all_paragraphs(doc):
+    """כל הפסקאות במסמך, כולל אלה שבתוך טבלאות.
+
+    `doc.paragraphs` מדלג על תאי טבלה, ובהסכם אמיתי יושבים שם פרטי הצדדים,
+    התמורה ולעיתים נספחים שלמים. סעיף שנמצא בטבלה פשוט לא היה נמצא.
+    """
+    out = list(doc.paragraphs)
+    for tbl in doc.tables:
+        for row in tbl.rows:
+            for cell in row.cells:
+                out.extend(cell.paragraphs)
+    return out
 
 
 def main() -> int:
@@ -142,7 +161,7 @@ def main() -> int:
 
     doc = Document(args.draft)
     tc.enable_track_changes(doc)
-    paragraphs = doc.paragraphs
+    paragraphs = all_paragraphs(doc)
 
     applied, commented, missed = [], [], []
     for d in decisions:
