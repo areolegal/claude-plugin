@@ -307,7 +307,15 @@ def add_decision_comment_paragraph(doc, decision):
 
 def generate_response_document(supplier_draft_path, decisions_path, output_path,
                                round_number=1, client_name='הלקוח'):
-    """הפקת מסמך התגובה."""
+    """הפקת תיק ההכרעות הפנימי.
+
+    supplier_draft_path נשמר בחתימה לשם תאימות אחורה ואינו נקרא: הסקריפט בונה
+    מסמך חדש ואינו נוגע בטיוטת הצד שכנגד. סימון ההסכם עצמו בעקוב אחר שינויים
+    ובהערות Word אמיתיות נעשה בכלים שב-track_changes_helpers.py.
+    """
+    if supplier_draft_path:
+        print("שים לב: הסקריפט אינו קורא את טיוטת הצד שכנגד ואינו מסמן אותה. "
+              "הפלט הוא תיק ההכרעות הפנימי בלבד.", file=sys.stderr)
     # טעינת ההכרעות
     with open(decisions_path, 'r', encoding='utf-8') as f:
         decisions_data = json.load(f)
@@ -317,9 +325,28 @@ def generate_response_document(supplier_draft_path, decisions_path, output_path,
     doc = Document()
     set_document_rtl(doc)
 
-    # עמוד שער
+    # עמוד שער. הבאנר הראשון ולא הכותרת: המסמך הזה מכיל קודי הכרעה, עמדות
+    # מהפלייבוק ונימוקים פנימיים, והוא נקרא בטעות "התייחסות לטיוטת הספק" -- שם
+    # שנשמע כמו משהו ששולחים. עורך דין שיעביר אותו ימסור לצד שכנגד את מלוא
+    # עמדות המיקוח של החברה, וזה בלתי הפיך.
+    warn_para = add_rtl_paragraph(doc, '')
+    warn_run = warn_para.add_run('מסמך פנימי — אין להעביר לצד שכנגד')
+    set_run_rtl(warn_run)
+    warn_run.font.size = Pt(14)
+    warn_run.font.bold = True
+    warn_run.font.color.rgb = RGBColor(0xB0, 0x00, 0x20)
+    sub_para = add_rtl_paragraph(
+        doc,
+        'המסמך כולל את קודי ההכרעה הפנימיים, את עמדות המדיניות מהפלייבוק, את נוסחי '
+        'הנסיגה ואת הנימוקים המשפטיים. הקובץ הנשלח לצד שכנגד הוא ההסכם שלהם בעקוב '
+        'אחר שינויים, והוא קובץ אחר.'
+    )
+    for run in sub_para.runs:
+        run.font.italic = True
+    add_rtl_paragraph(doc, '')
+
     title_para = add_rtl_paragraph(doc, '')
-    title_run = title_para.add_run(f'סבב {round_number}: התייחסות לטיוטת הספק')
+    title_run = title_para.add_run(f'סבב {round_number}: תיק ההכרעות הפנימי')
     set_run_rtl(title_run)
     title_run.font.size = Pt(28)
     title_run.font.bold = True
