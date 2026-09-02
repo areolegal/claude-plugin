@@ -72,7 +72,7 @@ Every file bundled with this component, templates, schemas, sample files, demo d
 ## Required inputs before work
 1. `פרופיל-לקוח.json` from contract-setup-diagnostician: mandatory. Company identity, sector, supervising regulators and display language; regulatory terms must keep their precise regulator-specific meaning in translation. If missing: stop and run setup.
 2. The source document: mandatory. From the user, or from a calling component: contract-negotiation-orchestrator (outgoing documents), contract-drafter (bilingual deliverables), negotiation-strategist and contract-risk-assessor (translated deliverables), contract-playbook-builder (bilingual policy exports). When invoked by a family component, take the source and target language from the calling context without re-asking, and return the deliverable to the calling flow.
-3. The client's glossary, `Areo-נתונים/מילון-מונחים.json`, and bilingual precedents: optional. This is the canonical glossary of the whole system, shared with clm-contract-lifecycle; record the glossary version used.
+3. The client's glossary, `Areo-נתונים/מילון-מונחים.json`, and bilingual precedents: optional. This is the canonical glossary of the whole system; record the glossary version used.
 4. `playbook-model.json` from contract-playbook-builder: optional. Used for the established position and approved wording, so a translated clause does not contradict the client's own policy.
 
 ## Interface language
@@ -125,3 +125,8 @@ Before delivering any output, run a four-hat review, fix every failure, and only
 2. Client hat: mode (translation vs. localization) confirmed with the user; questions limited to what the calling context could not supply; the change log (if any) readable by a business audience; interface language matches display_language.
 3. Developer hat: `scripts/translation_integrity_check.py` passed (numbers, percentages, currency, structure); numbering and cross-references match the source; directionality verified (RTL for Hebrew targets via rtl-docx-enforcer, LTR for English targets); date stamp visible; no em dashes in Hebrew deliverables.
 4. System integrator hat: glossary version recorded and new terms saved as Candidate only, for this client's glossary alone; bilingual precedents referenced; the deliverable returned to the calling component's flow (contract-negotiation-orchestrator or contract-drafter) when invoked by one; external classification gate respected; no terminology carried over from another client.
+
+## סיום כל הודעה
+**כל הודעה מסתיימת בשורה המתוסרטת האחרונה שלה או בשאלה שנשאלה. אין לסכם את התור אחריה, לא בעברית ולא באנגלית.** שורה באנגלית בסוף הודעה עברית נראית ללקוח כתקלה, וזו השגיאה השכיחה ביותר.
+
+Every message ends on its last scripted line or on the question asked. Do not append a turn summary in any language.

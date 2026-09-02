@@ -225,9 +225,12 @@ def main():
         json.dumps(profile, ensure_ascii=False, indent=2))
 
     print("הפרופיל נבנה: %s" % profile["profile_id"])
+    labels = {"Confirmed": "מאומת", "Likely": "סביר", "Potential": "אפשרי", "UserDeclared": "הוצהר על ידכם"}
     print("רגולטורים עיקריים, לתצוגה (%d):" % len(primary))
+    print("| רגולטור | מעמד | על סמך |")
+    print("|---|---|---|")
     for r in primary:
-        print("   %-42s %-12s %s" % (r["regulator_name"], r["applicability_status"], r["basis"]))
+        print("| %s | %s | %s |" % (r["regulator_name"], labels.get(r["applicability_status"], r["applicability_status"]), r["basis"]))
     print("רגולטורים נוספים, נשמרים ואינם מוצגים: %d" % len(secondary))
     if catalog:
         print("סעיפי קטלוג שהופעלו: " + ", ".join(catalog))
