@@ -67,6 +67,13 @@ setTimeout(async ()=>{
   R('הורדת PowerPoint', names.includes('מתאר_מצגת_מדיניות.doc'));
   R('הורדת חבילת סוכן JSON', names.includes('highlaw-nda-agent-pack.json'));
   R('הורדת יומן החלטות JSON', names.includes('highlaw-nda-decisions.json'));
+  if(qa.blobs.length<5){
+    console.log('\nעצירה: נוצרו '+qa.blobs.length+' קובצי ייצוא מתוך 5.');
+    console.log('הרתמה מכוילת לפלייבוק אחד (slug highlaw-nda, סעיפים R-02/R-03/C24).');
+    console.log('היא אינה מיושנת: כשמריצים אותה על פלייבוק אחר יש להתאים תחילה');
+    console.log('את השמות ואת מזהי הסעיפים שבראש הקובץ. ראה ההערה בשורה 1.');
+    process.exit(2);
+  }
   const texts=await Promise.all(qa.blobs.map(b=>b.text()));
   const doc=texts[0]||'',xls=texts[1]||'',ppt=texts[2]||'',agent=texts[3]||'',dec=texts[4]||'';
   const bom=async b=>{const a=new Uint8Array(await b.arrayBuffer());return a[0]===0xEF&&a[1]===0xBB&&a[2]===0xBF;};
