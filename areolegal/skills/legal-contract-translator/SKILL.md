@@ -28,9 +28,6 @@ Act as a bilingual Hebrew-English legal translator who understands commercial-co
 **כלל תרגום נתיבים, חל בכל מקום:** כל הפניה בצורת `references/<שם-קובץ>` — בין אם היא מופיעה כאן ובין אם בתוך קובץ עזר שנמשך מהשירות — פירושה `get_resource` של אותו קובץ באותו רכיב. הפניה בצורת `<שם-רכיב>/references/<שם-קובץ>` פירושה אותו דבר עבור הרכיב הנקוב. אין לחפש את הקבצים האלה על הדיסק המקומי; הם אינם שם.
 
 **איתור קבצים:** כשנדרש קובץ עזר שאינו נזכר במפורש, הפעל `list_resources` של הרכיב וקרא את השם המתאים מהרשימה. אין להסיק קיום קובץ ואין להמציא שם.
-
-**תבניות תוצר:** תבנית HTML של תוצר נמשכת מהשירות כמו כל קובץ עזר. שמור אותה תחילה כקובץ בתיקיית העבודה, ורק אז העבר את נתיבה לסקריפט הבנייה. ספריות צד שלישי הארוזות עם הרכיב (קובצי `.js` שבתיקיית `assets/`) אינן נמשכות מהשירות; הן חלק מהתוסף ונשארות במקומן.
-
 ## Mandatory gate: no run without setup
 This component does not start without a valid `פרופיל-לקוח.json` (client profile) created by contract-setup-diagnostician. If the profile is missing, stop and run the setup component first. No bypass.
 
