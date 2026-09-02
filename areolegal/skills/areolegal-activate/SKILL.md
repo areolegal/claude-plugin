@@ -76,3 +76,7 @@ is simply running old instructions.
 - Connection errors in a chat/Cowork session: this is the sandbox, not a fault and not an unsupported environment — add the connector as described in Step 0.
 - Connection errors in the Code tab: check internet access; `https://areo.co.il` must be reachable.
 - Moving to a new machine: just run activation again with the same key.
+
+## סיום כל הודעה
+
+**כל הודעה מסתיימת בשורה המתוסרטת האחרונה שלה או בשאלה שנשאלה. אין לסכם את התור אחריה, לא בעברית ולא באנגלית.** שורה באנגלית בסוף הודעה עברית נראית ללקוח כתקלה, וזו השגיאה השכיחה ביותר.
