@@ -7,9 +7,12 @@
 
 שני כללי ברזל:
 
-1. **שום תוכן פנימי אינו נכנס לקובץ הזה.** לא קודי הכרעה, לא עמדת הפלייבוק,
-   לא נוסח הנסיגה ולא הנימוק המשפטי הפנימי. ההערה לצד שכנגד נלקחת משדה
-   ייעודי (`external_comment`) ומשום מקום אחר. תיק ההכרעות הפנימי הוא קובץ נפרד.
+1. **שום תוכן פנימי אינו נכנס לקובץ הזה.** לא קודי הכרעה, לא נוסח הנסיגה
+   ולא שיקול טקטי. ההערה לצד שכנגד מורכבת מהעמדה, ממספר הכלל במדיניות
+   ומההסבר שב-`external_comment`, ומשום מקום אחר. **זהו התוצר היחיד של הרכיב**;
+   תיעוד ההכרעות נשמר ב-negotiation_state.json ואינו מופק כמסמך.
+   מותר ורצוי להסביר לצד שכנגד מה המדיניות שלנו קובעת בסעיף; אסור לחשוף
+   עד היכן אנחנו מוכנים לרדת.
 
 2. **לא מנחשים היכן לסמן.** סעיף שלא אותר בוודאות אינו מסומן, והוא מדווח
    כ"לא אותר" כדי שעורך הדין יטפל בו ידנית. סימון שינוי בסעיף הלא נכון
@@ -30,6 +33,7 @@ import unicodedata
 
 try:
     from docx import Document
+    from docx.enum.text import WD_COLOR_INDEX
 except ImportError:
     sys.exit("נדרש python-docx. התקנה: pip install python-docx")
 
@@ -38,6 +42,14 @@ import track_changes_helpers as tc
 # יחס דמיון מזערי להתאמת ציטוט. נבחר גבוה בכוונה: מוטב לדווח שסעיף לא אותר
 # מאשר לסמן שינוי בסעיף שכן. בבדיקות, ניסוח חוזי שונה יורד הרבה מתחת לזה.
 MIN_RATIO = 0.82
+
+# שלושת המסלולים. הפתיח קבוע ואינו נתון לניסוח חופשי: הצד שכנגד קורא עשרות
+# הערות, ועמדת החברה חייבת להיקרא באותה מילה בכל אחת מהן.
+TRACKS = {
+    "green":  ("מוסכם",                  WD_COLOR_INDEX.BRIGHT_GREEN),
+    "yellow": ("מוסכם בכפוף להערות",     WD_COLOR_INDEX.YELLOW),
+    "red":    ("לא מוסכם",               WD_COLOR_INDEX.RED),
+}
 
 # מספר סעיף בתחילת פסקה: "5.", "5.1", "5.1.2", "(א)" ועוד
 CLAUSE_RE = re.compile(r"^\s*\(?([0-9]+(?:\.[0-9]+)*|[א-ת])\)?[.):]?\s")
@@ -117,6 +129,41 @@ def locate(paragraphs, decision):
                   "מפני שהמספור נוצר אוטומטית ב-Word ואינו חלק מהטקסט")
 
 
+def build_comment(decision, author):
+    """מרכיב את בועת ההערה בנוסח אחיד, כאילו עורך הדין של החברה כותב לצד שכנגד.
+
+        <שם עורך הדין>:
+        מוסכם בכפוף להערות (סעיף 8.2 למדיניות שלנו)
+
+        <ההסבר שנכתב עבור הסעיף הזה>
+
+    הפתיח, שם החותם ומספר הכלל מורכבים כאן ולא נכתבים בכל פעם מחדש, כדי שכל
+    ההערות במסמך ייראו כמסמך אחד. ההסבר בלבד מגיע מההכרעה.
+
+    **המילה "פלייבוק" אינה מופיעה לעולם.** כלפי חוץ זו "המדיניות שלנו".
+    """
+    track = (decision.get("track") or "").lower()
+    if track not in TRACKS:
+        return None, None
+    verdict, color = TRACKS[track]
+    ref = str(decision.get("policy_ref") or "").strip()
+    head = "%s (סעיף %s למדיניות שלנו)" % (verdict, ref) if ref else verdict
+    body = (decision.get("external_comment") or "").strip()
+    lines = ["%s:" % author if author else "", head]
+    if body:
+        lines.append("")
+        lines.append(body)
+    return "\n".join(x for x in lines if x is not None), color
+
+
+def highlight(par, color):
+    """מסמן את הסעיף בצבע המסלול, כדי שהעמדה תיקרא בסריקה של הדף."""
+    if color is None:
+        return
+    for r in par.runs:
+        r.font.highlight_color = color
+
+
 def apply_edit(par, decision, author):
     """מוחק את הנוסח הישן ומכניס את החדש, כשינוי מעקב אמיתי."""
     old = decision.get("original_text") or par.text
@@ -175,10 +222,14 @@ def main() -> int:
 
         # ההערה לצד שכנגד נלקחת משדה ייעודי בלבד. אין ליפול חזרה על
         # legal_reasoning או policy_position -- אלה פנימיים.
-        note = (d.get("external_comment") or "").strip()
-        if note:
-            tc.add_comment(par, note)
-            commented.append(ident)
+        note, color = build_comment(d, args.author)
+        if note is None:
+            missed.append({"clause": ident,
+                           "reason": "אין track תקין (green/yellow/red); לא סומן ולא הוער"})
+            continue
+        tc.add_comment(par, note)
+        highlight(par, color)
+        commented.append(ident)
         if changed:
             applied.append({"clause": ident, "matched_by": how})
 

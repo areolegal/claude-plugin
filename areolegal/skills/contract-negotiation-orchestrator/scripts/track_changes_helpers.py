@@ -9,7 +9,9 @@ from docx.shared import Pt
 import copy
 
 W = nsmap['w']
-AUTHOR = "HIGHLAW, יועצת משפטית"
+# שם החותם על ההערות ועל השינויים המסומנים. **חייב להיקבע מהפרופיל בכל הרצה.**
+# הערך כאן הוא נפילה אחרונה בלבד; אם הוא מגיע לתוצר, שם עורך הדין לא נמסר.
+AUTHOR = "עורך הדין של החברה"
 DATE = "2026-08-13T00:00:00Z"
 _ids = {"rev": 100, "cmt": 0}
 
@@ -75,10 +77,16 @@ RT_COMMENTS = ("http://schemas.openxmlformats.org/officeDocument/2006/relationsh
 _comments = []
 
 
-def add_comment(p, text, initials="HL"):
+def _initials(name):
+    """ראשי תיבות מהשם שנמסר. Word מציג אותם על בועת ההערה."""
+    parts = [w for w in (name or "").replace(",", " ").split() if w]
+    return ("".join(w[0] for w in parts[:2]) or "עד")[:4]
+
+
+def add_comment(p, text, initials=None):
     """מוסיף הערת Word הצמודה לפסקה, בעברית RTL."""
     cid = str(_ids["cmt"]); _ids["cmt"] += 1
-    _comments.append((cid, text))
+    _comments.append((cid, text, initials or _initials(AUTHOR)))
     start = OxmlElement('w:commentRangeStart'); start.set(qn('w:id'), cid)
     end = OxmlElement('w:commentRangeEnd'); end.set(qn('w:id'), cid)
     ref_r = OxmlElement('w:r')
@@ -93,7 +101,7 @@ def add_comment(p, text, initials="HL"):
     return cid
 
 
-def _comment_xml(cid, text):
+def _comment_xml(cid, text, initials="עד"):
     paras = []
     for chunk in text.split('\n'):
         runs = ('<w:r><w:rPr><w:rFonts w:ascii="David" w:hAnsi="David" w:cs="David"/>'
@@ -101,7 +109,7 @@ def _comment_xml(cid, text):
                 '<w:t xml:space="preserve">' + _esc(chunk) + '</w:t></w:r>')
         paras.append('<w:p><w:pPr><w:bidi/></w:pPr>' + runs + '</w:p>')
     return ('<w:comment w:id="' + cid + '" w:author="' + _esc(AUTHOR) +
-            '" w:initials="HL" w:date="' + DATE + '">' + ''.join(paras) + '</w:comment>')
+            '" w:initials="' + _esc(initials) + '" w:date="' + DATE + '">' + ''.join(paras) + '</w:comment>')
 
 
 def _esc(s):
@@ -113,7 +121,7 @@ def attach_comments(doc):
     """יוצר את word/comments.xml, מקשר אותו ומוסיף Content-Type."""
     if not _comments:
         return doc
-    xml = COMMENTS_XML_HEAD + ''.join(_comment_xml(c, t) for c, t in _comments) + '</w:comments>'
+    xml = COMMENTS_XML_HEAD + ''.join(_comment_xml(c, t, i) for c, t, i in _comments) + '</w:comments>'
     part = Part(PackURI('/word/comments.xml'), CT_COMMENTS, xml.encode('utf-8'),
                 doc.part.package)
     doc.part.relate_to(part, RT_COMMENTS)

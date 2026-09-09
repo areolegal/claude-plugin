@@ -68,6 +68,51 @@ def check_date(r, where, field, value, required=False):
         r.err(where, "השדה %s בערך %r אינו בפורמט ISO של YYYY-MM-DD" % (field, value))
 
 
+COMMERCIAL_ROW = ["src", "field", "found", "norm", "he", "ref", "quote"]
+
+
+def check_commercial(r, data, sources):
+    """מסך התנאים המסחריים. רשות: מטען בלי `commercial` תקין, והמסך מוסתר.
+
+    כשהוא קיים הוא נבדק במלואו, כי שדה שגוי כאן אינו נראה כשגיאה: הטבלה
+    פשוט מציגה שורה ריקה או ערך שאינו מתאים למקור, ואיש אינו יודע שחסר.
+    """
+    c = data.get("commercial")
+    if c is None:
+        return
+    if not isinstance(c, dict):
+        r.err("commercial", "commercial חייב להיות אובייקט עם fields ו-rows"); return
+    fields = c.get("fields")
+    rows = c.get("rows")
+    if not isinstance(fields, list) or not fields:
+        r.err("commercial.fields", "חסר מערך fields, ובלעדיו אין כותרות לטבלה"); return
+    if not isinstance(rows, list):
+        r.err("commercial.rows", "rows חייב להיות מערך"); return
+    keys = set()
+    for i, f in enumerate(fields):
+        if not isinstance(f, dict) or not f.get("key") or not f.get("label"):
+            r.err("commercial.fields[%d]" % i, "לכל תנאי נדרשים key ו-label")
+        else:
+            if f["key"] in keys:
+                r.err("commercial.fields[%d]" % i, "מפתח כפול: %s" % f["key"])
+            keys.add(f["key"])
+    for i, row in enumerate(rows):
+        w = "commercial.rows[%d]" % i
+        if not isinstance(row, dict):
+            r.err(w, "שורה חייבת להיות אובייקט"); continue
+        for k in COMMERCIAL_ROW:
+            if k not in row:
+                r.err(w, "חסר שדה %s" % k)
+        if row.get("field") and row["field"] not in keys:
+            r.err(w, "field=%s אינו מופיע ב-fields" % row["field"])
+        if row.get("src") and sources and row["src"] not in sources:
+            r.err(w, "src=%s אינו מופיע ב-sources" % row["src"])
+        if row.get("found") and not str(row.get("quote") or "").strip():
+            r.warn(w, "סומן found בלי ציטוט; המגירה תיפתח ריקה")
+        if row.get("found") and not str(row.get("ref") or "").strip():
+            r.warn(w, "סומן found בלי מספר סעיף")
+
+
 def validate(data):
     r = Report()
 
@@ -241,6 +286,9 @@ def validate(data):
 
     if not (data.get("rules") or []):
         r.err("rules", "אין אף כלל מדיניות. ה-Workspace יוצג ריק")
+
+    check_commercial(r, data, sources)
+
 
     return r
 

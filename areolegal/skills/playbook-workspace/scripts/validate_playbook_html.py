@@ -22,7 +22,7 @@ import sys
 MUST_BE_REPLACED = ["/*__DATA__*/null", "/*__CHARTJS__*/", "__ENTITY__"]
 
 # המסכים. כל אחד הוא פונקציית תצוגה בתבנית; היעדר אחד פירושו מסך חסר.
-VIEWS = ["vOverview", "vRules", "vSegPolicy", "vCompare", "vFindings",
+VIEWS = ["vOverview", "vRules", "vSegPolicy", "vCompare", "vCommercial", "vFindings",
          "vAdditions", "vPrecedents", "vDecisions", "vSources"]
 
 # האינטראקציות שבלעדיהן זו תצוגה ולא סביבת עבודה.
