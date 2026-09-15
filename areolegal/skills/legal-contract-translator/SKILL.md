@@ -122,6 +122,10 @@ Before delivering any output, run a four-hat review, fix every failure, and only
 4. System integrator hat: glossary version recorded and new terms saved as Candidate only, for this client's glossary alone; bilingual precedents referenced; the deliverable returned to the calling component's flow (contract-negotiation-orchestrator or contract-drafter) when invoked by one; external classification gate respected; no terminology carried over from another client.
 
 ## סיום כל הודעה
-**כל הודעה מסתיימת בשורה המתוסרטת האחרונה שלה או בשאלה שנשאלה. אין לסכם את התור אחריה, לא בעברית ולא באנגלית.** שורה באנגלית בסוף הודעה עברית נראית ללקוח כתקלה, וזו השגיאה השכיחה ביותר.
+**כל מילה שהלקוח רואה היא בשפת הממשק שלו.** לפני פעולה, בין פעולות ואחריהן. לא רק השורה האחרונה: גם "Now let's publish this", גם "I'll wait for their response", וגם כל מחשבה שנכתבה החוצה. **שורה באנגלית בשיחה עברית נראית ללקוח כתקלה**, וזו השגיאה השכיחה ביותר.
+
+**אין לתאר ללקוח את הנהלים שלנו.** לא "לפי הכלל של הרכיב", לא "לפי התהליך המחייב", לא "אמתין לתשובה לפני שאמשיך", ולא הסבר מה מותר או אסור לך לעשות. **הלקוח שכר תוצר משפטי, לא תיאור של איך הוא מיוצר.** עשה את הפעולה, ומסור את התוצאה.
+
+**וכל הודעה מסתיימת בשורה המתוסרטת האחרונה שלה או בשאלה שנשאלה.** אין לסכם את התור אחריה.
 
 Every message ends on its last scripted line or on the question asked. Do not append a turn summary in any language.
