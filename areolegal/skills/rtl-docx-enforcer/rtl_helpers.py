@@ -11,6 +11,54 @@ RTL_STYLES = ["Normal", "Heading 1", "Heading 2", "Heading 3", "Heading 4", "Hea
               "List Paragraph", "List Number", "List Bullet", "Title", "Subtitle"]
 
 
+# ---------------------------------------------------------------- סדר סכימה
+# ב-OOXML סדר הילדים בתוך pPr, rPr, tblPr ו-sectPr קבוע בסכימה ואינו חופשי.
+# `append` מוסיף בסוף, וזה נכון רק כשהמכל כמעט ריק, כמו במסמך שנבנה מאפס.
+# במסמך קיים, שכבר יש בו spacing, ind, jc, rPr ו-lang, הוספה בסוף מייצרת
+# XML לא חוקי: `w:bidi` אחרי `w:rPr`. Word סלחן לרוב ופותח בכל זאת, אבל
+# מוודאי סכימה נכשלים, וגרסאות מסוימות מתלוננות או מתעלמות מהתג. לכן כל
+# הוספה כאן עוברת דרך `_ensure`, שמכניס כל תג במקומו לפי הסדר שלהלן.
+_ORDER_PPR = ("pStyle", "keepNext", "keepLines", "pageBreakBefore", "framePr",
+              "widowControl", "numPr", "suppressLineNumbers", "pBdr", "shd", "tabs",
+              "suppressAutoHyphens", "kinsoku", "wordWrap", "overflowPunct",
+              "topLinePunct", "autoSpaceDE", "autoSpaceDN", "bidi", "adjustRightInd",
+              "snapToGrid", "spacing", "ind", "contextualSpacing", "mirrorIndents",
+              "suppressOverlap", "jc", "textDirection", "textAlignment",
+              "textboxTightWrap", "outlineLvl", "divId", "cnfStyle", "rPr", "sectPr",
+              "pPrChange")
+_ORDER_RPR = ("rStyle", "rFonts", "b", "bCs", "i", "iCs", "caps", "smallCaps", "strike",
+              "dstrike", "outline", "shadow", "emboss", "imprint", "noProof",
+              "snapToGrid", "vanish", "webHidden", "color", "spacing", "w", "kern",
+              "position", "sz", "szCs", "highlight", "u", "effect", "bdr", "shd",
+              "fitText", "vertAlign", "rtl", "cs", "em", "lang", "eastAsianLayout",
+              "specVanish", "oMath", "rPrChange")
+_ORDER_TBLPR = ("tblStyle", "tblpPr", "tblOverlap", "bidiVisual", "tblStyleRowBandSize",
+                "tblStyleColBandSize", "tblW", "jc", "tblCellSpacing", "tblInd",
+                "tblBorders", "shd", "tblLayout", "tblCellMar", "tblLook", "tblCaption",
+                "tblDescription", "tblPrChange")
+_ORDER_SECTPR = ("footnotePr", "endnotePr", "type", "pgSz", "pgMar", "paperSrc",
+                 "pgBorders", "lnNumType", "pgNumType", "cols", "formProt", "vAlign",
+                 "noEndnote", "titlePg", "textDirection", "bidi", "rtlGutter", "docGrid",
+                 "printerSettings", "sectPrChange")
+
+
+def _ensure(parent, tag, order):
+    """מחזיר את התג אם הוא קיים, ואחרת מכניס אותו במקומו לפי הסכימה."""
+    found = parent.find(qn(tag))
+    if found is not None:
+        return found
+    name = tag.split(':', 1)[1]
+    rank = order.index(name)
+    el = OxmlElement(tag)
+    for i, child in enumerate(parent):
+        child_name = child.tag.split('}')[-1]
+        if child_name in order and order.index(child_name) > rank:
+            parent.insert(i, el)
+            return el
+    parent.append(el)
+    return el
+
+
 def _pPr(p):
     pPr = p._p.find(qn('w:pPr'))
     if pPr is None:
@@ -31,7 +79,7 @@ def set_paragraph_rtl(p):
     """bidi ברמת הפסקה. אין jc מפורש: ב-bidi ברירת המחדל start היא ימין."""
     pPr = _pPr(p)
     if pPr.find(qn('w:bidi')) is None:
-        pPr.append(OxmlElement('w:bidi'))
+        _ensure(pPr, 'w:bidi', _ORDER_PPR)
     for jc in pPr.findall(qn('w:jc')):
         if jc.get(qn('w:val')) in ('right', 'left'):
             pPr.remove(jc)
@@ -43,9 +91,7 @@ def set_paragraph_rtl(p):
 
 def set_run_rtl(run):
     rPr = _rPr(run)
-    if rPr.find(qn('w:rtl')) is None:
-        el = OxmlElement('w:rtl')
-        rPr.append(el)
+    _ensure(rPr, 'w:rtl', _ORDER_RPR)
     return run
 
 
@@ -61,9 +107,7 @@ def set_run_ltr_explicit(run):
     rPr = _rPr(run)
     for el in rPr.findall(qn('w:rtl')):
         rPr.remove(el)
-    el = OxmlElement('w:rtl')
-    el.set(qn('w:val'), '0')
-    rPr.append(el)
+    _ensure(rPr, 'w:rtl', _ORDER_RPR).set(qn('w:val'), '0')
     return run
 
 
@@ -71,16 +115,12 @@ def set_font(run, name="David", size=11, cs_name=None):
     run.font.name = name
     run.font.size = Pt(size)
     rPr = _rPr(run)
-    rFonts = rPr.find(qn('w:rFonts'))
-    if rFonts is None:
-        rFonts = OxmlElement('w:rFonts')
-        rPr.insert(0, rFonts)
+    rFonts = _ensure(rPr, 'w:rFonts', _ORDER_RPR)
     rFonts.set(qn('w:ascii'), name)
     rFonts.set(qn('w:hAnsi'), name)
     rFonts.set(qn('w:cs'), cs_name or name)
-    sz = OxmlElement('w:szCs')
-    sz.set(qn('w:val'), str(int(size * 2)))
-    rPr.append(sz)
+    # szCs קודם ל-rtl בסכימה, ולכן הוא נכנס לפי הסדר ולא בסוף
+    _ensure(rPr, 'w:szCs', _ORDER_RPR).set(qn('w:val'), str(int(size * 2)))
     return run
 
 
@@ -88,10 +128,8 @@ def set_document_rtl(doc):
     """section RTL + כל סגנונות הבסיס מקבלים bidi ברמת הסגנון עצמו."""
     for section in doc.sections:
         sectPr = section._sectPr
-        if sectPr.find(qn('w:bidi')) is None:
-            sectPr.append(OxmlElement('w:bidi'))
-        if sectPr.find(qn('w:rtlGutter')) is None:
-            sectPr.append(OxmlElement('w:rtlGutter'))
+        _ensure(sectPr, 'w:bidi', _ORDER_SECTPR)
+        _ensure(sectPr, 'w:rtlGutter', _ORDER_SECTPR)
     for name in RTL_STYLES:
         try:
             st = doc.styles[name]
@@ -101,8 +139,7 @@ def set_document_rtl(doc):
         if pPr is None:
             pPr = OxmlElement('w:pPr')
             st.element.append(pPr)
-        if pPr.find(qn('w:bidi')) is None:
-            pPr.append(OxmlElement('w:bidi'))
+        _ensure(pPr, 'w:bidi', _ORDER_PPR)
         for jc in pPr.findall(qn('w:jc')):
             pPr.remove(jc)
         rPr = st.element.find(qn('w:rPr'))
@@ -114,8 +151,7 @@ def set_document_rtl(doc):
             rFonts = OxmlElement('w:rFonts')
             rPr.insert(0, rFonts)
         rFonts.set(qn('w:cs'), 'David')
-        if rPr.find(qn('w:rtl')) is None:
-            rPr.append(OxmlElement('w:rtl'))
+        _ensure(rPr, 'w:rtl', _ORDER_RPR)
     return doc
 
 
@@ -200,12 +236,8 @@ def set_table_rtl(table):
     if tblPr is None:
         tblPr = OxmlElement('w:tblPr')
         table._tbl.insert(0, tblPr)
-    if tblPr.find(qn('w:bidiVisual')) is None:
-        tblPr.append(OxmlElement('w:bidiVisual'))
-    layout = tblPr.find(qn('w:tblLayout'))
-    if layout is None:
-        layout = OxmlElement('w:tblLayout')
-        tblPr.append(layout)
+    _ensure(tblPr, 'w:bidiVisual', _ORDER_TBLPR)
+    layout = _ensure(tblPr, 'w:tblLayout', _ORDER_TBLPR)
     layout.set(qn('w:type'), 'fixed')
     for row in table.rows:
         for cell in row.cells:
@@ -218,7 +250,18 @@ def set_table_rtl(table):
 
 
 def final_rtl_audit(doc, verbose=True):
-    """רשת ביטחון: עובר על כל המסמך ומתקן במקום לזרוק שגיאה."""
+    """רשת ביטחון: עובר על כל המסמך ומתקן במקום לזרוק שגיאה.
+
+    **בטוח למסמך קיים, לרבות מסמך עם עקוב אחר שינויים.** הפונקציה נוגעת
+    אך ורק במאפייני פסקה, טבלה, מקטע וסגנון: `w:pPr`, `w:tblPr`, `w:sectPr`
+    וה-`pPr` שבתוך `styles.xml`. היא אינה נוגעת ב-runs, ב-`w:ins`, ב-`w:del`,
+    בעוגני הערות ובשום תוכן, ולכן אינה יכולה לפגוע בסימוני המעקב או בבועות.
+    כל תג מוכנס במקומו לפי סדר הסכימה, ולא בסוף המכל, ולכן המסמך נשאר חוקי
+    גם כשה-pPr כבר מלא ב-spacing, ind, jc ו-rPr.
+
+    זו הדרך להפעיל את הסקיל על מסמך שלא אנחנו בנינו: להריץ את הפונקציה הזו
+    על המסמך הטעון, בלי `set_document_rtl` ובלי פונקציות הבנייה.
+    """
     fixed = {"paragraphs": 0, "tables": 0, "sections": 0, "styles": 0}
     body = doc.element.body
     for p in body.iter(qn('w:p')):
@@ -227,7 +270,7 @@ def final_rtl_audit(doc, verbose=True):
             pPr = OxmlElement('w:pPr')
             p.insert(0, pPr)
         if pPr.find(qn('w:bidi')) is None:
-            pPr.append(OxmlElement('w:bidi'))
+            _ensure(pPr, 'w:bidi', _ORDER_PPR)
             fixed["paragraphs"] += 1
     for tbl in body.iter(qn('w:tbl')):
         tblPr = tbl.find(qn('w:tblPr'))
@@ -235,27 +278,43 @@ def final_rtl_audit(doc, verbose=True):
             tblPr = OxmlElement('w:tblPr')
             tbl.insert(0, tblPr)
         if tblPr.find(qn('w:bidiVisual')) is None:
-            tblPr.append(OxmlElement('w:bidiVisual'))
+            _ensure(tblPr, 'w:bidiVisual', _ORDER_TBLPR)
             fixed["tables"] += 1
     for section in doc.sections:
         sectPr = section._sectPr
         if sectPr.find(qn('w:bidi')) is None:
-            sectPr.append(OxmlElement('w:bidi'))
+            _ensure(sectPr, 'w:bidi', _ORDER_SECTPR)
             fixed["sections"] += 1
-        if sectPr.find(qn('w:rtlGutter')) is None:
-            sectPr.append(OxmlElement('w:rtlGutter'))
+        _ensure(sectPr, 'w:rtlGutter', _ORDER_SECTPR)
     for name in RTL_STYLES[:4]:
         try:
             st = doc.styles[name]
         except KeyError:
             continue
         pPr = st.element.find(qn('w:pPr'))
-        if pPr is None or pPr.find(qn('w:bidi')) is None:
-            if pPr is None:
-                pPr = OxmlElement('w:pPr')
-                st.element.append(pPr)
-            pPr.append(OxmlElement('w:bidi'))
+        if pPr is None:
+            pPr = OxmlElement('w:pPr')
+            st.element.insert(0, pPr)
+        if pPr.find(qn('w:bidi')) is None:
+            _ensure(pPr, 'w:bidi', _ORDER_PPR)
             fixed["styles"] += 1
     if verbose:
         print("RTL audit:", fixed)
     return doc
+
+
+def audit_schema_order(doc):
+    """מחזיר כמה מכלים חורגים מסדר הסכימה. אפס הוא המצב התקין.
+
+    בדיקה זולה שאפשר להריץ אחרי כל עיבוד של מסמך קיים, כדי לוודא שלא נוצר
+    XML שמוודאי סכימה יפסלו.
+    """
+    bad = 0
+    for parent_tag, order in (('w:pPr', _ORDER_PPR), ('w:rPr', _ORDER_RPR),
+                              ('w:tblPr', _ORDER_TBLPR), ('w:sectPr', _ORDER_SECTPR)):
+        for parent in doc.element.body.iter(qn(parent_tag)):
+            ranks = [order.index(c.tag.split('}')[-1]) for c in parent
+                     if c.tag.split('}')[-1] in order]
+            if ranks != sorted(ranks):
+                bad += 1
+    return bad

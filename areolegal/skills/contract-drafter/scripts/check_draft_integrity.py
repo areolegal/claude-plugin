@@ -182,6 +182,19 @@ def check_placeholders(text, rep):
                 hits[:15])
 
 
+TEMPLATE_TAG_RX = re.compile(r"\{\{\s*([^{}]{1,60}?)\s*\}\}")
+
+
+def check_template_tags(text, rep):
+    """תגית {{...}} שנשארה בטיוטה היא משתנה של תבנית האב שלא קיבל ערך. בניגוד
+       לקו תחתון, אין לה פירוש לגיטימי במסמך שיוצא, ולכן היא חוסמת תמיד, גם בבלוק החתימה."""
+    tags = sorted(set(m.group(1) for m in TEMPLATE_TAG_RX.finditer(text)))
+    if tags:
+        rep.add("חוסם", "תגיות תבנית",
+                "%d משתני תבנית נותרו בלי ערך. יש להשלים אותם בקובץ הערכים ולהריץ את המילוי שוב" % len(tags),
+                ["{{%s}}" % t for t in tags[:20]])
+
+
 def check_amounts_dates(text, rep):
     nums = [m.group(1) or m.group(2) for m in MONEY_RX.finditer(text)]
     norm = [n.replace(",", "") for n in nums if n]
@@ -201,10 +214,48 @@ def check_amounts_dates(text, rep):
         rep.add("אזהרה", "תאריכים", "תאריכים בעייתיים או לא חד משמעיים", bad[:15])
 
 
-def check_style(text, rep, hebrew):
+def approved_matchers(template_paras):
+    """פסקאות התבנית שיש בהן מקף ארוך, כתבניות התאמה: הטקסט כלשונו, ובמקום כל
+       תגית {{...}} כל ערך שמולא בה. פסקה בטיוטה שתואמת אחת מהן היא נוסח מאושר."""
+    out = []
+    for tp in template_paras:
+        if not EMDASH_RX.search(tp):
+            continue
+        parts = TEMPLATE_TAG_RX.split(tp)
+        literal = [re.escape(x) for i, x in enumerate(parts) if i % 2 == 0]
+        out.append(re.compile(r"\A" + ".*?".join(literal) + r"\Z", re.S))
+    return out
+
+
+def check_style(text, rep, hebrew, paras=None, template_paras=None):
+    """מקף ארוך אסור בטקסט שאנחנו כותבים, **לא בנוסח המאושר של הלקוח.** טיוטה
+       שמולאה מתבנית אב שומרת את נוסח התבנית כלשונו, ואם יש בו מקפים ארוכים,
+       שינויים היה שבירה של הכלל שנוסח מאושר אינו משתנה. לכן, כשנמסרה התבנית:
+       מקף בפסקה שתואמת את התבנית הוא אזהרה, ומקף בטקסט חדש (סעיף שהוחלף או נוסף)
+       נשאר חוסם. בלי תבנית, כל מקף חוסם, כמו קודם."""
     if hebrew:
         n = len(EMDASH_RX.findall(text))
-        if n:
+        if n and template_paras is not None and paras is not None:
+            matchers = approved_matchers(template_paras)
+            approved, new = 0, []
+            for dp in paras:
+                k = len(EMDASH_RX.findall(dp))
+                if not k:
+                    continue
+                if any(m.match(dp) for m in matchers):
+                    approved += k
+                else:
+                    new.append(dp)
+            if new:
+                rep.add("חוסם", "סגנון",
+                        "%d מקפים ארוכים בטקסט שנכתב לטיוטה ואינו מהתבנית. יש להחליף בפסיק, בנקודה או בנקודתיים"
+                        % sum(len(EMDASH_RX.findall(x)) for x in new),
+                        [x[:90] for x in new[:8]])
+            if approved:
+                rep.add("אזהרה", "סגנון",
+                        "%d מקפים ארוכים בנוסח המאושר של התבנית. לא שונו, כי נוסח מאושר אינו משתנה; "
+                        "להסרתם יש לעדכן את התבנית עצמה" % approved)
+        elif n:
             rep.add("חוסם", "סגנון",
                     "%d מקפים ארוכים במסמך עברי. יש להחליף בפסיק, בנקודה או בנקודתיים" % n)
     stale = [m.group(0) for m in STALE_RX.finditer(text)]
@@ -220,6 +271,8 @@ def main():
     ap.add_argument("--json")
     ap.add_argument("--strict", action="store_true",
                     help="אזהרה נחשבת ממצא חוסם")
+    ap.add_argument("--template",
+                    help="master.docx שממנו מולאה הטיוטה: מקף ארוך בנוסח המאושר הוא אזהרה ולא חוסם")
     args = ap.parse_args()
 
     if not os.path.isfile(args.draft):
@@ -241,8 +294,15 @@ def main():
     check_crossrefs(paras, text, rep)
     check_annexes(paras, text, rep)
     check_placeholders(text, rep)
+    check_template_tags(text, rep)
     check_amounts_dates(text, rep)
-    check_style(text, rep, hebrew)
+    template_paras = None
+    if args.template:
+        if not os.path.isfile(args.template):
+            print("התבנית לא נמצאה: %s" % args.template)
+            sys.exit(2)
+        template_paras = docx_paragraphs(args.template, limit=20000)
+    check_style(text, rep, hebrew, paras, template_paras)
 
     print("בדיקת שלמות: %s" % os.path.basename(args.draft))
     order = {"חוסם": 0, "אזהרה": 1, "מידע": 2}
