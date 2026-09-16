@@ -5,7 +5,7 @@
 זהו התוצר שנשלח לצד שכנגד. הוא נבנה על הקובץ **שלהם**, ולא כמסמך חדש:
 השינויים מבוצעים בגוף ההסכם כ-w:ins/w:del, וההסבר נכנס כהערת Word אמיתית.
 
-שני כללי ברזל:
+שלושה כללי ברזל:
 
 1. **שום תוכן פנימי אינו נכנס לקובץ הזה.** לא קודי הכרעה, לא נוסח הנסיגה
    ולא שיקול טקטי. ההערה לצד שכנגד מורכבת מהעמדה, ממספר הכלל במדיניות
@@ -17,6 +17,12 @@
 2. **לא מנחשים היכן לסמן.** סעיף שלא אותר בוודאות אינו מסומן, והוא מדווח
    כ"לא אותר" כדי שעורך הדין יטפל בו ידנית. סימון שינוי בסעיף הלא נכון
    בהסכם שנשלח לצד שכנגד גרוע בהרבה מסעיף שלא סומן.
+
+3. **הטיוטה נקלטת לפני שמסמנים עליה.** השינויים שהצד שכנגד הציע מתקבלים
+   והופכים לנוסח הבסיס, וההערות שהיו בקובץ מוסרות. זו הקליטה שעורך דין עושה
+   ביד לפני שהוא פותח סבב, והיא מה שמאפשר לסמן מעליה: בלעדיה הציטוט שבהכרעה
+   והטקסט שהסקריפט רואה אינם אותו טקסט, והנוסח נכפל כשמקבלים את השינויים.
+   מה שנקלט ומה שהוסר מדווח בסוף הריצה. הנימוק המלא ב-track_changes_helpers.
 
 שימוש:
     python3 apply_redlines.py --draft <קובץ הצד שכנגד.docx> \\
@@ -34,6 +40,7 @@ import unicodedata
 try:
     from docx import Document
     from docx.enum.text import WD_COLOR_INDEX
+    from docx.oxml.ns import qn
 except ImportError:
     sys.exit("נדרש python-docx. התקנה: pip install python-docx")
 
@@ -56,6 +63,10 @@ CLAUSE_RE = re.compile(r"^\s*\(?([0-9]+(?:\.[0-9]+)*|[א-ת])\)?[.):]?\s")
 
 RLM = "‏"
 BIDI = "".join(chr(c) for c in (0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E))
+
+# ילדי w:p שנושאים טקסט. אלה שיורדים כשמחליפים נוסח פסקה.
+CONTENT_TAGS = {qn(t) for t in ('w:r', 'w:hyperlink', 'w:ins', 'w:del',
+                                'w:moveTo', 'w:moveFrom', 'w:smartTag')}
 
 
 def norm(s: str) -> str:
@@ -170,8 +181,12 @@ def apply_edit(par, decision, author):
     new = decision.get("replacement_text") or ""
     if not new or norm(new) == norm(old):
         return False
-    for r in list(par.runs):                 # הנוסח הישן יורד כמחיקה מסומנת
-        r._r.getparent().remove(r._r)
+    # הנוסח הישן יורד כמחיקה מסומנת. מוסרים כל נושא טקסט ולא רק par.runs:
+    # runs מחזיר w:r ישירים בלבד, ונוסח שנשאר בעטיפה אחרת היה נכפל בתוצר.
+    # סימניות ורכיבי pPr נשארים, כדי לא לשבור הפניות וסגנון.
+    for el in list(par._p):
+        if el.tag in CONTENT_TAGS:
+            par._p.remove(el)
     tc.add_del(par, old, ltr=False)
     tc.add_ins(par, new, ltr=False)
     return True
@@ -207,6 +222,10 @@ def main() -> int:
     decisions = data.get("decisions", data if isinstance(data, list) else [])
 
     doc = Document(args.draft)
+    # קליטת הטיוטה: מקבלים את מה שהצד שכנגד הציע ומסירים את ההערות שבקובץ,
+    # ורק אז מאתרים. סדר הפוך היה מאתר לפי טקסט חלקי. ראה כלל 3 למעלה.
+    intake = tc.accept_revisions(doc)
+    intake["comments_removed"] = tc.strip_comments(doc)
     tc.enable_track_changes(doc)
     paragraphs = all_paragraphs(doc)
 
@@ -237,6 +256,8 @@ def main() -> int:
     doc.save(args.out)
 
     print("נבנה %s" % args.out)
+    print("  נקלט מהטיוטה   : %d הוספות ו-%d מחיקות של הצד שכנגד התקבלו כנוסח הבסיס"
+          % (intake["accepted_insertions"], intake["accepted_deletions"]))
     print("  שינויים שסומנו : %d" % len(applied))
     print("  הערות לצד שכנגד: %d" % len(commented))
     print("  לא אותרו       : %d" % len(missed))
@@ -245,8 +266,20 @@ def main() -> int:
     if missed:
         print("  יש לטפל בהם ידנית. הם לא סומנו, ולא נוחשה עבורם פסקה.")
 
+    dropped = intake["comments_removed"]
+    if dropped:
+        print("  הערות שהוסרו   : %d. הן אינן יוצאות לצד שכנגד:" % len(dropped))
+        for c in dropped:
+            print("     · %s: %s" % (c["author"] or "ללא שם", (c["text"] or "")[:70]))
+        print("  בדוק אם יש ביניהן הערה פנימית שלנו שדורשת טיפול בסבב הזה.")
+    if intake["paragraph_marks_deleted"]:
+        print("  שים לב: ב-%d פסקאות הצד שכנגד מחק את סימן הפסקה, כלומר ביקש "
+              "לאחד פסקאות. האיחוד לא בוצע, מפני שהוא משנה את מבנה ההסכם."
+              % intake["paragraph_marks_deleted"])
+
     if args.report:
-        json.dump({"applied": applied, "commented": commented, "missed": missed},
+        json.dump({"intake": intake, "applied": applied,
+                   "commented": commented, "missed": missed},
                   open(args.report, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     return 0
 

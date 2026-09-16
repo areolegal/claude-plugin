@@ -209,14 +209,20 @@ def main():
         "notes": ["הפרופיל שומר זהות רגולטורים בלבד, ולא תוכן חובות."],
         "display_language": a["display_language"],
         "deliverable_language": a.get("deliverable_language", a["display_language"]),
+        # shared_output_folder is the root of Areo-נתונים, not just an output
+        # target: null means this install serves one lawyer, a path means it
+        # serves the department. Eight components read it, so it is always
+        # present in the file, even when unanswered.
         "connections": a.get("connections", {
-            "folders": [], "email": None, "calendar": None,
-            "email_tracking": None, "scheduled_scan": None,
+            "folders": [], "shared_output_folder": None,
+            "email": None, "calendar": None, "email_tracking": None,
             "doc_access": {"mode": "local", "baseUrl": ""}, "asked_at": ""}),
         "areo_notice_shown": True,
         "generated_at": now.strftime("%Y-%m-%dT%H:%M:%S"),
         "last_updated": now.strftime("%Y-%m-%dT%H:%M:%S"),
     }
+
+    profile["connections"].setdefault("shared_output_folder", None)
 
     d = os.path.dirname(os.path.abspath(args.out))
     if d and not os.path.isdir(d):

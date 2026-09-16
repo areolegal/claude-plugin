@@ -81,6 +81,57 @@ if bad:
 print("   licence gate + server fetching present in every skill")
 PY
 
+echo "==> 1b2/5 Verifying the profile gate cannot silently re-onboard"
+python3 - <<'PY'
+import pathlib, sys
+
+# A skill that loses this rule answers "no profile file" by running setup, which
+# forks the customer's company data into a second, diverging profile that nothing
+# reports. The marker it reads is written by mark_setup and rides on
+# license_status, so all three pieces are checked together.
+GATED = {"contract-drafter", "contract-negotiation-orchestrator",
+         "contract-playbook-builder", "contract-risk-assessor",
+         "legal-contract-translator", "negotiation-strategist", "playbook-workspace"}
+bad = []
+
+mcp = pathlib.Path("areolegal/mcp/areolegal_mcp.py").read_text(encoding="utf-8")
+if '"name": "mark_setup"' not in mcp:
+    bad.append("mcp: mark_setup tool is gone")
+if 'body["local_setup"] = local_setup()' not in mcp:
+    bad.append("mcp: license_status no longer carries local_setup")
+
+setup_md = pathlib.Path("areolegal/skills/contract-setup-diagnostician/SKILL.md").read_text(encoding="utf-8")
+if "mark_setup" not in setup_md:
+    bad.append("contract-setup-diagnostician: never records the marker (mark_setup missing)")
+
+for skill in sorted(GATED):
+    text = pathlib.Path("areolegal/skills/%s/SKILL.md" % skill).read_text(encoding="utf-8")
+    if "local_setup" not in text:
+        bad.append("%s: profile gate does not consult local_setup" % skill)
+    if "אם אין פרופיל, עצור והפעל את ההקמה" in text:
+        bad.append("%s: still runs setup unconditionally when the profile file is absent" % skill)
+
+# The shared folder is the root of Areo-נתונים, not just an output target. Eight
+# components read connections.shared_output_folder, and for a long time nothing
+# wrote it -- so the field is asserted at the writer, not only at the readers.
+writer = pathlib.Path("areolegal/skills/contract-setup-diagnostician/scripts/build_profile.py").read_text(encoding="utf-8")
+if '"shared_output_folder"' not in writer:
+    bad.append("build_profile.py: connections.shared_output_folder is not written")
+
+for skill in sorted(GATED | {"contract-setup-diagnostician"}):
+    text = pathlib.Path("areolegal/skills/%s/SKILL.md" % skill).read_text(encoding="utf-8")
+    if "shared_output_folder" not in text:
+        bad.append("%s: lost the shared-folder rule" % skill)
+
+if bad:
+    print("   REFUSING TO RELEASE:")
+    for b in bad:
+        print("     -", b)
+    sys.exit(1)
+print("   profile gate consults local_setup in every gated skill; marker is written")
+print("   shared folder is written by the setup script and read by every component")
+PY
+
 echo "==> 1c/5 Checking commands and referenced scripts are runnable"
 python3 - <<'PY'
 import pathlib, re, sys

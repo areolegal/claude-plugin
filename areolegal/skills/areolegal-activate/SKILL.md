@@ -1,6 +1,6 @@
 ---
 name: areolegal-activate
-description: Activate and onboard the AreoLegal legal suite. Use when the user wants to activate their AreoLegal subscription or license key, mentions "הפעלה", "רישיון", "מפתח רישיון", "activate areolegal", "setup areolegal", asks why AreoLegal skills say the subscription is inactive, or right after installing the AreoLegal plugin. Also use to set up recurring automated legal workflows (schedulers) and explain what the suite can do.
+description: Activate and onboard the AreoLegal legal suite. Use when the user wants to activate their AreoLegal subscription or license key, mentions "הפעלה", "רישיון", "מפתח רישיון", "activate areolegal", "setup areolegal", asks why AreoLegal skills say the subscription is inactive, or right after installing the AreoLegal plugin. Also use to explain what the suite can do.
 ---
 
 # AreoLegal Setup & Onboarding
@@ -35,28 +35,42 @@ Never ask the user to paste the key into files manually; the `activate` tool han
 
 ## Step 2 — Tour (brief)
 
-Tell the user what is now available, in one short paragraph each:
-- **contract-setup-diagnostician** — builds the Organization Profile (company research, regulators, logo and brand colors). Recommend running this FIRST, once.
-- **contract-playbook-builder** — builds a Green/Yellow/Red contract playbook from a folder of agreements, with an interactive HTML dashboard.
-- **contract-negotiation-orchestrator** — applies the playbook to supplier redlines and produces RTL Word documents with track changes and reasoned footnotes.
+Tell the user what is now available, one short line each. Keep it to this list; do not invent
+components and do not promise anything outside it.
+
+- **contract-setup-diagnostician** — builds the Organization Profile from a short questionnaire (company, incorporation, sector, markets, regulators, interface language). Recommend running this FIRST, once. Every other component is gated on it.
+- **contract-playbook-builder** — builds a Green/Yellow/Red contract playbook from a folder of signed agreements, with evidence and source quotes. Exports designed Word (short and full), Excel and a PowerPoint summary.
+- **playbook-workspace** — Areo Workspace | playbook: an interactive HTML workspace over the playbook model.
+- **contract-negotiation-orchestrator** — applies the playbook to the counterparty's redlines and produces a single Word file, "תגובת החברה", with track changes and reasoned comment bubbles.
+- **contract-risk-assessor** — maps exposures across six lenses and produces Areo Workspace | risks.
+- **negotiation-strategist** — balance of power, sequencing, concession packages, an interactive prep centre and a sparring simulation.
+- **contract-drafter** — first drafts, amendments, annexes, termination and demand letters, from the client's own approved templates.
+- **legal-contract-translator** — Hebrew↔English legal translation that preserves defined terms, numbering, cross-references and amounts.
 - Word documents in Hebrew are automatically RTL-enforced.
 
-Also state the privacy guarantee clearly: the user's contracts and documents are processed locally on their machine and are NEVER uploaded to the AreoLegal service — the service only validates the license and serves methodology content downward.
+Also state the privacy guarantee clearly: the user's contracts and documents are processed in
+their own working environment and are NEVER uploaded to the AreoLegal service — the service only
+validates the license and serves methodology content downward.
 
 Offer to run the Organization Profile setup now.
 
-## Step 3 — Offer automation (schedulers)
+## Step 3 — Nothing runs on a schedule
 
-Ask if they want recurring automated workflows. If yes, help them create scheduled tasks (via the platform's scheduling feature, e.g. `/schedule` or scheduled tasks UI). Useful recipes:
-- Weekly: scan a contracts folder for new agreements and flag deviations from the playbook.
-- Monthly: refresh the Organization Profile (regulators, brand assets) and report changes.
-- Quarterly: playbook review — summarize negotiation outcomes since last version and propose policy updates for approval.
+**No component ever schedules work.** There is no background folder scan, no weekly sweep, no
+automatic playbook update and no automatic profile refresh. Adding a file to a folder is not an
+event and triggers nothing. Do not offer any of these, not even with the user's approval.
 
-Note: scheduled tasks run under the user's account; they must be created interactively by the user — walk them through it, don't fabricate one.
+If the user asks for recurring automation, say plainly that everything runs on an explicit
+request: the playbook is rebuilt when they ask for it, and the Workspace is rebuilt right after.
 
-## Step 4 — Dashboards
+**A reminder is a different thing and is allowed:** a message to a person about a date, which
+never changes content. Reminders are offered by the component that produced the deliverable
+(a negotiation round awaiting an answer, a playbook worth refreshing), not here.
 
-Explain that playbooks are delivered as interactive HTML dashboards (artifacts). No setup needed; they are generated by the playbook builder automatically.
+## Step 4 — Workspaces
+
+Explain that the playbook and the risk register are delivered as interactive HTML workspaces,
+generated by their components automatically. No setup needed.
 
 ## Stale plugin: what "Couldn't check for updates" really means
 

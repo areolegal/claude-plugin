@@ -15,6 +15,10 @@ Backend URL resolution order:
   1. env AREOLEGAL_API_URL
   2. "api_url" in ~/.areolegal/license.json
   3. DEFAULT_API_URL below
+
+The same local file also carries a "setup" marker (mark_setup / local_setup):
+whether setup ever completed on this machine and where the profile folder was.
+It is local-only and is returned to skills inside license_status.
 """
 
 import json
@@ -28,7 +32,7 @@ from pathlib import Path
 
 DEFAULT_API_URL = "https://areo.co.il"
 PROTOCOL_VERSION = "2024-11-05"
-PLUGIN_VERSION = "1.14.0"   # kept in step with plugin.json by release.sh
+PLUGIN_VERSION = "1.15.0"   # kept in step with plugin.json by release.sh
 SERVER_INFO = {"name": "areolegal", "version": "1.0.4"}
 TIMEOUT = 60
 
@@ -106,6 +110,34 @@ TOOLS = [
         },
     },
     {
+        "name": "mark_setup",
+        "description": (
+            "Record locally, on this machine only, that AreoLegal setup has completed and "
+            "where the company profile folder is. Call this ONCE, at the end of a successful "
+            "run of contract-setup-diagnostician, right after the profile file is saved. "
+            "Nothing is sent to the AreoLegal service. Every later skill reads this back from "
+            "license_status as 'local_setup', and uses it to tell an existing customer who "
+            "forgot to connect their folder apart from a genuinely new one -- without it, the "
+            "skill re-runs onboarding and creates a second, diverging company profile."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "profile_folder": {
+                    "type": "string",
+                    "description": "Folder holding Areo-\u05e0\u05ea\u05d5\u05e0\u05d9\u05dd, "
+                                   "as the user sees it. Absolute path is fine.",
+                },
+                "entity": {
+                    "type": "string",
+                    "description": "Optional. Organisation name, for a recognisable prompt later.",
+                },
+            },
+            "required": ["profile_folder"],
+            "additionalProperties": False,
+        },
+    },
+    {
         "name": "save_resource",
         "description": (
             "Download one AreoLegal resource straight to a file on this machine and return "
@@ -142,6 +174,39 @@ def read_config() -> dict:
     return {}
 
 
+def write_config(cfg: dict, restrict: bool = False) -> bool:
+    """Persist the config to the first writable candidate path. Returns success."""
+    for path in config_paths():
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+            if restrict:
+                path.chmod(0o600)
+            return True
+        except OSError:
+            continue
+    return False
+
+
+def local_setup() -> dict:
+    """Has setup ever completed on this machine, and where did the profile live?
+
+    This is the only way a skill can tell a genuinely new customer apart from an
+    existing one who simply did not connect the folder holding their profile --
+    from inside the conversation the two look identical, because in both cases no
+    file is found. Onboarding the second one silently forks their company data
+    into a second source of truth, so the marker is load-bearing, not a nicety.
+    It never leaves the machine.
+    """
+    setup = read_config().get("setup") or {}
+    if not setup.get("completed_at"):
+        return {"completed": False}
+    return {"completed": True,
+            "completed_at": setup.get("completed_at"),
+            "profile_folder": setup.get("profile_folder") or "",
+            "entity": setup.get("entity") or ""}
+
+
 def license_key() -> str:
     return os.environ.get("AREOLEGAL_LICENSE_KEY") or read_config().get("license_key", "")
 
@@ -149,6 +214,12 @@ def license_key() -> str:
 def api_url() -> str:
     url = os.environ.get("AREOLEGAL_API_URL") or read_config().get("api_url") or DEFAULT_API_URL
     return url.rstrip("/")
+
+
+def now_iso() -> str:
+    import datetime
+
+    return datetime.datetime.now(datetime.timezone.utc).date().isoformat()
 
 
 def device_id() -> str:
@@ -163,13 +234,7 @@ def device_id() -> str:
     raw = f"{platform.node()}|{getpass.getuser()}|{Path.home()}"
     did = hashlib.sha256(raw.encode()).hexdigest()[:16]
     cfg["device_id"] = did
-    for path in config_paths():
-        try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
-            break
-        except OSError:
-            continue
+    write_config(cfg)
     return did
 
 
@@ -254,6 +319,25 @@ def call_tool(name: str, args: dict) -> str:
             + json.dumps(body, ensure_ascii=False)
         )
 
+    if name == "mark_setup":
+        folder = (args.get("profile_folder") or "").strip()
+        if not folder:
+            return "Error: profile_folder is required."
+        cfg = read_config()
+        setup = cfg.get("setup") or {}
+        # completed_at is stamped once and never overwritten: it answers "was this
+        # machine ever set up", and a later profile update must not reset that.
+        setup.setdefault("completed_at", now_iso())
+        setup["profile_folder"] = folder[:500]
+        if (args.get("entity") or "").strip():
+            setup["entity"] = args["entity"].strip()[:200]
+        cfg["setup"] = setup
+        if not write_config(cfg):
+            return "Error: could not persist the setup marker locally."
+        return json.dumps({"local_setup": local_setup(),
+                           "note": "Stored on this machine only; nothing was sent to the service."},
+                          ensure_ascii=False)
+
     key = license_key()
     if not key:
         return NO_KEY_MSG
@@ -278,6 +362,10 @@ def call_tool(name: str, args: dict) -> str:
         return body.get("content", "")
     if name == "save_resource":
         return save_to_disk(body.get("content", ""), str(args.get("path", "")))
+    if name == "license_status":
+        # Rides along on a call every skill already makes, so the profile gate
+        # costs no extra round trip.
+        body["local_setup"] = local_setup()
     return json.dumps(body, ensure_ascii=False, indent=2)
 
 
