@@ -24,7 +24,10 @@ ENUMS = {
     "presence.missing_clause_color": {"Green", "Yellow", "Red"},
     "ev.weight": {"High", "Medium", "Low"},
     "cite.side": {"pro", "con", "neutral"},
+    "cite.track": {"green", "yellow", "red"},
     "source.kind": {"internal", "external"},
+    "source.paper": {"ours", "theirs"},
+    "rule.kind": {"משפטי", "מסחרי"},
     "precedent.direction": {"stricter", "easier", "neutral"},
     "finding.severity": {"high", "medium", "low"},
     "meta.status": {"Draft", "Approved", "Superseded"},
@@ -155,6 +158,13 @@ def validate(data):
         check_enum(r, where, "kind", (s or {}).get("kind"), "source.kind")
         if not (s or {}).get("label"):
             r.err(where, "label חסר. המקור יוצג כקוד פנימי במקום בשם ידידותי")
+        if (s or {}).get("kind") == "internal":
+            # מי כתב את ההסכם משנה את משמעות הראיה: נוסח שהצד שכנגד כתב אינו
+            # מלמד על המדיניות שלנו כמו נוסח שיצא מהנייר שלנו.
+            check_enum(r, where, "paper", (s or {}).get("paper"), "source.paper",
+                       required=False)
+            if not (s or {}).get("paper"):
+                r.warn(where, "paper חסר. לא יוצג אם ההסכם על הנייר שלנו או של הצד שכנגד")
 
     cite_ids = set()
     rule_ids = set(x.get("id") for x in data.get("rules") or [])
@@ -171,6 +181,10 @@ def validate(data):
         if c.get("src") and c["src"] not in sources:
             r.err(where, "src %r אינו קיים ב-sources. הציטוט לא ישויך לאף מקור" % c["src"])
         check_enum(r, where, "side", c.get("side"), "cite.side", required=False)
+        check_enum(r, where, "track", c.get("track"), "cite.track", required=False)
+        if not c.get("track"):
+            r.warn(where, "track חסר. הציטוט לא ישויך לעמדה, ולא ייכנס לספירת "
+                          "ההסכמים ולאחוז שמוצגים בה")
         for rid in c.get("rules") or []:
             if rid not in rule_ids:
                 r.err(where, "מפנה לכלל %r שאינו קיים" % rid)
@@ -185,6 +199,31 @@ def validate(data):
         if not s.get("criteria"):
             r.warn(where, "criteria ריק. לא יהיה ברור מתי הסגמנט חל")
 
+    books = [b for b in (data.get("playbooks") or []) if b.get("id")]
+    if len(data.get("playbooks") or []) > 1 and not books:
+        r.err("playbooks", "יש יותר מפלייבוק אחד ואין להם id. בלי מזהה אי אפשר "
+                           "לשייך סעיפים ואי אפשר לבורר לעבוד")
+    if len(books) > 1:
+        known = set(b["id"] for b in books)
+        loose = [x.get("id") for x in (data.get("rules") or []) if not x.get("pb")]
+        if loose:
+            r.err("rules", "יש %d פלייבוקים, ו-%d סעיפים בלי שדה pb. סעיף בלי שיוך "
+                           "יוצג בכל משפחה, ומדיניות ממשפחה אחת תיראה כאילו היא של אחרת"
+                  % (len(books), len(loose)))
+        for x in (data.get("rules") or []):
+            if x.get("pb") and x["pb"] not in known:
+                r.err("rules[%s]" % x.get("id"), "pb %r אינו קיים ב-playbooks" % x["pb"])
+        for b in books:
+            if not any(x.get("pb") == b["id"] for x in (data.get("rules") or [])):
+                r.warn("playbooks[%s]" % b["id"],
+                       "אין בקובץ אף סעיף של הפלייבוק הזה. הבורר יציג מסך ריק מוסבר")
+
+    tracked = set()
+    for c in data.get("cites") or []:
+        if c.get("track"):
+            for rid in c.get("rules") or []:
+                tracked.add((rid, c["track"]))
+
     seen_rule = set()
     for i, rule in enumerate(data.get("rules") or []):
         rid = rule.get("id") or "?"
@@ -192,6 +231,23 @@ def validate(data):
         if rid in seen_rule:
             r.err(where, "מזהה הכלל %r חוזר" % rid)
         seen_rule.add(rid)
+        check_enum(r, where, "kind", rule.get("kind"), "rule.kind", required=False)
+        if not rule.get("they"):
+            r.warn(where, "they חסר. הכרטיס 'מה הצד שכנגד ירצה' לא יוצג, ועורך הדין "
+                          "יראה רק את הצד שלנו")
+        for j, n in enumerate(rule.get("norms") or []):
+            for f in ("law", "ref", "meaning"):
+                if not n.get(f):
+                    r.err("%s norms[%d]" % (where, j),
+                          "%s חסר. שורת המקור הנורמטיבי תוצג חלקית" % f)
+        if not rule.get("kind"):
+            r.warn(where, "kind חסר. הסעיף לא ישויך למשפטי או למסחרי, והסינון לפי "
+                          "סוג הסעיף לא יראה אותו")
+        for t in LIGHTS:
+            if (rid, t) not in tracked:
+                r.warn(where, "אין ציטוט משויך לעמדה ה%s. היא תוצג כהנחה של המערכת "
+                              "ולא כראיה מהתיקייה"
+                              % {"green": "ירוקה", "yellow": "צהובה", "red": "אדומה"}[t])
         for f in ("id", "topic", "issue"):
             if not rule.get(f):
                 r.err(where, "השדה %r חסר, והוא שדה חובה בכרטיס הכלל" % f)

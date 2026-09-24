@@ -66,6 +66,35 @@ def _local(tag):
     return tag.split("}")[-1]
 
 
+# אותו כלל סדר חל על w:tblPr ועל w:sectPr, ושם הוא לא נאכף עד כה: bidiVisual
+# שצורף בסוף tblPr נחת אחרי tblBorders ו-tblLook, ו-bidi בסוף sectPr נחת אחרי
+# docGrid. Word פותח בכל זאת, אבל הקובץ אינו תקף מול הסכמה.
+TBLPR_ORDER = ["tblStyle", "tblpPr", "tblOverlap", "bidiVisual", "tblStyleRowBandSize",
+               "tblStyleColBandSize", "tblW", "jc", "tblCellSpacing", "tblInd",
+               "tblBorders", "shd", "tblLayout", "tblCellMar", "tblLook", "tblCaption",
+               "tblDescription", "tblPrChange"]
+SECTPR_ORDER = ["footnotePr", "endnotePr", "type", "pgSz", "pgMar", "paperSrc",
+                "pgBorders", "lnNumType", "pgNumType", "cols", "formProt", "vAlign",
+                "noEndnote", "titlePg", "textDirection", "bidi", "rtlGutter", "docGrid",
+                "printerSettings", "sectPrChange"]
+
+
+def put_ordered(parent, el, order):
+    """מכניס אלמנט למקומו לפי הסכמה, ומחליף אלמנט קיים מאותו סוג."""
+    name = _local(el.tag)
+    old = parent.find(qn("w:" + name))
+    if old is not None:
+        parent.remove(old)
+    idx = order.index(name) if name in order else 99
+    for child in parent:
+        c = _local(child.tag)
+        if (order.index(c) if c in order else 99) > idx:
+            child.addprevious(el)
+            return el
+    parent.append(el)
+    return el
+
+
 def ppr_put(p, el):
     """סדר הילדים ב-w:pPr קבוע בסכמת OOXML. אלמנט שמצורף בסוף מתעלמים ממנו בשקט."""
     ppr = p._p.get_or_add_pPr()
@@ -113,6 +142,58 @@ def run(p, text, size=11, bold=False, color=INK, italic=False, fill=None, underl
 GAPS = []
 
 
+LINK = "0B5CAD"
+
+
+def link(p, url, text=None, size=10, bold=False):
+    """היפר-קישור לחיץ: w:hyperlink עם r:id שנרשם כקשר חיצוני של המסמך.
+    כתובת שנכתבת כטקסט רגיל אינה לחיצה ב-Word, ולכן אינה נחשבת קישור."""
+    from docx.opc.constants import RELATIONSHIP_TYPE as RT
+    url = (url or "").strip()
+    if not url:
+        return None
+    rid = p.part.relate_to(url, RT.HYPERLINK, is_external=True)
+    h = _el("w:hyperlink")
+    h.set(qn("r:id"), rid)
+    r = _el("w:r")
+    rpr = _el("w:rPr")
+    rf = _el("w:rFonts")
+    for k in ("ascii", "hAnsi", "cs"):
+        rf.set(qn("w:" + k), FONT)
+    rpr.append(rf)
+    if bold:
+        rpr.append(_el("w:b"))
+    rpr.append(_el("w:color", val=LINK))
+    rpr.append(_el("w:sz", val=str(int(size * 2))))
+    rpr.append(_el("w:u", val="single"))
+    if RTL:
+        rpr.append(_el("w:rtl"))
+    r.append(rpr)
+    t = _el("w:t")
+    t.text = text or url
+    t.set("{http://www.w3.org/XML/1998/namespace}space", "preserve")
+    r.append(t)
+    h.append(r)
+    p._p.append(h)
+    return h
+
+
+def cell_link(cell, url, text=None, size=9.5):
+    p = cell.paragraphs[0]
+    for r in list(p._p.findall(qn("w:r"))):
+        p._p.remove(r)
+    dir_p(p)
+    p.paragraph_format.space_before = Pt(3)
+    p.paragraph_format.space_after = Pt(3)
+    if url:
+        link(p, url, text or url, size)
+    else:
+        run(p, text or NOT_FOUND_TEXT, size, False, INK_SOFT)
+
+
+NOT_FOUND_TEXT = "[לא אותר]"
+
+
 def rich(p, text, size=11, bold=False, color=INK):
     """כותב טקסט ומסמן כל ציין חוסר ברקע, כדי שלא ייעלם בקריאה."""
     for part in GAP_RX.split(s(text)):
@@ -149,9 +230,9 @@ def table_borders(tbl, color=LINE, visible=True):
     for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
         b.append(_el("w:" + edge, val="single" if visible else "none",
                      sz="4", space="0", color=color))
-    tpr.append(b)
+    put_ordered(tpr, b, TBLPR_ORDER)
     if RTL:
-        tpr.append(_el("w:bidiVisual"))
+        put_ordered(tpr, _el("w:bidiVisual"), TBLPR_ORDER)
 
 
 def cell_text(cell, text, bold=False, size=10.5, color=INK, align=None):
@@ -205,7 +286,7 @@ def base(doc):
         sec.top_margin = Cm(2.2)
         sec.bottom_margin = Cm(2.0)
         if RTL:
-            sec._sectPr.append(_el("w:bidi"))
+            put_ordered(sec._sectPr, _el("w:bidi"), SECTPR_ORDER)
 
 
 def title_block(doc, m):
@@ -364,49 +445,92 @@ def signatures(doc, sig, m):
                   False, 10, INK, WD_ALIGN_PARAGRAPH.CENTER)
 
 
-def sources_annex(doc, d):
-    """נספח המקורות של מצב 4. פנימי: מוסר לפני שליחה החוצה, כמו כל חומר פנימי."""
-    src = d.get("sources") or {}
-    law, st = src.get("law") or [], src.get("structures") or []
-    if not (law or st):
+def clause_sources(c):
+    """"MAND-M1, REG-2" או רשימה: מזהי המקור של סעיף."""
+    v = c.get("source")
+    if isinstance(v, (list, tuple)):
+        items = v
+    else:
+        items = [x for x in re.split(r"[,;]", str(v or ""))]
+    return [x.strip() for x in items if str(x).strip()]
+
+
+def walk_clauses(cs, out=None):
+    out = [] if out is None else out
+    for c in cs or []:
+        out.append(c)
+        walk_clauses(c.get("children") or c.get("subclauses"), out)
+    return out
+
+
+def all_clauses(d):
+    out = walk_clauses(d.get("clauses"))
+    for a in d.get("annexes") or []:
+        walk_clauses(a.get("clauses"), out)
+    return out
+
+
+def source_link(sid, research):
+    """טקסט וקישור למזהה מקור: REG-<שורה>, MAND-<מזהה>, AGR-<מספר>."""
+    from research_sources import approved_agreements, normalise
+    r = normalise(research or {})
+    kind, _, key = sid.partition("-")
+    if kind == "REG":
+        for i, x in enumerate(r.get("law") or []):
+            if str(x.get("row", i + 1)) == key:
+                return "%s (%s)" % (s(x.get("instrument")), s(x.get("sections"))), x.get("url")
+    elif kind == "AGR":
+        for x in approved_agreements(r):
+            if str(x.get("no")) == key:
+                return s(x.get("title")), x.get("url")
+    elif kind == "MAND":
+        rows = {str(x.get("row", i + 1)): x for i, x in enumerate(r.get("law") or [])}
+        for m in r.get("mandatory_clauses") or []:
+            if m.get("clause_id") == key:
+                src = rows.get(str(m.get("source_row")), {})
+                return "סעיף חובה %s: %s" % (key, s(m.get("title"))), src.get("url")
+    return sid, None
+
+
+def sources_annex(doc, d, research):
+    """נספח המקורות של מצב 4. פנימי: מוסר לפני שליחה החוצה. כל מקור לחיץ."""
+    if not research:
         return
+    from research_sources import NORM_RANKS, approved_agreements, normalise, scope_has
+    r = normalise(research)
+    law = (r.get("law") or []) if scope_has(r, "research") else []
+    ags = approved_agreements(r) if scope_has(r, "agreements") else []
     page_break(doc)
     p = para(doc, before=0, after=4, align=WD_ALIGN_PARAGRAPH.CENTER)
     run(p, "נספח מקורות", 15, True, NAVY)
     para(doc, "פנימי. יש להסיר לפני שליחה לצד שכנגד.", 9.5, True, INK_SOFT, after=10,
          align=WD_ALIGN_PARAGRAPH.CENTER)
 
-    def grid(header, rows):
+    def grid(header, rows, link_col):
         tbl = doc.add_table(rows=1 + len(rows), cols=len(header))
         tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
         table_borders(tbl)
-        for j, h in enumerate(header):
-            cell_text(tbl.rows[0].cells[j], h, True, 9.5, NAVY)
-        for i, row in enumerate(rows):
-            for j, v in enumerate(row):
-                cell_text(tbl.rows[i + 1].cells[j], v, False, 9.5)
+        for jj, h in enumerate(header):
+            cell_text(tbl.rows[0].cells[jj], h, True, 9.5, NAVY)
+        for ii, row in enumerate(rows):
+            for jj, v in enumerate(row):
+                if jj == link_col:
+                    cell_link(tbl.rows[ii + 1].cells[jj], v[1], v[0])
+                else:
+                    cell_text(tbl.rows[ii + 1].cells[jj], v, False, 9.5)
         para(doc, after=6)
 
     if law:
         h1(doc, "הדין החל")
-        grid(["מקור נורמטיבי", "סעיפים", "השפעה", "קישור", "סטטוס"],
-             [[s(x.get("instrument")), s(x.get("sections")), s(x.get("effect")), s(x.get("url")),
-               "אומת" if x.get("verified") else "טעון אימות"] for x in law])
-    if st:
-        h1(doc, "מקורות המבנה")
-        grid(["מקור", "מפרסם", "קישור"],
-             [[s(x.get("title")), s(x.get("publisher")), s(x.get("url"))] for x in st])
-    mapping = []
-
-    def walk(cs):
-        for c in cs or []:
-            if c.get("source"):
-                mapping.append([s(c.get("number")), txt(c, "heading") or txt(c, "text")[:40], s(c.get("source"))])
-            walk(c.get("children") or c.get("subclauses"))
-    walk(d.get("clauses"))
-    if mapping:
-        h1(doc, "מקור לכל סעיף")
-        grid(["סעיף", "נושא", "נגזר מ"], mapping)
+        grid(["מזהה", "דרג", "מקור", "סעיפים", "סטטוס"],
+             [["REG-%s" % x.get("row", k + 1), NORM_RANKS.get(x.get("rank"), ""),
+               (s(x.get("instrument")), x.get("url")), s(x.get("sections")),
+               "אומת" if x.get("verified") else "טעון אימות"] for k, x in enumerate(law)], 2)
+    if ags:
+        h1(doc, "הסכמים מייצגים שאושרו")
+        grid(["מזהה", "הסכם", "מפרסם", "כיוון"],
+             [["AGR-%s" % x.get("no"), (s(x.get("title")), x.get("url")), s(x.get("publisher")),
+               s(x.get("orientation"))] for x in ags], 1)
 
 
 def footer(doc, m):
@@ -423,9 +547,38 @@ def footer(doc, m):
 
 
 # ---------- הרכבה ----------
-def build(d, prof, out):
+class State4Refused(Exception):
+    pass
+
+
+def state4_gate(d, research):
+    """מצב 4 מזוהה לפי notice, sources או קובץ מחקר. כך אי אפשר לעקוף את הבדיקה
+    פשוט בהשמטת דגל. הסקריפט בודק שהאישורים **נרשמו**; שהמשתמש אכן לחץ נאכף בסקיל."""
+    from research_sources import approved_mandatory, check, normalise, scope_has
+    m = d.get("meta") or {}
+    if not (m.get("notice") or d.get("sources") or research):
+        return None
+    if not research:
+        raise State4Refused(["טיוטת מצב 4 (notice או sources) נבנית רק עם --research."])
+    blocking, _, _ = check(research, stage="draft")
+    r = normalise(research)
+    if scope_has(r, "research"):
+        placed = set()
+        for c in all_clauses(d):
+            placed.update(clause_sources(c))
+        for mc in approved_mandatory(r):
+            if "MAND-%s" % mc.get("clause_id") not in placed:
+                blocking.append("סעיף חובה מאושר %s (%s) לא שובץ באף סעיף בטיוטה."
+                                % (mc.get("clause_id"), mc.get("title") or ""))
+    if blocking:
+        raise State4Refused(blocking)
+    return r
+
+
+def build(d, prof, out, research=None, cover=None):
     global RTL
     m = d.get("meta") or {}
+    r4 = state4_gate(d, research)
     lang = s(m.get("language")) or s((prof or {}).get("deliverable_language")) or "he"
     RTL = lang.lower() not in ("en", "english", "אנגלית")
 
@@ -440,9 +593,11 @@ def build(d, prof, out):
         clause(doc, c)
     annexes(doc, d.get("annexes"))
     signatures(doc, d.get("signatures"), m)
-    sources_annex(doc, d)
+    sources_annex(doc, d, r4)
     footer(doc, m)
     doc.save(out)
+    if r4 is not None and cover:
+        write_cover4(cover, d, r4)
 
     # counted from what was actually written, not from the input: a placeholder
     # that never reached the page must not be reported as marked.
@@ -452,11 +607,75 @@ def build(d, prof, out):
             "annexes": len(d.get("annexes") or []), "placeholders": gaps}
 
 
+def write_cover4(path, d, r):
+    """דף הליווי של מצב 4: מטריצת עקיבות, סעיפי חובה שהוסרו, פערים, והצעה להערכת סיכונים."""
+    from research_sources import SCOPES, normalise, scope_has
+    r = normalise(r)
+    doc = Document()
+    base(doc)
+    m = d.get("meta") or {}
+    run(para(doc, after=2), "דף ליווי: " + (txt(m, "title", "doc_type") or "טיוטה"), 16, True, NAVY)
+    run(para(doc, after=10), "טיוטה · הופק בתאריך %s · מקור: מצב 4, %s" % (produced_on(m), SCOPES[r["scope"]]),
+        9.5, False, INK_SOFT)
+
+    h1(doc, "מטריצת עקיבות")
+    rows = [c for c in all_clauses(d) if c.get("number")]
+    tbl = doc.add_table(rows=1 + len(rows), cols=5)
+    tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table_borders(tbl)
+    for jj, h in enumerate(["סעיף", "נושא", "מקור", "סעיף חובה", "עמדת פתיחה"]):
+        cell_text(tbl.rows[0].cells[jj], h, True, 9.5, NAVY)
+    for ii, c in enumerate(rows):
+        sids = clause_sources(c)
+        cells = tbl.rows[ii + 1].cells
+        cell_text(cells[0], s(c.get("number")), False, 9.5)
+        cell_text(cells[1], txt(c, "heading") or txt(c, "text")[:40], False, 9.5)
+        if sids:
+            label, url = source_link(sids[0], r)
+            cell_link(cells[2], url, ", ".join(sids)) if url else cell_text(cells[2], ", ".join(sids), False, 9.5)
+        else:
+            cell_text(cells[2], "ניסוח עצמאי", False, 9.5, INK_SOFT)
+        cell_text(cells[3], "כן" if any(x.startswith("MAND-") for x in sids) else "לא", False, 9.5)
+        cell_text(cells[4], "כן" if c.get("opening_position") else "", False, 9.5)
+    para(doc, after=6)
+
+    ap_ = r.get("approvals") or {}
+    removed = ap_.get("removed_clauses") or []
+    if removed:
+        h1(doc, "סעיפי חובה שהוסרו באישור המשתמש")
+        for x in removed:
+            if isinstance(x, dict):
+                line = "%s: %s. החשיפה: %s" % (x.get("clause_id", ""), x.get("reason", ""), x.get("exposure", "[להשלים]"))
+            else:
+                line = str(x)
+            rich(para(doc, after=3, indent=0.5), line, 10.5)
+
+    h1(doc, "פערים ומגבלות")
+    if not scope_has(r, "research"):
+        para(doc, "לא בוצע מחקר רגולטורי: נבחר איסוף הסכמים בלבד. הטיוטה אינה נשענת על מיפוי של הדין החל.",
+             10.5, True, INK, after=3)
+    else:
+        para(doc, "המחקר מוגבל למקורות רשמיים (gov.il, אתר הכנסת, נבו בנתיבי חקיקה ואתרים ממשלתיים זרים "
+                  "מרשימה סגורה), ואינו מכסה פסיקה. הנחיה שלא פורסמה במקורות אלה, או שאינה נגישה לשליפה, "
+                  "אינה בו.", 10.5, False, INK, after=3)
+        for x in [x for x in (r.get("law") or []) if not x.get("verified")]:
+            p = para(doc, after=3, indent=0.5)
+            run(p, "טעון אימות: ", 10.5, True)
+            link(p, x.get("url"), s(x.get("instrument")), 10.5)
+    marked = [c for c in all_clauses(d) if c.get("needs_case_law")]
+    if marked:
+        para(doc, "טעון בדיקת פסיקה: סעיפים " + ", ".join(s(c.get("number")) for c in marked), 10.5, False, INK, after=3)
+    para(doc, "להריץ על הטיוטה הערכת סיכונים לפני שהיא יוצאת?", 10.5, True, INK, before=14)
+    doc.save(path)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--draft", required=True)
     ap.add_argument("--profile")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--research", help="מצב 4: קובץ המחקר שאושר. בלעדיו טיוטת מצב 4 אינה נבנית")
+    ap.add_argument("--cover", help="מצב 4: דף ליווי עם מטריצת עקיבות")
     a = ap.parse_args()
     d = json.load(io.open(a.draft, encoding="utf-8"))
     prof = {}
@@ -465,7 +684,14 @@ def main():
             prof = json.load(io.open(a.profile, encoding="utf-8"))
         except (OSError, ValueError):
             prof = {}
-    r = build(d, prof, a.out)
+    research = json.load(io.open(a.research, encoding="utf-8")) if a.research else None
+    try:
+        r = build(d, prof, a.out, research, a.cover)
+    except State4Refused as e:
+        print("הטיוטה לא נבנתה:")
+        for b in e.args[0]:
+            print("  חוסם: " + b)
+        sys.exit(1)
     print("הטיוטה נבנתה: %s" % r["out"])
     print("סעיפים ראשיים: %d · הגדרות: %d · נספחים: %d · כיווניות: %s"
           % (r["clauses"], r["definitions"], r["annexes"], "RTL" if r["rtl"] else "LTR"))

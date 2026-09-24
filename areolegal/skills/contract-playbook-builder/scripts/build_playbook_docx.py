@@ -80,6 +80,35 @@ def _local(tag):
     return tag.split("}")[-1]
 
 
+# אותו כלל סדר חל על w:tblPr ועל w:sectPr, ושם הוא לא נאכף עד כה: bidiVisual
+# שצורף בסוף tblPr נחת אחרי tblBorders ו-tblLook, ו-bidi בסוף sectPr נחת אחרי
+# docGrid. Word פותח בכל זאת, אבל הקובץ אינו תקף מול הסכמה.
+TBLPR_ORDER = ["tblStyle", "tblpPr", "tblOverlap", "bidiVisual", "tblStyleRowBandSize",
+               "tblStyleColBandSize", "tblW", "jc", "tblCellSpacing", "tblInd",
+               "tblBorders", "shd", "tblLayout", "tblCellMar", "tblLook", "tblCaption",
+               "tblDescription", "tblPrChange"]
+SECTPR_ORDER = ["footnotePr", "endnotePr", "type", "pgSz", "pgMar", "paperSrc",
+                "pgBorders", "lnNumType", "pgNumType", "cols", "formProt", "vAlign",
+                "noEndnote", "titlePg", "textDirection", "bidi", "rtlGutter", "docGrid",
+                "printerSettings", "sectPrChange"]
+
+
+def put_ordered(parent, el, order):
+    """מכניס אלמנט למקומו לפי הסכמה, ומחליף אלמנט קיים מאותו סוג."""
+    name = _local(el.tag)
+    old = parent.find(qn("w:" + name))
+    if old is not None:
+        parent.remove(old)
+    idx = order.index(name) if name in order else 99
+    for child in parent:
+        c = _local(child.tag)
+        if (order.index(c) if c in order else 99) > idx:
+            child.addprevious(el)
+            return el
+    parent.append(el)
+    return el
+
+
 def ppr_put(p, el):
     """מכניס אלמנט ל-w:pPr במקומו לפי הסכמה, ומחליף אלמנט קיים מאותו סוג."""
     ppr = p._p.get_or_add_pPr()
@@ -154,8 +183,8 @@ def table_borders(tbl, color=LINE):
     b = _el("w:tblBorders")
     for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
         b.append(_el("w:" + edge, val="single", sz="4", space="0", color=color))
-    tpr.append(b)
-    tpr.append(_el("w:bidiVisual"))
+    put_ordered(tpr, b, TBLPR_ORDER)
+    put_ordered(tpr, _el("w:bidiVisual"), TBLPR_ORDER)
 
 
 def cell_text(cell, text, bold=False, size=10, color=INK, fill=None):
@@ -214,7 +243,7 @@ def base(doc):
         sec.left_margin = sec.right_margin = Cm(2.2)
         sec.top_margin = Cm(2.0)
         sec.bottom_margin = Cm(1.8)
-        sec._sectPr.append(_el("w:bidi"))
+        put_ordered(sec._sectPr, _el("w:bidi"), SECTPR_ORDER)
 
 
 def h1(doc, text, num=""):

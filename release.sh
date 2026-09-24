@@ -138,6 +138,26 @@ if "fill_template.py" not in drafter or "build_master_template.py" not in drafte
     bad.append("contract-drafter: states 1-3 no longer go through the master template")
 if "build_research_brief.py" not in drafter:
     bad.append("contract-drafter: state 4 no longer shows the research for approval before drafting")
+for script in ("build_regulatory_matrix.py",):
+    if not pathlib.Path("areolegal/skills/contract-drafter/scripts/" + script).is_file():
+        bad.append("contract-drafter: %s is missing" % script)
+# Going online is allowed only in the drafter, only in state 4. The research procedure and
+# its scripts may be named nowhere else, and inside the drafter only in the state-4 section.
+STATE4 = ("research-flow.md", "build_research_brief.py", "build_regulatory_matrix.py")
+for md in sorted(pathlib.Path("areolegal/skills").glob("*/SKILL.md")):
+    text = md.read_text(encoding="utf-8")
+    if md.parent.name != "contract-drafter":
+        for name in STATE4:
+            if name in text:
+                bad.append("%s: refers to %s, which belongs to the drafter's state 4 only" % (md.parent.name, name))
+if "\n**מצב 4:**" in drafter and "\n## תשאול" in drafter:
+    head, rest = drafter.split("\n**מצב 4:**", 1)
+    section, tail = rest.split("\n## תשאול", 1)
+    for name in STATE4:
+        if name in head or name in tail:
+            bad.append("contract-drafter: %s is referenced outside the state-4 section" % name)
+else:
+    bad.append("contract-drafter: the state-4 section is missing")
 if "rtl-docx-enforcer" in drafter and "\u05d0\u05d9\u05df \u05dc\u05d4\u05e2\u05d1\u05d9\u05e8" not in drafter:
     bad.append("contract-drafter: the extra rtl-docx-enforcer pass is back")
 
@@ -277,39 +297,96 @@ skv = json.load(io.open(os.path.join(ag, "skeleton.json"), encoding="utf-8"))["v
 found = {v["found_value"] for v in skv}
 ck("agreement kind: counterparty and its ID are variables, the company's are not",
    'ספק דוגמה בע"מ' in found and "598765432" in found and "512345678" not in found)
-# ---- state 4: research sources are enforced, and a typed-number draft renumbers like Word
-research = {"agreement_type": "SaaS", "company_role": "ספק", "consent_at": "2026-09-16",
-            "law": [{"instrument": "חוק הגנת הפרטיות", "url": "https://main.knesset.gov.il/x", "verified": True, "effect": "סעיף חובה"}],
-            "structures": [{"title": "t%d" % i, "source_type": "אתר משפטי", "url": "https://legal.example/%d" % i,
-                            "topics": ["נושא%d" % i]} for i in range(3)]}
-def brief(obj, name):
+# ---- state 4: the acceptance scenarios. Generic fixture: no client, no real case.
+def researchf(**over):
+    law = [{"row": 1, "rank": 1, "instrument": "חוק לדוגמה", "url": "https://main.knesset.gov.il/x", "verified": True,
+            "mandatory": True, "jurisdiction": "IL"},
+           {"row": 2, "rank": 2, "instrument": "תקנות לדוגמה", "url": "https://www.nevo.co.il/law_html/law00/1.htm",
+            "verified": True, "mandatory": False, "jurisdiction": "IL"}]
+    ags = [{"no": k + 1, "title": "הסכם %d" % (k + 1), "source_type": "אתר משפטי", "url": "https://agreements.example/%d" % (k + 1),
+            "orientation": "מאוזן", "orientation_reason": "נימוק", "topics": ["נושא"]} for k in range(10)]
+    base = {"agreement_type": "הסכם לדוגמה", "company_role": "לקוח", "scope": "both", "consent_at": "2026-09-16",
+            "jurisdiction": ["IL"], "law": law, "agreements": ags,
+            "mandatory_clauses": [{"clause_id": "M1", "title": "חובה", "source_row": 1, "status": "מוצע"}],
+            "approvals": {}}
+    base.update(over)
+    return base
+def run_script(script, obj, name, extra=()):
     path = os.path.join(out, name + ".json")
     io.open(path, "w", encoding="utf-8").write(json.dumps(obj, ensure_ascii=False))
-    return subprocess.run([sys.executable, S + "/build_research_brief.py", "--research", path,
-                           "--out", os.path.join(out, name + ".docx")], capture_output=True, text=True)
-ck("valid research builds the approval document", brief(research, "r_ok").returncode == 0)
-nevo = json.loads(json.dumps(research)); nevo["law"].append({"instrument": "x", "url": "https://www.nevo.co.il/x", "verified": True})
-ck("a law source outside the Knesset/gov.il is refused", brief(nevo, "r_nevo").returncode == 1)
-many = json.loads(json.dumps(research)); many["structures"] = many["structures"] * 3
-ck("more than 7 structure sources are refused", brief(many, "r_many").returncode == 1)
-noc = json.loads(json.dumps(research)); del noc["consent_at"]
-ck("research without the user's consent is refused", brief(noc, "r_noconsent").returncode == 1)
+    return subprocess.run([sys.executable, S + "/" + script, "--research", path,
+                           "--out", os.path.join(out, name + (".xlsx" if "matrix" in script else ".docx"))] + list(extra),
+                          capture_output=True, text=True)
+def refused(obj, name):
+    return run_script("build_research_brief.py", obj, name).returncode == 1
+def law_with(url, **kw):
+    r = researchf()
+    r["law"].append(dict({"row": 3, "rank": 2, "instrument": "x", "url": url, "verified": True}, **kw))
+    return r
 
-d4 = {"meta": {"title": "הסכם", "language": "he", "notice": "טיוטה זו נבנתה ללא נייר של החברה."},
+ck("valid research: approval document and Excel build", run_script("build_research_brief.py", researchf(), "s_ok").returncode == 0
+   and run_script("build_regulatory_matrix.py", researchf(), "s_ok").returncode == 0)
+ck("no scope or consent chosen: refused", refused(researchf(scope=""), "s_noscope") and refused(researchf(consent_at=""), "s_nocons"))
+ck("position missing: refused", refused(researchf(company_role=""), "s_norole"))
+ck("law from a law-firm site: refused", refused(law_with("https://www.lawfirm.co.il/x"), "s_firm"))
+ck("Nevo outside legislation (articles, case law): refused",
+   refused(law_with("https://www.nevo.co.il/articles/x"), "s_nart") and refused(law_with("https://www.nevo.co.il/psika_html/x"), "s_npsk"))
+ck("court sites under gov.il and Bank of Israel: refused",
+   refused(law_with("https://supreme.court.gov.il/x"), "s_court") and refused(law_with("https://www.boi.org.il/x"), "s_boi"))
+ck("foreign law: official .gov passes, .com refused",
+   not refused(law_with("https://www.sec.gov/x", jurisdiction="US"), "s_us") and refused(law_with("https://x.com/y", jurisdiction="US"), "s_uscom"))
+unsorted = researchf(); unsorted["law"].reverse()
+ck("rows out of normative order: refused", refused(unsorted, "s_order"))
+unv = researchf(); unv["law"][0]["verified"] = False
+ck("mandatory clause on an unverified source: refused", refused(unv, "s_unv"))
+ck("16 agreements: refused", refused(researchf(agreements=researchf()["agreements"] + researchf()["agreements"][:6]), "s_16"))
+seven = run_script("build_research_brief.py", researchf(agreements=researchf()["agreements"][:7]), "s_7")
+ck("7 agreements: passes, reported, not padded", seven.returncode == 0 and "נמצאו 7 הסכמים" in seven.stdout)
+against = researchf(); against["agreements"][0]["orientation"] = "נגד הפוזיציה"
+ck("an agreement against the position: refused", refused(against, "s_against"))
+nourl = researchf(); nourl["agreements"][1]["url"] = ""
+ck("an agreement without a link: refused", refused(nourl, "s_nourl"))
+
+dr = {"meta": {"title": "הסכם", "language": "he", "notice": "טיוטה זו נבנתה ללא נייר של החברה."},
+      "clauses": [{"number": "1", "heading": "חובה", "text": "חובה לפי דין.", "source": "MAND-M1"}]}
+io.open(os.path.join(out, "dr.json"), "w", encoding="utf-8").write(json.dumps(dr, ensure_ascii=False))
+def draft(research, name, cover=False):
+    extra = ["--cover", os.path.join(out, name + "_cover.docx")] if cover else []
+    rpath = os.path.join(out, name + ".json")
+    io.open(rpath, "w", encoding="utf-8").write(json.dumps(research, ensure_ascii=False))
+    return subprocess.run([sys.executable, S + "/build_draft_docx.py", "--draft", os.path.join(out, "dr.json"),
+                           "--research", rpath, "--out", os.path.join(out, name + ".docx")] + extra,
+                          capture_output=True, text=True)
+ck("state-4 draft without --research: refused",
+   subprocess.run([sys.executable, S + "/build_draft_docx.py", "--draft", os.path.join(out, "dr.json"),
+                   "--out", os.path.join(out, "x.docx")], capture_output=True).returncode == 1)
+approved = researchf(approvals={"research_at": "2026-09-16", "agreements_at": "2026-09-16"})
+approved["mandatory_clauses"][0]["status"] = "מאושר"
+ck("drafting with one approval missing: refused",
+   draft(dict(approved, approvals={"research_at": "2026-09-16"}), "d_oneapp").returncode == 1)
+unplaced = json.loads(json.dumps(approved))
+unplaced["mandatory_clauses"].append({"clause_id": "M2", "title": "לא שובץ", "source_row": 1, "status": "מאושר"})
+ck("an approved mandatory clause not placed: refused", draft(unplaced, "d_unplaced").returncode == 1)
+ok = draft(approved, "d_ok", cover=True)
+import zipfile
+ck("approved and placed: draft builds with real hyperlinks and a traceability cover",
+   ok.returncode == 0 and b"w:hyperlink" in zipfile.ZipFile(os.path.join(out, "d_ok.docx")).read("word/document.xml")
+   and "מטריצת עקיבות".encode("utf-8") in zipfile.ZipFile(os.path.join(out, "d_ok_cover.docx")).read("word/document.xml"))
+from openpyxl import load_workbook
+wb = load_workbook(os.path.join(out, "s_ok.xlsx"))
+ck("Excel: three right-to-left sheets, clickable, in rank order",
+   wb.sheetnames == ["מטריצה רגולטורית", "סעיפי חובה", "הסכמים מייצגים"] and all(w.sheet_view.rightToLeft for w in wb.worksheets)
+   and wb["מטריצה רגולטורית"].cell(row=2, column=4).hyperlink is not None
+   and [wb["מטריצה רגולטורית"].cell(row=k, column=2).value for k in (2, 3)] == [1, 2])
+
+# typed numbering: a state-4 draft saved as a master template renumbers like Word
+d4 = {"meta": {"title": "הסכם", "language": "he"},
       "clauses": [{"number": "1", "heading": "רישיון", "text": "רישיון שימוש.",
                    "children": [{"number": "1.1", "text": "כפוף לסעיף 3 להלן."}]},
                   {"number": "2", "heading": "רמת שירות", "text": "זמינות."},
                   {"number": "3", "heading": "תמורה", "text": "דמי מנוי.",
                    "children": [{"number": "3.1", "text": "בהתאם לסעיף 3 זה ולסעיף 1.1 לעיל."}]},
-                  {"number": "4", "heading": "אחריות", "text": "תקרה.", "needs_case_law": True}],
-      "sources": {"law": research["law"], "structures": research["structures"]}}
-io.open(os.path.join(out, "d4.json"), "w", encoding="utf-8").write(json.dumps(d4, ensure_ascii=False))
-subprocess.run([sys.executable, S + "/build_draft_docx.py", "--draft", os.path.join(out, "d4.json"),
-                "--out", os.path.join(out, "d4.docx")], capture_output=True, check=True)
-t4 = "\n".join(x["text"] for x in labelled_paragraphs(Document(os.path.join(out, "d4.docx"))))
-ck("research draft: notice, case-law marker and internal sources annex",
-   "נבנתה ללא נייר של החברה" in t4 and "[טעון בדיקת פסיקה]" in t4 and "נספח מקורות" in t4)
-del d4["sources"], d4["meta"]["notice"], d4["clauses"][3]["needs_case_law"]
+                  {"number": "4", "heading": "אחריות", "text": "תקרה."}]}
 io.open(os.path.join(out, "a4.json"), "w", encoding="utf-8").write(json.dumps(d4, ensure_ascii=False))
 subprocess.run([sys.executable, S + "/build_draft_docx.py", "--draft", os.path.join(out, "a4.json"),
                 "--out", os.path.join(out, "a4.docx")], capture_output=True, check=True)

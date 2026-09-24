@@ -1,109 +1,252 @@
 # -*- coding: utf-8 -*-
-"""כללי המקורות של מצב 4 (אין בתיקייה דבר מסוג ההסכם), כקוד ולא כהמלצה.
+"""כללי מצב 4 של רכיב הניסוח, כקוד ולא כהמלצה.
 
-שני סוגי מקורות, ולכל אחד תפקיד אחר:
-  law         הדין שחל על ההסכם. **רק אתר הכנסת ואתרי gov.il**, כולל תת-דומיינים
-              כמו mr.gov.il. מקור אחר אינו בסיס לקביעת דין, גם אם הוא נכון.
-  structures  הסכמים דומים שמהם נלקח **המבנה**: אילו נושאים יש, ובאיזה סדר. לא נוסח.
-              3 לפחות, 7 לכל היותר, ועוצרים כשהסכם נוסף אינו מוסיף נושא חדש.
+מצב 4: ללקוח אין טיוטה, הסכמים או פלייבוק מהסוג המבוקש. **זה המקום היחיד במערכת
+שבו רכיב הניסוח יוצא לרשת**, ורק אחרי שהמשתמש בחר את היקף העבודה:
 
-הבדיקות כאן חוסמות רק את מה שאסור באמת: מקור דין מאתר שאינו רשמי, ויותר משבעה
-מקורות מבנה. כל השאר (מקור שלא נפתח, תבנית ממשלתית כשהלקוח ספק, מקור פרטי) הוא
-סימון שעובר למסמך האישור ולנספח המקורות, כדי שעורך הדין יראה אותו.
+  agreements  איסוף 10 עד 15 הסכמים מפורסמים שמייצגים את הפוזיציה של המשתמש
+  research    מחקר רגולטורי בשכבות, ממקורות רשמיים בלבד
+  both        שניהם
+
+מקורות הדין (איסור קשיח, לא סימון):
+  ישראל  gov.il וכל תת-דומיין שלו, כולל אתר הכנסת; nevo.co.il בנתיבי חקיקה בלבד.
+  חו"ל   רק דומיינים ממשלתיים רשמיים מהרשימה הסגורה FOREIGN_OFFICIAL_DOMAINS.
+  **אין פסיקה בכלל**: לא מנבו ולא מאתרי בתי המשפט, גם כשהם תחת gov.il.
+  כל מקור אחר, כולל אתרי משרדי עורכי דין, מאמרים ובלוגים, אינו נאסף ואינו מוצג.
+
+הבדיקות מחזירות blocking (עוצר את השלב), flags (סימון ליד מקור) ו-notes (הערות).
 """
-import re
-
 try:                                   # Python 3
     from urllib.parse import urlparse
 except ImportError:                    # pragma: no cover
     from urlparse import urlparse
 
-LAW_EFFECTS = ("סעיף חובה", "איסור", "חובת גילוי", "דרישת רישום", "הגבלה", "אחר")
-STRUCTURE_TYPES = ("רגולטור", "גוף ציבורי", "ממשלתי-מכרז", "משרד עורכי דין", "אתר משפטי", "אחר")
-# a standard form a regulator or public body publishes may be used as worded, with the
-# source named. Everything else lends its structure only.
+SCOPES = {"agreements": "איסוף הסכמים מייצגים",
+          "research": "מחקר רגולטורי בשכבות",
+          "both": "איסוף הסכמים ומחקר רגולטורי"}
+
+ISRAELI_OFFICIAL_SUFFIX = "gov.il"                 # כולל knesset.gov.il ותת-דומיינים
+NEVO_HOST = "nevo.co.il"
+NEVO_ALLOWED_PATHS = ("/law_html/",)               # חקיקה בלבד. אין פסיקה בכלל
+COURT_HOST_MARKERS = ("court.gov.il",)             # פסיקה אינה מקור, גם תחת gov.il
+
+# רשימה סגורה. הוספה רק בהחלטת מוצר, לא בשיקול דעת בזמן ריצה.
+# ערך שמתחיל בנקודה הוא סיומת; אחר הוא דומיין מדויק או כל תת-דומיין שלו.
+FOREIGN_OFFICIAL_DOMAINS = {
+    "US": (".gov",),
+    "EU": ("eur-lex.europa.eu", "europa.eu"),
+    "UK": ("legislation.gov.uk", ".gov.uk"),
+    "DE": ("gesetze-im-internet.de", ".bund.de"),
+    "FR": ("legifrance.gouv.fr", ".gouv.fr"),
+    "CA": ("laws-lois.justice.gc.ca", ".gc.ca"),
+    "AU": ("legislation.gov.au", ".gov.au"),
+    "PT": ("dre.pt", ".gov.pt"),
+}
+
+NORM_RANKS = {1: "חקיקה ראשית", 2: "חקיקת משנה", 3: "הוראה מחייבת של רגולטור",
+              4: "הנחיה או מדריך של רגולטור", 5: "עמדת סגל או שו\"ת", 6: "מקור בהליך"}
+RANK_STATUS = {1: "מחייב", 2: "מחייב", 3: "מחייב", 4: "מנחה", 5: "מנחה", 6: "בהליך"}
+MANDATORY_ALLOWED_RANKS = (1, 2, 3)
+RECOMMENDED_RANKS = (4, 5)
+
+MIN_AGREEMENTS, TARGET_AGREEMENTS, MAX_AGREEMENTS = 10, 10, 15
+AGREEMENT_SOURCE_ORDER = ("אתר משפטי", "משרד עורכי דין", "רגולטור", "גוף ציבורי",
+                          "ממשלתי-מכרז", "דיווח פומבי", "אחר")
 VERBATIM_OK = ("רגולטור", "גוף ציבורי")
-MIN_STRUCTURES, TARGET_STRUCTURES, MAX_STRUCTURES = 3, 5, 7
+ORIENTATIONS = ("לטובת הפוזיציה", "מאוזן", "נגד הפוזיציה")
+NOT_FOUND = "[לא אותר]"
 
 
-def host(url):
+def _parts(url):
     try:
-        return (urlparse(url).hostname or "").lower()
+        u = urlparse(url or "")
+        return (u.hostname or "").lower(), (u.path or "")
     except Exception:
-        return ""
+        return "", ""
 
 
-def is_official_law_source(url):
-    h = host(url)
-    return h == "gov.il" or h.endswith(".gov.il")
+def _host_matches(host, entry):
+    if entry.startswith("."):
+        return host.endswith(entry)
+    return host == entry or host.endswith("." + entry)
 
 
-def is_government(url):
-    return is_official_law_source(url) and "knesset" not in host(url)
+def law_source_problem(url, jurisdiction="IL"):
+    """None כשהמקור מותר, אחרת הסיבה. זה המקום היחיד שמכריע אם מקור הוא מקור דין."""
+    host, path = _parts(url)
+    if not host:
+        return "אין קישור"
+    if any(m in host for m in COURT_HOST_MARKERS):
+        return "פסיקה אינה מקור במחקר הזה"
+    code = (jurisdiction or "IL").upper()
+    if code == "IL":
+        if host == ISRAELI_OFFICIAL_SUFFIX or host.endswith("." + ISRAELI_OFFICIAL_SUFFIX):
+            return None
+        if host == NEVO_HOST or host.endswith("." + NEVO_HOST):
+            if any(path.startswith(p) for p in NEVO_ALLOWED_PATHS):
+                return None
+            return "בנבו מותרים נתיבי חקיקה בלבד (%s)" % path
+        return "אינו gov.il, אתר הכנסת או נבו בנתיב חקיקה: %s" % host
+    allowed = FOREIGN_OFFICIAL_DOMAINS.get(code)
+    if not allowed:
+        return "אין רשימת אתרים רשמיים למדינה %s" % code
+    if any(_host_matches(host, e) for e in allowed):
+        return None
+    return "אינו אתר ממשלתי רשמי של %s: %s" % (code, host)
 
 
-def check(research):
-    """מחזיר (blocking, flags, notes). blocking: רשימת מחרוזות שעוצרות את המחקר.
-    flags: לכל מקור, סימונים שמוצגים לידו. notes: הערות כלליות למסמך האישור."""
+def normalise(research):
+    """קובץ מחקר בפורמט הקודם (structures, בלי scope) נקרא בלי לאבד נתונים."""
+    r = dict(research)
+    legacy = "structures" in r
+    if "agreements" not in r and r.get("structures"):
+        r["agreements"] = [dict(x, no=i + 1) for i, x in enumerate(r["structures"])]
+    # The scope is the user's explicit choice. It is inferred only for a file written in
+    # the old format, which had no such field; a current file without it is refused.
+    if legacy and not r.get("scope"):
+        has_a, has_r = bool(r.get("agreements")), bool(r.get("law"))
+        r["scope"] = "both" if (has_a and has_r) else ("agreements" if has_a else ("research" if has_r else ""))
+    r.setdefault("approvals", {})
+    return r
+
+
+def scope_has(research, part):
+    s = research.get("scope")
+    return s == "both" or s == part
+
+
+def check(research, stage="brief"):
+    """stage: 'brief' לפני הצגת המחקר, 'draft' לפני ניסוח (דורש גם את האישורים)."""
+    r = normalise(research)
     blocking, notes = [], []
-    flags = {"law": [], "structures": []}
-    role = (research.get("company_role") or "").strip()
+    flags = {"law": [], "agreements": [], "mandatory": []}
 
-    law = research.get("law") or []
-    if not law:
-        blocking.append("אין אף מקור דין. מיפוי הדין הוא החלק הראשון של המחקר, ובלעדיו אין טיוטה.")
-    for i, src in enumerate(law):
-        f = []
-        if not is_official_law_source(src.get("url", "")):
-            blocking.append("מקור דין %d (%s) אינו מאתר הכנסת או gov.il: %s"
-                            % (i + 1, src.get("instrument") or "ללא שם", host(src.get("url", "")) or "אין קישור"))
-            f.append("אינו מקור רשמי")
-        if not src.get("verified"):
-            f.append("טעון אימות")
-        if src.get("effect") and src["effect"] not in LAW_EFFECTS:
-            f.append("סוג השפעה לא מוכר")
-        flags["law"].append(f)
+    if r.get("scope") not in SCOPES:
+        blocking.append("לא נבחר היקף העבודה (scope): agreements, research או both.")
+    if not r.get("consent_at"):
+        blocking.append("אין תיעוד לאישור המשתמש לצאת לרשת (consent_at). היציאה לרשת רק אחרי בחירה.")
+    if not (r.get("company_role") or "").strip():
+        blocking.append("הפוזיציה של המשתמש (company_role) חסרה. היא נשאלת, ולעולם אינה מוסקת.")
 
-    st = research.get("structures") or []
-    if len(st) > MAX_STRUCTURES:
-        blocking.append("%d מקורות מבנה. המקסימום %d: מעבר לזה אין תוספת, רק רעש." % (len(st), MAX_STRUCTURES))
-    elif len(st) < MIN_STRUCTURES:
-        notes.append("נמצאו רק %d מקורות מבנה, פחות מ-%d. המבנה נשען בעיקר על הידע על סוג ההסכם."
-                     % (len(st), MIN_STRUCTURES))
+    # ---- regulatory research
+    law = r.get("law") or []
+    if scope_has(r, "research"):
+        if not law:
+            blocking.append("נבחר מחקר רגולטורי, ואין אף מקור דין.")
+        if not r.get("jurisdiction"):
+            blocking.append("הדין החל (jurisdiction) לא נקבע. הוא עולה מהמחקר, ונרשם לפני הצגתו.")
+        last_rank = 0
+        for i, src in enumerate(law):
+            f = []
+            name = src.get("instrument") or "שורה %d" % (i + 1)
+            problem = law_source_problem(src.get("url"), src.get("jurisdiction") or "IL")
+            if problem:
+                blocking.append("מקור דין %d (%s): %s" % (i + 1, name, problem))
+                f.append("מקור אסור")
+            rank = src.get("rank")
+            if rank not in NORM_RANKS:
+                blocking.append("מקור דין %d (%s): חסר דרג במדרג הנורמטיבי (1 עד 6)." % (i + 1, name))
+            else:
+                if rank < last_rank:
+                    blocking.append("השורות אינן ממוינות לפי המדרג: מקור %d בדרג %d אחרי דרג %d."
+                                    % (i + 1, rank, last_rank))
+                last_rank = max(last_rank, rank)
+            if not src.get("verified"):
+                f.append("טעון אימות")
+            if (src.get("jurisdiction") or "IL").upper() != "IL":
+                f.append("דין זר")
+            for k in ("published_original", "published_last"):
+                if src.get(k) in (None, "", NOT_FOUND):
+                    f.append("תאריך לא אותר")
+                    break
+            flags["law"].append(f)
+        rows = {src.get("row", i + 1): src for i, src in enumerate(law)}
+        for m in r.get("mandatory_clauses") or []:
+            f = []
+            src = rows.get(m.get("source_row"))
+            cid = m.get("clause_id") or "?"
+            if src is None:
+                blocking.append("סעיף חובה %s: אין שורת מקור %s במחקר." % (cid, m.get("source_row")))
+            else:
+                if not src.get("verified"):
+                    blocking.append("סעיף חובה %s נשען על מקור שלא אומת (שורה %s)." % (cid, m.get("source_row")))
+                if src.get("rank") not in MANDATORY_ALLOWED_RANKS:
+                    blocking.append("סעיף חובה %s נשען על מקור בדרג %s. סעיף חובה רק מדרגים 1 עד 3; "
+                                    "מדרגים 4 ו-5 נגזר סעיף מומלץ." % (cid, src.get("rank")))
+            flags["mandatory"].append(f)
+        derived = {m.get("source_row") for m in (r.get("mandatory_clauses") or [])}
+        for i, src in enumerate(law):
+            row = src.get("row", i + 1)
+            if src.get("mandatory") and src.get("verified") and src.get("rank") in MANDATORY_ALLOWED_RANKS \
+                    and row not in derived:
+                blocking.append("מקור %d (%s) סומן כמחייב סעיף חובה, ולא נגזר ממנו סעיף חובה."
+                                % (i + 1, src.get("instrument") or ""))
+        if r.get("layers_checked"):
+            notes.append("שכבות שנבדקו: " + ", ".join(r["layers_checked"]))
+        notes.append("המחקר מוגבל למקורות רשמיים ואינו מכסה פסיקה. סעיפים שתוקפם נקבע בפסיקה "
+                     "מסומנים בטיוטה \"טעון בדיקת פסיקה\".")
+    elif law:
+        notes.append("נבחר איסוף הסכמים בלבד, ולכן מקורות הדין שבקובץ אינם חלק מהתוצר.")
 
-    seen, saturated_at = set(), None
-    for i, src in enumerate(st):
-        f = []
-        typ = src.get("source_type") or "אחר"
-        topics = set(t.strip() for t in (src.get("topics") or []) if t and t.strip())
-        new = topics - seen
-        seen |= topics
-        if i >= MIN_STRUCTURES and not new and saturated_at is None:
-            saturated_at = i
-        if typ not in VERBATIM_OK:
-            f.append("מבנה בלבד, בלי העתקת נוסח")
-        else:
-            f.append("מותר כלשונו, בציון המקור")
-        if typ == "ממשלתי-מכרז" or (is_government(src.get("url", "")) and typ not in VERBATIM_OK):
-            f.append("נכתב לטובת המדינה כלקוח")
-            if role and "ספק" in role:
-                notes.append("\"%s\" הוא נוסח ממשלתי שנכתב לטובת המדינה כלקוח, והחברה היא הספק. "
-                             "הוא משמש לעיון בלבד." % (src.get("title") or "מקור %d" % (i + 1)))
-        if src.get("governing_law") and "ישראל" not in src["governing_law"]:
-            f.append("דין זר: מוסד שאינו קיים בדין הישראלי מסומן")
-        if not new and i > 0:
-            f.append("לא הוסיף נושא חדש")
-        flags["structures"].append(f)
-    if saturated_at is not None:
-        extra = len(st) - saturated_at - 1
-        notes.append("רוויה: מקור %d לא הוסיף אף נושא חדש.%s"
-                     % (saturated_at + 1, (" %d מקורות אחריו מיותרים." % extra) if extra > 0 else ""))
-    if research.get("case_law_sensitive"):
-        notes.append("סעיפים שתוקפם נקבע בפסיקה, ויסומנו בטיוטה \"טעון בדיקת פסיקה\": "
-                     + ", ".join(research["case_law_sensitive"]))
-    if research.get("foreign_institutions"):
-        notes.append("מוסדות משפטיים זרים שדורשים התאמה לדין הישראלי: "
-                     + ", ".join(research["foreign_institutions"]))
-    if not research.get("consent_at"):
-        blocking.append("אין תיעוד לאישור המשתמש לצאת למחקר (consent_at). מחקר נעשה רק אחרי אישור.")
+    # ---- representative agreements
+    ags = r.get("agreements") or []
+    if scope_has(r, "agreements"):
+        if len(ags) > MAX_AGREEMENTS:
+            blocking.append("%d הסכמים. התקרה היא %d." % (len(ags), MAX_AGREEMENTS))
+        elif len(ags) < MIN_AGREEMENTS:
+            notes.append("נמצאו %d הסכמים רלוונטיים, פחות מ-%d.%s" % (
+                len(ags), MIN_AGREEMENTS,
+                (" הסיבה: " + r["agreements_shortfall_reason"]) if r.get("agreements_shortfall_reason") else ""))
+        role = (r.get("company_role") or "")
+        mand_ids = {m.get("clause_id") for m in (r.get("mandatory_clauses") or [])}
+        for i, a in enumerate(ags):
+            f = []
+            title = a.get("title") or "הסכם %d" % (i + 1)
+            host, _ = _parts(a.get("url"))
+            if not host:
+                blocking.append("הסכם %d (%s) בלי קישור." % (i + 1, title))
+            o = a.get("orientation")
+            if o not in ORIENTATIONS:
+                blocking.append("הסכם %d (%s): חסר כיוון ביחס לפוזיציה." % (i + 1, title))
+            elif o == "נגד הפוזיציה":
+                blocking.append("הסכם %d (%s) מסווג \"נגד הפוזיציה\" ואינו נכלל." % (i + 1, title))
+            if o in ORIENTATIONS and not (a.get("orientation_reason") or "").strip():
+                f.append("חסר נימוק לכיוון")
+            typ = a.get("source_type") or "אחר"
+            f.append("מותר כלשונו, בציון המקור" if typ in VERBATIM_OK else "מבנה, נושאים ועמדות בלבד")
+            if typ == "ממשלתי-מכרז":
+                f.append("נכתב לטובת המדינה כלקוח")
+                if "ספק" in role:
+                    f.append("לעיון בלבד")
+            unknown = [x for x in (a.get("missing_mandatory") or []) if mand_ids and x not in mand_ids]
+            if unknown:
+                f.append("סעיפי חובה לא מוכרים: " + ", ".join(unknown))
+            flags["agreements"].append(f)
+
+    # ---- approvals, before drafting
+    if stage == "draft":
+        ap = r.get("approvals") or {}
+        if scope_has(r, "research") and not ap.get("research_at"):
+            blocking.append("אין אישור של המשתמש למחקר הרגולטורי ולסעיפי החובה (approvals.research_at).")
+        if scope_has(r, "agreements") and not ap.get("agreements_at"):
+            blocking.append("אין אישור של המשתמש להסכמים (approvals.agreements_at).")
     return blocking, flags, notes
+
+
+def approved_mandatory(research):
+    return [m for m in (normalise(research).get("mandatory_clauses") or []) if m.get("status") == "מאושר"]
+
+
+def approved_agreements(research):
+    r = normalise(research)
+    removed = set(str(x) for x in (r.get("approvals") or {}).get("removed_agreements") or [])
+    return [a for a in (r.get("agreements") or []) if str(a.get("no")) not in removed]
+
+
+def display_date(v):
+    """ISO בקובץ, יום.חודש.שנה בתצוגה. ערך שלא אותר מוצג כפי שהוא."""
+    s = (v or "").strip()
+    if len(s) == 10 and s[4] == "-" and s[7] == "-":
+        y, m, d = s.split("-")
+        return "%d.%d.%s" % (int(d), int(m), y)
+    return s or NOT_FOUND
