@@ -23,6 +23,12 @@ def load(p):
 def inject(tpl, data, chartjs):
     blob = json.dumps(data, ensure_ascii=False)
     blob = blob.replace('—', ', ').replace('–', '-')   # איסור מקפים ארוכים
+    # הנתונים יושבים בתוך <script> בדף, ולכן ציטוט מהסכם שמכיל </script>
+    # היה סוגר את הבלוק ומרוקן את הדף. הבריחה היא ברמת ה-JSON, ולכן הנוסח
+    # של הציטוט נשאר מילה במילה: המפרש מחזיר בדיוק את אותה מחרוזת.
+    # U+2028 ו-U+2029 חוקיים ב-JSON ואסורים בתוך קוד JavaScript.
+    blob = (blob.replace('</', '<\\/')
+                .replace('\u2028', '\\u2028').replace('\u2029', '\\u2029'))
     assert tpl.count('/*__DATA__*/null') == 1, 'injection point missing'
     assert tpl.count('/*__CHARTJS__*/') == 1, 'chart library placeholder missing'
     h = tpl.replace('/*__DATA__*/null', blob).replace('/*__CHARTJS__*/', chartjs)

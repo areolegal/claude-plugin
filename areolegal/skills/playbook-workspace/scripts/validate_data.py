@@ -19,7 +19,9 @@ ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 ENUMS = {
     "rule.conf": {"High", "Medium", "Low"},
-    "rule.reg": {"Researched", "NotResearched", "NotApplicable"},
+    # הערכים שרכיב הפלייבוק כותב בפועל, ולא רק אלה שתוכננו מראש
+    "rule.reg": {"Researched", "NotResearched", "NotApplicable",
+                 "ApplicableSourcesFound", "NoApplicableSources"},
     "presence.requirement": {"Required", "Recommended", "Optional", "Prohibited"},
     "presence.missing_clause_color": {"Green", "Yellow", "Red"},
     "ev.weight": {"High", "Medium", "Low"},
@@ -32,7 +34,15 @@ ENUMS = {
     "finding.severity": {"high", "medium", "low"},
     "meta.status": {"Draft", "Approved", "Superseded"},
     "rat.rationale_status": {"Draft", "Confirmed"},
-    "reg.status": {"Performed", "NotPerformed", "Partial"},
+    "reg.status": {"Performed", "Completed", "Partial", "NotPerformed", "Declined"},
+    # המסלול שבו הפלייבוק נבנה, לפס הבסיס
+    "build_path.path": {"own", "own_plus_market", "market_built"},
+    # הרשימה הסגורה של הקודים הטכניים, מ-`clause-catalog.md`
+    "technical_code": {"signature_block", "party_identification", "notice_addresses",
+                       "counterparts_esignature", "headings", "interpretation_grammar",
+                       "recitals_descriptive", "neutral_definition", "bank_details",
+                       "delivery_points_list", "admin_form_fields",
+                       "statutory_admin_restatement"},
 }
 
 LIGHTS = ("green", "yellow", "red")
@@ -133,6 +143,48 @@ def validate(data):
     if meta.get("ls_key") and not re.match(r"^[A-Za-z0-9_]+$", str(meta["ls_key"])):
         r.err("meta", "ls_key מכיל תווים שאינם אותיות לטיניות, ספרות או קו תחתון. "
                       "מפתח כזה שובר את שמירת הסימונים בדפדפן")
+
+    # פס הבסיס: בלעדיו הדף אינו אומר על כמה הסכמים הפלייבוק נשען, והקורא
+    # מניח שהוא נשען על הרבה (`dashboard_spec.md`, "פס הבסיס")
+    bp = meta.get("build_path")
+    if not isinstance(bp, dict):
+        r.warn("meta", "meta.build_path חסר. פס הבסיס לא יוצג, והדף לא יאמר "
+                       "על כמה הסכמים הפלייבוק נשען")
+    else:
+        if not isinstance(bp.get("n"), int):
+            r.err("meta.build_path", "n חסר או אינו מספר. הוא מספר ההסכמים אחרי "
+                                     "ניקוי כפילויות, ואינו מספר הקבצים בתיקייה")
+        check_enum(r, "meta.build_path", "path", bp.get("path"), "build_path.path")
+        if isinstance(bp.get("n"), int) and bp.get("path"):
+            n, path = bp["n"], bp["path"]
+            if n == 0 and path != "market_built":
+                r.err("meta.build_path", "אין הסכמים, ולכן המסלול חייב להיות market_built")
+            if n >= 7 and path != "own":
+                r.err("meta.build_path", "ב-%d הסכמים המסלול הוא own, "
+                                         "והבחירה בין שוק להסכמים אינה נשאלת" % n)
+            if n > 0 and path == "market_built":
+                r.err("meta.build_path", "יש %d הסכמים, ולכן המסלול אינו market_built" % n)
+
+    # כיסוי הסעיפים: בלעדיו אין בדף תשובה לשאלה אם סעיף נשר
+    cov = data.get("coverage")
+    if not isinstance(cov, dict):
+        r.warn("coverage", "coverage חסר. פאנל כיסוי הסעיפים לא יוצג")
+    else:
+        for f in ("units", "topic_units", "technical_units"):
+            if not isinstance(cov.get(f), int):
+                r.warn("coverage", "coverage.%s חסר או אינו מספר, והמספר יוצג כמקף" % f)
+        items = cov.get("technical_items")
+        if not isinstance(items, list):
+            r.warn("coverage", "technical_items חסר. רשימת הסעיפים הטכניים לא תוצג")
+        else:
+            for i, it in enumerate(items):
+                w = "coverage.technical_items[%d]" % i
+                if not isinstance(it, dict):
+                    r.err(w, "אינו אובייקט")
+                    continue
+                check_enum(r, w, "code", it.get("code"), "technical_code")
+                if not (it.get("reason") or "").strip():
+                    r.warn(w, "אין נימוק. הסעיף יוצג בלי הסבר למה אין לו משמעות")
 
     scope = data.get("scope") or {}
     fams = scope.get("contract_families") or []
@@ -243,11 +295,17 @@ def validate(data):
         if not rule.get("kind"):
             r.warn(where, "kind חסר. הסעיף לא ישויך למשפטי או למסחרי, והסינון לפי "
                           "סוג הסעיף לא יראה אותו")
+        # עמדה בלי ציטוט אינה בעיה כשהיא מצהירה על מקור אחר: התגית נקבעת
+        # לפי `basis` ו-`label`, ולא לפי היעדר ציטוטים (`dashboard_spec.md`,
+        # "שדות המטען שהמבנה הזה מחייב"). עמדה בלי ציטוט ובלי מקור מוצהר
+        # היא הנחה של המערכת, ועליה מזהירים
         for t in LIGHTS:
-            if (rid, t) not in tracked:
-                r.warn(where, "אין ציטוט משויך לעמדה ה%s. היא תוצג כהנחה של המערכת "
-                              "ולא כראיה מהתיקייה"
-                              % {"green": "ירוקה", "yellow": "צהובה", "red": "אדומה"}[t])
+            band = (rule.get("tl") or {}).get(t) or {}
+            if (rid, t) in tracked or band.get("basis") or band.get("label"):
+                continue
+            r.warn(where, "אין ציטוט משויך לעמדה ה%s ואין לה מקור מוצהר. היא תוצג "
+                          "כהנחה של המערכת ולא כראיה מהתיקייה"
+                          % {"green": "ירוקה", "yellow": "צהובה", "red": "אדומה"}[t])
         for f in ("id", "topic", "issue"):
             if not rule.get(f):
                 r.err(where, "השדה %r חסר, והוא שדה חובה בכרטיס הכלל" % f)

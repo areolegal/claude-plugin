@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
-"""קולט את קובץ ההחלטות שיוצא מסביבת העבודה, וכותב אותו למודל הפלייבוק.
+"""קולט את קובץ ההחלטות שיוצא מאשף ההערות, וכותב אותו למודל הפלייבוק.
 
-להכרעות יש שני מסלולים, ולסקריפט הזה שניהם נראים אותו דבר:
+**זה המסלול היחיד שבו הכרעה של הלקוח נכנסת למודל ולגרעין.** האשף
+(`wizard_spec.md`) הוא המקום שבו הלקוח מאשר סעיף, מציע נוסח או מעיר, ובסופו
+הוא מוריד קובץ החלטות ומעלה אותו לשיחה.
 
-  מסלול משותף  ההכרעה נכתבת למאגר של ה-Artifact ונראית מיד לכל מי שפתוח בו.
-                הרכיב קורא את המאגר לקובץ, ומעביר אותו לכאן.
-  מסלול אופליין  ההכרעה נשמרת בדפדפן ומיוצאת לקובץ `<slug>-decisions.json`.
+**סביבת העבודה אינה מכריעה.** אין בה כפתורי אישור, והערה או הצעת נוסח שנכתבו
+בה נשמרות בקובץ הערות נפרד ואינן נכנסות לכאן (`dashboard_spec.md`, "הערות
+והצעות: איפה הן חיות"). קובץ הערות שיגיע לכאן נדחה, כדי שהצעה לא תיכנס
+למדיניות בטעות.
 
-בשני המסלולים ההכרעה היא מסר בדרך, ולא מקור אמת: מקור האמת הוא
-`playbook-model.json` ו-`playbook-core.json` שבתיקייה המשותפת. הסקריפט הזה
-סוגר את הלולאה, ואחריו סביבת העבודה נבנית מחדש מהמודל ומתפרסמת לאותו קישור.
+ההכרעה היא מסר בדרך, ולא מקור אמת: מקור האמת הוא `playbook-model.json`
+ו-`playbook-core.json` שבתיקייה המשותפת. הסקריפט הזה סוגר את הלולאה, ואחריו
+סביבת העבודה נבנית מחדש מהמודל ומתפרסמת לאותו קישור.
 
 שימוש:
   python3 apply_decisions.py --decisions playbook-decisions.json \\
@@ -94,6 +97,52 @@ def from_db(raw):
             "exported": raw.get("read_at") or (max(ats) if ats else "")}
 
 
+def from_wizard(raw):
+    """קלט מאשף ההערות: רשומה לכל סעיף שהלקוח נגע בו.
+
+    {"kind": "areo-playbook-notes", "entries": [
+      {"rule_id": "R-02", "type": "approve|suggestion|comment", "track": "yellow",
+       "text": "...", "current_text": "...", "clause_hash": "h1f2", "by": "...", "at": "..."}]}
+
+    שלוש הפעולות של האשף: אישור הסעיף, הצעת נוסח חדש, והערה. הן מומרות
+    למבנה שהקליטה מכירה, כדי שהמסלול יישאר אחד.
+    """
+    picks, notes, edits, whos, ats, seen = {}, {}, {}, {}, [], {}
+    for e in raw.get("entries") or []:
+        rid, kind = e.get("rule_id"), e.get("type")
+        if not rid or not kind:
+            continue
+        if e.get("by"):
+            whos[rid] = e["by"]
+        if e.get("at"):
+            ats.append(e["at"])
+        if kind == "approve":
+            picks[rid] = "accept"
+        elif kind == "suggestion":
+            picks[rid] = "edit"
+            track = e.get("track") or "green"
+            edits.setdefault(rid, {})[track] = {"clause": e.get("text") or ""}
+            if e.get("clause_hash"):
+                seen.setdefault(rid, {})[track] = e["clause_hash"]
+        elif kind == "comment":
+            notes[rid] = e.get("text") or ""
+        if e.get("text") and kind == "approve":
+            notes[rid] = e["text"]
+    return {"playbook": raw.get("playbook") or {}, "decisions": picks, "notes": notes,
+            "ruleEdits": edits, "by_rule": whos, "seen_hash": seen,
+            "exported": raw.get("created") or (max(ats) if ats else "")}
+
+
+def wiz_hash(text):
+    """אותו גיבוב שהאשף מחשב על הנוסח שהוצג (hash() שבתבנית האשף)."""
+    h = 0
+    for ch in str(text or ""):
+        h = (h * 31 + ord(ch)) & 0xFFFFFFFF
+        if h >= 0x80000000:
+            h -= 0x100000000
+    return "h%x" % (h & 0xFFFFFFFF)
+
+
 def rules_of(model):
     return model.get("rules") or []
 
@@ -126,8 +175,21 @@ def check_batch(model, dec, force):
     return stamp, done
 
 
+def check_kind(dec):
+    """קובץ הערות של סביבת העבודה אינו קובץ החלטות, ואינו נקלט."""
+    kind = dec.get("kind")
+    if kind == "comments_and_proposals":
+        sys.exit("שגיאה: זה קובץ הערות והצעות מסביבת העבודה, ולא קובץ החלטות של "
+                 "האשף. הערה והצעת נוסח אינן מדיניות, ולכן אינן נכתבות לפלייבוק. "
+                 "כדי לאמץ הצעה, העבירו אותה באשף או בשיחה.")
+    if kind and kind not in ("areo-playbook-notes", "decisions"):
+        sys.exit("שגיאה: סוג הקובץ %r אינו מוכר. נדרש קובץ ההחלטות של האשף "
+                 "(kind: areo-playbook-notes)." % kind)
+
+
 def check_playbook(model, dec):
     """הקובץ נושא את מזהה הפלייבוק מאז גרסת התבנית שמוסיפה אותו. בלעדיו, אזהרה."""
+    check_kind(dec)
     src = dec.get("playbook") or {}
     pid, mid = src.get("id"), model.get("playbook_id")
     if not pid:
@@ -202,10 +264,16 @@ def main():
     a = ap.parse_args()
 
     dec = load(a.decisions, "קובץ ההחלטות")
+    check_kind(dec)
     if a.from_db:
         dec = from_db(dec)
         if not dec["decisions"]:
             sys.exit("במאגר אין הכרעה שטרם נקלטה. אין מה לקלוט.")
+    elif dec.get("kind") == "areo-playbook-notes" or "entries" in dec:
+        # הקובץ של האשף, שזה המסלול הרגיל
+        dec = from_wizard(dec)
+        if not dec["decisions"] and not dec["notes"]:
+            sys.exit("בקובץ האשף אין אישור, הצעה או הערה. אין מה לקלוט.")
     model = load(a.model, "מודל הפלייבוק")
     warnings = check_playbook(model, dec)
     stamp, batches = check_batch(model, dec, a.force)
@@ -232,8 +300,23 @@ def main():
                  "decided_at": stamp, "applied_at": now(),
                  "by": (dec.get("by_rule") or {}).get(rid) or a.by,
                  "source": os.path.basename(a.decisions)}
+        stale = []
+        for color, want in ((dec.get("seen_hash") or {}).get(rid) or {}).items():
+            light = (tl_of(rule) or {}).get(color) or {}
+            cur = light.get("proposed_clause")
+            cur = cur.get("he") if isinstance(cur, dict) else cur
+            if want and wiz_hash(cur) != want:
+                stale.append(color)
+        if stale:
+            he = {"green": "בירוק", "yellow": "בצהוב", "red": "באדום"}
+            entry["review_required"] = ("הנוסח %s השתנה במודל מאז שהלקוח ראה אותו, "
+                                        "ולכן ההצעה לא הוחלה. יש להשוות ולהכריע."
+                                        % " ו".join(he.get(c, c) for c in stale))
+            for color in stale:
+                (edits.get(rid) or {}).pop(color, None)
         changed = apply_edits(rule, edits.get(rid), entry)
-        if status == "approved_with_change" and not changed and not notes.get(rid):
+        if (status == "approved_with_change" and not changed and not notes.get(rid)
+                and not entry.get("review_required")):
             entry["review_required"] = ("סומן אושר עם שינוי, אך לא נמצא נוסח חדש "
                                         "ולא הערה. הנוסח נשאר כפי שהיה.")
         rule["decision"] = {k: entry[k] for k in

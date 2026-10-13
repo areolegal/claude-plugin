@@ -41,11 +41,19 @@ function run(file, label, published){
   w.go('sources');
   const links=[...d.querySelectorAll('#wrap a[href^="http"]')];
   ok(links.length>0,'  קישורים למקורות: '+links.length);
-  w.go('export');
+  /* ההורדה היחידה שנשארה בדף היא ההערות וההצעות: אין ייצוא Office,
+     אין חבילת סוכן ואין יומן החלטות (`dashboard_spec.md`, "מה אסור") */
+  const gone=['dl','agentPack','showOut','officeBlob','decide','approveAll']
+    .filter(n=>typeof w[n]==='function');
+  ok(gone.length===0,'  אין בדף פעולות אישור וייצוא'+(gone.length?': '+gone.join(', '):''));
+  w.go('decisions');
+  const rid=(w.rulesOf()[0]||{}).id;
+  w.setNote(rid,'הערה לבדיקה');
+  w.render();
   const before=downloads.length;
-  try{ w.dl('decisions'); }catch(e){}
+  try{ w.dlComments(); }catch(e){}
   if(published){ ok(downloads.length===before,'  בעמוד משותף לא נפתחה הורדה'); }
-  else { ok(downloads.length>before,'  בקובץ המקומי ההורדה פעלה'); }
+  else { ok(downloads.length>before,'  בקובץ המקומי הורדת ההערות פעלה'); }
   return fails;
 }
 

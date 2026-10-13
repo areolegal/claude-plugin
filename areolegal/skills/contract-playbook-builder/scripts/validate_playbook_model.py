@@ -15,6 +15,41 @@ VALID_SEG_STATUS = {"NotDetected", "Candidate", "Confirmed"}
 VALID_RATIONALE_STATUS = {"Draft", "Confirmed"}
 VALID_OUTPUT_LANGUAGE = {"he", "en"}
 VALID_MARKET_BASIS = {"ExternalResearch", "ExpertAssessment", "InternalTrendOnly", "NotAssessed"}
+# מאיפה נבנה הפלייבוק: מההסכמים של החברה, מהם יחד עם השוק, או מהשוק בלבד (שינוי 3)
+VALID_CORPUS_ORIGIN = {"own", "own_plus_market", "market_built"}
+# הרצועה נגזרת ממספר ההסכמים בסוג, אחרי ניקוי כפילויות, גרסאות, תיקונים
+# ותבניות. השמות הם אלה של `playbook-schema.md`, והספירה נעשית ב-
+# `build_corpus_manifest.py` ולא בהערכה של המודל
+CORPUS_BANDS = [(20, None, "full"), (7, 19, "below20"), (1, 6, "below7"), (0, 0, "none")]
+# ב-1 עד 6 הלקוח בוחר: לשלב מחקר שוק, או להישאר רק עם ההסכמים שלו
+BAND_CHOICES = {"full": {"own"}, "below20": {"own"},
+                "below7": {"own", "own_plus_market"}, "none": {"market_built"}}
+BAND_CHOICE_FIELD = {"full": {"not_asked"}, "below20": {"not_asked"},
+                     "below7": {"combine", "own_only"}, "none": {"market"}}
+CHOICE_ORIGIN = {"own_only": "own", "combine": "own_plus_market", "market": "market_built"}
+# הבסיס של כל מסלול: ראיה מההסכמים, נוסח שוק, או הצעה של Areo כשאין פשרה בראיות
+VALID_TRACK_BASIS = {"own_evidence", "own_paper_repeated", "market_standard", "areo_proposal"}
+VALID_FALLBACK_SOURCE = {"signed_compromise", "single_compromise", "offered_not_signed",
+                         "client_answer", "areo_proposal"}
+VALID_ACCEPTANCE_MODE = {"negotiated", "imposed", "unnegotiated", "unknown"}
+VALID_PAPER = {"ours", "theirs", "unknown"}
+# קודים לסעיף שאין לו מדיניות, רשימה סגורה (שינוי 5)
+# הרשימה הסגורה של הקודים הטכניים, מילה במילה מ-`clause-catalog.md`,
+# "Technical clauses: closed list". אין קוד "אחר": סעיף שאינו אחד מאלה
+# הוא נושא מדיניות
+TECHNICAL_CODES = {"signature_block", "party_identification", "notice_addresses",
+                   "counterparts_esignature", "headings", "interpretation_grammar",
+                   "recitals_descriptive", "neutral_definition", "bank_details",
+                   "delivery_points_list", "admin_form_fields",
+                   "statutory_admin_restatement"}
+# נימוקי השמטה שאינם מתקבלים (`playbook-schema.md`, `coverage`): נוסח שחוזר
+# בכל ההסכמים הוא הראיה החזקה ביותר לירוק, ולא סיבה לדלג עליו
+FORBIDDEN_OMISSION = ("לא רלוונטי", "נוסח אחיד", "נוסח עקבי", "אין מחלוקת", "תפעולי",
+                      "הסכם יחיד", "תנאי מסחרי", "אין ראיה לעמדת החברה", "סטנדרטי",
+                      "טכני בלבד", "אין צורך", "ברור מאליו",
+                      "not relevant", "standard", "boilerplate")
+# ביטויים שאסורים בנוסח צהוב: הם ויתור בלי תנאי
+FORBIDDEN_YELLOW = ("לפי שיקול דעת הצד", "ללא הגבלה", "כפי שיידרש", "unlimited", "sole discretion")
 LEGACY_RULE_KEYS = {"fallbacks", "fallback_1", "fallback_2", "red_line", "escalation"}
 COLOR_SPEC = {"green": "Approved", "yellow": "AgreeWithComments", "red": "NotApproved"}
 
@@ -112,6 +147,35 @@ def validate_traffic_light(errors, light, prefix, segment_ids):
             add(errors, f"{cp}.match_criteria must be a non-empty list")
         if color == "yellow" and not nonempty(block.get("comments")):
             add(errors, f"{cp} requires comments")
+
+        # מאיפה המסלול הגיע. בלי זה אי אפשר לדעת אם העמדה נגזרה מההסכמים
+        # או שהיא הצעה שלנו, וזו ההבחנה שהלקוח חייב לראות (שינויים 6, 7).
+        basis = block.get("basis")
+        if basis not in VALID_TRACK_BASIS:
+            add(errors, f"{cp} missing/invalid basis")
+        elif basis != "areo_proposal" and not nonempty(block.get("basis_refs")):
+            add(errors, f"{cp} basis {basis} requires basis_refs")
+        if basis in {"market_standard", "areo_proposal"} and not nonempty(block.get("label")):
+            add(errors, f"{cp} requires a label when the source is not the company")
+        if basis == "market_standard":
+            refs = block.get("basis_refs")
+            if not isinstance(refs, list) or len(refs) < 3:
+                add(errors, f"{cp} market_standard requires three counted sources")
+
+        if color == "yellow":
+            fb = block.get("fallback_wording")
+            if not isinstance(fb, dict) or not nonempty(fb.get("text")):
+                add(errors, f"{cp} requires fallback_wording.text")
+            elif fb.get("source") not in VALID_FALLBACK_SOURCE:
+                add(errors, f"{cp}.fallback_wording invalid source")
+            elif fb.get("source") == "signed_compromise" and len(fb.get("negotiation_refs") or []) < 2:
+                add(errors, f"{cp} established yellow requires two different negotiations")
+            if block.get("offer_yellow") and (fb or {}).get("source") != "signed_compromise":
+                add(errors, f"{cp} offer_yellow is allowed only when the yellow is established")
+            text = " ".join(str(x) for x in [block.get("proposed_clause"), (fb or {}).get("text")] if x)
+            for bad in FORBIDDEN_YELLOW:
+                if bad in text:
+                    add(errors, f"{cp} yellow wording contains an unconditional concession: {bad}")
         validate_previous(errors, block.get("previous_agreements_where_language_accepted", []), cp, segment_ids)
 
 
@@ -147,14 +211,19 @@ def main(path):
         if not nonempty(data.get(key)):
             add(errors, f"missing {key}")
 
-    if data.get("playbook_status") not in VALID_PB_STATUS:
+    # הבונה כותב תמיד Draft (שינוי 27). אישור מדיניות אינו מתואר, אינו
+    # מתועד ואינו נכתב כאן, ולכן מודל שיוצא מהבונה בכל ערך אחר נפסל
+    status = data.get("playbook_status")
+    if status not in VALID_PB_STATUS:
         add(errors, "invalid playbook_status")
+    elif status != "Draft":
+        add(errors, f"playbook_status must be Draft, got {status}: the builder never marks "
+                    f"a playbook as approved and never records who approved it")
+    for key in ["approved_by", "approved_at", "confirmed_by", "approved_version"]:
+        if nonempty(data.get(key)):
+            add(errors, f"{key} must not be written: approval of policy is not recorded")
     if data.get("output_language") not in VALID_OUTPUT_LANGUAGE:
         add(errors, "invalid output_language")
-    if data.get("playbook_status") == "Approved":
-        for key in ["approved_by", "approved_at"]:
-            if not nonempty(data.get(key)):
-                add(errors, f"Approved playbook requires {key}")
 
     scope = data.get("scope_summary")
     if not isinstance(scope, dict):
@@ -174,6 +243,52 @@ def main(path):
                         add(errors, f"{fp} missing {key}")
         if not nonempty(scope.get("total_document_count")):
             add(errors, "scope_summary missing total_document_count")
+
+        # מאיפה נבנה הפלייבוק, וכמה הסכמים באמת עמדו מאחוריו. הספירה נעשית
+        # בקוד מתוך המניפסט, ולא בהערכה של המודל (שינויים 2 ו-3).
+        origin = scope.get("corpus_origin")
+        if origin not in VALID_CORPUS_ORIGIN:
+            add(errors, "scope_summary missing/invalid corpus_origin")
+        basis = scope.get("corpus_basis")
+        if not isinstance(basis, dict):
+            add(errors, "scope_summary requires corpus_basis{}")
+        else:
+            units = basis.get("agreement_units")
+            band = basis.get("band") if basis.get("band") in BAND_CHOICES else None
+            if not isinstance(units, int):
+                add(errors, "corpus_basis.agreement_units must be a number counted in code")
+            else:
+                band = next((name for lo, hi, name in CORPUS_BANDS
+                             if units >= lo and (hi is None or units <= hi)), None)
+                if basis.get("band") != band:
+                    add(errors, f"corpus_basis.band must be {band} for {units} agreements")
+                if origin and band and origin not in BAND_CHOICES.get(band, set()):
+                    add(errors, f"corpus_origin {origin} does not match band {band}")
+            # מה נוכה נרשם ברשימות, כי מהן נבנית ההודעה ללקוח בשלב 2א
+            lists = ["removed_duplicates", "merged_versions",
+                     "amendments_attached", "excluded_templates"]
+            for key in lists:
+                if not isinstance(basis.get(key), list):
+                    add(errors, f"corpus_basis missing {key}[] (counted in code)")
+            if not isinstance(basis.get("files"), int):
+                add(errors, "corpus_basis missing files (counted in code)")
+            # הספירה חייבת להסתכם: כל קובץ או נספר, או נוכה בעילה מוצהרת.
+            # כך מתגלה ספירה שנכתבה ביד או שעוגלה כדי להיכנס למסלול אחר
+            elif all(isinstance(basis.get(k), list) for k in lists) and isinstance(units, int):
+                deducted = sum(len(basis[k]) for k in lists)
+                if units + deducted != basis["files"]:
+                    add(errors, f"corpus_basis does not add up: {basis['files']} files "
+                                f"but {units} counted plus {deducted} deducted")
+            # הבחירה של הלקוח, והמסלול שנגזר ממנה
+            choice = basis.get("choice")
+            if band and choice not in BAND_CHOICE_FIELD.get(band, set()):
+                add(errors, f"corpus_basis.choice {choice} is not allowed in band {band}")
+            elif choice in CHOICE_ORIGIN and origin and origin != CHOICE_ORIGIN[choice]:
+                add(errors, f"corpus_origin {origin} does not match choice {choice}")
+
+        # מי חתום על ההסכמים. כשזו אינה החברה שבפרופיל, חייבים לומר מי כן.
+        if scope.get("contracting_entity_differs") and not nonempty(scope.get("contracting_entity")):
+            add(errors, "scope_summary requires contracting_entity when the signer is not the profile company")
 
     segmentation = data.get("segmentation_model")
     segment_ids = set()
@@ -234,10 +349,91 @@ def main(path):
                 if not nonempty(qa.get(key)):
                     add(errors, f"Approved playbook requires qa_summary.{key}")
 
+    # מלאי הסעיפים: כל סעיף בהסכם קיבל מדיניות, או קוד טכני מרשימה סגורה.
+    # בלי זה סעיף נשמט בשקט ואיש אינו יודע (שינוי 5).
+    # מלאי הסעיפים: ההוכחה שאף סעיף לא נשר בשקט. המבנה הוא זה של
+    # `playbook-schema.md`, `coverage`: מספרים, ורשימה לסעיפים הטכניים
+    coverage = data.get("coverage")
+    if not isinstance(coverage, dict):
+        add(errors, "missing coverage{} (clause inventory written by the extractor)")
+    else:
+        nums = ["units", "topic_units", "technical_units", "unmapped_units",
+                "topics", "topics_with_rule"]
+        for key in nums:
+            if not isinstance(coverage.get(key), int):
+                add(errors, f"coverage.{key} must be a number counted in code")
+        if not nonempty(coverage.get("inventory_ref")):
+            add(errors, "coverage missing inventory_ref (where the clause inventory is kept)")
+        if all(isinstance(coverage.get(k), int) for k in nums):
+            if coverage["unmapped_units"] != 0:
+                add(errors, f"coverage.unmapped_units must be 0, got {coverage['unmapped_units']}")
+            total = coverage["topic_units"] + coverage["technical_units"] + coverage["unmapped_units"]
+            if total != coverage["units"]:
+                add(errors, f"coverage does not add up: {coverage['units']} units "
+                            f"but {total} mapped")
+            # לכל נושא יש כלל: נושא בלי כלל הוא סעיף שנמצא ולא קיבל מדיניות
+            if coverage["topics_with_rule"] != coverage["topics"]:
+                add(errors, f"coverage: {coverage['topics'] - coverage['topics_with_rule']} "
+                            f"topics have no rule in rules[]")
+        items = coverage.get("technical_items")
+        if not isinstance(items, list):
+            add(errors, "coverage.technical_items[] missing (the source of the Word chapter "
+                        "and of the coverage panel)")
+        else:
+            refs_total = 0
+            for k, item in enumerate(items):
+                ip = f"coverage.technical_items[{k}]"
+                if not isinstance(item, dict):
+                    add(errors, f"{ip} must be object")
+                    continue
+                if item.get("code") not in TECHNICAL_CODES:
+                    add(errors, f"{ip} code {item.get('code')} is not in the closed list")
+                reason = str(item.get("reason") or "")
+                if not reason:
+                    add(errors, f"{ip} missing reason")
+                elif any(bad in reason for bad in FORBIDDEN_OMISSION):
+                    add(errors, f"{ip} reason is not a reason: {reason[:40]}")
+                refs = item.get("refs")
+                if not isinstance(refs, list) or not refs:
+                    add(errors, f"{ip} missing refs[] (which clause this is)")
+                else:
+                    refs_total += len(refs)
+            if isinstance(coverage.get("technical_units"), int) and items \
+                    and refs_total != coverage["technical_units"]:
+                add(errors, f"coverage.technical_items cover {refs_total} clauses "
+                            f"but technical_units is {coverage['technical_units']}")
+
     rules = data.get("rules")
     if not isinstance(rules, list) or not rules:
         add(errors, "rules must be a non-empty list")
         rules = []
+
+    # רישום המקורות: על נייר של מי כל הסכם, ואיך התקבל. בלי זה ראיה
+    # ממסמך שהצד שכנגד ניסח נראית כמו ראיה למדיניות שלנו (שינוי 6).
+    source_ids = set()
+    for i, src in enumerate(data.get("source_log") or []):
+        sp = f"source_log[{i}]"
+        if not isinstance(src, dict):
+            add(errors, f"{sp} must be object")
+            continue
+        sid = src.get("source_id")
+        if not nonempty(sid):
+            add(errors, f"{sp} missing source_id")
+        elif sid in source_ids:
+            add(errors, f"duplicate source_id {sid}")
+        else:
+            source_ids.add(sid)
+        if src.get("doc_role") == "template":
+            continue          # תבנית אינה הסכם, ואינה נספרת ככזה
+        if src.get("paper") not in VALID_PAPER:
+            add(errors, f"{sp} missing/invalid paper (ours, theirs, unknown)")
+        if not nonempty(src.get("channel")):
+            add(errors, f"{sp} missing channel")
+        if src.get("acceptance_mode") not in VALID_ACCEPTANCE_MODE:
+            add(errors, f"{sp} missing/invalid acceptance_mode")
+
+    citation_ids = {c.get("citation_id") for c in (data.get("citations") or [])
+                    if isinstance(c, dict)}
 
     rule_ids = set()
     confirmed_segment_variants = 0
@@ -287,6 +483,39 @@ def main(path):
             add(errors, f"{prefix} invalid/missing regulatory_status")
         if reg_status == "ApplicableSourcesFound" and not nonempty(rule.get("regulatory_sources")):
             add(errors, f"{prefix} ApplicableSourcesFound requires regulatory_sources")
+
+        # הראיות של הכלל: לאיזה מסלול הן שייכות, מאיזה הסכם, ובאיזו פוזיציה.
+        # ראיה ממשפחת הסכמים אחרת אינה בסיס למסלול, רק הקשר (שינוי 6).
+        excluded = set()
+        for key in ("agreement_exceptions", "observed_alternatives", "statutory_override"):
+            for item in (rule.get(key) or []):
+                ref = item.get("source_ref") if isinstance(item, dict) else item
+                if ref:
+                    excluded.add(ref)
+        ev_count = 0
+        for k, ev in enumerate(rule.get("evidence") or []):
+            ep = f"{prefix}.evidence[{k}]"
+            if not isinstance(ev, dict):
+                add(errors, f"{ep} must be object")
+                continue
+            ev_count += 1
+            if ev.get("same_family") is None:
+                add(errors, f"{ep} missing same_family")
+            if not nonempty(ev.get("company_role_in_source")):
+                add(errors, f"{ep} missing company_role_in_source")
+            track = ev.get("track")
+            if ev.get("same_family") is False and track != "context":
+                add(errors, f"{ep} evidence from another contract family may only be context")
+            ref = ev.get("source_ref")
+            if ref and source_ids and ref.split("#")[0] not in source_ids:
+                add(errors, f"{ep} source_ref {ref} is not in source_log")
+            cid = ev.get("citation_id")
+            if cid and citation_ids and cid not in citation_ids:
+                add(errors, f"{ep} citation_id {cid} is not in citations[]")
+            if track in {"green", "yellow"} and ref in excluded:
+                add(errors, f"{ep} a green/yellow track cannot rest on an exception, a replaced wording or a statutory override")
+        if rule.get("evidence_count") is not None and rule.get("evidence_count") != ev_count:
+            add(errors, f"{prefix}.evidence_count says {rule.get('evidence_count')} but {ev_count} entries were found")
 
         validate_traffic_light(errors, rule.get("traffic_light"), prefix, segment_ids)
 

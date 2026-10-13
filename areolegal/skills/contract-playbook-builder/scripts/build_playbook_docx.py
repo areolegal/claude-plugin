@@ -18,6 +18,7 @@ import datetime
 import io
 import json
 
+import basis_line
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.oxml import OxmlElement
@@ -262,14 +263,42 @@ def h3(doc, text):
     run(para(doc, before=9, after=2), text, 11, True, INK_SOFT)
 
 
+def fam_role(fams):
+    for f in fams:
+        if isinstance(f, dict) and f.get("company_role"):
+            return f["company_role"]
+    return ""
+
+
+def corpus_label(model, scope):
+    """מה שמוצג בטבלת תמונת המצב: הסכמים, ולצדם מספר הקבצים כשהוא שונה."""
+    units = basis_line.agreement_units(model)
+    files = (scope.get("corpus_basis") or {}).get("files")
+    if units is None:
+        return "%s מסמכים" % scope.get("total_document_count", "לא צוין")
+    if isinstance(files, int) and files != units:
+        return "%d הסכמים (מתוך %d קבצים)" % (units, files)
+    return "%d הסכמים" % units
+
+
 def cover(doc, m):
     run(para(doc, before=150, after=2), m["company"], 13, True, BRAND)
     run(para(doc, after=0), "פלייבוק חוזי", 30, True, NAVY)
     run(para(doc, after=14), m["family"], 16, False, INK_SOFT)
     bar(para(doc, after=16), BRAND, 26, "top")
     run(para(doc, after=6), "הגרסה המלאה" if m["full"] else "הגרסה המקוצרת", 11, True, BRAND)
-    for k, v in [("פוזיציית החברה", m["role"]), ("גרסה", m["version"]),
-                 ("הופק בתאריך", m["date"]), ("מאגר המקור", m["corpus"])]:
+    # שורת הבסיס: על כמה הסכמים הפלייבוק נשען, ובאיזה מסלול נבנה. אותו
+    # נוסח בדיוק בפס הבסיס בארטיפקט, ולכן הוא נגזר ב-`basis_line.py`
+    # ואינו מנוסח כאן. הוא אינו מספר הקבצים בתיקייה
+    if m["basis"]:
+        run(para(doc, after=4), m["basis"], 10.5, False, INK)
+    if m["mostly_drafts"]:
+        run(para(doc, after=4), "פלייבוק ראשוני, נבנה ברובו מטיוטות", 10.5, True, INK_SOFT)
+    rows = [("פוזיציית החברה", m["role"]), ("גרסה", m["version"]),
+            ("הופק בתאריך", m["date"])]
+    if m["updated"] and m["updated"] != m["date"]:
+        rows.append(("עדכון אחרון", m["updated"]))
+    for k, v in rows:
         p = para(doc, after=3)
         run(p, k + ": ", 10.5, True, INK_SOFT)
         run(p, v, 10.5, False, INK)
@@ -404,11 +433,16 @@ def build(d, prof, out, full):
     m = {"company": clean_company(prof.get("organization_name")) or "החברה",
          "family": ", ".join(f.get("contract_family_name", "") if isinstance(f, dict) else str(f)
                              for f in fams) or "הסכמי החברה",
-         "role": short_role(sc.get("company_role")),
-         "role_full": s(sc.get("company_role"), 600),
+         # הפוזיציה חובה על השער. במודל היא יושבת על סוג ההסכם, ולכן
+         # כשאינה בראש התחולה היא נלקחת משם
+         "role": short_role(sc.get("company_role") or fam_role(fams)),
+         "role_full": s(sc.get("company_role") or fam_role(fams), 600),
          "version": str(d.get("version") or "1.0"),
          "date": produced_on(d),
-         "corpus": "%s מסמכים" % sc.get("total_document_count", "לא צוין"),
+         "corpus": corpus_label(d, sc),
+         "basis": basis_line.line_for(d) or "",
+         "mostly_drafts": basis_line.mostly_drafts(d),
+         "updated": produced_on({"last_updated": d.get("last_updated")}) if d.get("last_updated") else "",
          "full": full}
     doc = Document()
     base(doc)
