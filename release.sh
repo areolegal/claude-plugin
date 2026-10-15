@@ -459,6 +459,14 @@ fi
   || { echo "   REFUSING: the reference library's tests do not pass"; exit 1; }
 echo "   reference library passes"
 
+# tests/ is ours: it covers the CLI wrappers in each skill's scripts/, which
+# are the only code between the content and the library. A wrapper that
+# silently answers the wrong thing is worse than one that crashes, so these
+# run on every release too, in the same environment.
+( "$LIBVENV/bin/python" -m pytest tests -q -p no:cacheprovider ) \
+  || { echo "   REFUSING: the wrapper tests do not pass"; exit 1; }
+echo "   wrappers pass"
+
 echo "==> 2/5 Compiling bundled Python"
 find areolegal -name "*.py" -print0 | xargs -0 -n1 python3 -m py_compile
 echo "   all scripts compile"
