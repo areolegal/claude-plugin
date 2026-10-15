@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -202,7 +203,7 @@ def validate_rationale(errors, rationale, prefix, min_spec, applicability_min=2)
         add(errors, f"{prefix} invalid market_practice_basis")
 
 
-def main(path):
+def main(path, core=None, index_entry=None):
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
     except Exception as exc:
@@ -636,17 +637,71 @@ def main(path):
                     % (len(walk_away_rules), WALK_AWAY_MAX,
                        ", ".join(str(r) for r in walk_away_rules[:8])))
 
+    warnings = []
+    content = content_findings(data, errors, warnings, core=core, index_entry=index_entry)
+
     if errors:
         print("INVALID")
         for error in errors:
             print("-", error)
+        for w in warnings:
+            print("! warning:", w)
         return 1
     print("VALID")
+    for w in warnings:
+        print("! warning:", w)
+    if content:
+        print("(content checks from the shared library ran: %d findings, none blocking)"
+              % len(warnings))
     return 0
 
 
+def content_findings(data, errors, warnings, core=None, index_entry=None):
+    """בדיקות התוכן של ספריית הייחוס, לצד בדיקות הסכמה שלמעלה.
+
+    חוסר של הספרייה אינו עובר בשקט: מודל שלא נבדקו בו המנגנונים אינו
+    מודל שנבדק, ולכן הוא נפסל עם הסיבה.
+    """
+    try:
+        import areo_lib  # noqa: F401
+        from playbook.validate_model import validate
+    except ImportError as exc:
+        add(errors, "the shared library (areolegal/lib) is not importable, so the "
+                    "content checks did not run: %s" % exc)
+        return False
+    try:
+        findings = validate(data, core=core, index_entry=index_entry)
+    except Exception as exc:                      # מודל פגום מכדי להיבדק
+        add(errors, "content checks raised %s: %s" % (type(exc).__name__, exc))
+        return False
+    for fnd in findings:
+        where = " ".join(str(fnd.get(k)) for k in ("rule_id", "track") if fnd.get(k))
+        line = "%s%s: %s" % (fnd.get("code", "?"), " (%s)" % where if where else "",
+                             fnd.get("message", ""))
+        if fnd.get("severity") == "error":
+            add(errors, line)
+        else:
+            warnings.append(line)
+    return True
+
+
+def _load(path, label):
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception as exc:
+        print("INVALID")
+        print("- cannot read %s (%s): %s" % (label, path, exc))
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("usage: validate_playbook_model.py PLAYBOOK.json")
-        raise SystemExit(2)
-    raise SystemExit(main(sys.argv[1]))
+    ap = argparse.ArgumentParser(
+        description="Validates playbook-model.json: the schema here, and the "
+                    "mechanisms in the shared library (areolegal/lib).")
+    ap.add_argument("model")
+    ap.add_argument("--core", help="playbook-core.json, compared against the model")
+    ap.add_argument("--index", help="the playbook's entry in playbooks/index.json")
+    a = ap.parse_args()
+    raise SystemExit(main(a.model,
+                          core=_load(a.core, "the core") if a.core else None,
+                          index_entry=_load(a.index, "the index entry") if a.index else None))
