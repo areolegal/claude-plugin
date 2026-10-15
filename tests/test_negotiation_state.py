@@ -162,7 +162,10 @@ def test_an_old_format_file_is_kept_and_converted(deal):
     assert r.returncode == 2 and "migrate" in r.stdout
     r = _run("migrate", "--deal", deal)
     assert r.returncode == 0, r.stdout + r.stderr
-    assert json.loads((deal / "negotiation_state_legacy.json").read_text(encoding="utf-8")) == old
+    kept = list((deal / "history").glob("negotiation_state.*.vlegacy.json"))
+    assert len(kept) == 1, sorted(p.name for p in deal.rglob("*"))
+    assert json.loads(kept[0].read_text(encoding="utf-8")) == old
+    assert not (deal / "negotiation_state_legacy.json").exists()
     st = _state(deal)
     assert st["meta"]["schema_version"] == "4.9" and st["meta"]["round_stage"] == "opening"
     assert _run("check", "--deal", deal).returncode == 0

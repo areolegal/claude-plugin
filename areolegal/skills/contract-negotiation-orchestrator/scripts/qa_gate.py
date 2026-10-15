@@ -15,8 +15,9 @@
   את שמו לשם הסופי רק כשהוא עובר**. כשהוא נכשל, הקובץ הזמני נמחק ואין
   בתיקייה קובץ "למשלוח" כלל, ועותק "למשלוח" ישן שנמצא בנתיב מקבל את
   הסיומת " - לא למשלוח". כך אין מצב שבו קובץ שנכשל בשער יושב בתיקייה
-  ומחכה שמישהו ישלח אותו בטעות. קובץ קיים בנתיב `--send` נדרס כשהשער
-  עובר, ולכן השם נגזר לפי סבב, והסקריפט אומר זאת לפני שהוא רץ.
+  ומחכה שמישהו ישלח אותו בטעות. **קובץ קיים אינו נדרס** (`overview.md`,
+  "אין דריסה"): כשהנתיב תפוס, העותק החדש מקבל " (2)", ואם השער נכשל,
+  העותק הקודם הוא שמקבל " - לא למשלוח".
 
 קוד היציאה הוא חלק מהתשובה: **0** עבר, **3** נכשל בשער (וזו תשובה, לא
 תקלה), **2** קלט חסר או שאינו קריא, **1** נתיב פלט שסורב.
@@ -37,7 +38,9 @@ import sys
 import areo_lib  # noqa: F401  מוסיף את areolegal/lib לנתיב הייבוא
 
 from common.cli import OutputRefused, guard_out, no_bytecode, parser  # noqa: E402
+from common import paths  # noqa: E402
 from orchestrator import pre_send, qa_gate  # noqa: E402
+from lawyer import lawyer_view  # noqa: E402
 
 
 def load(path, what, required=True):
@@ -96,7 +99,10 @@ def main(argv=None):
         if not os.path.exists(p):
             print("%s אינו קיים: %s" % (what, p))
             return 2
-    profile = load(a.profile, "הפרופיל")
+    profile = lawyer_view(load(a.profile, "הפרופיל"))
+    if not profile.get("lawyer_name"):
+        print("אין בפרופיל שם עורך דין (branding.lawyer_name). השער מזהה את הבועות שלנו לפיו")
+        return 2
     state = load(a.state, "קובץ המצב", required=False)
     decisions = load(a.decisions, "קובץ ההכרעות", required=False)
     register = load(a.register, "המרשם", required=False)
@@ -126,13 +132,18 @@ def main(argv=None):
         except OutputRefused as exc:
             print("סירוב על --send: %s" % exc)
             return 1
-        if os.path.exists(a.send):
-            # בהצלחה הוא נדרס. השם נגזר לפי סבב, ולכן זה נאמר ואינו שקט
-            print("הערה: בנתיב --send כבר יש קובץ. אם השער יעבור הוא יידרס, "
-                  "ואם ייכשל הוא יקבל \" - לא למשלוח\".")
-        res = qa_gate.build_send_copy(a.work, a.received, a.send, profile, state=state,
+        previous = a.send if os.path.exists(a.send) else None
+        target = paths.unique_path(a.send)
+        if previous:
+            print("בנתיב --send כבר יש עותק. הוא אינו נדרס: העותק החדש ייכתב ל-%s"
+                  % os.path.basename(target))
+        res = qa_gate.build_send_copy(a.work, a.received, target, profile, state=state,
                                       expected_accept=expected, deal_dir=a.deal,
                                       register=register, decisions=decisions, lang=a.lang)
+        if not res["passed"] and previous:
+            # עותק "למשלוח" קודם, כשהעותק החדש נכשל, אינו נשאר מוכן למשלוח
+            res["retracted"] = pre_send.retract_send_copy(
+                previous, state, res.get("info", {}).get("lang", "he"), deal_dir=a.deal)
 
     report(res)
     if a.mode == "send":

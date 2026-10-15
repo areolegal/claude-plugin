@@ -10,16 +10,17 @@
 
 ארבע פעולות:
 
-* `write` — בסוף כל סבב. בונה את קובץ המצב של הסבב מקובץ ההכרעות, ו**מעביר
+* `write` - בסוף כל סבב. בונה את קובץ המצב של הסבב מקובץ ההכרעות, ו**מעביר
   מהסבב הקודם את כל מה שמצטבר**: מסמכים שנשלחו והתקבלו, ויתורים מכוונים,
   הכרעות משתמש, נקודות פתוחות, התחייבויות, ותיעוד הסעיפים שלא נפתחו מחדש.
   לפני הכתיבה הקובץ הקודם נשמר כ-`negotiation_state_round_<N>.json`
   (`negotiation_state_schema.md`, "כלל גרסאות").
-* `decide` — רושם הכרעה של המשתמש ("נדרשת הכרעתך", אחד מתשעת המצבים), בקובץ
+* `decide` - רושם הכרעה של המשתמש ("נדרשת הכרעתך", אחד מתשעת המצבים), בקובץ
   ובסעיפים שהיא חלה עליהם.
-* `check` — בודק את הקובץ מול המבנה. קוד יציאה 3 כשיש שגיאה.
-* `migrate` — קובץ בפורמט ישן: נשמר כמו שהוא כ-`negotiation_state_legacy.json`,
-  ונכתב במקומו קובץ לפי המבנה.
+* `check` - בודק את הקובץ מול המבנה. קוד יציאה 3 כשיש שגיאה.
+* `migrate` - קובץ בפורמט ישן: נשמר כמו שהוא בתיקיית `history/` של העסקה
+  (`negotiation_state.<חותמת זמן>.v<גרסה>.json`, ולא ליד הקובץ החי), ונכתב
+  במקומו קובץ לפי המבנה.
 
 **קובץ שאינו עובר את הבדיקה אינו נכתב במקום הקובץ החי.** הוא נשמר לצד הקובץ
 החי כ-`negotiation_state.rejected.json`, והשגיאות מודפסות. הקובץ החי נשאר
@@ -28,8 +29,8 @@
     python3 scripts/negotiation_state.py write --deal "Areo-נתונים/transactions/<id>" \\
         --decisions decisions_round_2.json --profile Areo-נתונים/פרופיל-לקוח.json \\
         --resolution playbook-resolution.json --gate gate-send.json \\
-        --produced send="תגובת החברה - סבב 2 - למשלוח.docx" \\
-        --sent "תגובת החברה - סבב 2 - למשלוח.docx"
+        --produced send="הסכם ייעוץ - <החברה> - סבב 2 - 15.10.2026.docx" \\
+        --sent "הסכם ייעוץ - <החברה> - סבב 2 - 15.10.2026.docx"
 
 קוד יציאה: **0** נכתב ותקין, **3** הקובץ אינו תקין ולא נכתב, **2** קלט חסר.
 """
@@ -47,7 +48,6 @@ from orchestrator import state_migrate as SM  # noqa: E402
 
 LIVE = "negotiation_state.json"
 REJECTED = "negotiation_state.rejected.json"
-LEGACY = "negotiation_state_legacy.json"
 
 # מה שמצטבר לאורך העסקה, ועובר מסבב לסבב כמו שהוא
 CARRY_TOP = ("playbook_source", "positions_source", "profile_gap", "playbook_status", "strategy_summary",
@@ -266,11 +266,12 @@ def cmd_migrate(a):
     if str((old.get("meta") or {}).get("schema_version")) == SB.SCHEMA_VERSION:
         print("הקובץ כבר במבנה הנוכחי (%s). אין מה להמיר." % SB.SCHEMA_VERSION)
         return 0
-    legacy = os.path.join(a.deal, LEGACY)
+    legacy = SM.history_path(a.deal, old)
     if os.path.exists(legacy):
         print("כבר קיים %s. הקובץ הישן אינו נדרס" % legacy)
         return 2
     new, log = SM.migrate_state(old)
+    os.makedirs(os.path.dirname(legacy), exist_ok=True)
     dump(legacy, old)
     print("הקובץ הישן נשמר כמו שהוא: %s" % legacy)
     for line in log[:20]:
