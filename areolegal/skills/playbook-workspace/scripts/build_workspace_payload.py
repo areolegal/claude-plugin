@@ -79,6 +79,29 @@ def build_meta(m):
     else:
         warn("אין corpus_basis.agreement_units או corpus_origin במודל, "
              "ולכן פס הבסיס לא יוצג")
+    # המעמד והתווית נגזרים במודל, והדף רק מציג אותם מילה במילה. הדף אינו
+    # מחשב תווית, ואינו ממציא אותה כשהמודל לא כתב אותה
+    gate = m.get("policy_gate") or {}
+    for key in ("status_label", "label_now"):
+        v = pick(m, key) or pick(gate, key)
+        if v:
+            meta[key] = v
+    for key in ("approved_count", "positions_count"):
+        v = gate.get(key)
+        if isinstance(v, int):
+            meta[key] = v
+    mr = m.get("market_research") or {}
+    date = pick(mr, "research_date", "date", "performed_at")
+    if date:
+        meta["market_research_date"] = date
+    # התפקידים הם נתון של הפלייבוק, ולא רשימה קבועה של הסקיל
+    roles = [x for x in (scope.get("company_roles") or []) if isinstance(x, dict)]
+    if roles:
+        meta["company_roles"] = [{"role": pick(x, "role") or "",
+                                  "label": pick(x, "label") or ""} for x in roles]
+    main = pick(scope, "main_role")
+    if main:
+        meta["main_role"] = main
     short = []
     if isinstance(units, int):
         short.append("%d הסכמים" % units)
@@ -139,10 +162,19 @@ def build_market(m):
         sid = pick(row, "source_id", "id")
         if not sid:
             continue
-        rows.append({"id": sid, "title": pick(row, "title") or sid,
-                     "body": pick(row, "issuer", "body") or "",
-                     "url": pick(row, "url") or "",
-                     "date": pick(row, "checked_at", "date") or ""})
+        out = {"id": sid, "title": pick(row, "title") or sid,
+               "body": pick(row, "issuer", "body") or "",
+               "url": pick(row, "url") or "",
+               "date": pick(row, "doc_date", "checked_at", "date") or ""}
+        for a, b in (("retrieved_at", "retrieved_at"), ("drafter_role", "drafter_role"),
+                     ("drafted_by", "drafted_by")):
+            v = pick(row, b)
+            if v:
+                out[a] = v
+        sup = row.get("supports") or row.get("topics")
+        if isinstance(sup, list) and sup:
+            out["supports"] = sup
+        rows.append(out)
     return rows
 
 
@@ -159,7 +191,8 @@ def light(obj, rule_id, color):
     out["crit"] = [str(c) for c in crit] if isinstance(crit, list) else [str(crit)]
     out["evidence"] = obj.get("evidence") or []
     for a, b in (("basis", "basis"), ("basis_note", "basis_note"),
-                 ("why", "meaning"), ("notes", "notes"), ("comments", "comments")):
+                 ("why", "meaning"), ("notes", "notes"), ("comments", "comments"),
+                 ("source_label", "source_label")):
         v = pick(obj, b)
         if v is not None:
             out[a] = v
@@ -181,6 +214,17 @@ def light(obj, rule_id, color):
                      % (rule_id, color, len(ids)))
         elif obj.get("basis") == "market_standard":
             warn("%s %s: market_standard בלי market_source_ids" % (rule_id, color))
+    # מה המסלול מטיל על החברה, שורה לכל תפקיד שיש לה בהסכם. `role_effects`
+    # הוא הנוסח הכללי; שמות as_*_effect נשמרים לפלייבוק הדדי שנכתב לפניו
+    eff = obj.get("role_effects")
+    if isinstance(eff, dict):
+        eff = {k: v for k, v in eff.items() if v}
+        if eff:
+            out["role_effects"] = eff
+    for a in ("as_discloser_effect", "as_recipient_effect", "company_effect"):
+        v = obj.get(a)
+        if v:
+            out[a] = v
     if color == "yellow":
         fw = obj.get("fallback_wording")
         if isinstance(fw, dict) and fw.get("text"):
@@ -383,6 +427,9 @@ def convert(m):
                        ("coverage", m.get("coverage")),
                        ("market", build_market(m)),
                        ("playbooks", build_playbooks(m)),
+                       ("external_sources", m.get("external_sources")),
+                       ("external_sources_table", m.get("external_sources_table")),
+                       ("assumptions", m.get("assumptions")),
                        ("cross", m.get("cross_family_links"))):
         if value:
             payload[key] = value

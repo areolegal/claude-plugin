@@ -39,8 +39,19 @@ function run(file, label, published){
     ok(!threw && html.length>50,'  מסך '+v+(threw?': '+threw:''));
   });
   w.go('sources');
-  const links=[...d.querySelectorAll('#wrap a[href^="http"]')];
-  ok(links.length>0,'  קישורים למקורות: '+links.length);
+  /* הבדיקה נגזרת מהנתונים: תוצר שבו אין לאף מקור כתובת https אינו אמור
+     להציג קישורים, והדרישה היא שכל קישור שכן מוצג ייפתח בכרטיסייה חדשה.
+     הגרסה הקודמת דרשה קישור תמיד, ולכן נכשלה על מטען בלי מקורות רשת. */
+  const withUrl=w.eval("[].concat(Object.values(D.sources||{}),D.market||[],D.external_sources||[])"
+    + ".filter(s=>s&&typeof s.url==='string'&&/^https:\\/\\//i.test(s.url)).length");
+  const links=[...d.querySelectorAll('#wrap a[href^="https://"]')];
+  if(withUrl){
+    ok(links.length>0,'  קישורים למקורות: '+links.length+' (מתוך '+withUrl+' מקורות עם כתובת)');
+    ok(links.every(a=>a.target==='_blank'&&/noopener/.test(a.rel||'')),
+      '  כל קישור נפתח בכרטיסייה חדשה');
+  } else {
+    ok(links.length===0,'  אין מקור עם כתובת https, ולכן אין קישורים');
+  }
   /* ההורדה היחידה שנשארה בדף היא ההערות וההצעות: אין ייצוא Office,
      אין חבילת סוכן ואין יומן החלטות (`dashboard_spec.md`, "מה אסור") */
   const gone=['dl','agentPack','showOut','officeBlob','decide','approveAll']
