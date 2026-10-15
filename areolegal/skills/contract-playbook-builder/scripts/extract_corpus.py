@@ -28,6 +28,10 @@ import sys
 import zipfile
 from pathlib import Path
 
+import areo_lib  # noqa: F401  מוסיף את areolegal/lib לנתיב הייבוא
+
+from common.cli import OutputRefused, guard_out  # noqa: E402
+
 SKIP_DIRS = {"Areo-נתונים", "דוגמאות-נראות", "__MACOSX", ".git", "node_modules"}
 # מספר סעיף בתחילת פסקה. מספר מורכב ("8.2", "8.2.1") מזוהה גם בלי סימן פיסוק
 # אחריו, כי כך נכתבים רוב תתי-הסעיפים, ושם יושבות ההוראות המהותיות. מספר בודד
@@ -123,7 +127,9 @@ def family_guess(stem: str) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("root")
-    ap.add_argument("--out", default="corpus-extract.json")
+    ap.add_argument("--out", required=True,
+                    help="קובץ הפלט (JSON). חובה ומפורש: ברירת מחדל שקטה "
+                         "כותבת לתיקייה שממנה הריצו")
     ap.add_argument("--max-paragraphs", type=int, default=1200,
                     help="תקרה לכל מסמך; פסקאות מעבר לה נספרות ואינן נשמרות")
     args = ap.parse_args()
@@ -189,10 +195,20 @@ def main() -> int:
         "unreadable": unreadable,
         "documents": docs,
     }
-    io.open(args.out, "w", encoding="utf-8").write(
+    # הקורפוס הוא ההסכמים של הלקוח, ו-`--out` שמצביע על אחד מהם דורס
+    # אותו ב-JSON. `common/cli.guard_out` מסרב על קובץ קלט, על תיקיית
+    # מקור ועל מסמך Word או PDF קיים. זה הבאג הקריטי של סבב 4 בספרייה,
+    # והעותק הזה נכתב לפניו
+    try:
+        out_path = guard_out(args.out,
+                             inputs=[str(f) for f in root.rglob("*") if f.is_file()])
+    except OutputRefused as exc:
+        print("סירוב: %s" % exc)
+        return 1
+    io.open(out_path, "w", encoding="utf-8").write(
         json.dumps(out, ensure_ascii=False, indent=1))
 
-    print("נכתב %s" % args.out)
+    print("נכתב %s" % out_path)
     print("  מסמכים ייחודיים : %d" % len(docs))
     print("  כפילויות מדויקות: %d" % out["duplicate_count"])
     print("  נחזים כטיוטות   : %d" % drafts)
