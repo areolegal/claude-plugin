@@ -37,17 +37,20 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
   out.push(['אין בדף פעולת אישור',
     ['decide','approveAll','dl','agentPack'].every(n=>typeof w[n]!=='function')]);
   const rid=ev('D.rules[1].id');
+  /* בדף של כמה פלייבוקים המזהה במאגר הוא <פלייבוק>__<סעיף>, כי R-01 של
+     סוג אחד אינו R-01 של סוג אחר. הדף עצמו אומר מה המזהה (dbKey) */
+  const key=r=>ev('typeof dbKey==="function"')?ev('dbKey('+JSON.stringify(r)+')'):r;
   w.setNote(rid,'לבדוק מול הביטוח'); await wait(700);
-  const doc=store.get(rid);
+  const doc=store.get(key(rid));
   out.push(['הערה נכתבה למאגר', !!doc && doc.note==='לבדוק מול הביטוח', JSON.stringify(doc&&doc.note)]);
   out.push(['המאגר אינו נושא מצב אישור', !!doc && doc.status===undefined && doc.kind==='proposal',
     JSON.stringify(doc&&(doc.status||doc.kind))]);
   out.push(['שם הכותב נרשם', !!doc && doc.by==='ענבל', JSON.stringify(doc&&doc.by)]);
   w.setProp(rid,'yellow','נוסח שאני מציע'); await wait(700);
   out.push(['הצעת נוסח נכתבה למאגר',
-    ((store.get(rid)||{}).wording||{}).yellow==='נוסח שאני מציע', '']);
+    ((store.get(key(rid))||{}).wording||{}).yellow==='נוסח שאני מציע', '']);
   const other=ev('D.rules[2].id');
-  store.set(other,{rule_id:other,kind:'proposal',note:'מבנק',by:'ניל',
+  store.set(key(other),{rule_id:other,kind:'proposal',note:'מבנק',by:'ניל',
     at:new Date().toISOString(),wording:{yellow:'נוסח חדש'}});
   cb(snap()); await wait(300);
   out.push(['הערה של משתמש אחר נקלטה', ev('S.notes')[other]==='מבנק', JSON.stringify(ev('S.notes')[other])]);
@@ -57,7 +60,17 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
     w.propBox(other,'yellow').indexOf('הצעה, לא מדיניות')>=0 &&
     w.effLight(ev('D.rules[2]'),'yellow').clause!=='נוסח חדש']);
   w.setNote(rid,''); w.setProp(rid,'yellow',''); await wait(700);
-  out.push(['מחיקת ההערה מוחקת מהמאגר', !store.has(rid), 'still='+store.has(rid)]);
+  out.push(['מחיקת ההערה מוחקת מהמאגר', !store.has(key(rid)), 'still='+store.has(key(rid))]);
+  /* בדף של כמה פלייבוקים: הערה של סוג אחד אינה מופיעה בסוג אחר */
+  if(ev('typeof BOOKS!=="undefined" && !!BOOKS')){
+    const ids=ev('Object.keys(BOOKS)'), here=ev('S.pb'), there=ids.find(x=>x!==here);
+    w.setNote(other,'הערה של הסוג הזה בלבד'); await wait(700);
+    w.setPb(there); await wait(100);
+    const leaked=(ev('S.notes')||{})[other]==='הערה של הסוג הזה בלבד';
+    w.setPb(here); await wait(100);
+    const back=(ev('S.notes')||{})[other]==='הערה של הסוג הזה בלבד';
+    out.push(['הערה אינה עוברת לסוג הסכם אחר', !leaked && back, 'leaked='+leaked+' back='+back]);
+  }
   let bad=0;
   out.forEach(([n,ok,note])=>{ if(!ok) bad++; console.log((ok?'✓':'✗')+' '+n+(note?'  ['+note+']':'')); });
   console.log(bad?('כשלים: '+bad):'כל הבדיקות עברו');

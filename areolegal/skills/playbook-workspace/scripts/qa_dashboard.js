@@ -81,7 +81,10 @@ setTimeout(async () => {
   R('KPI בשורה לרוחב', !!d.getElementById('kpirow')
     && d.getElementById('kpirow').classList.contains('statrow'));
 
-  // 3. לחיצה על כל כפתור בכל מסך
+  // 3. לחיצה על כל כפתור בכל מסך. בדף של כמה פלייבוקים זה כולל את הבורר,
+  // ולכן הסוג שנבחר נשמר, ומוחזר אחרי הלחיצות: הבדיקות שאחריו נמדדות מול
+  // הסעיפים של הסוג שממנו התחלנו
+  const pb0 = w.eval('S.pb');
   for (const v of views) {
     w.go(v); await sleep(30);
     for (const b of [...d.getElementById('wrap').querySelectorAll('button')]) {
@@ -98,6 +101,26 @@ setTimeout(async () => {
   }
   R('לחיצה על כל הכפתורים', qa.btnFail.length === 0,
     qa.btnOK + ' כפתורים, ' + qa.btnFail.length + ' כשלים');
+  if (w.eval('typeof BOOKS!=="undefined" && !!BOOKS') && pb0) w.setPb(pb0);
+
+  // 3א. דף של כמה פלייבוקים: כל סוג מוצג שלם בכל מסך, ומספר הסעיפים
+  // שמוצג הוא של הסוג שנבחר, לא של הסוג הקודם
+  if (w.eval('typeof BOOKS!=="undefined" && !!BOOKS')) {
+    const ids = w.eval('Object.keys(BOOKS)');
+    let bad = [];
+    for (const id of ids) {
+      w.setPb(id);
+      const want = w.pbRuleCount(id);
+      if (w.rulesOf().length !== want) bad.push(id + ': ' + w.rulesOf().length + '/' + want);
+      for (const v of views) {
+        try { w.go(v); if (wrap().length <= 120) bad.push(id + '/' + v + ' ריק'); }
+        catch (e) { bad.push(id + '/' + v + ': ' + e.message.slice(0, 50)); }
+      }
+    }
+    R('כל סוג הסכם נפתח שלם בכל המסכים', bad.length === 0,
+      ids.length + ' סוגים' + (bad.length ? ': ' + bad.slice(0, 3).join('; ') : ''));
+    w.setPb(pb0);
+  }
 
   // 4. הערות והצעות: הזרימה שהחליפה את ההכרעות
   w.go('rules'); w.renderList(); await sleep(20);

@@ -16,7 +16,16 @@ const {JSDOM, VirtualConsole} = require(process.env.JSDOM_PATH);
 const fs = require('fs');
 const errs = [];
 const vc = new VirtualConsole();
-vc.on('jsdomError', e => errs.push(e.message));
+vc.on('jsdomError', e => {
+  /* שורת "טיוטה, טעונה אישור" בכותרת כל עמוד מודפס נכתבת בתיבות השוליים של
+     @page (@top-center, @bottom-center). Chrome תומך בהן; המפרש של jsdom
+     אינו מכיר @page מקונן, ונכשל דווקא עליהן. רק השגיאה הזאת, ורק כשזה
+     תוכנה, אינה נספרת. כל שגיאת CSS אחרת עדיין נכשלת */
+  const detail = String(e.detail || '');
+  if (/Could not parse CSS stylesheet/.test(e.message)
+      && /^\s*@page\s*\{\s*@(top|bottom)-(left|center|right)\s*\{/.test(detail)) return;
+  errs.push(e.message);
+});
 vc.on('error', (...a) => errs.push(String(a[0])));
 const dom = new JSDOM(fs.readFileSync(process.argv[2], 'utf8'),
   {runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: vc, url: 'https://x/',

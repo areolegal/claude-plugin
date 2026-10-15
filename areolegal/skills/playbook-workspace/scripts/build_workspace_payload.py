@@ -371,6 +371,13 @@ def build_segments(m, rules_by_id):
             rat = v.get("segment_rationale") or v.get("policy_rationale")
             if rat:
                 vr["rat"] = rat
+            # סגמנט בלי משא ומתן אינו רמזור אלא שלוש שכבות (segmentation.md,
+            # §12). התבנית יודעת להציג אותן, וקודם הן לא הועברו, ולכן סגמנט
+            # של מכרז הוצג עם הכותרת "אין משא ומתן" ובלי שום תוכן מתחתיה
+            for key in ("imposed_regime", "clarification_positions", "bid_conditions",
+                        "clarification_record"):
+                if v.get(key) not in (None, "", [], {}):
+                    vr[key] = v[key]
             row.setdefault("variants", []).append(vr)
     return out
 

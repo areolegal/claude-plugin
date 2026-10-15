@@ -499,9 +499,23 @@ echo "   reference library passes"
 # are the only code between the content and the library. A wrapper that
 # silently answers the wrong thing is worse than one that crashes, so these
 # run on every release too, in the same environment.
-( "$LIBVENV/bin/python" -m pytest tests -q -p no:cacheprovider ) \
-  || { echo "   REFUSING: the wrapper tests do not pass"; exit 1; }
-echo "   wrappers pass"
+# The page harnesses (the workspace dashboard, the comments wizard, the risk
+# report) run in jsdom. They never ran routinely, and two of them had never
+# run at all. jsdom is installed once, outside the repo and outside any
+# synced folder: a copy under an iCloud Desktop stalled on every read.
+# AREO_REQUIRE_JSDOM turns a missing jsdom into a failure, not a skip.
+JSDOMDIR="${TMPDIR:-/tmp}/areo-jsdom"
+if [ ! -f "$JSDOMDIR/node_modules/jsdom/package.json" ]; then
+  echo "   installing jsdom once at $JSDOMDIR"
+  command -v npm >/dev/null || { echo "   REFUSING: npm is needed for the page tests"; exit 1; }
+  mkdir -p "$JSDOMDIR" && echo '{"name":"areo-qa","private":true}' > "$JSDOMDIR/package.json"
+  ( cd "$JSDOMDIR" && npm install --silent --no-audit --no-fund jsdom@24 ) \
+    || { echo "   REFUSING: cannot install jsdom"; exit 1; }
+fi
+( JSDOM_PATH="$JSDOMDIR/node_modules/jsdom" AREO_REQUIRE_JSDOM=1 \
+  "$LIBVENV/bin/python" -m pytest tests -q -p no:cacheprovider ) \
+  || { echo "   REFUSING: the wrapper or page tests do not pass"; exit 1; }
+echo "   wrappers and page harnesses pass"
 
 echo "==> 2/5 Compiling bundled Python"
 find areolegal -name "*.py" -print0 | xargs -0 -n1 python3 -m py_compile
