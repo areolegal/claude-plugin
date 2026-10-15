@@ -210,8 +210,14 @@ def extract_pdf(path, raw):
            'track_revisions_on': False, 'comments': [], 'hidden_total': 0}
     try:
         pages = _pdf_pages(raw)
-    except PdfTextUnavailable:
-        doc['no_text_layer'] = True
+    except PdfTextUnavailable as e:
+        # "אין ספרייה" אינו "סריקה": PDF עם שכבת טקסט סומן כסרוק כשלא הותקנה
+        # ספריית PDF, והרכיב ביקש מהלקוח עותק Word בלי צורך. תיקון מקומי של
+        # ניל, דווח
+        if str(e).startswith('אין ספרייה'):
+            doc['unreadable_reason'] = str(e)
+        else:
+            doc['no_text_layer'] = True
         return doc
     i = 0
     for n, txt in enumerate(pages, 1):

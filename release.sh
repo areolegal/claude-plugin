@@ -481,12 +481,14 @@ echo "==> 1e/5 Running the shared reference library's own test suite"
 # clients, so it is never released untested. The step builds its own
 # environment and reuses it next time; pymupdf is required rather than
 # optional, because pypdf returns Hebrew in visual order and three tests
-# fail on it instead of skipping.
+# fail on it instead of skipping. pypdf is installed too, but only so the
+# extractor's test can prove that a Hebrew PDF read by pypdf alone is
+# refused rather than quoted backwards.
 LIBVENV="${TMPDIR:-/tmp}/areo-lib-venv"
 if [ ! -x "$LIBVENV/bin/python" ]; then
   echo "   building the test environment once at $LIBVENV"
   python3 -m venv "$LIBVENV" || { echo "   REFUSING: cannot create a venv"; exit 1; }
-  "$LIBVENV/bin/pip" -q install python-docx lxml pymupdf Pillow pytest \
+  "$LIBVENV/bin/pip" -q install python-docx lxml pymupdf pypdf Pillow pytest \
     || { echo "   REFUSING: cannot install the library's dependencies"; exit 1; }
 fi
 ( cd areolegal/lib && "$LIBVENV/bin/python" -m pytest tests -q -p no:cacheprovider ) \
