@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "title": "הדגמת עשן",
+    "company": "דוגמה בעמ",
+    "counterparty": "צד שכנגד בעמ",
+    "contract_type": "הסכם שירותים",
+    "our_role": "מקבל שירותים",
+    "created": "2026-10-15",
+    "updated": "2026-10-15",
+    "version": "1.0",
+    "lang": "he",
+    "docAccess": {
+      "mode": "none"
+    },
+    "publishTarget": "local",
+    "status": "Draft"
+  },
+  "risks": [
+    {
+      "id": "RK-01",
+      "title": "תקרת אחריות נמוכה",
+      "lens": [
+        "legal"
+      ],
+      "severity": "high",
+      "clause_ref": "סעיף 11",
+      "finding": "התקרה נמוכה מהחשיפה",
+      "why": "אירוע אחד עלול לעלות יותר מהתקרה",
+      "recommendation": "להעלות את התקרה",
+      "basis": "document",
+      "quote": "אחריות הספק לא תעלה על התמורה"
+    }
+  ],
+  "scenarios": [],
+  "vague_terms": [],
+  "document_defects": [],
+  "dangerous_combinations": [],
+  "back_to_back_gaps": [],
+  "external_risks": [],
+  "annexes_reviewed": [],
+  "coverage": [
+    {
+      "lens": "legal",
+      "clauses": 1,
+      "with_risk": 1,
+      "checked": true
+    },
+    {
+      "lens": "commercial",
+      "clauses": 1,
+      "with_risk": 0,
+      "checked": true
+    },
+    {
+      "lens": "operational",
+      "clauses": 1,
+      "with_risk": 0,
+      "checked": true
+    },
+    {
+      "lens": "regulatory",
+      "clauses": 1,
+      "with_risk": 0,
+      "checked": true
+    },
+    {
+      "lens": "reputational",
+      "clauses": 1,
+      "with_risk": 0,
+      "checked": true
+    },
+    {
+      "lens": "financial",
+      "clauses": 1,
+      "with_risk": 0,
+      "checked": true
+    }
+  ],
+  "research": {
+    "status": "NotPerformed",
+    "sources_checked": [],
+    "search_log": []
+  }
+}
