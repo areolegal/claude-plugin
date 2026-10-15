@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Areo Workspace | סיכונים</title>
+<!--
+תבנית קנונית v3 (14.10.2026) של דוח הסיכונים: Areo Workspace | סיכונים, הדוח הקצר (6 עד 8 עמודי A4, בלי נספח הציטוטים).
+בהדפסה אין position:fixed: סימון החיסיון מודפס בתיבות השוליים של @page (בראש ובתחתית כל עמוד), ופס הסימון שבראש הדוח נשאר בזרימה הרגילה.
+כללי התבנית (מחייבים, ראו SKILL.md ו-references/risk-register-schema.md):
+1. התבנית עיוורת ללקוח: אפס שמות, אפס דוגמאות ענפיות. כל התוכן מגיע מהזרקת הנתונים בלבד.
+2. קובץ risk-register.json הוא מקור האמת. ה-HTML הוא תצוגה לקריאה ולהדפסה, בלי כפתורי החלטה ובלי ייצוא החלטות.
+3. דו-לשוני: display_language במטא קובע he (RTL) או en (LTR). אין טקסט קשיח מחוץ למילון L ולתוויות שבכל פרק.
+4. המבנה קבוע: עמוד ראשון, פרקים 1 עד 5 ונספח ציטוטים מילוליים.
+5. אפס תלות ברשת: גופני מערכת עבריים בלבד, בלי טעינת גופן מהרשת, בלי ספריות חיצוניות ובלי שום בקשה לכתובת חיצונית. הלוגו הוא תמונה מוטמעת.
+סכמת הנתונים מוגדרת רק ב-references/risk-register-schema.md, ברשימת "חוזה השדות". אין כאן עותק שלה, כדי שלא יהיו שני מקורות.
+מציין המיקום להזרקה מופיע פעם אחת בלבד בקובץ, בשורת const DATA.
+ההערה נסגרת בשורה הבאה. בלי הסגירה כל הקובץ נבלע בהערה, והדוח מוצג כעמוד ריק.
+-->
+<style>
+:root{
+  color-scheme: dark;
+  --bg:#0E1016; --surface:#151923; --surface2:#1A1F2B;
+  --ink:#F2F4F7; --ink2:#DDE1E8; --muted:#8B93A3; --faint:#6A7383;
+  --line:#252B37; --line2:#2F3646;
+  --brand:#2FE6A6; --brand2:#0DA678;
+  --grad:linear-gradient(120deg,#2FE6A6,#0DA678);
+  --gradm:linear-gradient(120deg,#2FE6A6,#0DA678);
+  --mint:#2FE6A6; --mint2:#0DA678; --navy:#F2F4F7;
+  --accent:#2FE6A6; --accent-soft:rgba(47,230,166,.12);
+  --green:#2FE6A6; --green-bg:rgba(47,230,166,.10); --green-line:rgba(47,230,166,.32);
+  --yellow:#FFC44D; --yellow-bg:rgba(255,196,77,.10); --yellow-line:rgba(255,196,77,.32);
+  --red:#FF7A7A; --red-bg:rgba(255,122,122,.10); --red-line:rgba(255,122,122,.32);
+  --blue:#8B93A3; --blue-bg:rgba(139,147,163,.10);
+  --r:14px; --r2:10px;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --serif:"Segoe UI",Arial,"Arial Hebrew","Noto Sans Hebrew",David,sans-serif;
+  --sh:0 1px 2px rgba(0,0,0,.30), 0 8px 28px rgba(0,0,0,.35);
+  --shl:0 26px 70px rgba(0,0,0,.55);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Segoe UI",Arial,"Arial Hebrew","Noto Sans Hebrew",David,Tahoma,sans-serif;background:var(--bg);color:var(--ink)}
+html[dir="rtl"] body{direction:rtl;text-align:right}
+html[dir="ltr"] body{direction:ltr;text-align:left}
+.app{display:flex;min-height:100vh}
+aside{width:250px;flex-shrink:0;background:linear-gradient(180deg,var(--side),var(--side2));color:#cfcde8;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.logo{padding:22px 20px 16px;border-bottom:1px solid var(--side-line)}
+.logo .mark{display:flex;align-items:center;gap:10px}
+.logo .cube{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--brand1),var(--brand2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:15px}
+.logo b{color:#fff;font-size:16px;font-weight:800}
+.logo small{display:block;font-size:11px;color:#8f8cb5;margin-top:2px}
+.nav{flex:1;padding:14px 12px;overflow-y:auto}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;font-family:inherit;font-size:13.5px;font-weight:600;color:#b9b6dd;background:none;border:none;border-radius:11px;padding:10px 12px;cursor:pointer;transition:.15s;position:relative}
+html[dir="rtl"] .nav button{text-align:right}
+html[dir="ltr"] .nav button{text-align:left}
+.nav button:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav button.on{background:linear-gradient(90deg,rgba(139,92,246,.28),rgba(79,70,229,.18));color:#fff}
+.nav .cnt{margin-inline-start:auto;font-size:11px;font-weight:700;background:rgba(255,255,255,.1);border-radius:99px;padding:2px 8px}
+.nav .cnt.alert{background:var(--red);color:#fff}
+.side-foot{padding:13px 16px;border-top:1px solid var(--side-line);font-size:10.5px;line-height:1.7;color:#8f8cb5}
+main{flex:1;min-width:0}
+.topbar{display:flex;align-items:center;gap:12px;padding:13px 26px;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.topbar h1{font-size:17px;font-weight:800}
+.topbar .sub{font-size:12px;color:var(--muted)}
+.stamp{font-size:11px;color:var(--brand-ink);background:var(--brand-soft);border-radius:99px;padding:5px 12px;font-weight:600;white-space:nowrap}
+.warnband{background:#fff7ed;border-bottom:1px solid #fed7aa;color:#9a3412;font-size:12px;font-weight:600;padding:7px 26px;display:flex;gap:14px;flex-wrap:wrap}
+.content{padding:22px 26px 48px;max-width:1150px;width:100%;margin:0 auto}
+section.view{display:none}
+section.view.on{display:block;animation:fade .25s}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:19px 21px;margin-bottom:15px}
+.card h3{font-size:15px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card h3::before{content:"";width:8px;height:8px;border-radius:3px;background:linear-gradient(135deg,var(--brand1),var(--brand2))}
+.card h3 small{font-weight:500;color:var(--muted);font-size:11.5px}
+.rtable td.num{white-space:nowrap;width:44px}
+.rtable .q{color:var(--muted);font-size:11.5px}
+.rtable tr{page-break-inside:avoid}
+.sep{color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:15px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;cursor:pointer;transition:.15s;border-inline-start:4px solid transparent}
+.kpi:hover{transform:translateY(-2px)}
+.kpi b{font-size:22px;font-weight:800;display:block;line-height:1.15}
+.kpi span{font-size:11.5px;color:var(--muted)}
+.empty{padding:28px 18px;text-align:center;color:var(--muted);font-size:13px;line-height:1.8;background:#fafafe;border:1px dashed var(--line);border-radius:12px}
+.chip{display:inline-block;font-size:10.5px;font-weight:700;border-radius:99px;padding:3px 10px}
+.chip.crit{background:var(--red-bg);color:var(--red)}
+.chip.high{background:rgba(255,160,77,.14);color:#FFA04D}
+@media print{.chip.high{background:#FDEDDC;color:#9A4A0B}}
+.chip.med{background:var(--yellow-bg);color:#8a6d0b}
+.chip.low{background:var(--green-bg);color:var(--green)}
+.chip.gray{background:var(--gray-bg);color:#5a5f77}
+.chip.brand{background:var(--brand-soft);color:var(--brand-ink)}
+.bars .row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12.5px}
+.bars .nm{flex:0 0 34%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.bars .tr{flex:1;height:18px;background:var(--gray-bg);border-radius:99px;overflow:hidden}
+.bars .fl{height:100%;border-radius:99px}
+.bars .sc{flex:0 0 58px;font-weight:800;font-size:12px}
+.legend{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.7}
+.matrix{display:grid;grid-template-columns:auto repeat(5,1fr);gap:5px;max-width:640px}
+.matrix .ax{display:flex;align-items:center;justify-content:center;font-size:10.5px;color:var(--muted);font-weight:700;padding:4px}
+.matrix .cell{min-height:62px;border-radius:10px;padding:5px;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;cursor:pointer;border:2px solid transparent}
+.matrix .cell:hover{border-color:var(--brand2)}
+.matrix .cell.selected{border-color:var(--ink)}
+.matrix .dot{min-width:22px;height:22px;border-radius:99px;background:rgba(255,255,255,.85);border:1px solid rgba(0,0,0,.15);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filters button,.filters select{font-family:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 13px;cursor:pointer;color:var(--muted)}
+.filters button.on{border-color:var(--brand2);color:var(--brand2);background:var(--brand-soft)}
+.riskcard{border:1px solid var(--line);border-radius:14px;margin-bottom:11px;overflow:hidden}
+.riskcard>.head{display:flex;align-items:center;gap:10px;padding:12px 15px;cursor:pointer;flex-wrap:wrap;background:var(--surface)}
+.riskcard>.head:hover{background:#fafaff}
+.riskcard .nm{font-weight:700;font-size:13.5px;flex:1;min-width:180px}
+.riskcard .body{display:none;padding:14px 16px;border-top:1px solid var(--line);background:#fcfcff;font-size:12.5px;line-height:1.75}
+.riskcard.open .body{display:block}
+.fld{margin-bottom:10px}
+.fld b{display:block;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.wording{background:#f2f0fd;border:1px solid #ddd6fa;border-radius:10px;padding:10px 12px;position:relative;font-size:12.5px}
+.copybtn{font-family:inherit;font-size:11px;font-weight:700;border:none;background:var(--brand2);color:#fff;border-radius:8px;padding:5px 11px;cursor:pointer;margin-top:8px}
+.copybtn.ok{background:var(--green)}
+.decide{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.decide button{font-family:inherit;font-size:11.5px;font-weight:700;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 12px;cursor:pointer;color:var(--muted)}
+.decide button.on{border-color:var(--brand2);color:var(--brand-ink);background:var(--brand-soft)}
+sup.ref{color:var(--brand2);font-weight:800;cursor:pointer;font-size:10px;margin-inline-start:2px}
+.combo{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px;background:var(--surface)}
+.combo .pair{display:flex;gap:0;align-items:stretch;flex-wrap:wrap;margin:9px 0}
+.combo .side{flex:1;min-width:190px;background:var(--red-bg);border:1px solid #f6c9c9;border-radius:12px;padding:10px 12px;font-size:12.5px}
+.combo .lnk{flex:0 0 42px;display:flex;align-items:center;justify-content:center;color:var(--red);font-weight:900;font-size:18px}
+.combo .why{font-size:12.5px;line-height:1.7;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:9px 12px}
+.mirror{display:grid;grid-template-columns:1fr 46px 1fr;gap:8px;align-items:stretch;margin-bottom:11px}
+.mirror .box{border-radius:12px;padding:10px 13px;font-size:12.5px;line-height:1.65;border:1px solid var(--line)}
+.mirror .down{background:var(--brand-soft)}
+.mirror .up.gap{background:var(--red-bg);border-color:#f6c9c9}
+.mirror .mid{display:flex;align-items:center;justify-content:center;color:var(--red);font-weight:900}
+.mirror .cap{font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{font-size:11px;color:var(--muted);font-weight:700;padding:7px 9px;border-bottom:2px solid var(--line)}
+html[dir="rtl"] th{text-align:right} html[dir="ltr"] th{text-align:left}
+td{padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.6}
+.foot{border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:9px;background:var(--surface);font-size:12.5px}
+.foot.hl{border-color:var(--brand2);box-shadow:0 0 0 3px var(--brand-soft)}
+.foot .q{background:#fafafe;border-inline-start:3px solid var(--brand1);padding:7px 11px;border-radius:8px;margin-top:6px;line-height:1.7}
+.notice{background:var(--brand-soft);border:1px solid #ddd6fa;color:var(--brand-ink);border-radius:12px;padding:11px 14px;font-size:12.5px;line-height:1.7;margin-bottom:14px}
+.btn{font-family:inherit;font-size:13px;font-weight:700;border:none;background:var(--brand2);color:#fff;border-radius:11px;padding:10px 18px;cursor:pointer}
+.btn.sec{background:var(--gray-bg);color:var(--ink)}
+.lensgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px}
+.lens{border:1px solid var(--line);border-radius:14px;padding:14px 15px;cursor:pointer;transition:.15s;background:var(--card)}
+.lens:hover{transform:translateY(-2px);border-color:var(--brand2)}
+.lens .nm{font-size:13px;font-weight:800;margin-bottom:7px}
+.lens .bar{height:7px;border-radius:99px;background:var(--gray-bg);overflow:hidden;margin-bottom:7px}
+.lens .bar i{display:block;height:100%;border-radius:99px}
+.lens .st{font-size:11.5px;color:var(--muted);line-height:1.6}
+.defect{border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:11px;background:var(--surface)}
+.defect .loc{display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:stretch;margin:9px 0}
+.defect .loc .box{background:var(--gray-bg);border-radius:11px;padding:9px 12px;font-size:12px;line-height:1.6}
+.defect .loc .vs{display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--red);font-size:15px}
+.defect .single{background:var(--gray-bg);border-radius:11px;padding:9px 12px;font-size:12px;margin:9px 0}
+.scen{border:1px solid var(--line);border-radius:14px;margin-bottom:11px;overflow:hidden;background:var(--surface)}
+.scen.silent{border-color:#f0b8a8;box-shadow:0 0 0 3px var(--red-bg)}
+.scen>.head{display:flex;gap:10px;align-items:center;padding:12px 15px;cursor:pointer;flex-wrap:wrap}
+.scen>.head:hover{background:#fafaff}
+.scen .body{display:none;padding:14px 16px;border-top:1px solid var(--line);background:#fcfcff;font-size:12.5px;line-height:1.75}
+.scen.open .body{display:block}
+.silentbox{background:var(--red-bg);border:1px solid #f0c5b8;border-radius:11px;padding:10px 13px;margin:9px 0}
+.keepbox{background:var(--green-bg);border:1px solid #c3e4cf;border-radius:11px;padding:10px 13px;margin:9px 0}
+.tier{border-inline-start:3px solid var(--brand1);padding:6px 11px;margin:7px 0;background:#faf9ff;border-radius:0 9px 9px 0;font-size:12.5px}
+.ext{border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:11px;background:var(--surface)}
+.ext .prot{border-radius:11px;padding:9px 12px;margin:8px 0;font-size:12.5px}
+.ext .prot.none{background:var(--red-bg);border:1px solid #f0c5b8}
+.ext .prot.partial{background:var(--yellow-bg);border:1px solid #ecdca8}
+.ext .prot.full{background:var(--green-bg);border:1px solid #c3e4cf}
+.expo{display:flex;gap:14px;flex-wrap:wrap;background:#fbfbfe;border:1px solid var(--line);border-radius:11px;padding:10px 13px;margin:9px 0;font-size:12px}
+.expo div b{display:block;font-size:10.5px;color:var(--muted);font-weight:700}
+.arrow{display:inline-flex;align-items:center;gap:6px;font-weight:800}
+.scorepill{display:inline-block;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:800}
+@media print{
+ aside,.topbar .stamp,.filters,.decide,.copybtn,#v-export .btn{display:none!important}
+ .warnband{display:flex!important;position:static!important;background:#fff!important;color:#9a3412!important;border:0;border-bottom:1px solid #fed7aa;padding:0 0 6px;margin:0 0 10px}
+ body{background:var(--surface)}
+ .content{padding:0!important;max-width:none}
+ section.view{display:none!important}
+ section.view.print{display:block!important}
+ .card{box-shadow:none;border:1px solid #ccc;break-inside:auto;page-break-inside:auto}
+ .card h3,.ptitle{break-after:avoid;page-break-after:avoid}
+ .rtable tr,.combo,.fld,.tier,.kpis{break-inside:avoid;page-break-inside:avoid}
+ thead{display:table-header-group}
+ section.view.print[data-v="sources"]{break-before:page;page-break-before:always}
+}
+.ptitle{display:none}
+@media print{.ptitle{display:block;font-size:15px;font-weight:800;margin:4px 0 8px}}
+#preSend td:nth-child(1){width:17%}#preSend td:nth-child(2){width:51%}#preSend td:nth-child(3){width:17%}
+
+/* Print never depends on the screen: every chapter is printed whichever tab was open, with no animation,
+   and nothing kept in the browser changes it. A4 with fixed margins, so the page count does not depend on the printer.
+   The 6 to 8 page target counts page one and chapters 1 to 5; the quotes appendix is printed but not counted. */
+@page{size:A4;margin:14mm 12mm 16mm}
+@media print{
+ :root{color-scheme:light}
+ html,body{background:#fff!important}
+ .app,main{display:block!important;min-height:0!important}
+ section.view.print,section.view.print.on{display:block!important;animation:none!important;opacity:1!important;transform:none!important}
+ section.view:not(.print){display:none!important}
+}
+
+/* Print: a dark page is unusable on paper, and these documents get printed. */
+@media print{
+  :root{
+    --bg:#FFFFFF; --surface:#FFFFFF; --surface2:#F4F6F8;
+    --ink:#0E1016; --ink2:#252B37; --muted:#5B6472; --faint:#8B93A3;
+    --line:#D7DBE0; --line2:#C3C9D2;
+    --brand:#0B8C66; --brand2:#0B8C66;
+    --accent:#0B8C66; --accent-soft:#E8F7F1;
+    --green:#0F7A55; --green-bg:#E8F7F1; --green-line:#BCE5D5;
+    --yellow:#8A6A12; --yellow-bg:#FBF3DE; --yellow-line:#E8D6A8;
+    --red:#B3423A; --red-bg:#FBEAE8; --red-line:#EFC7C2;
+    --sh:none; --shl:none;
+  }
+  body{background:#fff;color:#0E1016}
+  .side,.drawer,button,.no-print{display:none !important}
+}
+
+/* Client's own logo. The deliverable belongs to the client's legal department;
+   Areo's mark stays as the maker's mark, beside it and never in place of it. */
+.client-logo{display:none;max-height:34px;max-width:190px;width:auto;height:auto;
+  object-fit:contain;margin-inline-end:14px;flex:0 0 auto}
+.client-logo.on{display:block}
+@media print{.client-logo{max-height:28px}}
+.areo-brand{margin-inline-start:auto;display:flex;align-items:center;gap:8px;
+  padding-inline-start:12px;opacity:.85}
+.areo-brand .areo-cap{display:none}
+.areo-wm{font-family:"Segoe UI",Arial,"Arial Hebrew",system-ui,sans-serif;font-weight:700;
+  font-size:15px;letter-spacing:-.01em;color:#F2F4F7;direction:ltr;line-height:1}
+.areo-wm .sfx{color:var(--muted);font-weight:400}
+.areo-wm b{color:var(--brand);font-weight:700}
+.areo-cap{font-size:11px;color:var(--faint);letter-spacing:.01em}
+@media print{.area-brand,.areo-brand{border-top-color:#D7DBE0}
+  .areo-wm{color:#0E1016}.areo-wm b{color:#0B8C66}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+ <div class="logo"><div class="mark"><div class="cube">A</div><div><b>Areo Workspace</b><small id="brandSub"></small></div></div></div>
+ <nav class="nav" id="nav"></nav>
+ <div class="side-foot" id="sideFoot"></div>
+<img class="client-logo" id="clientLogo" alt="">
+    <div class="areo-brand">
+      <span class="areo-wm">Areo<span class="sfx">Legal</span><b>.</b></span>
+      <span class="areo-cap">הופק באמצעות AreoLegal</span>
+    </div>
+  </aside>
+<main>
+ <div class="warnband" id="warnband"></div>
+ <div class="topbar"><div><h1 id="vTitle"></h1><div class="sub" id="vSub"></div></div><div class="stamp" id="stamp" style="margin-inline-start:auto"></div></div>
+ <div class="content" id="content">
+  <section class="view print" data-v="overview">
+   <div class="notice" id="headLine"></div>
+   <div class="card" id="bottomLine"></div>
+   <div class="card" id="preSend" style="display:none"></div>
+   <div class="card"><h3 id="t_lens"></h3><div id="lensTable"></div><div class="legend" id="lg_lens"></div></div>
+   <div class="kpis" id="kpis"></div>
+   <div class="card" id="keyDates"></div>
+   <div class="notice" id="entityLine"></div>
+  </section>
+  <section class="view print" data-v="register"><div class="card"><div id="register"></div><div class="legend" id="lg_reg"></div></div></section>
+  <section class="view print" data-v="defects"><div class="card"><div id="defects"></div></div></section>
+  <section class="view print" data-v="combos"><div id="combos"></div></section>
+  <section class="view print" data-v="critical"><div id="critical"></div></section>
+  <section class="view print" data-v="gaps"><div class="card" id="notChecked"></div></section>
+  <section class="view print" data-v="sources"><div class="card"><h3 id="t_sources"></h3><div id="sources"></div></div></section>
+  <section class="view" data-v="export"><div id="exportView"></div></section>
+ </div>
+</main>
+</div>
+<script>
+const DATA = __RISK_DATA__;
+/* ===== i18n ===== */
+const HE = {
+ brandSub:"סיכונים · הערכת סיכונים חוזית", draft:"טיוטה, טעונה אישור", priv:"חסוי: מסמך עבודה של המחלקה המשפטית, הוכן לבקשת עו״ד {counsel} לצורך מתן ייעוץ משפטי ל{company}", privNoCounsel:"לא צוין עורך דין שהדוח הוכן עבורו; קיים ספק אם יחול חיסיון",
+ expert:"החומרה היא הערכת מומחה לפי סולם קבוע: כמה חמורה התוצאה וכמה סביר שתקרה בתקופת ההסכם. היא אינה תחזית סטטיסטית",
+ gen:"הופק בתאריך", upd:"עדכון אחרון",
+ nav:{overview:"תמונת מצב",matrix:"מטריצת חום",register:"מרשם הסיכונים",combos:"צירופים מסוכנים",vague:"מונחים עמומים",b2b:"פערי גב-אל-גב",plan:"תוכנית צמצום",sources:"מקורות וציטוטים",export:"ייצוא והגדרות"},
+ sub:{overview:"מה דורש את תשומת הלב עכשיו",matrix:"חומרה מול הסתברות; לחיצה על תא מסננת את המרשם",register:"כל הסיכונים, מהגבוה לנמוך",combos:"סעיפים שנסבלים לבדם ומסוכנים יחד",vague:"עמימות שפועלת נגדנו והצעות כימות",b2b:"התחייבות במורד מול גיבוי במעלה",plan:"מה מתקנים, באיזה ערוץ ובאיזה סדר",sources:"הנוסח המילולי שמאחורי כל קביעה",export:"החלטות, ייצוא והדפסה"},
+ kpi:{total:"סיכונים במרשם",crit:"קריטיים",combos:"צירופים מסוכנים",open:"החלטות פתוחות"},
+ top5:"חמשת הסיכונים המובילים", score:"ציון", sev:"חומרה", lik:"הסתברות",
+ sevL:{1:"זניחה",2:"נמוכה",3:"בינונית",4:"גבוהה",5:"קריטית"},
+ likL:{1:"נדירה",2:"נמוכה",3:"בינונית",4:"גבוהה",5:"כמעט ודאית"},
+ catL:{legal:"משפטי",business:"עסקי",operational:"תפעולי",reputational:"מוניטיני",regulatory:"רגולטורי"},
+ lvl:{crit:"קריטי",high:"גבוה",med:"בינוני",low:"נמוך"},
+ cert:{fact:"עובדה מההסכם",assessment:"הערכה מקצועית",hypothesis:"השערה, טעונה בדיקה"},
+ dec:{open:"פתוח",mitigating:"בצמצום",accepted:"התקבל כסיכון עסקי"},
+ chan:{internal:"תיקון פנימי",negotiation:"דורש משא ומתן"},
+ fld:{desc:"תיאור",scen:"תרחיש התממשות",mit:"המלצת צמצום",word:"נוסח מוצע להדבקה",owner:"בעלים מוצע",anchors:"עוגנים במקור",decision:"החלטה",note:"הערת החלטה"},
+ copy:"העתק נוסח", copied:"הועתק", copyQ:"העתק כימות",
+ matrixSmall:"מטריצת חום מוצגת כשבמרשם שמונה סיכונים או יותר; במרשם קטן היא מסתירה יותר משהיא מגלה. להלן הדירוג המלא:",
+ filterAll:"הכול", filterCat:"קטגוריה", filterDec:"מצב החלטה", clearSel:"נקה סינון מטריצה",
+ emptyRisks:"לא אותרו סיכונים במסמכים שנסרקו. זה ממצא חיובי, אך ראוי לוודא שהסריקה כיסתה את כל התיקיות שחוברו.",
+ emptyCombos:"לא אותרו צירופים מסוכנים בין הסיכונים שבמרשם.",
+ emptyVague:"לא אותרו מונחים עמומים הפועלים נגדנו.",
+ emptyB2B:"לא אותרו פערי גב-אל-גב בין התחייבויות במורד לגיבוי במעלה.",
+ emptySources:"אין ציטוטים במרשם. סיכון ללא עוגן מסומן כהשערה.",
+ down:"ההתחייבות שלנו במורד", up:"הגיבוי מהצד השני במעלה", gap:"פער",
+ planInt:"תיקון פנימי, בשליטתנו", planNeg:"דורש משא ומתן מול הצד השני",
+ exportTitle:"ייצוא החלטות והדפסה",
+ exportNotice:"הסימונים וההחלטות שביצעת בממשק נשמרים בדפדפן שלך בלבד ואינם מתעדכנים אצל אחרים. כדי לקבע אותם במרשם הקנוני: לחץ על ייצוא החלטות, ומסור את הקובץ שירד בצ'ט (או שמור אותו בתיקיית ההסכמים). ריצת העדכון הבאה תמזג אותו אל risk-register.json ותפיץ לכל התוצרים.",
+ exportBtn:"ייצוא החלטות (JSON)", printBtn:"הדפסת תקציר להנהלה",
+ exportEmpty:"טרם נרשמו החלטות בממשק.",
+ decLocal:"החלטה מקומית, ממתינה לייצוא", srcTag:"מקור הנתונים", scopePb:"סריקת פלייבוק, כלל-חברתי", scopeDeal:"סריקת עסקה",
+ disclaimer:"מסמך עבודה פנימי של המחלקה המשפטית. דרגות החומרה הן הערכת מומחה ואינן תחזית סטטיסטית; הנוסח המחייב הוא נוסח מסמכי המקור.",
+ lensmap:"מפת חשיפות", lensmapSub:"שש עדשות; לחיצה על עדשה מסננת את המרשם",
+ lensL:{legal:"משפטית",commercial:"מסחרית",operational:"תפעולית",economic:"כלכלית",reputational:"מוניטינית",regulatory:"רגולטורית"},
+ lensSt:{findings:"נמצאו ממצאים",none_found:"נבדק, לא נמצא ממצא מהותי",not_checked:"לא נבדק"},
+ defects:"סתירות וחוסרים", defectsSub:"בין ההסכם לנספחיו: סתירות, עמימות ומה שחסר",
+ defT:{contradiction:"סתירה",ambiguity:"עמימות",missing_annex:"נספח חסר",missing_agreement:"הסכם נלווה חסר",undefined_term:"מונח לא מוגדר",inconsistent_term:"מונח בשתי משמעויות",broken_reference:"הפניה שבורה",precedence_missing:"אין סדר עדיפות",version_mismatch:"אי-התאמת גרסה",language_mismatch:"פער בין נוסחים",leftover_text:"שארית מהסכם אחר",blank_field:"שדה להשלמה",unilateral_document:"עדיפות למסמך שהצד השני משנה לבדו",cumulative_requirement:"דרישות מצטברות"},
+ defRisk:"הסיכון שנוצר", defFix:"התיקון המוצע", defWhere:"היכן",
+ scen:"מה קורה אם", scenSub:"תרחישי השתבשות והחשיפה בכל אחד",
+ scTrigger:"מה מפעיל את התרחיש", scSays:"מה ההסכם אומר", scSilent:"ההסכם שותק בנקודה זו", scSilentTag:"ההסכם שותק",
+ scExp:"החשיפה שלנו", scFin:"כספית", scOps:"תפעולית", scRep:"מוניטינית", scDisp:"סיכוי לסכסוך",
+ scAct:"מה עושים היום", scKeep:"מה לתעד ולשמור כבר עכשיו",
+ ext:"חשיפות חיצוניות", extSub:"מה שיכול לקרות מסביב להסכם, והאם הוא מגן עלינו",
+ extC:{counterparty_stability:"יציבות הצד שכנגד",regulatory_change:"שינוי רגולטורי",change_of_control:"שינוי שליטה",concentration:"תלות וריכוזיות",technology:"התיישנות טכנולוגית",market:"שוק וכלכלה",force_majeure:"אירועים חיצוניים",third_party:"צדדים שלישיים",reputation:"מוניטין"},
+ extWarn:"סימנים מוקדמים", extProt:"האם ההסכם מגן", extTools:"כלי צמצום", extNotChecked:"לא נבדק חיצונית",
+ adeq:{"מלאה":"full","חלקית":"partial","אין":"none"},
+ tierW:"תיקון נוסחי", tierS:"תיקון מבני בעסקה", tierO:"בקרה תפעולית",
+ feas:"ישימות", feasL:{high:"גבוהה",medium:"בינונית",low:"נמוכה"}, leverage:"חלון מינוף",
+ inherent:"גולמי", residual:"שיורי", controls:"בקרות קיימות", afterControls:"אחרי בקרות",
+ cap:"תקרת אחריות", capEx:"מוחרג מהתקרה (כאן החשיפה האמיתית)", estAmt:"אומדן חשיפה", noEst:"לא ניתן לאמוד",
+ scope:"היקף הבדיקה", scopeL:{documents_only:"מהמסמכים ומהפלייבוק בלבד, לא הייתה גישה לרשת",approved_sources:"כולל אימות דרישות רגולטוריות ממקורות מורשים",official:"בדיקת עומק, מקורות רשמיים",extended:"בדיקת עומק מורחבת"},
+ checked:"מה נבדק ומתי", notChecked:"לא הייתה גישה לרשת; הממצאים מבוססים על המסמכים שנמסרו בלבד",
+ disputeIdx:"מוכנות לסכסוך", disputeSub:"ליקויים במסמכים, תרחישים שההסכם שותק לגביהם, וחשיפות ללא הגנה",
+ emptyDefects:"לא אותרו סתירות, חוסרים או עמימות בין ההסכם לנספחיו.",
+ emptyScen:"לא נבנו תרחישים.", emptyExt:"לא אותרו חשיפות חיצוניות מהותיות.",
+ annexes:"נספחים שנסרקו", noAnnex:"לא נמסרו נספחים; ייתכנו חשיפות שלא אותרו"
+};
+const EN = {
+ brandSub:"Risks · Contract risk assessment", draft:"Draft, pending approval", priv:"Privileged: legal department working document, prepared at the request of {counsel} for the purpose of legal advice to {company}", privNoCounsel:"No counsel named for this report; privilege may not apply",
+ expert:"Severity is expert judgment on a fixed rubric: how bad the outcome is and how likely it is during the term. It is not a statistical forecast",
+ gen:"Generated", upd:"Last updated",
+ nav:{overview:"Overview",matrix:"Heat matrix",register:"Risk register",combos:"Dangerous combinations",vague:"Vague terms",b2b:"Back-to-back gaps",plan:"Mitigation plan",sources:"Sources & quotes",export:"Export & settings"},
+ sub:{overview:"What needs attention now",matrix:"Severity vs likelihood; click a cell to filter",register:"All risks, highest first",combos:"Clauses tolerable alone, dangerous together",vague:"Ambiguity working against us, with quantification",b2b:"Downstream duty vs upstream backing",plan:"What to fix, in which channel, in what order",sources:"The verbatim language behind every finding",export:"Decisions, export and print"},
+ kpi:{total:"Risks in register",crit:"Critical",combos:"Dangerous combos",open:"Open decisions"},
+ top5:"Top five risks", score:"Score", sev:"Severity", lik:"Likelihood",
+ sevL:{1:"Negligible",2:"Low",3:"Medium",4:"High",5:"Critical"},
+ likL:{1:"Rare",2:"Low",3:"Medium",4:"High",5:"Near-certain"},
+ catL:{legal:"Legal",business:"Business",operational:"Operational",reputational:"Reputational",regulatory:"Regulatory"},
+ lvl:{crit:"Critical",high:"High",med:"Medium",low:"Low"},
+ cert:{fact:"Fact from the agreement",assessment:"Professional assessment",hypothesis:"Hypothesis, needs verification"},
+ dec:{open:"Open",mitigating:"Mitigating",accepted:"Accepted as business risk"},
+ chan:{internal:"Internal fix",negotiation:"Requires negotiation"},
+ fld:{desc:"Description",scen:"Materialization scenario",mit:"Mitigation",word:"Proposed wording",owner:"Suggested owner",anchors:"Source anchors",decision:"Decision",note:"Decision note"},
+ copy:"Copy wording", copied:"Copied", copyQ:"Copy quantification",
+ matrixSmall:"The heat matrix is shown for 8+ risks; below that it hides more than it reveals. Full ranking:",
+ filterAll:"All", filterCat:"Category", filterDec:"Decision", clearSel:"Clear matrix filter",
+ emptyRisks:"No risks were identified in the scanned documents. A positive finding, but verify the scan covered all connected folders.",
+ emptyCombos:"No dangerous combinations identified.",
+ emptyVague:"No vague terms working against us were identified.",
+ emptyB2B:"No back-to-back gaps identified.",
+ emptySources:"No quotes in the register. An unanchored risk is marked as hypothesis.",
+ down:"Our downstream obligation", up:"Upstream backing from counterparty", gap:"Gap",
+ planInt:"Internal fix, within our control", planNeg:"Requires negotiation with counterparty",
+ exportTitle:"Export decisions & print",
+ exportNotice:"Decisions made in this interface are saved in your browser only and are not visible to others. To commit them to the canonical register: click Export decisions and hand the downloaded file back in chat (or save it in the agreements folder). The next update run merges it into risk-register.json.",
+ exportBtn:"Export decisions (JSON)", printBtn:"Print executive summary",
+ exportEmpty:"No decisions recorded yet.",
+ decLocal:"Local decision, pending export", srcTag:"Data source", scopePb:"Playbook scan, company-wide", scopeDeal:"Deal scan",
+ disclaimer:"Internal legal department working document. Severity levels are expert judgment, not a statistical forecast; the source documents govern.",
+ lensmap:"Exposure map", lensmapSub:"Six lenses; click a lens to filter the register",
+ lensL:{legal:"Legal",commercial:"Commercial",operational:"Operational",economic:"Economic",reputational:"Reputational",regulatory:"Regulatory"},
+ lensSt:{findings:"Findings identified",none_found:"Checked, nothing material",not_checked:"Not checked"},
+ defects:"Conflicts & gaps", defectsSub:"Between the agreement and its annexes: conflicts, ambiguity, what is missing",
+ defT:{contradiction:"Conflict",ambiguity:"Ambiguity",missing_annex:"Missing annex",missing_agreement:"Missing ancillary agreement",undefined_term:"Undefined term",inconsistent_term:"Term used inconsistently",broken_reference:"Broken reference",precedence_missing:"No order of precedence",version_mismatch:"Version mismatch",language_mismatch:"Language version gap",leftover_text:"Leftover from another contract",blank_field:"Blank field",unilateral_document:"Priority to a document the other side changes alone",cumulative_requirement:"Cumulative requirements"},
+ defRisk:"Risk created", defFix:"Proposed fix", defWhere:"Where",
+ scen:"What if", scenSub:"Failure scenarios and the exposure in each",
+ scTrigger:"Trigger", scSays:"What the contract says", scSilent:"The contract is silent here", scSilentTag:"Contract silent",
+ scExp:"Our exposure", scFin:"Financial", scOps:"Operational", scRep:"Reputational", scDisp:"Dispute likelihood",
+ scAct:"What to do now", scKeep:"What to record and keep from now",
+ ext:"External exposures", extSub:"What can happen around the contract, and whether it protects us",
+ extC:{counterparty_stability:"Counterparty stability",regulatory_change:"Regulatory change",change_of_control:"Change of control",concentration:"Dependency & concentration",technology:"Technology obsolescence",market:"Market & economy",force_majeure:"External events",third_party:"Third parties",reputation:"Reputation"},
+ extWarn:"Early warning signs", extProt:"Contract protection", extTools:"Mitigation tools", extNotChecked:"Not externally verified",
+ adeq:{"מלאה":"full","חלקית":"partial","אין":"none",full:"full",partial:"partial",none:"none"},
+ tierW:"Wording fix", tierS:"Structural fix", tierO:"Operational control",
+ feas:"Feasibility", feasL:{high:"High",medium:"Medium",low:"Low"}, leverage:"Leverage window",
+ inherent:"Inherent", residual:"Residual", controls:"Existing controls", afterControls:"After controls",
+ cap:"Liability cap", capEx:"Excluded from cap (the real exposure)", estAmt:"Estimated exposure", noEst:"Cannot be estimated",
+ scope:"Review scope", scopeL:{documents_only:"Documents and playbook only, no web access",approved_sources:"Including verification of regulatory requirements from approved sources",official:"Deep check, official sources",extended:"Extended deep check"},
+ checked:"What was checked and when", notChecked:"No web access; the findings rely on the documents provided only",
+ disputeIdx:"Dispute readiness", disputeSub:"Document defects, scenarios the contract is silent on, and unprotected exposures",
+ emptyDefects:"No conflicts, gaps or ambiguities identified between the agreement and its annexes.",
+ emptyScen:"No scenarios built.", emptyExt:"No material external exposures identified.",
+ annexes:"Annexes reviewed", noAnnex:"No annexes provided; some exposures may not have been identified"
+};
+const LANG=(DATA.meta&&DATA.meta.display_language==='en')?'en':'he';
+const L=LANG==='en'?EN:HE;
+document.documentElement.setAttribute('dir',LANG==='en'?'ltr':'rtl');
+document.documentElement.setAttribute('lang',LANG);
+const RLM='‏';
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function fmtD(iso){if(!iso)return'';const p=String(iso).split('T')[0].split('-');return p.length===3?`${+p[2]}.${+p[1]}.${p[0]}`:iso;}
+/* money: an amount with the currency in words, never the currency code. lab: a label for an enum value, never the raw value. sep: a visible separator between two fields in one cell. */
+const CURW={he:{ILS:'ש"ח',USD:'דולר',EUR:'אירו',GBP:'ליש"ט'},en:{ILS:'NIS',USD:'USD',EUR:'EUR',GBP:'GBP'}};
+function money(n,cur){if(n==null||n==='')return '';const c=cur||'ILS';const u=(CURW[LANG]||CURW.he)[c]||'';return Number(n).toLocaleString(LANG==='en'?'en-US':'he-IL')+(u?' '+u:'');}
+function lab(map,k,fb){return (map&&k!=null&&map[k]!=null)?map[k]:(fb!=null?fb:(LANG==='en'?'Other':'אחר'));}
+function sep(){return '<span class="sep"> · </span>';}
+function lvlOf(sc){return sc>=16?'crit':sc>=9?'high':sc>=4?'med':'low';}
+const SEVK={critical:'crit',high:'high',medium:'med',low:'low'};
+function sevOf(r){return (r&&SEVK[r.severity_level])||lvlOf(scoreOf(r));}
+function scoreOf(x){ if(x==null) return 0;
+ if(x.residual&&x.residual.score!=null) return x.residual.score;
+ if(x.inherent&&x.inherent.score!=null) return x.inherent.score;
+ if(x.score!=null) return x.score;
+ if(x.severity!=null&&x.likelihood!=null) return x.severity*x.likelihood;
+ if(x.severity!=null) return x.severity*3;
+ return 0; }
+function inhOf(x){ return (x.inherent&&x.inherent.score!=null)?x.inherent.score:(x.score!=null?x.score:0); }
+/* scoreOf() reads residual, then inherent, then a bare score. The canonical
+   register carries score only inside inherent/residual, so sorting on a
+   top-level b.score scored every risk 0 and left the register in file order --
+   the "top five risks" were simply the first five written. */
+const SEVRANK={crit:4,high:3,med:2,low:1};
+const RISKS=(DATA.risks||[]).slice().sort((a,b)=>(a.risk_no&&b.risk_no)?a.risk_no-b.risk_no:((SEVRANK[sevOf(b)]-SEVRANK[sevOf(a)])||(scoreOf(b)-scoreOf(a))));
+RISKS.forEach((r,i)=>{r._no=r.risk_no||i+1;});
+const COMBOS=(DATA.dangerous_combinations||[]).slice(); COMBOS.forEach((c,i)=>{c._no=i+1;});
+const DEFECTS=(DATA.document_defects||[]).slice().sort((a,b)=>(b.severity||0)-(a.severity||0)); DEFECTS.forEach((d,i)=>{d._no=i+1;});
+function NO(id){const r=RISKS.find(x=>x.id===id);return r?r._no:null;}
+function NOS(ids){return (ids||[]).map(NO).filter(n=>n!=null).sort((a,b)=>a-b);}
+const SCENS=(DATA.scenarios||[]).slice().sort((a,b)=>((b.contract_silent?100:0)+(b.severity||0))-((a.contract_silent?100:0)+(a.severity||0)));
+const EXTS=(DATA.external_risks||[]).slice().sort((a,b)=>((b.severity||0)*(b.likelihood||1))-((a.severity||0)*(a.likelihood||1)));
+const COVER=DATA.coverage||[];
+const RESEARCH=DATA.research||{mode:"documents_only"};
+const LENSES=["legal","commercial","operational","economic","reputational","regulatory"];
+const VAGUE=DATA.vague_terms||[];
+const B2B=DATA.back_to_back_gaps||[];
+/* ===== footnotes ===== */
+const FOOTS=[]; const refOf=new Map();
+function regAnchor(a){if(a&&a.agreement==null&&a.document!=null)a.agreement=a.document;const k=(a.agreement||'')+'|'+(a.clause||'')+'|'+(a.quote||'');if(refOf.has(k))return refOf.get(k);const n=FOOTS.length+1;FOOTS.push({n,...a});refOf.set(k,n);return n;}
+RISKS.forEach(r=>{r._refs=(r.anchors||[]).map(regAnchor);});
+COMBOS.forEach(c=>{c._refs=(c.anchors||[]).map(regAnchor);});
+B2B.forEach(g=>{g._refs=(g.anchors||[]).map(regAnchor);});
+DEFECTS.forEach(d=>{d._refs=(d.locations||[]).filter(l=>l.quote).map(l=>regAnchor({agreement:l.document,clause:l.clause,quote:l.quote}));});
+SCENS.forEach(x=>{x._refs=(x.anchors||[]).map(regAnchor);});
+function refsHtml(ns){return (ns||[]).map(n=>`<sup class="ref" data-ref="${n}">${n}</sup>`).join('');}
+/* ===== no browser storage: the report is read-only, and nothing a browser kept from an earlier visit changes what is shown or printed ===== */
+function decOf(r){return r.decision&&r.decision.status?r.decision:{status:'open'};}
+/* ===== shell ===== */
+document.getElementById('brandSub').textContent=L.brandSub;
+const PRIV_COUNSEL=String(((DATA.meta||{}).prepared_for_counsel)||'').trim();
+const PRIV_TXT=PRIV_COUNSEL?L.priv.replace('{counsel}',PRIV_COUNSEL).replace('{company}',(DATA.meta||{}).company||''):L.privNoCounsel;
+document.getElementById('warnband').innerHTML=`<span>${esc(L.draft)}</span><span${PRIV_COUNSEL?'':' style="color:var(--red)"'}>${esc(PRIV_TXT)}</span>`;
+document.body.setAttribute('data-priv',L.draft+' · '+PRIV_TXT);
+
+/* The privileged marking on every printed page, in the @page margin boxes: it never covers content. */
+(function pageMarks(){
+ const s=(L.draft+' · '+PRIV_TXT).replace(/[\\"]/g,'\\$&').replace(/[\r\n]+/g,' ');
+ const box='content:"'+s+'";font-size:8px;color:#9a3412;font-family:"Segoe UI",Arial,"Arial Hebrew",sans-serif';
+ const st=document.createElement('style'); st.id='pageMarks';
+ st.textContent='@page{@top-center{'+box+'}@bottom-center{'+box+'}}';
+ document.head.appendChild(st);
+})();
+const M=DATA.meta||{};
+const scopeTxt=M.scope==='playbook'?L.scopePb:`${M.scope==='deal'?L.scopeDeal:(LANG==='en'?'Single agreement, not linked to a deal':'הסכם בודד, לא משויך לעסקה')}${M.scope_label?': '+esc(M.scope_label):''}`;
+document.getElementById('stamp').textContent=`${L.gen}: ${fmtD(M.generated_at)}`+(M.last_updated&&M.last_updated!==M.generated_at?`${RLM} · ${L.upd}: ${fmtD(M.last_updated)}`:'');
+document.getElementById('sideFoot').innerHTML=`<b>${esc(M.company||'')}</b><br>${scopeTxt}<br>${L.srcTag}: ${esc(M.document_title||M.source_ref||'')}<br>${esc(L.disclaimer)}`;
+const openCount=()=>RISKS.filter(r=>decOf(r).status==='open').length;
+const TABS=[['overview',null],['register',()=>RISKS.length],['defects',()=>DEFECTS.length||null],['combos',()=>COMBOS.length||null],['critical',()=>RISKS.filter(r=>sevOf(r)==='crit').length||null],['gaps',null],['sources',()=>FOOTS.length||null],['export',null]];
+Object.assign(L.nav,LANG==='en'?{overview:"At a glance",register:"1. Risks",defects:"2. Agreement vs annexes",combos:"3. Combinations and chains",critical:"4. Critical risks in detail",gaps:"5. Not checked and missing",sources:"Appendix: verbatim quotes",export:"Print"}:{overview:"התמונה במבט אחד",register:"1. הסיכונים",defects:"2. סתירות בין ההסכם לנספחים",combos:"3. צירופים ושרשראות",critical:"4. הסיכונים הקריטיים בפירוט",gaps:"5. מה לא נבדק ומה חסר",sources:"נספח: ציטוטים מילוליים",export:"הדפסה"});
+Object.assign(L.sub,LANG==='en'?{overview:"The bottom line, the lenses and the dates",register:"Each risk once, most severe first",defects:"What the agreement says against what the annex says, and what prevails",combos:"Clauses that are worse together, and clauses that cancel a protection",critical:"Critical risks only: what happens and why the agreement does not protect us",gaps:"Annexes not provided, assumptions to confirm, topics for another function",sources:"Every reference in the report points to a number here",export:"Print the full report"}:{overview:"השורה התחתונה, העדשות והמועדים",register:"כל סיכון פעם אחת, מהחמור לקל",defects:"מה כתוב בהסכם מול מה שכתוב בנספח, ומה גובר",combos:"סעיפים שיחד גרועים מכל אחד לבדו, וסעיפים שמנטרלים הגנה",critical:"רק הסיכונים הקריטיים: מה יקרה ולמה ההסכם לא מגן",gaps:"נספחים שלא נמסרו, הנחות לאישור ונושאים לגורם אחר",sources:"כל הפניה בדוח היא למספר כאן",export:"הדפסת הדוח המלא"});
+function drawNav(){document.getElementById('nav').innerHTML=TABS.map(([k,cnt])=>{const c=cnt?cnt():null;const alert=(k==='combos'||k==='defects'||(k==='scen'&&SCENS.some(x=>x.contract_silent)));return `<button data-go="${k}">${esc(L.nav[k])}${c?`<span class="cnt${alert?' alert':''}">${c}</span>`:''}</button>`;}).join('');}
+drawNav();
+function go(k){document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.go===k));document.querySelectorAll('section.view').forEach(s=>s.classList.toggle('on',s.dataset.v===k));document.getElementById('vTitle').textContent=L.nav[k];document.getElementById('vSub').textContent=L.sub[k];window.scrollTo({top:0});}
+document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)go(b.dataset.go);});
+/* ===== overview ===== */
+function drawKpis(){
+ const T=LANG==='en'?{risks:"Risks",defects:"Agreement vs annex conflicts",combos:"Combinations and chains"}:{risks:"סיכונים",defects:"סתירות",combos:"צירופים ושרשראות"};
+ document.getElementById('kpis').innerHTML=[
+  ['risks',RISKS.length,'var(--brand2)','register'],
+  ['defects',DEFECTS.length,'var(--yellow)','defects'],
+  ['combos',COMBOS.length,'var(--red)','combos']
+ ].map(([k,v,c,goto])=>`<div class="kpi" style="border-inline-start-color:${c}" data-goto="${goto}" data-f="" data-count="${k}"><b style="color:${c}">${v}</b><span>${esc(T[k])}</span></div>`).join('');
+}
+drawKpis();
+/* ===== page 1: head line ===== */
+const S=DATA.summary||{};
+(function(){
+ const T=LANG==='en'?{cp:"Counterparty",deal:"The deal",pos:"Our position",scanned:"Reviewed",missing:"Not provided, therefore not reviewed",focus:"Topic you asked about",pb:"Benchmark playbook",bm:{approved:"approved positions",draft:"benchmark only",none:"no playbook"},ver:"Version reviewed",round:"round"}:{cp:"הצד השני",deal:"העסקה",pos:"הפוזיציה שלנו",scanned:"מה נסרק",missing:"לא נמסרו ולכן לא נבדקו",focus:"נושא שביקשתם",pb:"פלייבוק להשוואה",bm:{approved:"עמדות מאושרות",draft:"נקודת השוואה בלבד",none:"אין פלייבוק"},ver:"הגרסה שנסרקה",round:"סבב"};
+ const mode=RESEARCH.mode||'documents_only';
+ const ann=(M.annexes_reviewed||DATA.annexes_reviewed||[]), miss=(M.annexes_missing||[]), sv=(M.source_version||{}), cp=(M.counterparty||{});
+ let h='';
+ if(M.user_focus) h+=`<div style="margin-bottom:6px"><b>${esc(T.focus)}:</b> ${esc(M.user_focus)}</div>`;
+ h+=`<b>${esc(T.cp)}:</b> ${esc(cp.name||'')}${sep()}<b>${esc(T.deal)}:</b> ${esc(S.deal_one_line||M.scope_label||'')}${M.position?sep()+`<b>${esc(T.pos)}:</b> ${esc(M.position)}${M.mutual_primary_role?' ('+esc(M.mutual_primary_role)+')':''}`:''}`;
+ const DOCS=(DATA.documents||[]).map(d=>d.title).filter(Boolean);
+ const scanned=(DOCS.length?DOCS:[M.document_title]).concat(ann.filter(a=>!DOCS.includes(a)&&a!==M.document_title)).filter(Boolean);
+ h+=`<br><b>${esc(T.scanned)}:</b> ${esc(scanned.join(', '))}`;
+ if(miss.length) h+=`<br><b>${esc(T.missing)}:</b> ${esc(miss.join(', '))}`;
+ if(sv.round) h+=`<br><b>${esc(T.ver)}:</b> ${esc(sv.title||sv.file||'')}${sep()}${esc(T.round)} ${esc(String(sv.round))}`;
+ if(M.playbook_ref) h+=`<br><b>${esc(T.pb)}:</b> ${esc(M.playbook_ref)} (${esc(lab(T.bm,M.benchmark_status||'none'))})`;
+ h+=`<br><b>${esc(L.scope)}:</b> ${esc(lab(L.scopeL,mode))}`;
+ document.getElementById('headLine').innerHTML=h;
+})();
+document.getElementById('kpis').addEventListener('click',e=>{const el=e.target.closest('.kpi');if(!el)return;if(el.dataset.f==='crit'){FILT.lvl='crit';FILT.dec=null;}else if(el.dataset.f==='open'){FILT.dec='open';FILT.lvl=null;}else{FILT.lvl=null;FILT.dec=null;}FILT.cell=null;drawRegister();go(el.dataset.goto);});
+/* ===== page 1: lens table, eight fixed lenses ===== */
+const LENS8=['legal','financial','operational','technology','regulatory','reputational','insurance','force_majeure'];
+const LN=LANG==='en'?{legal:"Legal and contractual",financial:"Financial",operational:"Operational",technology:"Technology and cyber",regulatory:"Regulation and privacy",reputational:"Reputation",insurance:"Insurance",force_majeure:"Force majeure and geopolitical"}:{legal:"משפטי-חוזי",financial:"כספי",operational:"תפעולי",technology:"טכנולוגי וסייבר",regulatory:"רגולציה ופרטיות",reputational:"מוניטין",insurance:"ביטוח",force_majeure:"כוח עליון וגיאופוליטי"};
+const OLDLENS={commercial:'financial',economic:'financial',business:'financial'};
+function lensOf(r){const k=r.primary_lens||(r.lens&&r.lens[0])||r.category||'legal';return OLDLENS[k]||k;}
+function LENSNAME(r){return lab(LN,lensOf(r));}
+document.getElementById('t_lens').textContent=LANG==='en'?'The lenses':'העדשות';
+(function(){
+ const LV=LANG==='en'?{crit:"Critical",high:"High",med:"Medium",low:"Low risk only",none:"No material risk found",not_checked:"Not checked",via:"See a risk under another lens"}:{crit:"קריטי",high:"גבוה",med:"בינוני",low:"סיכון נמוך בלבד",none:"לא נמצא סיכון מהותי",not_checked:"לא נבדק",via:"ראו סיכון בעדשה אחרת"};
+ const rank={crit:3,high:2,med:1,low:0};
+ const rows=LENS8.map(k=>{
+  const rs=RISKS.filter(r=>lensOf(r)===k); const cov=COVER.find(c=>(OLDLENS[c.lens]||c.lens)===k)||{};
+  const sec=RISKS.filter(r=>lensOf(r)!==k&&(r.lens||[]).some(x=>(OLDLENS[x]||x)===k)).map(r=>r._no).sort((a,b)=>a-b);
+  let lv=rs.reduce((m,r)=>rank[sevOf(r)]>rank[m]?sevOf(r):m,'low');
+  if(lv==='low'&&!rs.length) lv=(cov.status==='not_checked')?'not_checked':(sec.length?'via':'none');
+  const nums=rs.map(r=>r._no).sort((a,b)=>a-b).join(', ');
+  const secTxt=sec.length?(LANG==='en'?'Also through: ':'גם דרך: ')+sec.join(', '):'';
+  return `<tr><td><b>${esc(LN[k])}</b></td><td><span class="chip ${lv==='none'?'low':(lv==='not_checked'||lv==='via')?'gray':lv}">${esc(lab(LV,lv))}</span></td><td>${esc(nums)}${secTxt?esc((nums?'; ':'')+secTxt):''}${(!rs.length&&!sec.length&&cov.note)?esc(cov.note):''}</td></tr>`;}).join('');
+ document.getElementById('lensTable').innerHTML=`<table class="rtable"><tbody>${rows}</tbody></table>`;
+ document.getElementById('lg_lens').textContent=LANG==='en'?'Every lens was checked. A lens without a material risk says so; a lens that could not be checked says why in chapter 5.':'כל עדשה נבדקה. עדשה שלא נמצא בה סיכון מהותי מופיעה כך, ועדשה שלא ניתן היה לבדוק מופיעה עם הסיבה בפרק 5.';
+})();
+/* ===== page 1: bottom line, critical dates, entity line ===== */
+(function(){
+ const T=LANG==='en'?{bl:"Bottom line",sign:{yes:"Can be signed as is",with_fixes:"Can be signed only after the fixes in chapter 4",no:"Should not be signed as is"},dates:"Critical dates",none:"No critical dates were identified.",ent:{not_requested:"The counterparty was not checked. An entity check on {name} can be run on request.",requested:"An entity check on {name} was requested and is in progress.",done:"Entity check on {name} done on {date}; see the separate entity report. Risks raised: {up}. Risks lowered: {down}."},isnew:" The counterparty is new to the company.",none2:"none"}:{bl:"השורה התחתונה",sign:{yes:"אפשר לחתום כמו שהוא",with_fixes:"אפשר לחתום רק אחרי התיקונים שבפרק 4",no:"לא מומלץ לחתום כמו שהוא"},dates:"מועדים קריטיים",none:"לא אותרו מועדים קריטיים.",ent:{not_requested:"בדיקת הצד השני לא בוצעה. אפשר להפעיל חקר ישות על {name}.",requested:"התבקש חקר ישות על {name}, והוא בביצוע.",done:"חקר ישות על {name} בוצע ב-{date}; ראו את דוח חקר הישות הנפרד. סיכונים שעלו: {up}. סיכונים שירדו: {down}."},isnew:" הצד השני חדש לחברה.",none2:"אין"};
+ const bl=S.bottom_line||[];
+ if((M.source_version||{}).text_status==='our_unsent_response'&&(DATA.pre_send_fixes||[]).some(p=>p.kind!=='polish')) T.sign.with_fixes=LANG==='en'?'Our response can be sent only after the fixes listed under "To fix before sending our response"':'אפשר לשלוח את התגובה רק אחרי התיקונים שברשימה "לתיקון לפני שליחת התגובה"';
+ else if(!RISKS.some(r=>sevOf(r)==='crit')) T.sign.with_fixes=LANG==='en'?'Can be signed only after the fixes in the treatment direction of chapter 1':'אפשר לחתום רק אחרי התיקונים שבכיוון הטיפול בפרק 1';
+ document.getElementById('bottomLine').innerHTML=`<h3>${esc(T.bl)}</h3>${S.sign_as_is?`<p style="font-weight:800;margin-bottom:6px">${esc(lab(T.sign,S.sign_as_is,''))}</p>`:''}${bl.map(s=>`<p style="font-size:13px;line-height:1.75;margin-bottom:4px">${esc(s)}</p>`).join('')}`;
+ const KD=(S.key_dates||[]).slice().sort((a,b)=>((a.date?0:1)-(b.date?0:1))||String(a.date||'').localeCompare(String(b.date||''))).slice(0,5);
+ document.getElementById('keyDates').innerHTML=`<h3>${esc(T.dates)}</h3>`+(KD.length?`<table><tbody>${KD.map(k=>`<tr><td${k.date?' style="white-space:nowrap"':''}><b>${k.date?fmtD(k.date)+(k.time?' '+esc(k.time):''):esc(k.window||'')}</b></td><td>${esc(k.what||'')}${k.consequence?`<br><span style="color:var(--red)">${esc(k.consequence)}</span>`:''}</td><td>${esc(k.clause||'')}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">${esc(T.none)}</div>`);
+ const E=DATA.entity_research||{status:'not_requested'}; const nm=(M.counterparty&&M.counterparty.name)||E.counterparty_name||'';
+ const list=a=>{const n=NOS(a);return n.length?n.join(', '):T.none2;};
+ const st=E.status||'not_requested';
+ const MI=(E.missing_identifiers||[]).length?(LANG==='en'?' To run it, the full name and registration number of the counterparty are needed.':' כדי להפעיל אותו נדרשים השם המלא ומספר הרישום של הצד השני.'):'';
+ document.getElementById('entityLine').textContent=lab(T.ent,st,T.ent.not_requested).replace('{name}',nm).replace('{date}',fmtD(E.done_at)).replace('{up}',list(E.risks_up)).replace('{down}',list(E.risks_down))+((st==='not_requested'&&E.is_new_counterparty)?T.isnew:'')+(st==='not_requested'?MI:'');
+})();
+/* ===== page 1: to fix before sending our response (only when our unsent response was reviewed) ===== */
+(function(){
+ const sv=M.source_version||{}; const P=DATA.pre_send_fixes||[]; const el=document.getElementById('preSend');
+ const T=LANG==='en'?{h:"To fix before sending our response",a:"Reviewed: the text we propose, assuming it is accepted in full.",kind:{missing:"Missing from our response",incomplete:"Partly covered in our response",created_by_response:"Created by our response",polish:"Wording only, does not block sending"},rk:"Risk"}:{h:"לתיקון לפני שליחת התגובה",a:"נבדק הנוסח שאנחנו מציעים, בהנחה שיתקבל במלואו.",kind:{missing:"חסר בתגובה",incomplete:"מכוסה בתגובה רק בחלקו",created_by_response:"נוצר בתגובה שלנו",polish:"ליטוש, אינו חוסם את המשלוח"},rk:"סיכון"};
+ if(sv.text_status==='our_unsent_response'||sv.text_status==='our_sent_response') document.getElementById('headLine').insertAdjacentHTML('beforeend',`<br><b>${esc(T.a)}</b>`);
+ const ACC=RISKS.filter(r=>(r.decision||{}).basis==='deliberate_waiver').map(r=>r._no).sort((a,b)=>a-b);
+ if(sv.text_status!=='our_unsent_response'||(!P.length&&!ACC.length)||!el) return;
+ const KO={created_by_response:0,incomplete:1,missing:2};
+ const PS=P.slice().sort((a,b)=>(KO[a.kind]??3)-(KO[b.kind]??3)).slice(0,6);
+ const accTxt=ACC.length?(LANG==='en'?'Accepted risks, left by a deliberate concession in our response and not for fixing: ':'סיכונים שהתקבלו בוויתור מכוון בתגובה שלנו, ואינם לתיקון: ')+ACC.map(n=>(LANG==='en'?'risk ':'סיכון ')+n).join(', ')+'.':'';
+ el.style.display='';
+ el.innerHTML=`<h3>${esc(T.h)}</h3>`+(PS.length?`<table class="rtable"><tbody>${PS.map(p=>`<tr><td>${esc(lab(T.kind,p.kind,''))}</td><td>${esc(p.gap||'')}</td><td>${esc(p.where||'')}</td><td>${NOS(p.risk_ids).map(n=>esc(T.rk)+' '+n).join(', ')}</td></tr>`).join('')}</tbody></table>`:'')+(accTxt?`<div class="legend">${esc(accTxt)}</div>`:'');
+})();
+/* ===== the heat matrix and the top-five bars were removed: severity words only, chapter 1 is the ranking ===== */
+const FILT={cat:null,lvl:null,dec:null,cell:null,lens:null};
+/* ===== chapter 1: risks, one table, each risk once ===== */
+function shortQ(q){q=String(q||'');return q.length>90?q.slice(0,88)+'...':q;}
+function drawRegister(){
+ const T=LANG==='en'?{h:["#","Lens","The risk in one line","Clause","Severity","Treatment direction"],see:"See also",def:"conflict",cmb:"combination",ch4:"chapter 4",pbf:{red_line:"Crosses a red line",deviates_from_benchmark:"Deviates from the playbook benchmark"}}:{h:["מספר","עדשה","הסיכון בשורה אחת","סעיף","חומרה","כיוון טיפול"],see:"ראו גם",def:"סתירה",cmb:"צירוף",ch4:"פרק 4",pbf:{red_line:"חוצה קו אדום",deviates_from_benchmark:"חורג מנקודת ההשוואה שבפלייבוק"}};
+ const el=document.getElementById('register');
+ if(!RISKS.length){el.innerHTML=`<div class="empty">${esc(L.emptyRisks)}</div>`;return;}
+ const see=r=>DEFECTS.filter(d=>(d.risk_ids||[]).includes(r.id)).map(d=>T.def+' '+d._no).concat(COMBOS.filter(c=>(c.risk_ids||[]).includes(r.id)).map(c=>T.cmb+' '+c._no)).concat(sevOf(r)==='crit'?[T.ch4]:[]);
+ el.innerHTML=`<table class="rtable"><thead><tr>${T.h.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${RISKS.map(r=>{const a=(r.anchors||[])[0]||{};const lv=sevOf(r);const s=see(r);
+  return `<tr id="risk-${r._no}"><td class="num"><b>${r._no}</b></td><td>${esc(LENSNAME(r))}</td><td><b>${esc(r.name||'')}</b>${(r.playbook_flag&&r.playbook_flag!=='none')?` <span class="chip crit">${esc(lab(T.pbf,r.playbook_flag,''))}</span>`:''}${r.side?` <span class="chip gray">${esc(lab(LANG==='en'?{as_obligor:"As the bound party",as_beneficiary:"As the protected party",as_discloser:"As the protected party",as_recipient:"As the bound party",both:"In both roles"}:{as_obligor:"כמי שמתחייב",as_beneficiary:"כמי שהסעיף מגן עליו",as_discloser:"כמי שהסעיף מגן עליו",as_recipient:"כמי שמתחייב",both:"בשני התפקידים"},r.side,''))}</span>`:''}${((r.decision||{}).basis==='deliberate_waiver')?` <span class="chip gray">${esc(LANG==='en'?'Accepted: deliberate concession':'התקבל: ויתור מכוון')}</span>`:''}${s.length?`<div class="legend">${esc(T.see)}: ${esc(s.join(', '))}</div>`:''}</td><td>${esc(a.clause||'')}${a.quote?` <span class="q">("${esc(shortQ(a.quote))}")</span>`:''}${refsHtml(r._refs)}</td><td><span class="chip ${lv}">${esc(L.lvl[lv])}</span></td><td>${esc(r.treatment_direction||'')}</td></tr>`;}).join('')}</tbody></table>`;
+ document.getElementById('lg_reg').textContent=L.expert+'.';
+ drawKpis();
+}
+drawRegister();
+document.getElementById('register').addEventListener('click',e=>{const sup=e.target.closest('sup.ref');if(sup)showRef(sup.dataset.ref);});
+function doCopy(txt,btn){
+ const done=()=>{const t=btn.textContent;btn.textContent=L.copied;btn.classList.add('ok');setTimeout(()=>{btn.textContent=t;btn.classList.remove('ok')},1600);};
+ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done).catch(()=>fallbackCopy(txt,done));}
+ else fallbackCopy(txt,done);
+}
+function fallbackCopy(txt,done){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}document.body.removeChild(ta);done();}
+/* ===== chapter 2: agreement vs annexes ===== */
+(function(){
+ const el=document.getElementById('defects');
+ const T=LANG==='en'?{h:["#","Topic","The agreement says","The annex says","What prevails","Why it is dangerous","The fix"],pr:{first:"The first, under the precedence clause",second:"The second, under the precedence clause",none:"No resolution"},rk:"Risks"}:{h:["מספר","נושא","מה כתוב בהסכם","מה כתוב בנספח","מה גובר","למה זה מסוכן","התיקון"],pr:{first:"הראשון, לפי סעיף הקדימות",second:"השני, לפי סעיף הקדימות",none:"אין הכרעה"},rk:"סיכונים"};
+ if(!DEFECTS.length){el.innerHTML=`<div class="empty">${esc(L.emptyDefects)}</div>`;return;}
+ if(DEFECTS.every(d=>{const l=d.locations||[];return !l[1]||(l[0]||{}).document===l[1].document;})){T.h[2]=LANG==='en'?'First location':'מיקום ראשון';T.h[3]=LANG==='en'?'Second location':'מיקום שני';}
+ const cell=l=>l?`<b>${esc(l.document||'')}${l.clause?', '+esc(l.clause):''}</b>${l.quote?`<div class="q">"${esc(l.quote)}"</div>`:''}`:'';
+ el.innerHTML=`<table class="rtable"><thead><tr>${T.h.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${DEFECTS.map(d=>{const ls=d.locations||[];
+  return `<tr><td class="num"><b>${d._no}</b></td><td><b>${esc(d.topic||d.title||'')}</b><div class="legend">${esc(lab(L.defT,d.type))}</div></td><td>${cell(ls[0])}</td><td>${cell(ls[1])}</td><td>${esc(lab(T.pr,d.prevails||'none'))}${d.prevails_basis?`<div class="legend">${esc(d.prevails_basis)}</div>`:''}</td><td>${esc(d.risk_created||'')}${(d.risk_ids||[]).length?`<div class="legend">${esc(T.rk)}: ${NOS(d.risk_ids).join(', ')}</div>`:''}</td><td>${esc(d.proposed_fix||'')}${refsHtml(d._refs)}</td></tr>`;}).join('')}</tbody></table>`;
+ el.addEventListener('click',e=>{const sup=e.target.closest('sup.ref');if(sup)showRef(sup.dataset.ref);});
+})();
+
+/* ===== chapter 4: critical risks in detail (critical only, up to five) ===== */
+(function(){
+ const el=document.getElementById('critical');
+ const C=RISKS.filter(r=>sevOf(r)==='crit').slice(0,5);
+ const T=LANG==='en'?{none:"No risk was rated critical.",what:"What will happen",why:"Why the agreement does not protect us",cost:"What it may cost",dir:"Treatment direction",src:{contract:"from the agreement",client:"as provided by the client"},nocost:"There is no amount in the agreement or from the client to calculate from"}:{none:"אף סיכון לא דורג קריטי.",what:"מה יקרה",why:"למה ההסכם לא מגן",cost:"כמה זה עלול לעלות",dir:"כיוון טיפול",src:{contract:"מתוך ההסכם",client:"לפי מסירת הלקוח"},nocost:"אין בהסכם או מהלקוח סכום לחישוב"};
+ if(!C.length){el.innerHTML=`<div class="card"><div class="empty">${esc(T.none)}</div></div>`;return;}
+ el.innerHTML=C.map(r=>{const cd=r.critical_detail||{};const am=((r.exposure||{}).amount)||{};
+  const ok=am.value!=null&&(am.source==='contract'||am.source==='client');
+  const amt=ok?`${esc(money(am.value,am.currency))}${am.text?' '+esc(am.text):''} (${esc(lab(T.src,am.source))}${am.source_ref?', '+esc(am.source_ref):''})${am.calc?`<div class="legend">${esc(am.calc)}</div>`:''}`:esc(T.nocost);
+  return `<div class="card"><h3><span class="chip crit">${esc(L.lvl.crit)}</span> ${r._no}. ${esc(r.name||'')}</h3>
+  <div class="fld"><b>${esc(T.what)}</b>${esc(cd.what_happens||r.scenario||'')}</div>
+  <div class="fld"><b>${esc(T.why)}</b>${esc(cd.why_not_protected||'')}${refsHtml(r._refs)}</div>
+  <div class="fld"><b>${esc(T.cost)}</b>${amt}</div>
+  <div class="tier"><b>${esc(T.dir)}:</b> ${esc(r.treatment_direction||'')}</div></div>`;}).join('');
+ el.addEventListener('click',e=>{const s=e.target.closest('sup.ref');if(s)showRef(s.dataset.ref);});
+})();
+
+/* ===== chapter 5: not checked and missing ===== */
+(function(){
+ const el=document.getElementById('notChecked');
+ const T=LANG==='en'?{h:"Not checked and missing",ann:"Annexes not provided",as:"Assumptions the client should confirm",oth:"Topics that need another function",web:"What was checked online, and when",dd:"This check is not a substitute for full financial due diligence.",none:"None.",th:["#","Official source","What was taken from it","Link","Date"]}:{h:"מה לא נבדק ומה חסר",ann:"נספחים שלא נמסרו",as:"הנחות שהלקוח צריך לאשר",oth:"נושאים שדורשים בדיקה של גורם אחר",web:"מה נבדק ברשת ומתי",dd:"הבדיקה אינה תחליף לבדיקת נאותות פיננסית מלאה.",none:"אין.",th:["#","מקור רשמי","מה נלקח ממנו","קישור","תאריך"]};
+ const miss=(M.annexes_missing||[]), asm=(S.assumptions||[]), oth=(S.not_checked||[]), src=(RESEARCH.sources_checked||[]);
+ const ul=a=>a.length?`<ul style="margin:4px 0 10px;padding-inline-start:18px;font-size:13px;line-height:1.7">${a.join('')}</ul>`:`<div class="legend" style="margin-bottom:10px">${esc(T.none)}</div>`;
+ const href=u=>/^https?:\/\//i.test(String(u||''))?esc(u):'';
+ const link=(u,t)=>{const h=href(u);return h?`<a href="${h}" target="_blank" rel="noopener noreferrer" style="word-break:break-all">${esc(t||u)}</a>`:esc(t||'');};
+ el.innerHTML=`<h3>${esc(T.h)}</h3>`+
+  `<b>${esc(T.ann)}</b>`+ul(miss.map(x=>`<li>${esc(x)}</li>`))+
+  `<b>${esc(T.as)}</b>`+ul(asm.map(x=>`<li>${esc(x)}</li>`))+
+  `<b>${esc(T.oth)}</b>`+ul(oth.map(x=>`<li><b>${esc(x.who||'')}</b>: ${esc(x.item||'')}${x.why?' ('+esc(x.why)+')':''}</li>`))+
+  (src.length?`<b>${esc(T.web)}</b><table class="rtable" style="margin:4px 0 10px"><thead><tr>${T.th.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${src.map((x,i)=>`<tr><td class="num"><b>${i+1}</b></td><td>${esc(x.source||'')}</td><td>${esc(x.taken||x.subject||'')}${x.finding?`<div class="legend">${esc(x.finding)}</div>`:''}</td><td>${link(x.url,x.url)}</td><td>${esc(fmtD(x.date))}</td></tr>`).join('')}</tbody></table>`+`<div class="legend">${esc(T.dd)}</div>`:'');
+})();
+
+/* ===== chapter 3: combinations, chains and neutralizers ===== */
+(function(){
+ const el=document.getElementById('combos');
+ if(!COMBOS.length){el.innerHTML=`<div class="card"><div class="empty">${esc(L.emptyCombos)}</div></div>`;return;}
+ const TY=LANG==='en'?{combination:"Combination",chain:"Chain",neutralizer:"Neutralizing clause"}:{combination:"צירוף",chain:"שרשרת",neutralizer:"סעיף נטרול"};
+ const T=LANG==='en'?{cl:"Clauses",why:"Why together it is worse",neu:"The protection it cancels",fix:"The one fix that breaks it",rk:"Risks"}:{cl:"הסעיפים",why:"למה יחד זה גרוע מכל אחד לבדו",neu:"ההגנה שמתבטלת בפועל",fix:"התיקון האחד ששובר את הצירוף",rk:"סיכונים"};
+ el.innerHTML=COMBOS.map(c=>`<div class="combo"><h3 style="font-size:14px;font-weight:800;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="chip ${c.type==='neutralizer'?'crit':'high'}">${esc(lab(TY,c.type||'combination'))} ${c._no}</span>${esc(T.cl)}: ${esc((c.clauses||[]).join(c.type==='chain'?' ← ':' + '))}</h3>
+  <div class="why"><b>${esc(T.why)}:</b> ${esc(c.why_together||c.why_dangerous_together||'')}${refsHtml(c._refs)}</div>
+  ${c.neutralizes?`<div class="fld" style="margin-top:8px"><b>${esc(T.neu)}</b>${esc(c.neutralizes)}</div>`:''}
+  <div class="tier"><b>${esc(T.fix)}:</b> ${esc(c.breaking_fix||'')}</div>
+  ${(c.risk_ids||[]).length?`<div class="legend">${esc(T.rk)}: ${NOS(c.risk_ids).join(', ')}</div>`:''}</div>`).join('');
+ el.addEventListener('click',e=>{const s=e.target.closest('sup.ref');if(s)showRef(s.dataset.ref);});
+})();
+/* ===== vague terms, back-to-back gaps and the mitigation plan are no longer screens: each such finding is a risk in chapter 1 ===== */
+/* ===== chapter 5: research figures ===== */
+(function(){
+ const el=document.getElementById('notChecked'); const R=RESEARCH||{};
+ const src=R.sources_checked||[], log=R.search_log||[], raw=R.raw_copies||[], conf=R.confidence||[];
+ if(!el||(!src.length&&!log.length)) return;
+ const T=LANG==='en'?{q:"Queries sent",o:"Pages opened and saved",f:"Facts taken from official sources",s:"Official sources used",blk:"Blocked or not loaded",mid:"Medium confidence (source no.)",at:"Research date"}:{q:"שאילתות שנשלחו",o:"דפים שנפתחו ונשמרו",f:"עובדות שנלקחו ממקורות רשמיים",s:"מקורות רשמיים שונים",blk:"נחסם או לא נטען",mid:"ודאות בינונית (מספר המקור)",at:"תאריך המחקר"};
+ const facts=src.length, bodies=new Set(src.map(x=>String(x.source||'').trim()).filter(Boolean)).size;
+ const blk=log.filter(x=>x.result==='blocked').length;
+ const idx={}; src.forEach((x,i)=>{idx[x.id]=i+1;});
+ const mid=conf.filter(c=>c.label==='medium').map(c=>`${idx[c.source_id]||'?'}${c.why?' ('+esc(c.why)+')':''}`);
+ const last=log.map(x=>String(x.at||'').split('T')[0]).filter(Boolean).sort().pop();
+ el.insertAdjacentHTML('beforeend',`<div class="legend">${esc(T.q)}: ${log.length}. ${esc(T.o)}: ${raw.length}. ${esc(T.f)}: ${facts}. ${esc(T.s)}: ${bodies}.${blk?' '+esc(T.blk)+': '+blk+'.':''}${mid.length?' '+esc(T.mid)+': '+mid.join('; ')+'.':''}${last?' '+esc(T.at)+': '+esc(fmtD(last))+'.':''}</div>`);
+})();
+/* ===== sources ===== */
+document.getElementById('t_sources').textContent=L.nav.sources;
+(function(){
+ const el=document.getElementById('sources');
+ const T=LANG==='en'?{n:"#",d:"Document and clause",q:"Verbatim text",s:"Summary of an internal document, not a quote"}:{n:"מספר",d:"מסמך וסעיף",q:"הנוסח המילולי",s:"תמצית ממסמך פנימי, לא ציטוט"};
+ el.innerHTML=FOOTS.length?`<table class="rtable"><thead><tr><th>${esc(T.n)}</th><th>${esc(T.d)}</th><th>${esc(T.q)}</th></tr></thead><tbody>${FOOTS.map(f=>`<tr class="foot" id="foot-${f.n}"><td class="num"><b>${f.n}</b></td><td>${esc(f.agreement||'')}${f.clause?', '+esc(f.clause):''}${f.anchor_type==='internal_summary'?`<div class="legend">${esc(T.s)}</div>`:''}</td><td>${esc(f.quote||'')}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">${esc(L.emptySources)}</div>`;
+})();
+function showRef(n){go('sources');const t=document.getElementById('foot-'+n);if(t){document.querySelectorAll('.foot').forEach(f=>f.classList.remove('hl'));t.classList.add('hl');t.scrollIntoView({block:'center'});}}
+document.getElementById('content').addEventListener('click',e=>{const s=e.target.closest('sup.ref');if(s&&!e.target.closest('#register,#combos,#b2b,#plan'))showRef(s.dataset.ref);});
+/* ===== export ===== */
+(function(){
+ const el=document.getElementById('exportView');
+ const T=LANG==='en'?{h:"Print",n:"Printing gives the full short report: page one, chapters 1 to 5 and the quotes appendix.",b:"Print the report"}:{h:"הדפסה",n:"ההדפסה כוללת את הדוח המלא והקצר: העמוד הראשון, פרקים 1 עד 5 ונספח הציטוטים.",b:"הדפסת הדוח"};
+ el.innerHTML=`<div class="card"><h3>${esc(T.h)}</h3><div class="notice">${esc(T.n)}</div><button class="btn" id="btnPrint">${esc(T.b)}</button></div>`;
+ document.getElementById('btnPrint').addEventListener('click',()=>window.print());
+})();
+go('overview');
+/* Print: each chapter opens with its title, so a printed page is never a table without a heading. */
+document.querySelectorAll('section.view.print').forEach(s=>{const k=s.dataset.v;if(['register','defects','combos','critical'].includes(k)&&L.nav[k])s.insertAdjacentHTML('afterbegin',`<h2 class="ptitle">${esc(L.nav[k])}</h2>`);});
+
+/* Client logo: a data URI carried on the payload, so the page stays
+   self-contained and the CSP never sees an external request. */
+(function clientLogo(){
+  try{
+    var src = ((DATA.meta || {}).branding || {}).logo;
+    if (!src || !/^data:image\//.test(String(src))) return;   // only an embedded image; a file path is never loaded
+    var el = document.getElementById('clientLogo');
+    if (!el) return;
+    el.src = src;
+    el.alt = ((DATA.meta || {}).company) || '';
+    el.classList.add('on');
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

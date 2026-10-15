@@ -1,0 +1,752 @@
+{
+ "_about": "קטע מהפלייבוק ההדדי של סבב 3 (C2, 14.10.2026), כפי שנבנה: ארבעה כללים (R-02, R-08, R-14, R-16), הספירה ושורת השקיפות, תור האימות, הסמכויות ושתי התוויות. חייב להיכשל בקודים של הערות 5.5. נתוני בדיקה בלבד.",
+ "family_id": "fam_nda_mutual",
+ "family_label": "הסכם סודיות הדדי",
+ "corpus_origin": "market_built",
+ "corpus_basis": {
+  "files": 5,
+  "agreement_units": 0,
+  "templates": 0,
+  "removed_duplicates": [],
+  "merged_versions": [],
+  "amendments_attached": [],
+  "band": "none",
+  "choice": "market",
+  "language": "en",
+  "excluded_other_language": [],
+  "classification_method": "כותרת ופתיח בלבד (classify_heads), לפני כל קריאה"
+ },
+ "presentation_label": "פלייבוק מוצע, מבוסס מחקר שוק, טעון אישור",
+ "status_label": "פלייבוק מוצע, מבוסס מחקר שוק, טעון אישור",
+ "playbook_status": "Draft",
+ "scope_summary": {
+  "contract_families": [
+   {
+    "contract_family_id": "fam_nda_mutual",
+    "contract_family_name": "הסכם סודיות הדדי (EXAMPLECO מגלה בעיקר)",
+    "company_role": "צד הדדי, מגלה בעיקר",
+    "company_role_code": "mutual",
+    "family_aliases": [
+     "הסכם סודיות",
+     "הסכם סודיות הדדי",
+     "NDA",
+     "Mutual NDA",
+     "mutual non-disclosure agreement"
+    ],
+    "document_count": 0
+   }
+  ],
+  "total_document_count": 0,
+  "mutual_lean": "mostly_discloses",
+  "contracting_entity": {
+   "name": "EXAMPLECO",
+   "incorporation_country": "IL",
+   "relation_code": "same"
+  }
+ },
+ "authority": {
+  "escalation": "היועץ המשפטי הראשי וגם מנכ\"ל החברה",
+  "amendments": "היועצת המשפטית של EXAMPLECO",
+  "per_track": [
+   {
+    "track": "yellow",
+    "from_step": "Fallback 1",
+    "approver": "היועץ המשפטי הראשי או ראש המחלקה המשפטית"
+   },
+   {
+    "track": "red",
+    "from_step": "Fallback 2",
+    "approver": "היועץ המשפטי הראשי וגם מנכ\"ל החברה"
+   }
+  ],
+  "source": "client_answer",
+  "source_ref": "answer:BQ2 (המאשר); escalation לפי טבלת הסמכויות ב\"07 מדיניות חוזית ופלייבוקים\\מדיניות חוזית - מקבל השירותים.docx\" (סוג אחר, מוצג כהמלצה בגיליון)"
+ },
+ "market_research": {
+  "counts": {
+   "found": 14,
+   "opened": 12,
+   "read": 10,
+   "counted": 6
+  },
+  "disclosure": {
+   "fixed_sentence": "אין לכם הסכם הדדי מהסוג הזה, ולכן הפלייבוק נבנה כולו לפי 10 הסכמים הדדיים שפורסמו ברשת, מ-10 גופים, ולפי 3 מקורות רגולטוריים. התבניות החד-צדדיות שלכם סווגו לפי הכותרת והפתיח בלבד, ולא שימשו מקור לעמדות. כל עמדה בו היא הצעה של Areo.",
+   "chat_message": "",
+   "word_chapter": true
+  },
+  "jurisdiction_note": "לא נמצא נוסח הסכם סודיות הדדי ישראלי שפורסם; העמדות התלויות בדין נקבעו לפי הדין הישראלי.",
+  "ranges": [
+   {
+    "topic": "R-02",
+    "measure": "האם מידע שלא סומן, ומידע בעל פה, מוגנים",
+    "distribution": {
+     "2": [
+      "W3",
+      "W4",
+      "W7"
+     ],
+     "1": [
+      "W1"
+     ],
+     "-1": [
+      "W5",
+      "W6"
+     ]
+    },
+    "silence": [],
+    "ours": {
+     "level": 2,
+     "source_ids": [
+      "W3",
+      "W4",
+      "W7"
+     ]
+    },
+    "middle": {
+     "level": 2,
+     "source_ids": [
+      "W3",
+      "W4",
+      "W7"
+     ]
+    },
+    "theirs": "לא נמדד: אין מקור מהצד השני",
+    "certainty": "ודאות בינונית",
+    "periods": []
+   },
+   {
+    "topic": "R-08",
+    "measure": "משך חובת הסודיות בשנים, וסוד מסחרי",
+    "distribution": {
+     "1": [
+      "W4"
+     ],
+     "0": [
+      "W3",
+      "W5",
+      "W6",
+      "W7"
+     ]
+    },
+    "silence": [],
+    "ours": {
+     "level": 0,
+     "source_ids": [
+      "W3",
+      "W5",
+      "W6",
+      "W7"
+     ]
+    },
+    "middle": {
+     "level": 0,
+     "source_ids": [
+      "W3",
+      "W5",
+      "W6",
+      "W7"
+     ]
+    },
+    "theirs": "לא נמדד: אין מקור מהצד השני",
+    "certainty": "ודאות בינונית",
+    "periods": []
+   },
+   {
+    "topic": "R-14",
+    "measure": "הדין החל ומקום השיפוט",
+    "distribution": {},
+    "silence": [],
+    "ours": null,
+    "middle": null,
+    "theirs": "לא נמדד: אין מקור מהצד השני",
+    "certainty": "הערכת מומחה",
+    "periods": [],
+    "note": "לא נבדק מול השוק: הנושא תלוי בדין, והמקורות שנמצאו מדין זר"
+   },
+   {
+    "topic": "R-16",
+    "measure": "מידע אישי ומידע מותמם על לקוחות",
+    "distribution": {},
+    "silence": [],
+    "ours": null,
+    "middle": null,
+    "theirs": "לא נמדד: אין מקור מהצד השני",
+    "certainty": "הערכת מומחה",
+    "periods": [],
+    "note": "לא נבדק מול השוק: הנושא תלוי בדין, והמקורות שנמצאו מדין זר"
+   }
+  ],
+  "unverified_findings": [
+   {
+    "rule_id": "R-02",
+    "topic": "האם מידע שלא סומן, ומידע בעל פה, מוגנים",
+    "level": 1,
+    "source_ids": [
+     "W1"
+    ],
+    "sources_found": 1,
+    "label": "ממצא לא מאומת, 1 מקורות",
+    "reason": "נמצאו 1 מקורות נספרים בלבד לדרגה הזו"
+   },
+   {
+    "rule_id": "R-02",
+    "topic": "האם מידע שלא סומן, ומידע בעל פה, מוגנים",
+    "level": -1,
+    "source_ids": [
+     "W5",
+     "W6"
+    ],
+    "sources_found": 2,
+    "label": "ממצא לא מאומת, 2 מקורות",
+    "reason": "נמצאו 2 מקורות נספרים בלבד לדרגה הזו"
+   },
+   {
+    "rule_id": "R-08",
+    "topic": "משך חובת הסודיות בשנים, וסוד מסחרי",
+    "level": 1,
+    "source_ids": [
+     "W4"
+    ],
+    "sources_found": 1,
+    "label": "ממצא לא מאומת, 1 מקורות",
+    "reason": "נמצאו 1 מקורות נספרים בלבד לדרגה הזו"
+   },
+   {
+    "rule_id": "R-14",
+    "topic": "הדין החל ומקום השיפוט",
+    "level": null,
+    "source_ids": [],
+    "sources_found": 0,
+    "label": "לא נבדק מול השוק",
+    "reason": "לא נבדק מול השוק: הנושא תלוי בדין, והמקורות שנמצאו מדין זר"
+   },
+   {
+    "rule_id": "R-16",
+    "topic": "מידע אישי ומידע מותמם על לקוחות",
+    "level": null,
+    "source_ids": [],
+    "sources_found": 0,
+    "label": "לא נבדק מול השוק",
+    "reason": "לא נבדק מול השוק: הנושא תלוי בדין, והמקורות שנמצאו מדין זר"
+   }
+  ],
+  "source_refs": [
+   {
+    "source_id": "W1",
+    "issuing_body": "Common Paper (ועדת עורכי דין, רישיון CC BY 4.0)",
+    "document": "Mutual Non-Disclosure Agreement, Standard Terms, Version 1.0",
+    "agreement_type": "mutual NDA, balanced model",
+    "jurisdiction": "US (הדין נקבע בדף השער)",
+    "template_family": "F-CPBT",
+    "drafted_by": "neutral_model",
+    "url": "https://commonpaper.com/standards/mutual-nda/1.0/"
+   },
+   {
+    "source_id": "W2",
+    "issuing_body": "Bonterms (ועדת עורכי דין, רישיון CC BY 4.0)",
+    "document": "Bonterms Mutual NDA, Version 1.0",
+    "agreement_type": "mutual NDA, balanced model",
+    "jurisdiction": "US (הדין נקבע בדף השער)",
+    "template_family": "F-CPBT",
+    "drafted_by": "neutral_model",
+    "url": "https://bonterms.com/standard/bonterms-mutual-nda-v1/"
+   },
+   {
+    "source_id": "W3",
+    "issuing_body": "NHS England (ממשלת בריטניה, gov.uk)",
+    "document": "Mutual Non-disclosure Agreement (NDA), in \"IP guidance for the NHS in England: model agreements and templates\"",
+    "agreement_type": "mutual NDA, public-body model for commercial collaboration",
+    "jurisdiction": "UK-EW",
+    "template_family": "F-NHS",
+    "drafted_by": "neutral_model",
+    "url": "https://assets.publishing.service.gov.uk/media/691ae177b49cc44345161838/model-agreements-and-templates.docx"
+   },
+   {
+    "source_id": "W4",
+    "issuing_body": "Boise State University, Office of Technology Transfer",
+    "document": "Industry Mutual Non-Disclosure Agreement (OTT-0243.1)",
+    "agreement_type": "mutual NDA, university model for industry collaboration",
+    "jurisdiction": "US-ID",
+    "template_family": "F-BSU",
+    "drafted_by": "neutral_model",
+    "url": "https://www.boisestate.edu/research-osp/wp-content/uploads/sites/233/2023/11/OTT-0243.1-Industry-Mutual-Non-Disclosure-Agreement-11-22-2023-WM-1.docx"
+   },
+   {
+    "source_id": "W5",
+    "issuing_body": "University of Tennessee, Office of Sponsored Programs",
+    "document": "Mutual Non-Disclosure Agreement (Rev. 05-13-22)",
+    "agreement_type": "mutual NDA, university model",
+    "jurisdiction": "US-TN",
+    "template_family": "F-UTK",
+    "drafted_by": "neutral_model",
+    "url": "https://utiasponsoredprograms.tennessee.edu/wp-content/uploads/sites/36/2024/08/NDA-Template_Mutual-Rev.-05-13-22.docx"
+   },
+   {
+    "source_id": "W6",
+    "issuing_body": "University of Washington, Office of Sponsored Programs",
+    "document": "Mutual Nondisclosure Agreement (sample template 2025)",
+    "agreement_type": "mutual NDA, university model",
+    "jurisdiction": "US-WA",
+    "template_family": "F-UW",
+    "drafted_by": "neutral_model",
+    "url": "https://research.washington.edu/research/wp-content/uploads/mnda-sample-template.2025.pdf"
+   },
+   {
+    "source_id": "W7",
+    "issuing_body": "AIM ImmunoTech Inc., UMN Pharma, National Institute of Infectious Diseases, Shionogi (EDGAR)",
+    "document": "Mutual Confidentiality Agreement, EX-10.1 (signed 21.4.2020)",
+    "agreement_type": "mutual confidentiality agreement, business relationship evaluation",
+    "jurisdiction": "US-NY",
+    "template_family": "F-AIM",
+    "drafted_by": "negotiated",
+    "url": "https://www.sec.gov/Archives/edgar/data/946644/000149315220007168/ex10-1.htm"
+   }
+  ]
+ },
+ "regulatory_research": {
+  "facts": [
+   {
+    "fact_id": "LF1",
+    "fact": "\"מידע אישי\" הוא נתון הנוגע לאדם מזוהה או לאדם הניתן לזיהוי, כלומר מי שניתן לזהותו במאמץ סביר, במישרין או בעקיפין (סעיף 3, כנוסחו אחרי תיקון 13).",
+    "rule_ids": [
+     "R-16"
+    ],
+    "official_source": {
+     "source_id": "L1",
+     "url": "https://www.nevo.co.il/law_html/law00/71631.htm",
+     "version_date": "2026-10-11",
+     "retrieved_at": "2026-10-14"
+    },
+    "currency_check": {
+     "checked_on": "2026-10-14",
+     "in_force_version": "נוסח עדכני נכון ליום 11.10.2026, כולל תיקון 13 (פורסם 14.8.2024, בתוקף מ-14.8.2025)",
+     "amendments_after_version": [],
+     "result": "current",
+     "evidence": "לפי רשומת החוק במאגר של הכנסת, הפרסום האחרון של תיקון לחוק הוא מ-14.8.2024 (תיקון 13, ס\"ח 3287); אין תיקון שפורסם אחרי 11.10.2026"
+    },
+    "verification": "verified",
+    "reason": "",
+    "label": "מקור רשמי: נבו (נוסח חקיקה), בנוסח בתוקף ל-14.10.2026"
+   },
+   {
+    "fact_id": "LF2",
+    "fact": "לא יעבד אדם מידע אישי ממאגר מידע ללא הרשאה מאת בעל השליטה במאגר המידע או בחריגה מהרשאה כאמור (סעיף 8(ג)).",
+    "rule_ids": [
+     "R-16"
+    ],
+    "official_source": {
+     "source_id": "L1",
+     "url": "https://www.nevo.co.il/law_html/law00/71631.htm",
+     "version_date": "2026-10-11",
+     "retrieved_at": "2026-10-14"
+    },
+    "currency_check": {
+     "checked_on": "2026-10-14",
+     "in_force_version": "נוסח עדכני נכון ליום 11.10.2026, כולל תיקון 13",
+     "amendments_after_version": [],
+     "result": "current",
+     "evidence": "כמו LF1"
+    },
+    "verification": "verified",
+    "reason": "",
+    "label": "מקור רשמי: נבו (נוסח חקיקה), בנוסח בתוקף ל-14.10.2026"
+   }
+  ]
+ },
+ "rules": [
+  {
+   "rule_id": "R-02",
+   "topic_name": "הגדרת המידע הסודי ומידע בעל פה",
+   "clause_issue": "איזה מידע מוגן",
+   "importance": "high",
+   "topic_ids": [],
+   "round1_posture": "hold_green",
+   "round1_posture_source": "importance",
+   "walk_away": false,
+   "legal_review_required": [],
+   "statutory_override": [],
+   "policy_status": "Inferred",
+   "approval_required": "היועץ המשפטי הראשי וגם מנכ\"ל החברה (מעבר לצהוב)",
+   "traffic_light": {
+    "green": {
+     "position": "כל מידע שנמסר בקשר למטרה, בכל צורה ובכל אמצעי, גם בלי סימון וגם בעל פה, וכן ניתוחים שנגזרו ממנו",
+     "match_criteria": [
+      "בלי דרישת סימון",
+      "כולל מידע בעל פה",
+      "כולל ניתוחים ותמציות שנגזרו"
+     ],
+     "proposed_clause": {
+      "en": "\"Confidential Information\" means all information disclosed or made available by or on behalf of the Disclosing Party in connection with the Purpose, in any form or medium, including orally, whether or not marked as confidential, together with all notes, analyses and summaries prepared by the Receiving Party that contain or reflect such information.",
+      "he": "",
+      "source_language": "en"
+     },
+     "basis": "market_standard",
+     "as_discloser_effect": "כל מה שהחברה מוסרת מוגן, גם בפגישות ובשיחות, בלי סיכון שמידע ייפול משום שלא סומן.",
+     "as_recipient_effect": "גם על החברה כמקבלת חלה חובה רחבה על כל מה שתקבל, וצריך לנהל זאת בצוות העסקה.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "market_source_ids": [
+      "W3",
+      "W7",
+      "W4"
+     ],
+     "range_point": "ours",
+     "source_label": "הצעת Areo (לא מבוסס על מסמכי הלקוח). מקורות: W3, W7, W4 (לטובתנו)"
+    },
+    "yellow": {
+     "position": "מידע שסומן כסודי, או שאדם סביר היה מבין שהוא סודי לפי טיבו ונסיבות מסירתו, כולל מידע בעל פה",
+     "match_criteria": [
+      "סימון או מבחן סבירות",
+      "מידע בעל פה מוגן לפי אותו מבחן",
+      "בלי חובת אישור בכתב"
+     ],
+     "proposed_clause": {
+      "en": "\"Confidential Information\" means information disclosed by or on behalf of the Disclosing Party in connection with the Purpose, in any form, including orally, that is marked or identified as confidential or that a reasonable person would understand to be confidential given its nature and the circumstances of disclosure.",
+      "he": "",
+      "source_language": "en"
+     },
+     "fallback_wording": {
+      "text": "\"Confidential Information\" means information disclosed by or on behalf of the Disclosing Party in connection with the Purpose, in any form, including orally, that is marked or identified as confidential or that a reasonable person would understand to be confidential given its nature and the circumstances of disclosure.",
+      "source": "areo_proposal"
+     },
+     "basis": "areo_proposal",
+     "as_discloser_effect": "הגנה מעט צרה יותר, אבל מבחן הסבירות שומר על תוכניות המוצר ועל המידע על הלקוחות גם בלי סימון.",
+     "as_recipient_effect": "החברה כמקבלת מחויבת רק במידע שסומן או שסודיותו ניכרת.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "source_label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    },
+    "red": {
+     "position": "רק מידע שסומן בכתב, מידע בעל פה מוגן רק אם הועלה על הכתב בתוך מועד, או מבחן סובייקטיבי (\"שנחשב סודי בעיני המגלה\")",
+     "match_criteria": [
+      "סימון בלבד",
+      "חובת אישור בכתב למידע בעל פה",
+      "מבחן סובייקטיבי בלי אמת מידה"
+     ],
+     "proposed_clause": {
+      "en": "\"Confidential Information\" includes all information that is marked as confidential or that a reasonable person would understand to be confidential, including information disclosed orally, without any requirement of written confirmation.",
+      "he": "",
+      "source_language": "en"
+     },
+     "basis": "areo_proposal",
+     "as_discloser_effect": "מידע שנמסר בעל פה, בפגישות הבחינה, היה יוצא מההגנה.",
+     "as_recipient_effect": "דרישת סימון הייתה מקלה על החברה כמקבלת, אבל פוגעת בה כמגלה בעיקר.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "source_label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    }
+   }
+  },
+  {
+   "rule_id": "R-08",
+   "topic_name": "משך חובת הסודיות",
+   "clause_issue": "כמה זמן המידע מוגן",
+   "importance": "critical",
+   "topic_ids": [],
+   "round1_posture": "hold_green",
+   "round1_posture_source": "importance",
+   "walk_away": false,
+   "legal_review_required": [],
+   "statutory_override": [],
+   "policy_status": "Inferred",
+   "approval_required": "היועץ המשפטי הראשי וגם מנכ\"ל החברה (מעבר לצהוב)",
+   "traffic_light": {
+    "green": {
+     "position": "חמש שנים מיום מסירתו של כל פריט מידע",
+     "match_criteria": [
+      "חמש שנים",
+      "מיום כל מסירה"
+     ],
+     "proposed_clause": {
+      "en": "The Receiving Party's obligations with respect to each item of Confidential Information shall continue for five (5) years from the date of its disclosure, notwithstanding any termination or expiry of this Agreement.",
+      "he": "",
+      "source_language": "en"
+     },
+     "basis": "market_standard",
+     "as_discloser_effect": "תוכניות המוצר והמידע העסקי של החברה מוגנים חמש שנים מכל מסירה; סוד מסחרי מוגן גם לפי הדין.",
+     "as_recipient_effect": "אותו משך מחייב את החברה כמקבלת.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "market_source_ids": [
+      "W3",
+      "W5",
+      "W7"
+     ],
+     "range_point": "ours",
+     "source_label": "הצעת Areo (לא מבוסס על מסמכי הלקוח). מקורות: W3, W5, W7 (לטובתנו)"
+    },
+    "yellow": {
+     "position": "שלוש שנים מיום מסירתו של כל פריט מידע",
+     "match_criteria": [
+      "שלוש שנים",
+      "מיום כל מסירה"
+     ],
+     "proposed_clause": {
+      "en": "The Receiving Party's obligations with respect to each item of Confidential Information shall continue for three (3) years from the date of its disclosure, notwithstanding any termination or expiry of this Agreement.",
+      "he": "",
+      "source_language": "en"
+     },
+     "fallback_wording": {
+      "text": "The Receiving Party's obligations with respect to each item of Confidential Information shall continue for three (3) years from the date of its disclosure, notwithstanding any termination or expiry of this Agreement.",
+      "source": "areo_proposal"
+     },
+     "basis": "areo_proposal",
+     "as_discloser_effect": "הגנה קצרה יותר; סוד מסחרי עדיין מוגן לפי הדין, ומידע על לקוחות לפי סעיף המידע האישי.",
+     "as_recipient_effect": "מקצר גם את החובה של החברה כמקבלת.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "source_label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    },
+    "red": {
+     "position": "פחות משנתיים, או חובה שמסתיימת עם סיום ההסכם",
+     "match_criteria": [
+      "פחות משנתיים",
+      "מסתיים עם ההסכם"
+     ],
+     "proposed_clause": {
+      "en": "The Receiving Party's obligations shall continue for no less than three (3) years from the date of each disclosure.",
+      "he": "",
+      "source_language": "en"
+     },
+     "basis": "areo_proposal",
+     "as_discloser_effect": "תוכניות המוצר של החברה היו נשארות בלי הגנה חוזית אחרי זמן קצר.",
+     "as_recipient_effect": "תקופה קצרה הייתה משחררת גם את החברה כמקבלת.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "source_label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    }
+   }
+  },
+  {
+   "rule_id": "R-14",
+   "topic_name": "דין חל וסמכות שיפוט",
+   "clause_issue": "איזה דין חל ואיפה מתדיינים",
+   "importance": "medium",
+   "topic_ids": [],
+   "round1_posture": "offer_yellow",
+   "round1_posture_source": "importance",
+   "walk_away": false,
+   "legal_review_required": [
+    {
+     "track": "red",
+     "clause_refs": [
+      "R-14"
+     ],
+     "concern": "האם תנאי שיפוט ייחודי בחוץ לארץ, בטופס קבוע שהצד שכנגד קבע מראש ולא נוהל עליו משא ומתן, ניתן לביטול או לשינוי, ומה מעמד החברה כצד לטופס כזה.",
+     "label": "טעון בדיקה משפטית",
+     "checked_by": "עו\"ד דנה לוי (נרשם בגיליון שנקלט בסימולציה)",
+     "checked_at": "2026-10-14"
+    }
+   ],
+   "statutory_override": [],
+   "policy_status": "Inferred",
+   "approval_required": "היועץ המשפטי הראשי וגם מנכ\"ל החברה (מעבר לצהוב)",
+   "traffic_light": {
+    "green": {
+     "position": "דין ישראלי וסמכות ייחודית לבתי המשפט בתל אביב-יפו, עם זכות לבקש סעד דחוף בכל בית משפט מוסמך",
+     "match_criteria": [
+      "דין ישראלי",
+      "תל אביב-יפו",
+      "סעד דחוף בכל מקום"
+     ],
+     "proposed_clause": {
+      "en": "This Agreement shall be governed by the laws of the State of Israel, and the competent courts of Tel Aviv-Jaffa shall have exclusive jurisdiction, provided that either party may seek urgent or injunctive relief in any court of competent jurisdiction.",
+      "he": "",
+      "source_language": "en"
+     },
+     "basis": "areo_proposal",
+     "as_discloser_effect": "החברה, כמגלה ולכן כתובעת בדרך כלל, תתבע בבית ובדין המוכר לה, ותוכל לבקש סעד דחוף בכל מקום.",
+     "as_recipient_effect": "החברה כנתבעת תתגונן בישראל.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "source_label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "forum_anchor": "company_seat"
+    },
+    "yellow": {
+     "position": "דין ישראלי, וסמכות לבית המשפט במקום מושבו של התובע; בכל מקרה סעד דחוף בישראל",
+     "match_criteria": [
+      "דין ישראלי",
+      "מקום מושב התובע",
+      "סעד דחוף בישראל"
+     ],
+     "proposed_clause": {
+      "en": "This Agreement shall be governed by the laws of the State of Israel. Any claim shall be brought in the competent courts of the place of the claimant's principal office, and in any event either party may seek urgent or injunctive relief in the competent courts of Israel.",
+      "he": "",
+      "source_language": "en"
+     },
+     "fallback_wording": {
+      "text": "This Agreement shall be governed by the laws of the State of Israel. Any claim shall be brought in the competent courts of the place of the claimant's principal office, and in any event either party may seek urgent or injunctive relief in the competent courts of Israel.",
+      "source": "areo_proposal"
+     },
+     "basis": "areo_proposal",
+     "as_discloser_effect": "החברה, כתובעת, תתבע במקום מושבה; תמיד אפשר לבקש סעד דחוף בישראל.",
+     "as_recipient_effect": "אם החברה תפר, הצד שכנגד יתבע אותה במקום מושבו.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "source_label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "forum_anchor": "plaintiff_seat"
+    },
+    "red": {
+     "position": "דין זר וסמכות ייחודית בחוץ לארץ, בלי אפשרות לסעד דחוף בישראל",
+     "match_criteria": [
+      "דין זר",
+      "שיפוט ייחודי בחו\"ל",
+      "אין סעד דחוף בישראל"
+     ],
+     "proposed_clause": {
+      "en": "Notwithstanding any choice of law or forum, either party may seek urgent or injunctive relief in any court of competent jurisdiction, including the courts of Israel.",
+      "he": "",
+      "source_language": "en"
+     },
+     "basis": "areo_proposal",
+     "as_discloser_effect": "החברה הייתה נאלצת לתבוע בחוץ לארץ, לפי דין זר, כדי לעצור דליפה.",
+     "as_recipient_effect": "שיפוט בחוץ לארץ היה מקשה גם על הגנת החברה כנתבעת.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "source_label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    }
+   }
+  },
+  {
+   "rule_id": "R-16",
+   "topic_name": "מידע אישי ומידע מותמם על לקוחות",
+   "clause_issue": "האם ובאילו תנאים יימסר מידע על לקוחות",
+   "importance": "critical",
+   "topic_ids": [],
+   "round1_posture": "hold_green",
+   "round1_posture_source": "importance",
+   "walk_away": true,
+   "legal_review_required": [
+    {
+     "track": "green",
+     "clause_refs": [
+      "R-16"
+     ],
+     "concern": "האם המידע שיימסר מותמם באמת כך שלא ניתן לזהות אדם במאמץ סביר, והאם נדרש הסכם עיבוד מידע נפרד; הדין הזר שחל על נתונים מחוץ לישראל לא נבדק.",
+     "label": "טעון בדיקה משפטית",
+     "checked_by": "עו\"ד דנה לוי (נרשם בגיליון שנקלט בסימולציה)",
+     "checked_at": "2026-10-14"
+    }
+   ],
+   "statutory_override": [
+    {
+     "clause_refs": [
+      "R-16"
+     ],
+     "statute": "חוק הגנת הפרטיות, התשמ\"א-1981",
+     "section": "3 (הגדרת \"מידע אישי\") ו-8(ג)",
+     "effect": "mandatory_term",
+     "consequence_for_company": "מידע על לקוחות שניתן לזהות בו אדם במאמץ סביר הוא מידע אישי, ועיבודו אצל הצד שכנגד כפוף לחוק; הסכם הסודיות אינו יכול להתיר עיבוד בניגוד לו.",
+     "remediation": "למסור רק מידע מותמם, ומידע אישי רק לפי הסכם עיבוד נפרד.",
+     "basis": "statute_text",
+     "fact_id": "LF1",
+     "verified_in": "L1",
+     "label": "חובה בדין"
+    }
+   ],
+   "policy_status": "Inferred",
+   "walk_away_source": "client_data",
+   "approval_required": "היועץ המשפטי הראשי וגם מנכ\"ל החברה (מעבר לצהוב)",
+   "traffic_light": {
+    "green": {
+     "position": "מוסרים רק מידע על לקוחות שהותמם כך שלא ניתן לזהות אדם במאמץ סביר; המקבל לא ינסה לזהות, לא יצליב ולא יעביר, יודיע מיד על אירוע אבטחה וימחק לפי דרישה; מידע אישי רק לפי הסכם עיבוד נפרד",
+     "match_criteria": [
+      "מידע מותמם בלבד",
+      "איסור זיהוי מחדש והצלבה",
+      "איסור העברה לצד שלישי ולחו\"ל",
+      "הודעה מיידית על אירוע",
+      "מחיקה לפי דרישה",
+      "מידע אישי רק בהסכם עיבוד נפרד"
+     ],
+     "proposed_clause": {
+      "en": "Information relating to a party's customers, insureds or employees shall be disclosed under this Agreement only after it has been de-identified so that no individual can be identified by reasonable means. The Receiving Party shall not attempt to re-identify any individual, shall not combine such information with other data, shall not transfer it to any third party or outside the country of disclosure without the Disclosing Party's prior written consent, shall notify the Disclosing Party without delay of any security incident affecting it, and shall delete it upon request. Any disclosure of personal data shall be made only under a separate data processing agreement.",
+      "he": "",
+      "source_language": "en"
+     },
+     "basis": "areo_proposal",
+     "as_discloser_effect": "המידע על לקוחות החברה נמסר רק מותמם, והצד שכנגד מחויב לא לזהות, לא להצליב, להודיע מיד על אירוע ולמחוק.",
+     "as_recipient_effect": "אם הצד שכנגד ימסור לחברה מידע מותמם, אותן חובות יחולו עליה; היא ממילא מחזיקת מידע מפוקחת.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "source_label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    },
+    "yellow": {
+     "position": "מידע מקובץ (סטטיסטי) בלבד, עם איסור זיהוי מחדש והודעה על אירוע",
+     "match_criteria": [
+      "נתונים מקובצים בלבד",
+      "איסור זיהוי מחדש",
+      "הודעה על אירוע"
+     ],
+     "proposed_clause": {
+      "en": "Information relating to a party's customers shall be disclosed only in aggregated form that does not permit the identification of any individual. The Receiving Party shall not attempt to re-identify any individual and shall notify the Disclosing Party without delay of any security incident affecting such information.",
+      "he": "",
+      "source_language": "en"
+     },
+     "fallback_wording": {
+      "text": "Information relating to a party's customers shall be disclosed only in aggregated form that does not permit the identification of any individual. The Receiving Party shall not attempt to re-identify any individual and shall notify the Disclosing Party without delay of any security incident affecting such information.",
+      "source": "areo_proposal"
+     },
+     "basis": "areo_proposal",
+     "as_discloser_effect": "החברה מוסרת רק מידע מקובץ, ומוותרת על חובת המחיקה ואיסור ההעברה.",
+     "as_recipient_effect": "מקל על החברה כמקבלת.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "source_label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    },
+    "red": {
+     "position": "שימוש של המקבל במידע על הלקוחות למטרותיו, היתר לזהות מחדש או להצליב, העברה לחוץ לארץ בלי הסכמה, או בלי הודעה על אירוע",
+     "match_criteria": [
+      "שימוש למטרות המקבל",
+      "היתר לזהות או להצליב",
+      "העברה לחו\"ל בלי הסכמה",
+      "אין הודעה על אירוע"
+     ],
+     "proposed_clause": {
+      "en": "The Receiving Party shall not use information relating to the Disclosing Party's customers for any purpose other than the Purpose, shall not attempt to re-identify any individual, and shall notify the Disclosing Party without delay of any security incident.",
+      "he": "",
+      "source_language": "en"
+     },
+     "basis": "areo_proposal",
+     "as_discloser_effect": "לקוחות החברה היו חשופים לשימוש, להצלבה ולהעברה לחוץ לארץ.",
+     "as_recipient_effect": "היתר רחב היה מקל על החברה כמקבלת, אבל חושף את לקוחותיה.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "source_label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    }
+   }
+  }
+ ],
+ "validation_queue": [
+  {
+   "id": "Q-01",
+   "topic": "שאלה מכריעה: מידע על לקוחות",
+   "scope": "rule",
+   "rule_id": "R-16",
+   "severity": "גבוהה",
+   "question": "האם המידע על הלקוחות שיימסר מותמם כך שאי אפשר לזהות בו אדם במאמץ סביר?",
+   "why": "מסרתם שתמסרו מידע אנונימי על לקוחות. לפי ההגדרה בחוק, מידע שאפשר לזהות בו אדם במאמץ סביר הוא מידע אישי.",
+   "recommendation": "לאשר שהמידע יימסר רק אחרי התממה שנבדקה בידי הגורם שאחראי לפרטיות, ולהחיל את הירוק; אם אפשר להצליב, נדרש הסכם עיבוד נפרד.",
+   "options": [
+    "המידע יימסר רק מותמם, אחרי בדיקה של הגורם שאחראי לפרטיות (המלצה)",
+    "אפשר להצליב: נדרש הסכם עיבוד מידע נפרד לפני כל מסירה"
+   ],
+   "answered": false,
+   "answer_verbatim": "",
+   "status": "open"
+  },
+  {
+   "id": "Q-03",
+   "topic": "השלמת הנימוקים (מעבר ב)",
+   "scope": "playbook",
+   "rule_id": "GLOBAL",
+   "severity": "נמוכה",
+   "question": "להשלים את הנימוקים המלאים (מעבר ב) בסוף המשא ומתן?",
+   "why": "בבנייה לבקשת הנושא ונותן רץ רק מעבר א.",
+   "recommendation": "להשלים בסוף המשא ומתן, לפני שהפלייבוק משמש בעסקה נוספת.",
+   "answered": false,
+   "answer_verbatim": "",
+   "status": "open"
+  }
+ ],
+ "handoff": {
+  "status": "built",
+  "family_id": "fam_nda_mutual",
+  "playbook_status": "Draft",
+  "presentation_label": "פלייבוק מוצע, מבוסס מחקר שוק, טעון אישור",
+  "status_label": "פלייבוק מוצע, מבוסס מחקר שוק, טעון אישור",
+  "counted_sources": 6
+ },
+ "produced_with": {
+  "skill_version": "3.1",
+  "notes_version": "5.4",
+  "refs_sha256": "10d4d5ebfc38b4fef33adaeb65f7bc98350709be326444ef2a7bc282c723a93d"
+ }
+}

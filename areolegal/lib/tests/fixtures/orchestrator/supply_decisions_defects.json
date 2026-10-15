@@ -1,0 +1,64 @@
+{
+ "transaction_id": "deal_fixture_supply_defects",
+ "round": 1,
+ "received_sha256": "supply",
+ "lang": "he",
+ "author": "עורכת הדין לדוגמה",
+ "initials": "עד",
+ "_note": "אותו הסכם אספקה, עם פגם מכל מנגנון כללי.",
+ "decisions": [
+  {
+   "id": "P01",
+   "op": "replace_span",
+   "para": 1,
+   "old": "[שם הקונה]",
+   "new": "EXAMPLECO בע\"מ, ח.פ. 511111114",
+   "decision_code": "A2",
+   "conforming": true,
+   "external_comment": "השלמנו את פרטי הקונה."
+  },
+  {
+   "id": "P03d",
+   "op": "replace_span",
+   "para": 3,
+   "old": "בתוך 30 יום מקבלת החשבונית.",
+   "decision_code": "R1",
+   "new": "בתוך המועד המאוחר ביותר שהדין מתיר.",
+   "external_comment": "קבענו מועד תשלום."
+  },
+  {
+   "id": "P04d",
+   "op": "replace",
+   "para": 4,
+   "decision_code": "R1",
+   "new_text": "3.‏ אחריות הספק מוגבלת לסכום השווה למחיר הכולל המוסכם.",
+   "external_comment": "קבענו תקרה בגובה המחיר הכולל, שידוע מראש."
+  },
+  {
+   "id": "P05d",
+   "op": "replace_span",
+   "para": 5,
+   "old": "כל צד רשאי לסיים את ההסכם בהתראה של 30 יום.",
+   "decision_code": "R1",
+   "new": "הקונה רשאי לסיים את ההסכם בהודעה מוקדמת של 30 יום.",
+   "external_comment": "קבענו שרק הקונה רשאי לסיים בהודעה מוקדמת."
+  },
+  {
+   "id": "P06d",
+   "op": "replace",
+   "para": 6,
+   "decision_code": "R1",
+   "new_text": "5.‏ כל צד ישמור בסוד את המידע של הצד האחר.",
+   "external_comment": "חיזקנו את הסודיות."
+  },
+  {
+   "id": "P07d",
+   "op": "replace_span",
+   "para": 7,
+   "old": "הקונה",
+   "new": "EXAMPLECO בע\"מ",
+   "decision_code": "A2",
+   "conforming": true
+  }
+ ]
+}

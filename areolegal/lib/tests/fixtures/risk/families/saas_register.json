@@ -1,0 +1,306 @@
+{
+ "meta": {
+  "company": "החברה לדוגמה",
+  "scope": "deal",
+  "transaction_id": "deal_saas-demo_2026-10-14",
+  "source_version": {
+   "text_status": "counterparty_draft",
+   "file": "saas_licence_draft.docx"
+  },
+  "generated_at": "2026-10-14",
+  "counterparty": {
+   "name": "ספק הענן לדוגמה בע\"מ"
+  },
+  "display_language": "he",
+  "document_title": "הסכם רישיון שימוש בשירות ענן",
+  "position": "מזמין",
+  "prepared_for_counsel": "עורכת הדין",
+  "annexes_reviewed": [],
+  "annexes_missing": []
+ },
+ "documents": [
+  {
+   "title": "הסכם רישיון שימוש בשירות ענן",
+   "file": "saas_licence_draft.docx",
+   "role": "counterparty_draft"
+  }
+ ],
+ "summary": {
+  "sign_as_is": "with_fixes",
+  "deal_one_line": "הסכם רישיון שימוש בשירות ענן",
+  "bottom_line": [
+   "ההסכם מאוזן בחלקו, ויש בו חשיפות שכדאי לטפל בהן.",
+   "החשיפה המרכזית מפורטת בפרק 1.",
+   "אין סיכון קריטי."
+  ],
+  "key_dates": [],
+  "not_checked": [],
+  "assumptions": []
+ },
+ "research": {
+  "mode": "documents_only",
+  "question": [],
+  "search_log": [],
+  "raw_copies": [],
+  "sources_checked": [],
+  "confidence": []
+ },
+ "coverage": [
+  {
+   "lens": "legal",
+   "status": "findings",
+   "risk_ids": [
+    "RSK-001"
+   ],
+   "note": ""
+  },
+  {
+   "lens": "financial",
+   "status": "findings",
+   "risk_ids": [
+    "RSK-003"
+   ],
+   "note": ""
+  },
+  {
+   "lens": "operational",
+   "status": "findings",
+   "risk_ids": [
+    "RSK-004"
+   ],
+   "note": ""
+  },
+  {
+   "lens": "technology",
+   "status": "findings",
+   "risk_ids": [
+    "RSK-002"
+   ],
+   "note": ""
+  },
+  {
+   "lens": "regulatory",
+   "status": "none_found",
+   "risk_ids": [],
+   "note": "נבדק, ואין בהסכם הוראה שיוצרת חשיפה בעדשה הזו"
+  },
+  {
+   "lens": "reputational",
+   "status": "none_found",
+   "risk_ids": [],
+   "note": "נבדק, ואין בהסכם הוראה שיוצרת חשיפה בעדשה הזו"
+  },
+  {
+   "lens": "insurance",
+   "status": "none_found",
+   "risk_ids": [],
+   "note": "נבדק, ואין בהסכם הוראה שיוצרת חשיפה בעדשה הזו"
+  },
+  {
+   "lens": "force_majeure",
+   "status": "none_found",
+   "risk_ids": [],
+   "note": "נבדק, ואין בהסכם הוראה שיוצרת חשיפה בעדשה הזו"
+  }
+ ],
+ "risks": [
+  {
+   "id": "RSK-001",
+   "risk_no": 1,
+   "kind": "clause",
+   "name": "שינוי חד צדדי של תנאי השימוש בהודעה באתר",
+   "description": "",
+   "primary_lens": "legal",
+   "lens": [
+    "legal"
+   ],
+   "inherent": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12
+   },
+   "residual": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12
+   },
+   "severity_level": "high",
+   "controls": [],
+   "exposure": {
+    "amount": {
+     "value": null,
+     "source": "none"
+    },
+    "basis": "לפי הסעיף"
+   },
+   "anchors": [
+    {
+     "document": "הסכם רישיון שימוש בשירות ענן",
+     "clause": "סעיף 3",
+     "quote": "הספק רשאי לשנות את תנאי השימוש בכל עת"
+    }
+   ],
+   "treatment_direction": "לקבוע שינוי רק בהסכמה בכתב, או זכות יציאה בלי עלות",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "decision": {
+    "status": "open",
+    "basis": null,
+    "state_clause_id": null,
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-002",
+   "risk_no": 2,
+   "kind": "clause",
+   "name": "מחיקת הנתונים בתוך 7 ימים בלי מנגנון ייצוא",
+   "description": "",
+   "primary_lens": "technology",
+   "lens": [
+    "technology"
+   ],
+   "inherent": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12
+   },
+   "residual": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12
+   },
+   "severity_level": "high",
+   "controls": [],
+   "exposure": {
+    "amount": {
+     "value": null,
+     "source": "none"
+    },
+    "basis": "לפי הסעיף"
+   },
+   "anchors": [
+    {
+     "document": "הסכם רישיון שימוש בשירות ענן",
+     "clause": "סעיף 5",
+     "quote": "יימחקו נתוני הלקוח בתוך 7 ימים"
+    }
+   ],
+   "treatment_direction": "להוסיף תקופת ייצוא של 60 ימים בפורמט פתוח",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "decision": {
+    "status": "open",
+    "basis": null,
+    "state_clause_id": null,
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-003",
+   "risk_no": 3,
+   "kind": "clause",
+   "name": "תקרת אחריות של שלושה חודשי מנוי",
+   "description": "",
+   "primary_lens": "financial",
+   "lens": [
+    "financial"
+   ],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 3,
+    "score": 9
+   },
+   "residual": {
+    "severity": 3,
+    "likelihood": 3,
+    "score": 9
+   },
+   "severity_level": "high",
+   "controls": [],
+   "exposure": {
+    "amount": {
+     "value": null,
+     "source": "none"
+    },
+    "basis": "לפי הסעיף"
+   },
+   "anchors": [
+    {
+     "document": "הסכם רישיון שימוש בשירות ענן",
+     "clause": "סעיף 4",
+     "quote": "אחריות הספק מוגבלת לדמי המנוי"
+    }
+   ],
+   "treatment_direction": "להעלות את התקרה ולהחריג פגיעה בנתונים",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "decision": {
+    "status": "open",
+    "basis": null,
+    "state_clause_id": null,
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-004",
+   "risk_no": 4,
+   "kind": "clause",
+   "name": "זיכוי סמלי כסעד יחיד על אי זמינות",
+   "description": "",
+   "primary_lens": "operational",
+   "lens": [
+    "operational"
+   ],
+   "inherent": {
+    "severity": 2,
+    "likelihood": 3,
+    "score": 6
+   },
+   "residual": {
+    "severity": 2,
+    "likelihood": 3,
+    "score": 6
+   },
+   "severity_level": "medium",
+   "controls": [],
+   "exposure": {
+    "amount": {
+     "value": null,
+     "source": "none"
+    },
+    "basis": "לפי הסעיף"
+   },
+   "anchors": [
+    {
+     "document": "הסכם רישיון שימוש בשירות ענן",
+     "clause": "סעיף 2",
+     "quote": "הסעד היחיד על אי עמידה בה הוא זיכוי"
+    }
+   ],
+   "treatment_direction": "להוסיף זכות סיום בזמינות נמוכה חוזרת",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "decision": {
+    "status": "open",
+    "basis": null,
+    "state_clause_id": null,
+    "note": "",
+    "decided_at": null
+   }
+  }
+ ],
+ "document_defects": [],
+ "dangerous_combinations": [],
+ "entity_research": {
+  "status": "not_requested",
+  "offered_at": "2026-10-14"
+ }
+}

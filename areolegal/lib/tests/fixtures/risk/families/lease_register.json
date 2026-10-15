@@ -1,0 +1,256 @@
+{
+ "meta": {
+  "company": "החברה לדוגמה",
+  "scope": "deal",
+  "transaction_id": "deal_lease-demo_2026-10-14",
+  "source_version": {
+   "text_status": "agreed",
+   "file": "lease_agreed.docx"
+  },
+  "generated_at": "2026-10-14",
+  "counterparty": {
+   "name": "משה כהן (בעל הנכס, אדם פרטי)"
+  },
+  "display_language": "he",
+  "document_title": "הסכם שכירות משרדים",
+  "position": "מזמין",
+  "prepared_for_counsel": "עורכת הדין",
+  "annexes_reviewed": [],
+  "annexes_missing": []
+ },
+ "documents": [
+  {
+   "title": "הסכם שכירות משרדים",
+   "file": "lease_agreed.docx",
+   "role": "agreed"
+  }
+ ],
+ "summary": {
+  "sign_as_is": "with_fixes",
+  "deal_one_line": "הסכם שכירות משרדים",
+  "bottom_line": [
+   "ההסכם מאוזן בחלקו, ויש בו חשיפות שכדאי לטפל בהן.",
+   "החשיפה המרכזית מפורטת בפרק 1.",
+   "אין סיכון קריטי."
+  ],
+  "key_dates": [],
+  "not_checked": [],
+  "assumptions": []
+ },
+ "research": {
+  "mode": "documents_only",
+  "question": [],
+  "search_log": [],
+  "raw_copies": [],
+  "sources_checked": [],
+  "confidence": []
+ },
+ "coverage": [
+  {
+   "lens": "legal",
+   "status": "findings",
+   "risk_ids": [
+    "RSK-003"
+   ],
+   "note": ""
+  },
+  {
+   "lens": "financial",
+   "status": "findings",
+   "risk_ids": [
+    "RSK-002"
+   ],
+   "note": ""
+  },
+  {
+   "lens": "operational",
+   "status": "findings",
+   "risk_ids": [
+    "RSK-001"
+   ],
+   "note": ""
+  },
+  {
+   "lens": "technology",
+   "status": "none_found",
+   "risk_ids": [],
+   "note": "נבדק, ואין בהסכם הוראה שיוצרת חשיפה בעדשה הזו"
+  },
+  {
+   "lens": "regulatory",
+   "status": "none_found",
+   "risk_ids": [],
+   "note": "נבדק, ואין בהסכם הוראה שיוצרת חשיפה בעדשה הזו"
+  },
+  {
+   "lens": "reputational",
+   "status": "none_found",
+   "risk_ids": [],
+   "note": "נבדק, ואין בהסכם הוראה שיוצרת חשיפה בעדשה הזו"
+  },
+  {
+   "lens": "insurance",
+   "status": "none_found",
+   "risk_ids": [],
+   "note": "נבדק, ואין בהסכם הוראה שיוצרת חשיפה בעדשה הזו"
+  },
+  {
+   "lens": "force_majeure",
+   "status": "none_found",
+   "risk_ids": [],
+   "note": "נבדק, ואין בהסכם הוראה שיוצרת חשיפה בעדשה הזו"
+  }
+ ],
+ "risks": [
+  {
+   "id": "RSK-001",
+   "risk_no": 1,
+   "kind": "clause",
+   "name": "זכות סיום של המשכיר בהודעה של 30 ימים",
+   "description": "",
+   "primary_lens": "operational",
+   "lens": [
+    "operational"
+   ],
+   "inherent": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12
+   },
+   "residual": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12
+   },
+   "severity_level": "high",
+   "controls": [],
+   "exposure": {
+    "amount": {
+     "value": null,
+     "source": "none"
+    },
+    "basis": "לפי הסעיף"
+   },
+   "anchors": [
+    {
+     "document": "הסכם שכירות משרדים",
+     "clause": "סעיף 2",
+     "quote": "המשכיר רשאי לסיים את ההסכם בהודעה של 30 ימים"
+    }
+   ],
+   "treatment_direction": "לבטל את זכות הסיום בלי הפרה, או להאריך להודעה של שנה",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "decision": {
+    "status": "open",
+    "basis": null,
+    "state_clause_id": null,
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-002",
+   "risk_no": 2,
+   "kind": "clause",
+   "name": "נשיאה בתיקונים במבנה",
+   "description": "",
+   "primary_lens": "financial",
+   "lens": [
+    "financial"
+   ],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 3,
+    "score": 9
+   },
+   "residual": {
+    "severity": 3,
+    "likelihood": 3,
+    "score": 9
+   },
+   "severity_level": "high",
+   "controls": [],
+   "exposure": {
+    "amount": {
+     "value": null,
+     "source": "none"
+    },
+    "basis": "לפי הסעיף"
+   },
+   "anchors": [
+    {
+     "document": "הסכם שכירות משרדים",
+     "clause": "סעיף 3",
+     "quote": "לרבות תיקונים במבנה"
+    }
+   ],
+   "treatment_direction": "להטיל תיקונים במבנה על המשכיר",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "decision": {
+    "status": "open",
+    "basis": null,
+    "state_clause_id": null,
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-003",
+   "risk_no": 3,
+   "kind": "clause",
+   "name": "ערבות בנקאית בלי מנגנון השבה",
+   "description": "",
+   "primary_lens": "legal",
+   "lens": [
+    "legal"
+   ],
+   "inherent": {
+    "severity": 2,
+    "likelihood": 3,
+    "score": 6
+   },
+   "residual": {
+    "severity": 2,
+    "likelihood": 3,
+    "score": 6
+   },
+   "severity_level": "medium",
+   "controls": [],
+   "exposure": {
+    "amount": {
+     "value": null,
+     "source": "none"
+    },
+    "basis": "לפי הסעיף"
+   },
+   "anchors": [
+    {
+     "document": "הסכם שכירות משרדים",
+     "clause": "סעיף 4",
+     "quote": "ערבות בנקאית בסכום של שלושה חודשי שכירות"
+    }
+   ],
+   "treatment_direction": "לקבוע השבה בתוך 30 ימים מסיום, בניכוי חוב מוכח",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "decision": {
+    "status": "open",
+    "basis": null,
+    "state_clause_id": null,
+    "note": "",
+    "decided_at": null
+   }
+  }
+ ],
+ "document_defects": [],
+ "dangerous_combinations": [],
+ "entity_research": {
+  "status": "not_requested",
+  "offered_at": "2026-10-14"
+ }
+}

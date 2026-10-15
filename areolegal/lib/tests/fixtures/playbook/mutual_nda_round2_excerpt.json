@@ -1,0 +1,544 @@
+{
+ "_about": "קטע מפלייבוק ההדדי של סבב 2 (C2, 14.10.2026), כפי שנבנה: 4 כללים. משמש לבדיקה שהמאמת תופס את פגמי סבב 2.",
+ "family_id": "fam_mutual_nda",
+ "family_label": "הסכם סודיות הדדי",
+ "corpus_origin": "market_built",
+ "corpus_basis": {
+  "agreement_units": 0,
+  "templates": 0,
+  "band": "none",
+  "choice": "market"
+ },
+ "presentation_label": "פלייבוק מוצע, מבוסס הסכמים ומחקר שוק, טעון אישור",
+ "playbook_status": "Draft",
+ "scope_summary": {
+  "contract_families": [
+   {
+    "contract_family_id": "fam_mutual_nda",
+    "contract_family_name": "הסכם סודיות הדדי (EXAMPLECO מגלה בעיקר)",
+    "company_role_code": "mutual",
+    "document_count": 0
+   }
+  ],
+  "total_document_count": 0,
+  "mutual_lean": "mostly_discloses",
+  "contracting_entity": {
+   "name": "EXAMPLECO",
+   "incorporation_country": "IL"
+  }
+ },
+ "market_research": {
+  "source_refs": [
+   {
+    "source_id": "W1",
+    "issuing_body": "CECO Environmental Corp. / Profire Energy, Inc. (EDGAR)",
+    "document": "Mutual Confidentiality Agreement, EX-99.(D)(2)",
+    "agreement_type": "mutual confidentiality agreement (evaluation of a possible transaction)",
+    "jurisdiction": "US-NV",
+    "template_family": "F-CECO",
+    "drafted_by": "negotiated",
+    "url": "https://www.sec.gov/Archives/edgar/data/1289636/000110465924124892/tm2426882d6_ex99-d2.htm",
+    "counted": true
+   },
+   {
+    "source_id": "W2",
+    "issuing_body": "Evoke Pharma, Inc. / QOL Medical, LLC (EDGAR)",
+    "document": "Mutual Confidentiality Agreement (letter agreement), EX-99.(D)(2)",
+    "agreement_type": "mutual confidentiality agreement (evaluation of a possible transaction)",
+    "jurisdiction": "US-DE",
+    "template_family": "F-W2W7",
+    "drafted_by": "negotiated",
+    "url": "https://www.sec.gov/Archives/edgar/data/1403708/000119312525283849/d944241dex99d2.htm",
+    "counted": true
+   },
+   {
+    "source_id": "W3",
+    "issuing_body": "FOCUS Investment Banking LLC (for TSR, Inc.) / BCforward (EDGAR)",
+    "document": "Confidentiality Agreement (reciprocal drafting), EX-99.D4",
+    "agreement_type": "confidentiality agreement drafted reciprocally (each party as recipient)",
+    "jurisdiction": "US-DE",
+    "template_family": "F-FOCUS",
+    "drafted_by": "negotiated",
+    "url": "https://www.sec.gov/Archives/edgar/data/98338/000117494724000769/ea020707501ex99-d4_vienna.htm",
+    "counted": true
+   },
+   {
+    "source_id": "W4",
+    "issuing_body": "HilleVax, Inc. / XOMA (US) LLC (EDGAR)",
+    "document": "Mutual Nondisclosure Agreement, EX-99.(D)(2)",
+    "agreement_type": "mutual nondisclosure agreement (proposed business relationship or transaction)",
+    "jurisdiction": "US-NY",
+    "template_family": "F-HLVX",
+    "drafted_by": "negotiated",
+    "url": "https://www.sec.gov/Archives/edgar/data/1888012/000119312525182241/d13490dex99d2.htm",
+    "counted": true
+   },
+   {
+    "source_id": "W5",
+    "issuing_body": "Lisata Therapeutics, Inc. / Kuva Labs (EDGAR)",
+    "document": "Mutual Nondisclosure Agreement, EX-99.D4",
+    "agreement_type": "mutual nondisclosure agreement (potential business opportunity)",
+    "jurisdiction": "US-NY",
+    "template_family": "F-LSTA",
+    "drafted_by": "negotiated",
+    "url": "https://www.sec.gov/Archives/edgar/data/320017/000114036126024731/ny20068687x1_exd4.htm",
+    "counted": true
+   },
+   {
+    "source_id": "W6",
+    "issuing_body": "Hildred Capital / Crown Laboratories / Revance Therapeutics, Inc. (EDGAR)",
+    "document": "Mutual Nondisclosure Agreement, EX-99.(D)(5)",
+    "agreement_type": "mutual nondisclosure agreement (potential license, partnership or transaction)",
+    "jurisdiction": "US-DE",
+    "template_family": "F-RVNC",
+    "drafted_by": "negotiated",
+    "url": "https://www.sec.gov/Archives/edgar/data/1479290/000119312524276366/d771059dex99d5.htm",
+    "counted": true
+   },
+   {
+    "source_id": "W7",
+    "issuing_body": "scPharmaceuticals Inc. / MannKind Corporation (EDGAR)",
+    "document": "Mutual Nondisclosure Agreement, EX-99.(D)(3)",
+    "agreement_type": "mutual nondisclosure agreement (possible business opportunity)",
+    "jurisdiction": "US-DE",
+    "template_family": "F-W2W7",
+    "drafted_by": "negotiated",
+    "url": "https://www.sec.gov/Archives/edgar/data/1604950/000119312525198346/d34139dex99d3.htm",
+    "counted": true
+   },
+   {
+    "source_id": "W8",
+    "issuing_body": "Sequans Communications S.A. / Renesas Electronics Corporation (EDGAR)",
+    "document": "Mutual Nondisclosure Agreement, EX-99.(D)(10)",
+    "agreement_type": "mutual nondisclosure agreement (potential strategic transaction)",
+    "jurisdiction": "US-CA",
+    "template_family": "F-SQNS",
+    "drafted_by": "negotiated",
+    "url": "https://www.sec.gov/Archives/edgar/data/1383395/000119312523231944/d543505dex99d10.htm",
+    "counted": true
+   },
+   {
+    "source_id": "W9",
+    "issuing_body": "Common Paper (ועדת עורכי דין, רישיון CC BY 4.0)",
+    "document": "Mutual NDA Standard Terms, Version 1.0",
+    "agreement_type": "mutual NDA, balanced model",
+    "jurisdiction": "US (הדין נקבע בדף השער)",
+    "template_family": "F-CPBT",
+    "drafted_by": "neutral_model",
+    "url": "https://commonpaper.com/standards/mutual-nda/1.0/",
+    "counted": true
+   },
+   {
+    "source_id": "W10",
+    "issuing_body": "Bonterms (ועדת עורכי דין, רישיון CC BY 4.0)",
+    "document": "Bonterms Mutual NDA, Version 1.0",
+    "agreement_type": "mutual NDA, balanced model",
+    "jurisdiction": "US (הדין נקבע בדף השער)",
+    "template_family": "F-CPBT",
+    "drafted_by": "neutral_model",
+    "url": "https://bonterms.com/standard/bonterms-mutual-nda-v1/",
+    "counted": true
+   },
+   {
+    "source_id": "W11",
+    "issuing_body": "ממשלת בריטניה, משרד הקניין הרוחני (Intellectual Property Office, gov.uk)",
+    "document": "An Example of a Mutual Non-Disclosure Agreement",
+    "agreement_type": "mutual NDA, government model for businesses",
+    "jurisdiction": "UK-EW",
+    "template_family": "F-UKIPO",
+    "drafted_by": "neutral_model",
+    "url": "https://assets.publishing.service.gov.uk/media/5a8188fd40f0b62302697d5e/Example-Mutual-Non-Disclosure-Agreement.pdf",
+    "counted": true
+   }
+  ],
+  "unverified_findings": [
+   {
+    "topic": "דין חל וסמכות שיפוט",
+    "rule_id": "R-15",
+    "level": null,
+    "what": "הנושא כולו",
+    "sources_found": [],
+    "label": "לא נבדק מול השוק",
+    "reason": "לא נבדק מול השוק: הנושא תלוי בדין."
+   },
+   {
+    "topic": "מידע אישי ומידע שהותמם על לקוחות",
+    "rule_id": "R-22",
+    "level": null,
+    "what": "הנושא כולו",
+    "sources_found": [],
+    "label": "לא נבדק מול השוק",
+    "reason": "לא נבדק מול השוק: הנושא תלוי בדין, והמקורות שנמצאו מדין זר."
+   }
+  ]
+ },
+ "regulatory_research": {
+  "facts": [
+   {
+    "fact_id": "LF3",
+    "fact": "\"מידע אישי\" הוא נתון הנוגע לאדם מזוהה או לאדם הניתן לזיהוי, כלומר מי שניתן לזהותו במאמץ סביר, במישרין או בעקיפין (סעיף 3); לא יעבד אדם מידע אישי ממאגר מידע ללא הרשאה מבעל השליטה (סעיף 8(ג)).",
+    "rule_ids": [
+     "R-22"
+    ],
+    "source_ids": [
+     "L3"
+    ],
+    "verification": "verified_one_official_source",
+    "verification_label": "אומת במקור רשמי אחד: נבו (נוסח חקיקה), מהרשימה המורשית",
+    "sources_found": 1,
+    "reason": ""
+   },
+   {
+    "fact_id": "LF4",
+    "fact": "אירע אירוע אבטחה חמור, יודיע על כך בעל המאגר לרשם באופן מיידי (תקנה 11(ד)(1)).",
+    "rule_ids": [
+     "R-06",
+     "R-22"
+    ],
+    "source_ids": [
+     "L4"
+    ],
+    "verification": "verified_one_official_source",
+    "verification_label": "אומת במקור רשמי אחד: נבו (נוסח חקיקה), מהרשימה המורשית",
+    "sources_found": 1,
+    "reason": ""
+   }
+  ]
+ },
+ "rules": [
+  {
+   "rule_id": "R-07",
+   "topic_name": "משך חובת הסודיות",
+   "topic_ids": [
+    "T07"
+   ],
+   "importance": "critical",
+   "activation_conditions": [],
+   "traffic_light": {
+    "green": {
+     "position": "חמש שנים מיום כל גילוי, וסוד מסחרי ומידע על לקוחות מוגנים כל עוד הם כאלה",
+     "match_criteria": [
+      "5 שנים מיום הגילוי",
+      "סוד מסחרי: כל עוד הוא סוד מסחרי",
+      "מידע על לקוחות: ללא הגבלת זמן"
+     ],
+     "proposed_clause": {
+      "he": "חובות הסודיות וההגבלה על השימוש יחולו במשך חמש (5) שנים מיום מסירתו של כל מידע סודי; ואולם לגבי מידע סודי שהוא סוד מסחרי, יחולו החובות כל עוד הוא סוד מסחרי לפי כל דין, ולגבי מידע על לקוחות, יחולו החובות ללא הגבלת זמן.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "market_standard",
+     "as_recipient_effect": "אותו משך יחייב את החברה כמקבלת: חמש שנים, וסודות מסחריים של הצד שכנגד כל עוד הם סוד.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "market_source_ids": [
+      "W4",
+      "W5",
+      "W7"
+     ]
+    },
+    "yellow": {
+     "position": "שלוש שנים מיום הגילוי, וסוד מסחרי ומידע על לקוחות כל עוד הם כאלה",
+     "match_criteria": [
+      "3 שנים מיום הגילוי",
+      "סוד מסחרי ומידע על לקוחות: ללא קיצור"
+     ],
+     "proposed_clause": {
+      "he": "חובות הסודיות וההגבלה על השימוש יחולו במשך שלוש (3) שנים מיום מסירתו של כל מידע סודי; ואולם לגבי סוד מסחרי ולגבי מידע על לקוחות, יחולו החובות כל עוד המידע הוא סוד מסחרי או מידע על לקוחות.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "as_recipient_effect": "מקצר גם את החובה של החברה כמקבלת.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "fallback_wording": {
+      "text": "חובות הסודיות וההגבלה על השימוש יחולו במשך שלוש (3) שנים מיום מסירתו של כל מידע סודי; ואולם לגבי סוד מסחרי ולגבי מידע על לקוחות, יחולו החובות כל עוד המידע הוא סוד מסחרי או מידע על לקוחות.",
+      "source": "areo_proposal"
+     }
+    },
+    "red": {
+     "position": "שנתיים או פחות, בלי הגנה מיוחדת לסוד מסחרי, או חובה שמסתיימת עם סיום ההסכם",
+     "match_criteria": [
+      "שנתיים או פחות",
+      "אין הגנה לסוד מסחרי",
+      "החובה מסתיימת עם סיום ההסכם"
+     ],
+     "proposed_clause": {
+      "he": "חובות הסודיות יחולו לפחות שלוש (3) שנים מיום מסירת המידע, וסוד מסחרי ומידע על לקוחות יוגנו כל עוד הם כאלה.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "market_standard",
+     "as_recipient_effect": "תקופה קצרה הייתה משחררת מהר גם את החברה כמקבלת, אבל משאירה את תוכניות המוצר שלה בלי הגנה.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "market_source_ids": [
+      "W3",
+      "W6",
+      "W8"
+     ]
+    }
+   },
+   "round1_posture": "hold_green",
+   "legal_review_required": [],
+   "statutory_override": [],
+   "policy_status": "Inferred"
+  },
+  {
+   "rule_id": "R-15",
+   "topic_name": "דין חל וסמכות שיפוט",
+   "topic_ids": [
+    "T15"
+   ],
+   "importance": "high",
+   "activation_conditions": [],
+   "traffic_light": {
+    "green": {
+     "position": "דין ישראלי וסמכות ייחודית לבתי המשפט בתל אביב-יפו, עם זכות לבקש סעד דחוף בכל מקום",
+     "match_criteria": [
+      "דין ישראלי",
+      "סמכות ייחודית בתל אביב-יפו",
+      "סעד דחוף בכל בית משפט מוסמך"
+     ],
+     "proposed_clause": {
+      "he": "על הסכם זה יחול הדין הישראלי בלבד, וסמכות השיפוט הייחודית בכל עניין הנוגע לו תהיה לבתי המשפט המוסמכים במחוז תל אביב-יפו; ואולם כל צד רשאי לבקש צו מניעה או סעד דחוף אחר בכל בית משפט מוסמך.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "as_recipient_effect": "סימטרי; החברה כמקבלת תתבע בישראל, וזה יתרון לה.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    },
+    "yellow": {
+     "position": "דין ישראלי, וסמכות לבית המשפט שבמקום מושבו של הנתבע",
+     "match_criteria": [
+      "דין ישראלי",
+      "שיפוט במקום הנתבע"
+     ],
+     "proposed_clause": {
+      "he": "על הסכם זה יחול הדין הישראלי, וסמכות השיפוט תהיה לבתי המשפט המוסמכים במקום מושבו של הצד הנתבע; כל צד רשאי לבקש סעד דחוף בכל בית משפט מוסמך.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "as_recipient_effect": "אם החברה תפר, היא תתבע בישראל.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "fallback_wording": {
+      "text": "על הסכם זה יחול הדין הישראלי, וסמכות השיפוט תהיה לבתי המשפט המוסמכים במקום מושבו של הצד הנתבע; כל צד רשאי לבקש סעד דחוף בכל בית משפט מוסמך.",
+      "source": "areo_proposal"
+     }
+    },
+    "red": {
+     "position": "דין זר וסמכות ייחודית בחו\"ל, או סמכות שהצד שכנגד בוחר לבדו",
+     "match_criteria": [
+      "דין זר",
+      "שיפוט ייחודי בחו\"ל",
+      "בחירת מקום שיפוט בידי צד אחד"
+     ],
+     "proposed_clause": {
+      "he": "על הסכם זה יחול הדין הישראלי, וכל צד רשאי לבקש סעד דחוף בכל בית משפט מוסמך.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "as_recipient_effect": "שיפוט בחו\"ל היה מקשה גם על הגנת החברה כנתבעת.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    }
+   },
+   "round1_posture": "hold_green",
+   "legal_review_required": [
+    {
+     "track": "red",
+     "clause_refs": [
+      "R-15"
+     ],
+     "concern": "תחולת חוק החוזים האחידים על הסכם סודיות בטופס קבוע של צד שכנגד גדול, והאם החברה היא 'לקוח' לעניין זה, דורשות בדיקה משפטית לפני שמסתמכים על החזקה.",
+     "label": "טעון בדיקה משפטית"
+    }
+   ],
+   "statutory_override": [],
+   "policy_status": "Inferred"
+  },
+  {
+   "rule_id": "R-20",
+   "topic_name": "הקפאת רכישות ניירות ערך (standstill)",
+   "topic_ids": [
+    "T20"
+   ],
+   "importance": "low",
+   "activation_conditions": [
+    {
+     "condition": "הצד שכנגד עשוי לשקול השקעה בחברה או רכישה שלה",
+     "deciding_question": "האם הצד שכנגד עשוי לשקול השקעה בחברה או רכישה שלה?"
+    }
+   ],
+   "traffic_light": {
+    "green": {
+     "position": "12 חודשים בלי רכישת ניירות ערך של הצד האחר ובלי מהלך שליטה, אלא בהזמנת הדירקטוריון",
+     "match_criteria": [
+      "12 חודשים",
+      "אין רכישת ניירות ערך",
+      "אין הצעת רכש או מאבק שליטה",
+      "אלא בהזמנת הדירקטוריון"
+     ],
+     "proposed_clause": {
+      "he": "במשך שנים עשר (12) חודשים ממועד חתימת הסכם זה, לא ירכוש צד, במישרין או בעקיפין, ניירות ערך של הצד האחר, לא יציע הצעת רכש ולא יפעל להשגת שליטה בו או להשפעה על הנהלתו, אלא אם הוזמן לכך בכתב בידי הדירקטוריון של הצד האחר.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "market_standard",
+     "as_recipient_effect": "ההגבלה הדדית; לחברה אין כוונה לרכוש ניירות ערך של הצד שכנגד, ולכן העלות לה נמוכה.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "market_source_ids": [
+      "W1",
+      "W3",
+      "W8"
+     ]
+    },
+    "yellow": {
+     "position": "אותה הקפאה, שפוקעת כשצד שלישי מתקשר בעסקת שליטה בצד האחר",
+     "match_criteria": [
+      "12 חודשים",
+      "פקיעה בעסקה עם צד שלישי"
+     ],
+     "proposed_clause": {
+      "he": "ההגבלה תפקע אם הצד האחר התקשר עם צד שלישי בהסכם לרכישת השליטה בו או רוב נכסיו.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "as_recipient_effect": "ללא שינוי ממשי לחברה.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "fallback_wording": {
+      "text": "ההגבלה תפקע אם הצד האחר התקשר עם צד שלישי בהסכם לרכישת השליטה בו או רוב נכסיו.",
+      "source": "areo_proposal"
+     }
+    },
+    "red": {
+     "position": "אין הקפאה כשהצד שכנגד עשוי לשקול השקעה או רכישה, או הקפאה רק על החברה",
+     "match_criteria": [
+      "אין הקפאה במגעי השקעה",
+      "הקפאה חד-צדדית על החברה"
+     ],
+     "proposed_clause": {
+      "he": "הגבלת ההקפאה תחול על שני הצדדים באותה מידה.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "as_recipient_effect": "הקפאה חד-צדדית על החברה הייתה מגבילה אותה בלי צורך.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    }
+   },
+   "round1_posture": "hold_green",
+   "legal_review_required": [],
+   "statutory_override": [],
+   "policy_status": "Inferred"
+  },
+  {
+   "rule_id": "R-22",
+   "topic_name": "מידע אישי ומידע שהותמם על לקוחות",
+   "topic_ids": [
+    "T22"
+   ],
+   "importance": "critical",
+   "activation_conditions": [
+    {
+     "condition": "יימסר מידע על לקוחות, מבוטחים או עובדים, גם בצורה מותממת",
+     "deciding_question": "האם המידע על הלקוחות שיימסר מותמם כך שאי אפשר לזהות אדם במאמץ סביר?"
+    }
+   ],
+   "traffic_light": {
+    "green": {
+     "position": "מוסרים רק מידע שהותמם; הצד המקבל לא ינסה לזהות אדם, לא יצליב ולא יעביר, יודיע מיד על אירוע וימחק לפי דרישה; מידע מזהה רק בהסכם עיבוד נפרד",
+     "match_criteria": [
+      "מידע מותמם בלבד",
+      "איסור זיהוי מחדש והצלבה",
+      "איסור העברה לצד שלישי ולחו\"ל בלי הסכמה",
+      "הודעה מיידית על אירוע אבטחה",
+      "מחיקה לפי דרישה",
+      "מידע מזהה רק בהסכם עיבוד נפרד"
+     ],
+     "proposed_clause": {
+      "he": "מידע על לקוחות, מבוטחים או עובדים של צד יימסר לפי הסכם זה רק לאחר שהותמם כך שלא ניתן לזהות בו אדם במאמץ סביר. הצד המקבל לא ינסה לזהות אדם מתוך מידע כאמור, לא יצליב אותו עם מידע אחר, לא יעבירו לצד שלישי או אל מחוץ לישראל בלא הסכמה מראש ובכתב, יודיע לצד המגלה מיד על כל אירוע אבטחה הנוגע לו, וימחק אותו לפי דרישה. מסירה של מידע אישי, כהגדרתו בחוק הגנת הפרטיות, התשמ\"א-1981, תיעשה רק לפי הסכם עיבוד מידע נפרד.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "as_recipient_effect": "אם הצד שכנגד ימסור לחברה מידע מותמם, אותן חובות יחולו עליה; היא ממילא מחזיקת מידע מפוקחת.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    },
+    "yellow": {
+     "position": "מידע מקובץ בלבד (סטטיסטי), ללא חובות נוספות מעבר לאיסור זיהוי מחדש",
+     "match_criteria": [
+      "נתונים מקובצים בלבד",
+      "איסור זיהוי מחדש"
+     ],
+     "proposed_clause": {
+      "he": "צד ימסור מידע על לקוחות רק בצורה מקובצת שאינה מאפשרת זיהוי של אדם, והצד המקבל לא ינסה לזהות אדם מתוכו.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "as_recipient_effect": "מקל על החברה כמקבלת.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "fallback_wording": {
+      "text": "צד ימסור מידע על לקוחות רק בצורה מקובצת שאינה מאפשרת זיהוי של אדם, והצד המקבל לא ינסה לזהות אדם מתוכו.",
+      "source": "areo_proposal"
+     }
+    },
+    "red": {
+     "position": "שימוש של הצד המקבל במידע למטרותיו, היתר לזהות מחדש או להצליב, העברה לחו\"ל בלי הסכמה, או היעדר הודעה על אירוע",
+     "match_criteria": [
+      "שימוש למטרות המקבל, לרבות אימון מודלים",
+      "היתר לזהות מחדש או להצליב",
+      "העברה לחו\"ל בלי הסכמה",
+      "אין הודעה על אירוע"
+     ],
+     "proposed_clause": {
+      "he": "הצד המקבל לא ישתמש במידע על לקוחות לכל מטרה שאינה המטרה, לרבות לפיתוח או לאימון של מערכות, לא ינסה לזהות אדם מתוכו, ויודיע מיד על כל אירוע אבטחה.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "as_recipient_effect": "היתר רחב היה מקל על החברה כמקבלת, אבל חושף את לקוחותיה.",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
+    }
+   },
+   "round1_posture": "hold_green",
+   "legal_review_required": [
+    {
+     "track": "green",
+     "clause_refs": [
+      "R-22"
+     ],
+     "concern": "תקנות אבטחת מידע נקראו בנוסח בנבו שנכון ל-18.09.2023, לפני תיקון 13 לחוק; ייתכן שהמונחים עודכנו. יש לבדוק גם אם נדרש הסכם עיבוד מידע ואם המידע המותמם עומד במבחן 'מאמץ סביר'. דין זר (GDPR) לא נבדק.",
+     "label": "טעון בדיקה משפטית"
+    }
+   ],
+   "statutory_override": [
+    {
+     "statute": "חוק הגנת הפרטיות, התשמ\"א-1981",
+     "section": "3 (הגדרת 'מידע אישי') ו-8",
+     "effect": "מידע שאפשר לזהות בו אדם במאמץ סביר הוא מידע אישי, ועיבודו כפוף לחוק; הסכם הסודיות אינו יכול להתיר עיבוד בניגוד לו.",
+     "fact_id": "LF3",
+     "verified_in": "L3",
+     "label": "חובה בדין"
+    }
+   ],
+   "policy_status": "Inferred"
+  }
+ ],
+ "validation_queue": [
+  {
+   "topic": "שאלה מכריעה: מידע על לקוחות",
+   "scope": "rule",
+   "rule_id": "R-22",
+   "severity": "גבוהה",
+   "question": "האם המידע על הלקוחות שיימסר מותמם כך שאי אפשר לזהות בו אדם במאמץ סביר, או שאפשר להצליב אותו?",
+   "why": "מסרתם שתמסרו מידע אנונימי על לקוחות. לפי הגדרת \"מידע אישי\" בחוק, מידע שאפשר לזהות בו אדם במאמץ סביר הוא מידע אישי.",
+   "recommendation": "לבדוק עם הגורם שאחראי לפרטיות את אופן ההתממה לפני המסירה, ולהחיל בכל מקרה את הירוק של R-22 (איסור זיהוי מחדש והודעה מיידית).",
+   "answered": false,
+   "answer_verbatim": "",
+   "id": "Q-02"
+  }
+ ]
+}

@@ -1,0 +1,243 @@
+{
+ "meta": {
+  "transaction_id": "deal_google_2026-10-14"
+ },
+ "clauses": [
+  {
+   "clause_id": "D01",
+   "contract_ref": "פסקה 0 בטיוטה",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D02",
+   "contract_ref": "פסקה 1 בטיוטה",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D03",
+   "contract_ref": "פסקה 2 בטיוטה",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D04",
+   "contract_ref": "פסקה 3 בטיוטה",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D05",
+   "contract_ref": "פסקה 4 בטיוטה",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D06",
+   "contract_ref": "פסקה 5 בטיוטה",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D07",
+   "contract_ref": "פסקה חדשה אחרי פסקה 5",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D08",
+   "contract_ref": "פסקה חדשה אחרי פסקה 5",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D09",
+   "contract_ref": "פסקה חדשה אחרי פסקה 5",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D10",
+   "contract_ref": "פסקה 7 בטיוטה",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D11",
+   "contract_ref": "פסקה חדשה אחרי פסקה 7",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D12",
+   "contract_ref": "פסקה חדשה אחרי פסקה 10",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D13",
+   "contract_ref": "פסקה 11 בטיוטה",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D14",
+   "contract_ref": "פסקה 12 בטיוטה",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D15",
+   "contract_ref": "פסקה חדשה אחרי פסקה 13",
+   "concession_history": []
+  },
+  {
+   "clause_id": "D16",
+   "contract_ref": "פסקה 13 בטיוטה",
+   "concession_history": []
+  },
+  {
+   "clause_id": "E-004",
+   "contract_ref": null,
+   "concession_history": [
+    {
+     "round": 1,
+     "who": "us",
+     "what": "פתיח, הגדרת \"מטרה\"",
+     "in_exchange_for": "ויתור מכוון (תגובה ממוקדת מול טופס של תאגיד גדול, Q2)",
+     "approved_by": "proposed"
+    }
+   ]
+  },
+  {
+   "clause_id": "E-012",
+   "contract_ref": null,
+   "concession_history": [
+    {
+     "round": 1,
+     "who": "us",
+     "what": "קניין רוחני",
+     "in_exchange_for": "ויתור מכוון (תגובה ממוקדת מול טופס של תאגיד גדול, Q2)",
+     "approved_by": "proposed"
+    }
+   ]
+  },
+  {
+   "clause_id": "E-013",
+   "contract_ref": null,
+   "concession_history": [
+    {
+     "round": 1,
+     "who": "us",
+     "what": "אין סוכנות; המחאה",
+     "in_exchange_for": "ויתור מכוון (תגובה ממוקדת מול טופס של תאגיד גדול, Q2)",
+     "approved_by": "proposed"
+    }
+   ]
+  },
+  {
+   "clause_id": "E-026",
+   "contract_ref": null,
+   "concession_history": [
+    {
+     "round": 1,
+     "who": "us",
+     "what": "היעדר מצגים ואחריות למידע",
+     "in_exchange_for": "ויתור מכוון (תגובה ממוקדת מול טופס של תאגיד גדול, Q2)",
+     "approved_by": "proposed"
+    }
+   ]
+  },
+  {
+   "clause_id": "E-027",
+   "contract_ref": null,
+   "concession_history": [
+    {
+     "round": 1,
+     "who": "us",
+     "what": "סעדים",
+     "in_exchange_for": "ויתור מכוון (תגובה ממוקדת מול טופס של תאגיד גדול, Q2)",
+     "approved_by": "proposed"
+    }
+   ]
+  },
+  {
+   "clause_id": "E-028",
+   "contract_ref": null,
+   "concession_history": [
+    {
+     "round": 1,
+     "who": "us",
+     "what": "סודיות קיום המגעים",
+     "in_exchange_for": "ויתור מכוון (תגובה ממוקדת מול טופס של תאגיד גדול, Q2)",
+     "approved_by": "proposed"
+    }
+   ]
+  },
+  {
+   "clause_id": "E-029",
+   "contract_ref": null,
+   "concession_history": [
+    {
+     "round": 1,
+     "who": "us",
+     "what": "פיתוח עצמאי וזיכרון",
+     "in_exchange_for": "ויתור מכוון (תגובה ממוקדת מול טופס של תאגיד גדול, Q2)",
+     "approved_by": "proposed"
+    }
+   ]
+  },
+  {
+   "clause_id": "E-031",
+   "contract_ref": null,
+   "concession_history": [
+    {
+     "round": 1,
+     "who": "us",
+     "what": "חבילת הפרטיות: דיווח תקופתי על אבטחת מידע",
+     "in_exchange_for": "ויתור מכוון (תגובה ממוקדת מול טופס של תאגיד גדול, Q2)",
+     "approved_by": "proposed"
+    }
+   ]
+  },
+  {
+   "clause_id": "E-032",
+   "contract_ref": null,
+   "concession_history": [
+    {
+     "round": 1,
+     "who": "us",
+     "what": "סיום בשל הפרה יסודית (נושא חובה)",
+     "in_exchange_for": "ויתור מכוון (תגובה ממוקדת מול טופס של תאגיד גדול, Q2)",
+     "approved_by": "proposed"
+    }
+   ]
+  },
+  {
+   "clause_id": "E-033",
+   "contract_ref": null,
+   "concession_history": [
+    {
+     "round": 1,
+     "who": "us",
+     "what": "גישת הרגולטור (גוף מפוקח)",
+     "in_exchange_for": "ויתור מכוון (תגובה ממוקדת מול טופס של תאגיד גדול, Q2)",
+     "approved_by": "proposed"
+    }
+   ]
+  },
+  {
+   "clause_id": "E-034",
+   "contract_ref": null,
+   "concession_history": [
+    {
+     "round": 1,
+     "who": "us",
+     "what": "סנקציות ובקרת יצוא (פריטי קטלוג)",
+     "in_exchange_for": "ויתור מכוון (תגובה ממוקדת מול טופס של תאגיד גדול, Q2)",
+     "approved_by": "proposed"
+    }
+   ]
+  },
+  {
+   "clause_id": "E-035",
+   "contract_ref": null,
+   "concession_history": [
+    {
+     "round": 1,
+     "who": "us",
+     "what": "אי-שידול והקפאת רכישות",
+     "in_exchange_for": "ויתור מכוון (תגובה ממוקדת מול טופס של תאגיד גדול, Q2)",
+     "approved_by": "proposed"
+    }
+   ]
+  }
+ ]
+}

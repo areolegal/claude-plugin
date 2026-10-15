@@ -1,0 +1,53 @@
+{
+ "transaction_id": "deal_fixture_lease_defects",
+ "round": 1,
+ "received_sha256": "lease",
+ "lang": "he",
+ "author": "עורכת הדין לדוגמה",
+ "initials": "עד",
+ "_note": "אותו הסכם שכירות, עם פגם מכל מנגנון כללי.",
+ "decisions": [
+  {
+   "id": "L01",
+   "op": "replace_span",
+   "para": 1,
+   "old": "[שם השוכר]",
+   "new": "EXAMPLECO בע\"מ, ח.פ. 511111114",
+   "decision_code": "A2",
+   "conforming": true,
+   "external_comment": "השלמנו את פרטי השוכר."
+  },
+  {
+   "id": "L02d",
+   "op": "insert_paragraph",
+   "after_para": 3,
+   "decision_code": "N1",
+   "text": "2א.‏ דמי השכירות ישולמו בתוך 10 ימים מקבלת חשבון.",
+   "external_comment": "מחקנו את סעיף התשלום הרבעוני."
+  },
+  {
+   "id": "L04d",
+   "op": "replace",
+   "para": 4,
+   "decision_code": "R1",
+   "new_text": "3.‏ המשכיר רשאי לסיים את ההסכם אם השוכר הפר אותו. אי-תשלום של סכום שהשוכר חולק עליו אינו הפרה.",
+   "external_comment": "קבענו חריג למחלוקת."
+  },
+  {
+   "id": "L05d",
+   "op": "delete_paragraph",
+   "para": 5,
+   "decision_code": "R1",
+   "external_comment": "מחקנו את הערבות."
+  },
+  {
+   "id": "L06d",
+   "op": "replace_span",
+   "para": 6,
+   "old": "השוכר",
+   "new": "EXAMPLECO בע\"מ",
+   "decision_code": "A2",
+   "conforming": true
+  }
+ ]
+}

@@ -1,0 +1,64 @@
+{
+ "transaction_id": "deal_fixture_saas",
+ "round": 1,
+ "received_sha256": "saas",
+ "lang": "en",
+ "author": "עורכת הדין לדוגמה",
+ "initials": "עד",
+ "_note": "SaaS agreement (family: SaaS and licensing). Passes both modes.",
+ "decisions": [
+  {
+   "id": "S01",
+   "op": "replace_span",
+   "para": 1,
+   "old": "[Customer name]",
+   "new": "EXAMPLECO Ltd.",
+   "decision_code": "A2",
+   "conforming": true,
+   "external_comment": "We completed the Customer's name, so that the contracting party is identified."
+  },
+  {
+   "id": "S03",
+   "op": "replace",
+   "para": 3,
+   "decision_code": "R1",
+   "new_text": "2. Fees are payable annually in advance, within 30 days after receipt of a valid invoice.",
+   "external_comment": "Fees are payable within 30 days after receipt of a valid invoice, because a fixed period gives both parties a clear due date."
+  },
+  {
+   "id": "S04",
+   "op": "replace",
+   "para": 4,
+   "decision_code": "R1",
+   "new_text": "3. Either party may terminate this agreement for a material breach not cured within 30 days after written notice. Non-payment, partial payment or set-off of an amount that Customer disputes in good faith, as to liability, amount or timing, is not a breach for this purpose. On termination, Provider shall provide transition assistance for 60 days and return all Customer data.",
+   "external_comment": "Termination now requires notice and a cure period, because immediate termination would cut off a service Customer depends on. A good-faith dispute about the amount, timing or set-off is not a ground for termination, so that a billing dispute does not stop the service. Provider gives transition assistance and returns Customer data, so that Customer can move to another service."
+  },
+  {
+   "id": "S05",
+   "op": "replace_span",
+   "para": 5,
+   "old": "shall not disclose it.",
+   "decision_code": "R1",
+   "new": "shall not disclose it, except as required by applicable law or a competent authority, to its advisers and auditors bound by confidentiality, information received from a third party without restriction, or information independently developed.",
+   "external_comment": "We added exceptions to confidentiality, because Customer must be able to comply with law and use its advisers and auditors."
+  },
+  {
+   "id": "S06",
+   "op": "replace",
+   "para": 6,
+   "decision_code": "R1",
+   "new_text": "5. Provider's aggregate liability is limited to USD 500,000.",
+   "external_comment": "We set the cap at a fixed amount of USD 500,000, so that it is known in advance and does not depend on the fees paid so far."
+  },
+  {
+   "id": "S07",
+   "op": "replace_span",
+   "para": 7,
+   "old": "Customer: __________",
+   "decision_code": "A2",
+   "conforming": true,
+   "new": "EXAMPLECO Ltd.: ________ (to be completed at signing)",
+   "external_comment": "We completed the Customer's name in the signature block."
+  }
+ ]
+}

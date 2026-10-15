@@ -1,0 +1,303 @@
+{
+ "_about": "קטע פלייבוק לבדיקת הכלליות של המנגנונים (הערות 5.5, החלטה 22). נתוני בדיקה בלבד.",
+ "family_id": "fam_supply_framework",
+ "family_label": "הסכם אספקה מסגרת (החברה קונה וגם מוכרת)",
+ "corpus_origin": "market_built",
+ "corpus_basis": {
+  "agreement_units": 0,
+  "templates": 0,
+  "band": "none",
+  "choice": "market"
+ },
+ "status_label": "פלייבוק מוצע, מבוסס מחקר שוק, טעון אישור",
+ "playbook_status": "Draft",
+ "scope_summary": {
+  "contract_families": [
+   {
+    "contract_family_id": "fam_supply_framework",
+    "contract_family_name": "הסכם אספקה מסגרת (החברה קונה וגם מוכרת)",
+    "company_role_code": "mutual",
+    "document_count": 0
+   }
+  ],
+  "total_document_count": 0,
+  "contracting_entity": {
+   "name": "חברת בדיקה",
+   "incorporation_country": "IL"
+  },
+  "company_roles": [
+   {
+    "role": "buyer",
+    "label": "הקונה"
+   },
+   {
+    "role": "seller",
+    "label": "המוכרת"
+   }
+  ]
+ },
+ "market_research": {
+  "question": {
+   "engagement_purpose": "business"
+  },
+  "counts": {
+   "found": 11,
+   "opened": 9,
+   "read": 8,
+   "counted": 5
+  },
+  "disclosure": {
+   "fixed_sentence": "הפלייבוק נבנה לפי 5 משפחות תבנית של הסכמים שפורסמו ברשת ונספרו (מתוך 8 מסמכים שנקראו).",
+   "chat_message": "",
+   "word_chapter": true
+  },
+  "jurisdiction_note": "לא נמצא נוסח ישראלי שפורסם מהסוג הזה.",
+  "source_refs": [
+   {
+    "source_id": "W1",
+    "template_family": "F1",
+    "jurisdiction": "US",
+    "engagement_purpose": "business"
+   },
+   {
+    "source_id": "W2",
+    "template_family": "F2",
+    "jurisdiction": "US",
+    "engagement_purpose": "business"
+   },
+   {
+    "source_id": "W3",
+    "template_family": "F3",
+    "jurisdiction": "US",
+    "engagement_purpose": "business"
+   },
+   {
+    "source_id": "W4",
+    "template_family": "F4",
+    "jurisdiction": "US",
+    "engagement_purpose": "other"
+   }
+  ],
+  "ranges": [
+   {
+    "topic": "R-01",
+    "ours": {
+     "level": 1,
+     "source_ids": [
+      "W1",
+      "W2",
+      "W3"
+     ]
+    },
+    "middle": {
+     "level": 0,
+     "source_ids": [
+      "W1",
+      "W2",
+      "W4"
+     ]
+    }
+   }
+  ],
+  "unverified_findings": [
+   {
+    "rule_id": "R-01",
+    "level": -1,
+    "source_ids": [
+     "W4"
+    ],
+    "sources_found": 1,
+    "label": "ממצא לא מאומת, מקור אחד (W4)",
+    "reason": "נמצא מקור נספר אחד לנקודה \"לטובתם\""
+   }
+  ]
+ },
+ "regulatory_research": {
+  "facts": []
+ },
+ "rules": [
+  {
+   "rule_id": "R-01",
+   "topic_name": "מועד התשלום",
+   "topic_ids": [
+    "T01"
+   ],
+   "importance": "medium",
+   "activation_conditions": [],
+   "traffic_light": {
+    "green": {
+     "position": "תשלום בתוך 45 ימים מקבלת חשבונית תקינה",
+     "match_criteria": [
+      "תשלום בתוך 45 ימים מקבלת חשבונית תקינה"
+     ],
+     "proposed_clause": {
+      "he": "התמורה תשולם בתוך 45 ימים מיום קבלת חשבונית מס תקינה.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "market_standard",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "role_effects": {
+      "buyer": "כקונה, לחברה 45 ימים לשלם.",
+      "seller": "כמוכרת, החברה ממתינה 45 ימים לתשלום."
+     },
+     "market_source_ids": [
+      "W1",
+      "W2",
+      "W3"
+     ],
+     "range_point": "ours"
+    },
+    "yellow": {
+     "position": "תשלום בתוך 30 ימים",
+     "match_criteria": [
+      "תשלום בתוך 30 ימים"
+     ],
+     "proposed_clause": {
+      "he": "התמורה תשולם בתוך 30 ימים מיום קבלת חשבונית מס תקינה.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "role_effects": {
+      "buyer": "כקונה, פחות זמן לשלם.",
+      "seller": "כמוכרת, תשלום מהיר יותר."
+     },
+     "fallback_wording": {
+      "text": "התמורה תשולם בתוך 30 ימים מיום קבלת חשבונית מס תקינה.",
+      "source": "areo_proposal"
+     }
+    },
+    "red": {
+     "position": "תשלום מראש, או בתוך פחות מ-15 ימים",
+     "match_criteria": [
+      "תשלום מראש, או בתוך פחות מ-15 ימים"
+     ],
+     "proposed_clause": {
+      "he": "התמורה תשולם בתוך 30 ימים מיום קבלת חשבונית מס תקינה.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "role_effects": {
+      "buyer": "תזרים לחוץ לחברה כקונה.",
+      "seller": "אין חשש לחברה כמוכרת."
+     }
+    }
+   },
+   "round1_posture": "offer_yellow",
+   "legal_review_required": [],
+   "statutory_override": [],
+   "policy_status": "Inferred",
+   "walk_away": false
+  },
+  {
+   "rule_id": "R-02",
+   "topic_name": "אחריות לטיב",
+   "topic_ids": [
+    "T02"
+   ],
+   "importance": "critical",
+   "activation_conditions": [],
+   "traffic_light": {
+    "green": {
+     "position": "אחריות לטיב 24 חודשים, והחלפה או זיכוי לפי בחירת הקונה",
+     "match_criteria": [
+      "אחריות לטיב 24 חודשים, והחלפה או זיכוי לפי בחירת הקונה"
+     ],
+     "proposed_clause": {
+      "he": "המוכר אחראי לכך שהמוצרים יהיו נקיים מפגמים במשך 24 חודשים מהמסירה, ובפגם יחליף אותם או יזכה את הקונה, לפי בחירת הקונה.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "role_effects": {
+      "buyer": "כקונה, הגנה מלאה.",
+      "seller": "כמוכרת, חשיפה ארוכה."
+     },
+     "assumptions": [
+      "לחברה כמוכרת יש מלאי חלופי לתקופה הזו."
+     ]
+    },
+    "yellow": {
+     "position": "אחריות 12 חודשים, תיקון או החלפה לפי בחירת המוכר",
+     "match_criteria": [
+      "אחריות 12 חודשים, תיקון או החלפה לפי בחירת המוכר"
+     ],
+     "proposed_clause": {
+      "he": "המוכר אחראי לכך שהמוצרים יהיו נקיים מפגמים במשך 12 חודשים מהמסירה, ובפגם יתקן או יחליף אותם, לפי בחירתו.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "role_effects": {
+      "buyer": "כקונה, הגנה קצרה יותר.",
+      "seller": "כמוכרת, חשיפה קצרה יותר."
+     },
+     "fallback_wording": {
+      "text": "המוכר אחראי לכך שהמוצרים יהיו נקיים מפגמים במשך 12 חודשים מהמסירה, ובפגם יתקן או יחליף אותם, לפי בחירתו.",
+      "source": "areo_proposal"
+     }
+    },
+    "red": {
+     "position": "אין אחריות לטיב",
+     "match_criteria": [
+      "אין אחריות לטיב"
+     ],
+     "proposed_clause": {
+      "he": "המוכר אחראי לפגמים במוצרים במשך 12 חודשים לפחות.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "role_effects": {
+      "buyer": "כקונה, אין סעד.",
+      "seller": "כמוכרת, אין חשיפה."
+     }
+    }
+   },
+   "round1_posture": "hold_green",
+   "legal_review_required": [],
+   "statutory_override": [],
+   "policy_status": "Inferred",
+   "walk_away": true,
+   "walk_away_source": "company_document"
+  }
+ ],
+ "validation_queue": [
+  {
+   "id": "Q-01",
+   "topic": "שאלה מכריעה",
+   "scope": "rule",
+   "rule_id": "R-02",
+   "severity": "גבוהה",
+   "question": "מי בוחר את הסעד?",
+   "why": "נדרשת הכרעה של הלקוח.",
+   "recommendation": "הקונה.",
+   "options": [
+    "הקונה",
+    "המוכר"
+   ],
+   "answered": false,
+   "answer_verbatim": "",
+   "status": "open"
+  }
+ ],
+ "handoff": {
+  "status": "built",
+  "family_id": "fam_supply_framework",
+  "playbook_status": "Draft",
+  "status_label": "פלייבוק מוצע, מבוסס מחקר שוק, טעון אישור",
+  "counted_sources": 5
+ },
+ "produced_with": {
+  "skill_version": "3.2",
+  "notes_version": "5.5",
+  "refs_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+ }
+}

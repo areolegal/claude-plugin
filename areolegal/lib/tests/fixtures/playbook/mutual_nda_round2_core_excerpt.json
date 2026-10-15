@@ -1,0 +1,26 @@
+{
+ "presentation_label": "פלייבוק מוצע, מבוסס הסכמים ומחקר שוק, טעון אישור",
+ "playbook_status": "Draft",
+ "clauses": [
+  {
+   "id": "R-07",
+   "walk_away": true,
+   "round1_posture": "hold_green"
+  },
+  {
+   "id": "R-15",
+   "walk_away": true,
+   "round1_posture": "hold_green"
+  },
+  {
+   "id": "R-20",
+   "walk_away": true,
+   "round1_posture": "hold_green"
+  },
+  {
+   "id": "R-22",
+   "walk_away": true,
+   "round1_posture": "hold_green"
+  }
+ ]
+}

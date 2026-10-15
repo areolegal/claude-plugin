@@ -1,0 +1,272 @@
+{
+ "_about": "קטע פלייבוק לבדיקת הכלליות של המנגנונים (הערות 5.5, החלטה 22). נתוני בדיקה בלבד.",
+ "family_id": "fam_saas_customer",
+ "family_label": "הסכם SaaS (החברה לקוחה)",
+ "corpus_origin": "market_built",
+ "corpus_basis": {
+  "agreement_units": 0,
+  "templates": 0,
+  "band": "none",
+  "choice": "market"
+ },
+ "status_label": "פלייבוק מוצע, מבוסס מחקר שוק, טעון אישור",
+ "playbook_status": "Draft",
+ "scope_summary": {
+  "contract_families": [
+   {
+    "contract_family_id": "fam_saas_customer",
+    "contract_family_name": "הסכם SaaS (החברה לקוחה)",
+    "company_role_code": "licensee",
+    "document_count": 0
+   }
+  ],
+  "total_document_count": 0,
+  "contracting_entity": {
+   "name": "חברת בדיקה",
+   "incorporation_country": "IL"
+  }
+ },
+ "market_research": {
+  "question": {
+   "engagement_purpose": "business"
+  },
+  "counts": {
+   "found": 12,
+   "opened": 10,
+   "read": 9,
+   "counted": 6
+  },
+  "disclosure": {
+   "fixed_sentence": "הפלייבוק נבנה לפי 6 משפחות תבנית של הסכמים שפורסמו ברשת ונספרו (מתוך 9 מסמכים שנקראו).",
+   "chat_message": "",
+   "word_chapter": true
+  },
+  "jurisdiction_note": "לא נמצא נוסח ישראלי שפורסם מהסוג הזה.",
+  "source_refs": [
+   {
+    "source_id": "W1",
+    "template_family": "F1",
+    "jurisdiction": "US",
+    "engagement_purpose": "business"
+   },
+   {
+    "source_id": "W2",
+    "template_family": "F2",
+    "jurisdiction": "US",
+    "engagement_purpose": "business"
+   },
+   {
+    "source_id": "W3",
+    "template_family": "F3",
+    "jurisdiction": "US",
+    "engagement_purpose": "other"
+   },
+   {
+    "source_id": "W4",
+    "template_family": "F4",
+    "jurisdiction": "US",
+    "engagement_purpose": "business"
+   }
+  ],
+  "ranges": [
+   {
+    "topic": "R-01",
+    "ours": {
+     "level": 1,
+     "source_ids": [
+      "W1",
+      "W2",
+      "W3"
+     ]
+    },
+    "middle": {
+     "level": 0,
+     "source_ids": [
+      "W1",
+      "W2",
+      "W4"
+     ]
+    }
+   }
+  ],
+  "unverified_findings": [
+   {
+    "rule_id": "R-01",
+    "level": -1,
+    "source_ids": [
+     "W4"
+    ],
+    "sources_found": 1,
+    "label": "ממצא לא מאומת, מקור אחד (W4)",
+    "reason": "נמצא מקור נספר אחד לנקודה \"לטובתם\""
+   }
+  ]
+ },
+ "regulatory_research": {
+  "facts": []
+ },
+ "rules": [
+  {
+   "rule_id": "R-01",
+   "topic_name": "זמינות השירות וזיכוי",
+   "topic_ids": [
+    "T01"
+   ],
+   "importance": "medium",
+   "activation_conditions": [],
+   "traffic_light": {
+    "green": {
+     "position": "זמינות חודשית של 99.9% לפחות, וזיכוי של 10% מהתשלום החודשי על כל 0.1% מתחת לה",
+     "match_criteria": [
+      "זמינות חודשית של 99.9% לפחות, וזיכוי של 10% מהתשלום החודשי על כל 0.1% מתחת לה"
+     ],
+     "proposed_clause": {
+      "he": "הספק יעמיד את השירות בזמינות חודשית של 99.9% לפחות; על כל 0.1% מתחת לכך יזוכה הלקוח ב-10% מהתשלום החודשי.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "market_standard",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "company_effect": "הספק מתחייב לרמת שירות מדידה, והחברה מקבלת זיכוי.",
+     "market_source_ids": [
+      "W1",
+      "W2",
+      "W3"
+     ],
+     "range_point": "ours"
+    },
+    "yellow": {
+     "position": "זמינות של 99.5%, וזיכוי של 5% על כל 0.5% מתחת לה",
+     "match_criteria": [
+      "זמינות של 99.5%, וזיכוי של 5% על כל 0.5% מתחת לה"
+     ],
+     "proposed_clause": {
+      "he": "הספק יעמיד את השירות בזמינות חודשית של 99.5% לפחות; על כל 0.5% מתחת לכך יזוכה הלקוח ב-5% מהתשלום החודשי.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "company_effect": "רמת שירות נמוכה יותר, וזיכוי קטן יותר.",
+     "fallback_wording": {
+      "text": "הספק יעמיד את השירות בזמינות חודשית של 99.5% לפחות; על כל 0.5% מתחת לכך יזוכה הלקוח ב-5% מהתשלום החודשי.",
+      "source": "areo_proposal"
+     }
+    },
+    "red": {
+     "position": "אין התחייבות לזמינות",
+     "match_criteria": [
+      "אין התחייבות לזמינות"
+     ],
+     "proposed_clause": {
+      "he": "הספק יעמיד את השירות בזמינות מדידה, והזיכוי אינו גורע מזכויות הלקוח לפי ההסכם.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "company_effect": "בלי התחייבות, החברה אינה יכולה להסתמך על השירות."
+    }
+   },
+   "round1_posture": "offer_yellow",
+   "legal_review_required": [],
+   "statutory_override": [],
+   "policy_status": "Inferred",
+   "walk_away": false
+  },
+  {
+   "rule_id": "R-02",
+   "topic_name": "החזרת הנתונים בסיום",
+   "topic_ids": [
+    "T02"
+   ],
+   "importance": "critical",
+   "activation_conditions": [],
+   "traffic_light": {
+    "green": {
+     "position": "בסיום, הספק מחזיר את כל נתוני הלקוח בפורמט נפוץ בתוך 30 ימים",
+     "match_criteria": [
+      "בסיום, הספק מחזיר את כל נתוני הלקוח בפורמט נפוץ בתוך 30 ימים"
+     ],
+     "proposed_clause": {
+      "he": "בסיום ההסכם יעביר הספק ללקוח, בתוך 30 ימים, את כל נתוני הלקוח בפורמט נפוץ שניתן לקריאה במכונה.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "company_effect": "החברה אינה תלויה בספק כדי לצאת."
+    },
+    "yellow": {
+     "position": "החזרת הנתונים בתוך 60 ימים, בעלות סבירה",
+     "match_criteria": [
+      "החזרת הנתונים בתוך 60 ימים, בעלות סבירה"
+     ],
+     "proposed_clause": {
+      "he": "בסיום ההסכם יעביר הספק ללקוח, בתוך 60 ימים ובעלות סבירה, את נתוני הלקוח בפורמט נפוץ.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "company_effect": "היציאה איטית ויקרה יותר.",
+     "fallback_wording": {
+      "text": "בסיום ההסכם יעביר הספק ללקוח, בתוך 60 ימים ובעלות סבירה, את נתוני הלקוח בפורמט נפוץ.",
+      "source": "areo_proposal"
+     }
+    },
+    "red": {
+     "position": "אין חובה להחזיר נתונים",
+     "match_criteria": [
+      "אין חובה להחזיר נתונים"
+     ],
+     "proposed_clause": {
+      "he": "הספק יחזיר ללקוח את נתוני הלקוח בסיום ההסכם.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "company_effect": "הנתונים של החברה נשארים אצל הספק."
+    }
+   },
+   "round1_posture": "hold_green",
+   "legal_review_required": [],
+   "statutory_override": [],
+   "policy_status": "Inferred",
+   "walk_away": true,
+   "walk_away_source": "client_answer"
+  }
+ ],
+ "validation_queue": [
+  {
+   "id": "Q-01",
+   "topic": "שאלה מכריעה",
+   "scope": "rule",
+   "rule_id": "R-02",
+   "severity": "גבוהה",
+   "question": "באיזה פורמט נדרשים הנתונים?",
+   "why": "נדרשת הכרעה של הלקוח.",
+   "recommendation": "פורמט נפוץ שניתן לקריאה במכונה.",
+   "options": [
+    "פורמט נפוץ",
+    "פורמט של הספק"
+   ],
+   "answered": false,
+   "answer_verbatim": "",
+   "status": "open"
+  }
+ ],
+ "handoff": {
+  "status": "built",
+  "family_id": "fam_saas_customer",
+  "playbook_status": "Draft",
+  "status_label": "פלייבוק מוצע, מבוסס מחקר שוק, טעון אישור",
+  "counted_sources": 6
+ },
+ "produced_with": {
+  "skill_version": "3.2",
+  "notes_version": "5.5",
+  "refs_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+ }
+}

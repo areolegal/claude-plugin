@@ -1,0 +1,75 @@
+{
+  "_note": "מועמדים לאיתור הפלייבוק, בדמות התיקייה של C1ב בסבב 2. הבדיקות בונות מהם תיקייה זמנית.",
+  "root_single_contractor_core": {
+    "playbook_id": "pb_fixture_services_2026_09_01",
+    "family_code": "services",
+    "company_role_code": "service_recipient",
+    "output_language": "he",
+    "last_updated": "2026-09-01",
+    "playbook_status": "Draft",
+    "produced_with": {"skill_version": "5.2"},
+    "applicability": {"not_covered": []}
+  },
+  "root_single_contractor_model": {
+    "rules": [
+      {"rule_id": "R01", "activation_conditions": ["התקשרות עם קבלן עצמאי יחיד למתן שירותים"]},
+      {"rule_id": "R04", "activation_conditions": ["התקשרות עם קבלן עצמאי יחיד למתן שירותים"]},
+      {"rule_id": "R09", "activation_conditions": ["התקשרות עם קבלן עצמאי יחיד למתן שירותים"]}
+    ],
+    "validation_queue": [
+      {"id": "Q1", "rule_id": "R04", "severity": "high", "question": "האם חוק מוסר תשלומים לספקים, התשע\"ז-2017, חל על ההתקשרות? עד לאימות אין לאשר את שוטף+60 כעמדה סופית."},
+      {"id": "Q5", "rule_id": "R09", "severity": "high", "question": "האם החברה מוכנה לתקרה של 12 חודשי תמורה?"}
+    ]
+  },
+  "indexed_valid_core": {
+    "playbook_id": "pb_fixture_services_recipient_2026_10_01",
+    "family_code": "services",
+    "company_role_code": "service_recipient",
+    "output_language": "he",
+    "last_updated": "2026-10-01",
+    "playbook_status": "Approved",
+    "produced_with": {"skill_version": "5.4"},
+    "applicability": {"not_covered": []}
+  },
+  "indexed_valid_model": {
+    "rules": [
+      {"rule_id": "R01", "activation_conditions": ["כל ספק שירותים"]},
+      {"rule_id": "R02", "activation_conditions": []}
+    ],
+    "validation_queue": []
+  },
+  "supplier_side_core": {
+    "family_code": "services",
+    "company_role_code": "service_provider",
+    "output_language": "he",
+    "last_updated": "2026-10-05",
+    "applicability": {"not_covered": []}
+  },
+  "supplier_side_model": {
+    "rules": [{"rule_id": "S01", "activation_conditions": []}],
+    "validation_queue": [
+      {"id": "QS1", "rule_id": "S01", "severity": "high", "question": "לבדוק את ברירת המחדל שבחוק מוסר תשלומים לספקים לפני שמציעים מועד תשלום."}
+    ]
+  },
+  "one_way_nda_core": {
+    "family_code": "nda",
+    "company_role_code": "disclosing",
+    "output_language": "en",
+    "last_updated": "2026-10-14",
+    "applicability": {"not_covered": [{"kind": "הסכם סודיות הדדי"}]}
+  },
+  "mixed_policy_paragraphs": [
+    "מדיניות חוזית",
+    "הסכמי שירות - החברה (מקבלת השירותים)",
+    "תאריך: 24.6.2026",
+    "מסמך זה מהווה מדיניות חוזית אחידה של החברה ביחס להסכמים שבהם היא הצד מקבל השירותים. המסמך נבנה על בסיס ניתוח של ההסכמים הקיימים בתיק החברה: נספח מיקור חוץ ועיבוד מידע, הסכם למתן שירותים לקבלן עצמאי, והסכם עבודה אישי.",
+    "סמכות לאישור חריגות",
+    "חריגה מעמדת ברירת המחדל היא בסמכות עורך הדין שמטפל בהסכם. חריגה מ-Fallback 1 דורשת אישור היועץ המשפטי הראשי או ראש המחלקה המשפטית. חריגה מ-Fallback 2 (הקו האדום) דורשת אישור בכתב של היועץ המשפטי הראשי וגם של מנכ\"ל החברה.",
+    "קטגוריה 9: הגבלת אחריות",
+    "הלכת שילה, ע\"א 8569/06, הוראה הפוטרת מאחריות ברשלנות חמורה אינה תקפה."
+  ],
+  "review_report_paragraphs": [
+    "דוח סקירת הסכם שירותים מול מדיניות מקבל השירותים",
+    "הסכם שירותים, מקבלת השירותים, 1.10.2026."
+  ]
+}

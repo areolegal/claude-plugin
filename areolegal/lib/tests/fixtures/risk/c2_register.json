@@ -1,0 +1,1571 @@
+{
+ "meta": {
+  "company": "EXAMPLECO",
+  "scope": "deal",
+  "transaction_id": "deal_google_2026-10-14",
+  "party_terms": {
+   "we": "EXAMPLECO; בהסכם הדדי: \"הצד החושף\" כשאנחנו מוסרים, \"הנמען\" או \"הצד המקבל\" כשאנחנו מקבלים",
+   "they": "Google LLC; אותם כינויים, לפי כיוון המסירה"
+  },
+  "scope_label": "הסכם סודיות הדדי עם Google LLC, 14.10.2026",
+  "source_ref": "הסכם סודיות הדדי - EXAMPLECO - סבב 1 - 14.10.2026 - פנימי.docx",
+  "source_version": {
+   "file": "הסכם סודיות הדדי - EXAMPLECO - סבב 1 - 14.10.2026 - פנימי.docx",
+   "title": "התגובה שלנו לפני שליחה (מספור לפי הנוסח המוצע)",
+   "round": 1,
+   "date_in_document": null,
+   "other_versions_in_folder": [
+    "Google - הסכם סודיות הדדי - טיוטה שהתקבלה 12.10.2026.docx"
+   ],
+   "compared_against": null,
+   "text_status": "our_unsent_response"
+  },
+  "annexes_reviewed": [],
+  "annexes_missing": [
+   "הסכם עיבוד מידע (סעיף 6)"
+  ],
+  "deal_value": {
+   "amount": null,
+   "currency": "ILS",
+   "basis": "לא ידוע",
+   "source": "none",
+   "source_ref": "הסכם סודיות ללא תמורה"
+  },
+  "generated_at": "2026-10-14",
+  "last_updated": "2026-10-14",
+  "docAccess": {
+   "mode": "local",
+   "baseUrl": ""
+  },
+  "branding": {
+   "logo": "data:image/jpeg;base64,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"
+  },
+  "display_language": "he",
+  "prepared_for_counsel": "עורכת הדין",
+  "user_focus": null,
+  "counterparty": {
+   "name": "Google LLC",
+   "registration_no": "",
+   "country": ""
+  },
+  "document_title": "הסכם סודיות הדדי (NDA)",
+  "position": "הדדי",
+  "mutual_primary_role": "מגלים בעיקר",
+  "playbook_ref": "פלייבוק הסכם סודיות הדדי, 14.10.2026 (מוצע, מבוסס מחקר שוק)",
+  "benchmark_status": "approved"
+ },
+ "documents": [
+  {
+   "file": "הסכם סודיות הדדי - EXAMPLECO - סבב 1 - 14.10.2026 - פנימי.docx",
+   "title": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+   "role": "our_response",
+   "webUrl": null,
+   "urlSource": "none"
+  },
+  {
+   "file": "Google - הסכם סודיות הדדי - טיוטה שהתקבלה 12.10.2026.docx",
+   "title": "טיוטת Google שהתקבלה, 12.10.2026",
+   "role": "counterparty_draft",
+   "webUrl": null,
+   "urlSource": "none"
+  }
+ ],
+ "summary": {
+  "deal_one_line": "הסכם סודיות הדדי ללא תמורה, לבחינת שיתוף פעולה טכנולוגי עם Google LLC.",
+  "bottom_line": [
+   "הנוסח המוצע סוגר את רוב הפערים שבטיוטה של Google, ולא דורג בו סיכון קריטי.",
+   "נשארו שלושה סיכונים גבוהים: עצם המגעים אינו סודי, המטרה כוללת ביצוע של עסקה לא מוגדרת, וההגנה על מידע הלקוחות תלויה בהתממה שלנו.",
+   "התגובה עצמה יוצרת שתי אי-התאמות בהגנה על מידע הלקוחות; את כל שש הנקודות שלמטה אפשר לתקן לפני השליחה."
+  ],
+  "sign_as_is": "with_fixes",
+  "key_dates": [
+   {
+    "date": null,
+    "time": "",
+    "window": "מיד עם היוודע",
+    "what": "הודעה על דליפה או שימוש בלתי מורשה",
+    "clause": "סעיף 3",
+    "consequence": "איחור עלול להיטען כהפרה"
+   },
+   {
+    "date": null,
+    "time": "",
+    "window": "עשרה ימי עבודה מדרישה או מסיום ההסכם",
+    "what": "החזרה או השמדה ואישור בכתב",
+    "clause": "סעיף 10",
+    "consequence": "אי-החזרה עלולה להיטען כהפרה"
+   },
+   {
+    "date": null,
+    "time": "",
+    "window": "שלושים יום מההודעה",
+    "what": "סיום בהודעה של כל צד",
+    "clause": "סעיף 8",
+    "consequence": "החובות שורדות לגבי מידע שנחשף"
+   },
+   {
+    "date": null,
+    "time": "",
+    "window": "חמש שנים מכל חשיפה",
+    "what": "פקיעת הסודיות (למעט סוד מסחרי ולקוחות)",
+    "clause": "סעיף 9",
+    "consequence": "המידע העסקי שלנו אינו מוגן עוד"
+   }
+  ],
+  "not_checked": [
+   {
+    "item": "כיסוי ביטוחי לאחריות שלנו כמקבלים (סיכון 5)",
+    "why": "אין אישור קיום ביטוח בתיק",
+    "who": "ביטוח"
+   },
+   {
+    "item": "נוהל מחסומי מידע בפעילות ההשקעות (סיכון 8)",
+    "why": "אינו בתיק",
+    "who": "ציות"
+   },
+   {
+    "item": "אם \"חברה\" בפרק ח'1 לחוק ניירות ערך כוללת את חברת האם של Google (סיכון 8)",
+    "why": "טעון בדיקה משפטית",
+    "who": "עורך הדין"
+   },
+   {
+    "item": "אכיפת פסק דין ישראלי נגד Google LLC מחוץ לישראל (סיכון 11)",
+    "why": "נדרשת סקירת דין מקומי",
+    "who": "עורך הדין"
+   },
+   {
+    "item": "הנוסח האנגלי המקורי של הטופס של Google",
+    "why": "לא נמסר",
+    "who": "עורך הדין"
+   }
+  ],
+  "assumptions": [
+   "שיטת ההתממה של מידע על לקוחות, מבוטחים ועובדים טרם נקבעה ואושרה (לאישור גורם הפרטיות).",
+   "מספר התאגיד של EXAMPLECO (11111111) מסומן בפרופיל כטעון אימות, והכתובת חסרה (לאישור מזכירות החברה)."
+  ]
+ },
+ "research": {
+  "mode": "approved_sources",
+  "set_at": "2026-10-14",
+  "case_law_connector": null,
+  "question": [
+   {
+    "id": "Q-1",
+    "requirement": "הגדרת מידע אישי ורף הזיהוי בחוק הגנת הפרטיות, בנוסח העדכני",
+    "risk_ids": [
+     "RSK-003"
+    ],
+    "regulator": "הרשות להגנת הפרטיות",
+    "jurisdiction": "IL",
+    "answer_needed": "חל, לא חל או חל בתנאי: האם החוק מגדיר מידע אישי, ומה הרף לאדם הניתן לזיהוי, בנוסח העדכני",
+    "defined_at": "2026-10-14T15:05:00+03:00"
+   },
+   {
+    "id": "Q-2",
+    "requirement": "הגדרת מידע פנים והאיסור על שימוש בו בחוק ניירות ערך, בנוסח העדכני",
+    "risk_ids": [
+     "RSK-008",
+     "RSK-001"
+    ],
+    "regulator": "רשות ניירות ערך",
+    "jurisdiction": "IL",
+    "answer_needed": "חל, לא חל או חל בתנאי: למי ההגדרה חלה ומה האיסור, בנוסח העדכני",
+    "defined_at": "2026-10-14T15:05:00+03:00"
+   }
+  ],
+  "search_log": [
+   {
+    "at": "2026-10-14T14:29:00+03:00",
+    "engine_or_source": "פתיחה ישירה של דף רשמי (נבו, נוסח חקיקה)",
+    "query": "ללא שאילתה: פתיחה ישירה של כתובת הדף",
+    "question_id": "Q-1",
+    "results": 1,
+    "opened": [
+     "https://www.nevo.co.il/law_html/law00/71631.htm"
+    ],
+    "result": "found"
+   },
+   {
+    "at": "2026-10-14T14:29:00+03:00",
+    "engine_or_source": "פתיחה ישירה של דף רשמי (נבו, נוסח חקיקה)",
+    "query": "ללא שאילתה: פתיחה ישירה של כתובת הדף",
+    "question_id": "Q-2",
+    "results": 1,
+    "opened": [
+     "https://www.nevo.co.il/law_html/law00/70349.htm"
+    ],
+    "result": "found"
+   }
+  ],
+  "raw_copies": [
+   {
+    "typed_url": "https://www.nevo.co.il/law_html/law00/71631.htm",
+    "final_url": "https://www.nevo.co.il/law_html/law00/71631.htm",
+    "saved_at": "2026-10-14T14:29:00+03:00",
+    "file": "raw/SRC-001.htm",
+    "title": "חוק הגנת הפרטיות, תשמ\"א-1981",
+    "sha256": "7f29e45bf4870445b1634582e0eecf8eed5c523f66f1b9ad5e3c2cbe1b1f91ae"
+   },
+   {
+    "typed_url": "https://www.nevo.co.il/law_html/law00/70349.htm",
+    "final_url": "https://www.nevo.co.il/law_html/law00/70349.htm",
+    "saved_at": "2026-10-14T14:29:00+03:00",
+    "file": "raw/SRC-002.htm",
+    "title": "חוק ניירות ערך, תשכ\"ח-1968",
+    "sha256": "dc517e435753b415d5959a27b6aebf3c33b304ffa760bbfc4fd901c89a8851d1"
+   }
+  ],
+  "sources_checked": [
+   {
+    "id": "SRC-001",
+    "source": "נבו, נוסח חקיקה: חוק הגנת הפרטיות, התשמ\"א-1981, נוסח עדכני ל-11.10.2026",
+    "url": "https://www.nevo.co.il/law_html/law00/71631.htm",
+    "subject": "הגדרת מידע אישי ואדם הניתן לזיהוי",
+    "taken": "הגדרת מידע אישי, ואדם הניתן לזיהוי: מי שניתן לזהותו במאמץ סביר",
+    "date": "2026-10-14",
+    "finding": "חל: סעיף 6 משתמש באותו רף",
+    "excerpt": "\" אדם הניתן לזיהוי \" – מי שניתן לזהותו במאמץ סביר, במישרין או בעקיפין"
+   },
+   {
+    "id": "SRC-002",
+    "source": "נבו, נוסח חקיקה: חוק ניירות ערך, התשכ\"ח-1968, נוסח עדכני ל-02.09.2026",
+    "url": "https://www.nevo.co.il/law_html/law00/70349.htm",
+    "subject": "הגדרות חברה ומידע פנים בפרק ח'1, והאיסור בסעיפים 52ג ו-52ד",
+    "taken": "הגדרות חברה ומידע פנים (סעיף 52א) והאיסור (סעיפים 52ג, 52ד)",
+    "date": "2026-10-14",
+    "finding": "חל על מידע פנים על EXAMPLECO; לגבי חברת האם של Google, חל בתנאי (טעון בדיקה משפטית)",
+    "excerpt": "\" חברה \" – תאגיד שניירות ערך שלו הוצעו לציבור על פי תשקיף או נסחרים בבורסה והם נמצאים בידי הציבור, לרבות חברה בת וחברה קשורה של אותה חברה"
+   }
+  ],
+  "note": "בדיקה זו אינה תחליף לבדיקת נאותות פיננסית מלאה.",
+  "confidence": [
+   {
+    "source_id": "SRC-001",
+    "label": "high",
+    "why": ""
+   },
+   {
+    "source_id": "SRC-002",
+    "label": "high",
+    "why": ""
+   }
+  ]
+ },
+ "coverage": [
+  {
+   "lens": "legal",
+   "status": "findings",
+   "note": "",
+   "risk_ids": [
+    "RSK-002",
+    "RSK-004",
+    "RSK-006",
+    "RSK-007",
+    "RSK-010",
+    "RSK-011",
+    "RSK-012",
+    "RSK-013",
+    "RSK-014"
+   ],
+   "topics_checked": [
+    "תוקף ואופן הכריתה",
+    "אחריות",
+    "קניין רוחני",
+    "סיום",
+    "דין ושיפוט",
+    "המחאה"
+   ]
+  },
+  {
+   "lens": "financial",
+   "status": "findings",
+   "note": "",
+   "risk_ids": [
+    "RSK-005"
+   ],
+   "topics_checked": [
+    "תמורה (אין)",
+    "תקרת אחריות (אין)",
+    "בלעדיות (אין)"
+   ]
+  },
+  {
+   "lens": "operational",
+   "status": "findings",
+   "note": "",
+   "risk_ids": [
+    "RSK-008"
+   ],
+   "topics_checked": [
+    "החזרה והשמדה",
+    "מקבלי מידע",
+    "מחסומי מידע"
+   ]
+  },
+  {
+   "lens": "technology",
+   "status": "findings",
+   "note": "",
+   "risk_ids": [
+    "RSK-009"
+   ],
+   "topics_checked": [
+    "אבטחת מידע",
+    "הודעה על דליפה",
+    "בינה מלאכותית",
+    "הנדסה חוזרת"
+   ]
+  },
+  {
+   "lens": "regulatory",
+   "status": "findings",
+   "note": "",
+   "risk_ids": [
+    "RSK-003"
+   ],
+   "topics_checked": [
+    "הגנת הפרטיות",
+    "מידע פנים",
+    "גישת רגולטור",
+    "סנקציות"
+   ]
+  },
+  {
+   "lens": "reputational",
+   "status": "findings",
+   "note": "",
+   "risk_ids": [
+    "RSK-001"
+   ],
+   "topics_checked": [
+    "פרסום הזיקה לצד השני",
+    "סודיות המגעים"
+   ]
+  },
+  {
+   "lens": "insurance",
+   "status": "none_found",
+   "note": "ההסכם אינו דורש ביטוח; הכיסוי לסיכון 5 לא נבדק (פרק 5).",
+   "risk_ids": [],
+   "topics_checked": [
+    "דרישות ביטוח",
+    "החרגות מתקרה"
+   ]
+  },
+  {
+   "lens": "force_majeure",
+   "status": "none_found",
+   "note": "אין חובות ביצוע או אספקה, ואין העברה שבקרת יצוא חלה עליה.",
+   "risk_ids": [],
+   "topics_checked": [
+    "הגדרת כוח עליון",
+    "בקרת יצוא"
+   ]
+  }
+ ],
+ "risks": [
+  {
+   "id": "RSK-001",
+   "risk_no": 1,
+   "kind": "silence",
+   "name": "עצם קיום המגעים עם Google אינו מידע סודי",
+   "description": "ההגדרה בסעיף 2 חלה על מידע שצד חושף, ולא על עצם קיום המגעים ותנאיהם. ההסכם שותק על פרסום של שיתוף הפעולה ושל שם EXAMPLECO. ניירות הערך שלנו נסחרים (לפי הפרופיל), ומידע על מגעים כאלה עשוי להיות מידע פנים כהגדרתו בחוק ניירות ערך, התשכ\"ח-1968.",
+   "primary_lens": "reputational",
+   "lens": [
+    "regulatory"
+   ],
+   "inherent": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "high",
+   "controls": [],
+   "residual": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "פרסום או דליפה של עצם המגעים לפני שהחברה החליטה אם לדווח עליהם.",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 2",
+     "quote": "שנחשבת סודית על ידי הצד החושף",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "לכלול את עצם המגעים במידע הסודי",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [
+    "SRC-002"
+   ],
+   "side": "as_beneficiary",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-002",
+   "risk_no": 2,
+   "kind": "vague_term",
+   "name": "המטרה כוללת ביצוע של עסקה שלא הוגדרה",
+   "description": "השימוש המותר בסעיף 3 הוא \"רק לצורך המטרה\", והמטרה בפתיח כוללת גם ביצוע של \"העסקה העסקית\", שאינה מוגדרת. בפרשנות שמיטיבה איתנו המטרה היא בחינה בלבד; הנוסח נוסח בידי Google, ועמימות מתפרשת ככלל נגד המנסח, אך קיים סיכון שתיטען פרשנות לפיה שימוש לביצוע מותר.",
+   "primary_lens": "legal",
+   "lens": [],
+   "inherent": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "high",
+   "controls": [
+    {
+     "type": "contractual",
+     "description": "סעיף 3 בנוסח המוצע אוסר שימוש לאימון, כיול ושיפור של מערכות בינה מלאכותית",
+     "in_place": true,
+     "basis": "proposed_text"
+    }
+   ],
+   "residual": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "Google משתמשת בתוכניות המוצר שמסרנו לצורך פעילות שהיא רואה כביצוע העסקה.",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "פתיח",
+     "quote": "כדי להעריך את העסקה העסקית ואולי לבצע אותה",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "לצמצם את המטרה לבחינה ולהגדיר את העסקה",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": "as_beneficiary",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "drafted_by": "counterparty"
+  },
+  {
+   "id": "RSK-003",
+   "risk_no": 3,
+   "kind": "clause",
+   "name": "ההגנה על מידע הלקוחות שלנו תלויה בהתממה שאנחנו מבצעים",
+   "description": "סעיף 6 מטיל על הצד המוסר להתמים את המידע \"כך שלא ניתן לזהות בו אדם במאמץ סביר\", וזה הרף של הגדרת \"אדם הניתן לזיהוי\" בחוק הגנת הפרטיות (אומת במקור רשמי). מידע שלא הותמם כנדרש הוא מידע אישי, שמסירתו מותנית בהסכם עיבוד מידע שאינו קיים. ההנחה לגבי שיטת ההתממה בפרק 5.",
+   "primary_lens": "regulatory",
+   "lens": [
+    "technology"
+   ],
+   "inherent": {
+    "severity": 5,
+    "likelihood": 3,
+    "score": 15,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "high",
+   "controls": [
+    {
+     "type": "contractual",
+     "description": "סעיף 6 בנוסח המוצע: התממה לפני מסירה, איסור זיהוי, הצלבה והעברה, הודעה על אירוע אבטחה ומחיקה לפי דרישה",
+     "in_place": true,
+     "basis": "proposed_text"
+    }
+   ],
+   "residual": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "נמסר קובץ שאפשר לזהות בו מבוטחים בצירוף נתונים נוספים, ואינו מכוסה בהסכם עיבוד.",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 6",
+     "quote": "רק לאחר שהותמם כך שלא ניתן לזהות בו אדם במאמץ סביר",
+     "anchor_type": "agreement"
+    },
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 6",
+     "quote": "מסירה של מידע אישי, כהגדרתו בחוק הגנת הפרטיות, התשמ\"א-1981, תיעשה רק לפי הסכם עיבוד מידע נפרד",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "לאשר מראש את שיטת ההתממה ולתעד כל מסירה",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [
+    "SRC-001"
+   ],
+   "side": "as_beneficiary",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-004",
+   "risk_no": 4,
+   "kind": "clause",
+   "name": "ההגנה ללא הגבלת זמן חלה על לקוחות בלבד",
+   "description": "סעיף 9 שהוספנו מאריך ללא הגבלה רק את ההגנה על \"מידע על לקוחות\", ואילו סעיף 6 שהוספנו מבחין בין לקוחות, מבוטחים ועובדים. קיים סיכון שתיטען פרשנות לפיה מידע על מבוטחים ועל עובדים מוגן חמש שנים בלבד.",
+   "primary_lens": "legal",
+   "lens": [],
+   "inherent": {
+    "severity": 4,
+    "likelihood": 2,
+    "score": 8,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "medium",
+   "controls": [],
+   "residual": {
+    "severity": 4,
+    "likelihood": 2,
+    "score": 8
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 9",
+     "quote": "ולגבי מידע על לקוחות של הצד החושף, החובה תחול ללא הגבלת זמן",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "להשוות את המונח בסעיף 9 לסעיף 6",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": "as_beneficiary",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "drafted_by": "company",
+   "created_by_response": true
+  },
+  {
+   "id": "RSK-005",
+   "risk_no": 5,
+   "kind": "clause",
+   "name": "אחריות ללא תקרה עלינו כמקבלים, גם להפרת קבלנים",
+   "description": "ההסכם אינו מגביל אחריות, והנוסח המוצע מוסיף שהצד המקבל אחראי להפרה של כל מי שקיבל ממנו מידע. ההוראה הדדית: היא מגנה עלינו כמגלים, ומטילה עלינו אחריות מלאה כשאנחנו מקבלים מידע מ-Google. הכיסוי הביטוחי לאחריות כזו לא נבדק.",
+   "primary_lens": "financial",
+   "lens": [
+    "insurance"
+   ],
+   "inherent": {
+    "severity": 4,
+    "likelihood": 2,
+    "score": 8,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "medium",
+   "controls": [],
+   "residual": {
+    "severity": 4,
+    "likelihood": 2,
+    "score": 8
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 3",
+     "quote": "הצד המקבל אחראי לכל הפרה של הסכם זה על ידי מי מהם",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "לבדוק כיסוי ביטוחי ולצמצם את מקבלי המידע אצלנו",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": "as_obligor",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-006",
+   "risk_no": 6,
+   "kind": "clause",
+   "name": "שתי הוראות מחיקה שונות למידע על לקוחות",
+   "description": "סעיף 6 מחייב למחוק מידע על לקוחות לפי דרישה, וסעיף 10 קובע החזרה או השמדה בתוך עשרה ימי עבודה ומתיר שמירה בגיבוי אוטומטי. שתי ההוראות הוספו בתגובה שלנו, ואין בהסכם סעיף קדימות.",
+   "primary_lens": "legal",
+   "lens": [],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "medium",
+   "controls": [],
+   "residual": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 10",
+     "quote": "בתוך עשרה (10) ימי עבודה",
+     "anchor_type": "agreement"
+    },
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 6",
+     "quote": "וימחק אותו לפי דרישה",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "הוראת מחיקה אחת עם מועד וכלל גיבוי",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": "both",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "drafted_by": "company",
+   "created_by_response": true
+  },
+  {
+   "id": "RSK-007",
+   "risk_no": 7,
+   "kind": "vague_term",
+   "name": "כמקבלים, כל מידע ש-Google רואה כסודי מחייב אותנו",
+   "description": "ההגדרה סובייקטיבית ואינה דורשת סימון. כמגלים זה מיטיב איתנו; כמקבלים, מחלוקת על מה היה סודי תוכרע לפי עמדת Google, וללא הגבלת זמן לגבי סוד מסחרי ומידע על לקוחותיה (סעיף 9).",
+   "primary_lens": "legal",
+   "lens": [],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "medium",
+   "controls": [],
+   "residual": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 2",
+     "quote": "שנחשבת סודית על ידי הצד החושף",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "לנהל רישום של המידע שהתקבל ושל סימונו",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": "as_obligor",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "drafted_by": "counterparty"
+  },
+  {
+   "id": "RSK-008",
+   "risk_no": 8,
+   "kind": "clause",
+   "name": "איסור המסחר כמקבלים מחייב מחסומי מידע, והיקפו לא ברור",
+   "description": "סעיף 7 שהוספנו הדדי. לפי הפרופיל אנחנו מנהלי תיקים ומבטח, ולכן מידע פנים שנקבל מ-Google מחייב מחסומי מידע בפעילות ההשקעות. האיסור חל על \"ניירות ערך של הצד החושף\", כלומר Google LLC; אם הוא חל גם על ניירות הערך של חברת האם שלה, לא הוכרע.",
+   "primary_lens": "operational",
+   "lens": [
+    "regulatory"
+   ],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "medium",
+   "controls": [],
+   "residual": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 7",
+     "quote": "עסקאות בניירות ערך של הצד החושף",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "נוהל מחסומי מידע, והבהרה על אילו ניירות ערך",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [
+    "SRC-002"
+   ],
+   "side": "as_obligor",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-009",
+   "risk_no": 9,
+   "kind": "vague_term",
+   "name": "איסור הבינה המלאכותית אינו חל על הזנת מידע לכלים",
+   "description": "סעיף 3 בנוסח המוצע אוסר אימון, כיול ושיפור של מערכות בינה מלאכותית, אך אינו אוסר להזין מידע סודי לכלי חיצוני לצורך ניתוח. כמגלים, המידע שלנו עלול לעבור לספק כלי כזה כ\"קבלן צד שלישי\"; כמקבלים, אותה עמימות חלה על הכלים שלנו.",
+   "primary_lens": "technology",
+   "lens": [],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "medium",
+   "controls": [
+    {
+     "type": "contractual",
+     "description": "סעיף 3 בנוסח המוצע: איסור אימון, כיול ושיפור של מערכות בינה מלאכותית, וחובת זהירות שאינה פחותה מזו שהצד נוקט לגבי המידע שלו",
+     "in_place": true,
+     "basis": "proposed_text"
+    }
+   ],
+   "residual": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 3",
+     "quote": "ולא לאימון, לכיול או לשיפור של מודלים או מערכות של בינה מלאכותית",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "להבהיר אם מותרת הזנה לכלים חיצוניים",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": "both",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "drafted_by": "company"
+  },
+  {
+   "id": "RSK-010",
+   "risk_no": 10,
+   "kind": "clause",
+   "name": "פרטי הזיהוי של EXAMPLECO אינם סופיים",
+   "description": "בפתיח ובבלוק החתימות מספר התאגיד מופיע בסוגריים מרובעים, הכתובת היא \"[להשלים]\", ופרטי החותמים ריקים. הנוסח הזה אינו מזהה בוודאות את הישות שמתחייבת ושזכאית להגנה.",
+   "primary_lens": "legal",
+   "lens": [],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "medium",
+   "controls": [],
+   "residual": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "בלוק החתימות",
+     "quote": "EXAMPLECO, ח.פ. [11111111]",
+     "anchor_type": "agreement"
+    },
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "פתיח",
+     "quote": "ו-EXAMPLECO, ח.פ. [11111111], שכתובתה [להשלים]",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "להשלים ולאמת מול מזכירות החברה",
+   "playbook_flag": "none",
+   "certainty": "fact",
+   "external_source_ids": [],
+   "side": "both",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-011",
+   "risk_no": 11,
+   "kind": "clause",
+   "name": "Google LLC אינה מזוהה במספר רישום או בכתובת",
+   "description": "ההסכם מזהה את Google LLC בשמה בלבד. השיפוט הייחודי בתל אביב-יפו מיטיב איתנו בתביעה, אבל פסק דין ישראלי ייאכף נגד Google LLC מחוץ לישראל לפי הדין המקומי שם, שלא נבדק. הסעד הדחוף בכל בית משפט מוסמך שמור גם לנו.",
+   "primary_lens": "legal",
+   "lens": [],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "medium",
+   "controls": [
+    {
+     "type": "contractual",
+     "description": "סעיף 16 בנוסח המוצע: דין ישראלי, שיפוט בתל אביב-יפו, וסעד דחוף לכל צד בכל בית משפט מוסמך",
+     "in_place": true,
+     "basis": "proposed_text"
+    }
+   ],
+   "residual": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 16",
+     "quote": "לבתי המשפט המוסמכים במחוז תל אביב-יפו",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "להשלים את פרטי הרישום והכתובת",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": "as_beneficiary",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-012",
+   "risk_no": 12,
+   "kind": "silence",
+   "name": "אין הוראה שהמידע נמסר כמות שהוא",
+   "description": "ההסכם הממצה אינו קובע שמידע נמסר בלי מצג או אחריות לנכונותו. כמגלים בעיקר, תחזיות ותוכניות מוצר שנמסור עלולות לשמש בסיס לטענה על מצג, לפי הדין הכללי.",
+   "primary_lens": "legal",
+   "lens": [],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "medium",
+   "controls": [],
+   "residual": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 15",
+     "quote": "הסכם זה הוא ההסכם היחיד בין הצדדים בנושא זה",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "לסייג בכתב תחזיות ותוכניות שנמסור",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": "as_beneficiary",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-013",
+   "risk_no": 13,
+   "kind": "clause",
+   "name": "כמקבלים, אין היתר למסור ליועצים מקצועיים",
+   "description": "רשימת מקבלי המידע כוללת עובדים, דירקטורים, סוכנים וקבלני צד שלישי, ואינה מזכירה יועצים משפטיים, רואי חשבון או חברות בקבוצה. גילוי לרשות מוסמכת מכוסה בסעיף 4.",
+   "primary_lens": "legal",
+   "lens": [],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 1,
+    "score": 3,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "low",
+   "controls": [],
+   "residual": {
+    "severity": 3,
+    "likelihood": 1,
+    "score": 3
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 3",
+     "quote": "העובדים, הדירקטורים, הסוכנים או קבלני הצד השלישי שלו",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "להבהיר שמותר למסור ליועצים חבי סודיות",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": "as_obligor",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   }
+  },
+  {
+   "id": "RSK-014",
+   "risk_no": 14,
+   "kind": "clause",
+   "name": "הוראת ההודעות אינה כוללת כתובות",
+   "description": "סעיף 14 שהוספנו מפנה לכתובת שכל צד ימסור במועד החתימה, ואין בהסכם כתובת לאף צד. הודעת הסיום, ההודעה על דליפה והדרישה להחזרת מידע נמדדות ממועד ההודעה.",
+   "primary_lens": "legal",
+   "lens": [],
+   "inherent": {
+    "severity": 2,
+    "likelihood": 1,
+    "score": 2,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "severity_level": "low",
+   "controls": [],
+   "residual": {
+    "severity": 2,
+    "likelihood": 1,
+    "score": 2
+   },
+   "exposure": {
+    "contractual_cap": "אין בהסכם תקרת אחריות",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה מתוארת במילים: אין בהסכם סכום, תמורה או תקרה, והלקוח לא מסר סכום.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך מבטח"
+   },
+   "scenario": "",
+   "critical_detail": null,
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 14",
+     "quote": "לכתובת שכל צד ימסור לצד השני בכתב במועד החתימה",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "לרשום בהסכם כתובות לכל צד",
+   "playbook_flag": "none",
+   "certainty": "fact",
+   "external_source_ids": [],
+   "side": "both",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   }
+  }
+ ],
+ "pre_send_fixes": [
+  {
+   "id": "PSF-01",
+   "kind": "missing",
+   "gap": "עצם קיום המגעים ותנאיהם אינם מידע סודי.",
+   "where": "סעיף 2",
+   "clause_ref": "E-028",
+   "status": "open",
+   "risk_ids": [
+    "RSK-001"
+   ]
+  },
+  {
+   "id": "PSF-02",
+   "kind": "missing",
+   "gap": "המטרה עדיין כוללת ביצוע של עסקה שלא הוגדרה.",
+   "where": "פתיח",
+   "clause_ref": "E-004",
+   "status": "open",
+   "risk_ids": [
+    "RSK-002"
+   ]
+  },
+  {
+   "id": "PSF-03",
+   "kind": "incomplete",
+   "gap": "ההתממה מוטלת עלינו, והסעיף מפנה להסכם עיבוד שאינו קיים.",
+   "where": "סעיף 6",
+   "clause_ref": "D07",
+   "status": "open",
+   "risk_ids": [
+    "RSK-003"
+   ]
+  },
+  {
+   "id": "PSF-04",
+   "kind": "created_by_response",
+   "gap": "סעיף 9 מגן ללא הגבלת זמן על לקוחות בלבד, לא על מבוטחים ועובדים.",
+   "where": "6, 9",
+   "clause_ref": "D12",
+   "status": "open",
+   "risk_ids": [
+    "RSK-004"
+   ]
+  },
+  {
+   "id": "PSF-05",
+   "kind": "created_by_response",
+   "gap": "שתי הוראות מחיקה שונות, בלי קביעה מה גובר.",
+   "where": "6, 10",
+   "clause_ref": "D13",
+   "status": "open",
+   "risk_ids": [
+    "RSK-006"
+   ]
+  },
+  {
+   "id": "PSF-06",
+   "kind": "missing",
+   "gap": "מספר התאגיד בסוגריים, כתובת להשלמה, חותמים ריקים.",
+   "where": "פתיח, חתימות",
+   "clause_ref": "D01",
+   "status": "open",
+   "risk_ids": [
+    "RSK-010"
+   ]
+  }
+ ],
+ "document_defects": [
+  {
+   "id": "DEF-001",
+   "type": "contradiction",
+   "title": "מחיקת מידע על לקוחות",
+   "topic": "מחיקת מידע על לקוחות",
+   "locations": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 6",
+     "quote": "וימחק אותו לפי דרישה",
+     "anchor_type": "agreement"
+    },
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 10",
+     "quote": "או בגיבוי אוטומטי שאין אליו גישה",
+     "anchor_type": "agreement"
+    }
+   ],
+   "risk_created": "לא ברור אם מוחקים מיד או בתוך עשרה ימי עבודה, ואם מותר גיבוי.",
+   "proposed_fix": "הוראת מחיקה אחת",
+   "prevails": "none",
+   "prevails_basis": "אין סעיף קדימות",
+   "risk_ids": [
+    "RSK-006"
+   ],
+   "severity": 3,
+   "lens": [
+    "legal"
+   ]
+  },
+  {
+   "id": "DEF-002",
+   "type": "inconsistent_term",
+   "title": "לקוחות, מבוטחים ועובדים",
+   "topic": "לקוחות, מבוטחים ועובדים",
+   "locations": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 6",
+     "quote": "מידע על לקוחות, מבוטחים או עובדים",
+     "anchor_type": "agreement"
+    },
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 9",
+     "quote": "ולגבי מידע על לקוחות של הצד החושף",
+     "anchor_type": "agreement"
+    }
+   ],
+   "risk_created": "אותה קבוצת מידע בשני היקפים שונים.",
+   "proposed_fix": "מונח אחד לשני הסעיפים",
+   "prevails": "none",
+   "prevails_basis": "אין סעיף קדימות",
+   "risk_ids": [
+    "RSK-004"
+   ],
+   "severity": 3,
+   "lens": [
+    "legal"
+   ]
+  },
+  {
+   "id": "DEF-003",
+   "type": "missing_agreement",
+   "title": "הסכם עיבוד מידע",
+   "topic": "הסכם עיבוד מידע",
+   "locations": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 6",
+     "quote": "תיעשה רק לפי הסכם עיבוד מידע נפרד",
+     "anchor_type": "agreement"
+    }
+   ],
+   "risk_created": "מסירת מידע אישי מותנית בהסכם שאינו קיים.",
+   "proposed_fix": "לא למסור מידע אישי בלי הסכם עיבוד",
+   "prevails": "none",
+   "prevails_basis": "המסמך לא נמסר",
+   "risk_ids": [
+    "RSK-003"
+   ],
+   "severity": 3,
+   "lens": [
+    "regulatory"
+   ]
+  },
+  {
+   "id": "DEF-004",
+   "type": "undefined_term",
+   "title": "העסקה",
+   "topic": "העסקה",
+   "locations": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "פתיח",
+     "quote": "כדי להעריך את העסקה העסקית ואולי לבצע אותה",
+     "anchor_type": "agreement"
+    }
+   ],
+   "risk_created": "המונח שתוחם את השימוש במידע אינו מוגדר.",
+   "proposed_fix": "הגדרה של העסקה במשפט אחד",
+   "prevails": "none",
+   "prevails_basis": "אין הגדרה",
+   "risk_ids": [
+    "RSK-002"
+   ],
+   "severity": 3,
+   "lens": [
+    "legal"
+   ]
+  },
+  {
+   "id": "DEF-005",
+   "type": "blank_field",
+   "title": "פרטי EXAMPLECO",
+   "topic": "פרטי EXAMPLECO",
+   "locations": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "פתיח",
+     "quote": "שכתובתה [להשלים]",
+     "anchor_type": "agreement"
+    },
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "בלוק החתימות",
+     "quote": "EXAMPLECO, ח.פ. [11111111]",
+     "anchor_type": "agreement"
+    }
+   ],
+   "risk_created": "שדות ריקים ומספר בסוגריים בנוסח למשלוח.",
+   "proposed_fix": "השלמה ואימות לפני השליחה",
+   "prevails": "none",
+   "prevails_basis": "שדות ריקים",
+   "risk_ids": [
+    "RSK-010"
+   ],
+   "severity": 2,
+   "lens": [
+    "legal"
+   ]
+  }
+ ],
+ "scenarios": [],
+ "entity_research": {
+  "status": "done",
+  "counterparty_name": "Google LLC",
+  "is_new_counterparty": true,
+  "offered_at": "2026-10-14",
+  "missing_identifiers": [
+   "registration_no"
+  ],
+  "report_file": "Areo Workspace - חקר ישות.html",
+  "done_at": "2026-10-14",
+  "risks_up": [],
+  "risks_down": [],
+  "note": "אין ממצא חוסם במקורות שנבדקו; זהות ומעמד במרשם, ורשימות ההכרזה הישראליות, נחסמו והפכו למשימה"
+ },
+ "external_risks": [],
+ "dangerous_combinations": [
+  {
+   "combo_id": "CMB-001",
+   "type": "combination",
+   "risk_ids": [
+    "RSK-002"
+   ],
+   "clauses": [
+    "פתיח",
+    "3",
+    "12"
+   ],
+   "why_together": "המטרה כוללת ביצוע של עסקה לא מוגדרת, וסעיף 3 מתיר כל שימוש שמשרת אותה. סעיף 12 מקנה זכויות \"הנחוצות לשימוש במידע הסודי למטרה זו\", ולכן השימוש בתוכניות המוצר שלנו עשוי לחרוג מבחינה.",
+   "neutralizes": null,
+   "breaking_fix": "לצמצם את המטרה לבחינת שיתוף הפעולה",
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 12",
+     "quote": "למעט הזכויות המוגבלות הנחוצות לשימוש במידע הסודי למטרה זו",
+     "anchor_type": "agreement"
+    }
+   ]
+  },
+  {
+   "combo_id": "CMB-002",
+   "type": "neutralizer",
+   "risk_ids": [
+    "RSK-003"
+   ],
+   "clauses": [
+    "6",
+    "3"
+   ],
+   "why_together": "ההגנות המיוחדות בסעיף 6 חלות על \"מידע כאמור\", כלומר מידע שהותמם. מידע שנמסר בטעות בלי התממה, הרגיש מכולם, נשאר רק עם חובת הזהירות הכללית בסעיף 3.",
+   "neutralizes": "איסור הזיהוי, ההצלבה וההעברה, ההודעה והמחיקה שבסעיף 6",
+   "breaking_fix": "להחיל את הגנות סעיף 6 על כל מידע על לקוחות, מבוטחים או עובדים",
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 6",
+     "quote": "הצד המקבל לא ינסה לזהות אדם מתוך מידע כאמור",
+     "anchor_type": "agreement"
+    }
+   ]
+  },
+  {
+   "combo_id": "CMB-003",
+   "type": "combination",
+   "risk_ids": [
+    "RSK-001"
+   ],
+   "clauses": [
+    "2",
+    "7"
+   ],
+   "why_together": "סעיף 7 על מידע פנים חל רק על המידע הסודי, שסעיף 2 מגדיר כמידע שנחשף. עצם המגעים אינו מידע שנחשף, ולכן הנתון שעשוי להשפיע על מחיר המניה שלנו אינו מכוסה.",
+   "neutralizes": null,
+   "breaking_fix": "להגדיר את עצם המגעים כמידע סודי",
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 7",
+     "quote": "הצד המקבל מאשר כי המידע הסודי עשוי לכלול מידע פנים",
+     "anchor_type": "agreement"
+    }
+   ]
+  },
+  {
+   "combo_id": "CMB-004",
+   "type": "combination",
+   "risk_ids": [
+    "RSK-007",
+    "RSK-011"
+   ],
+   "clauses": [
+    "2",
+    "9",
+    "16"
+   ],
+   "why_together": "כמקבלים, אנחנו מחויבים לכל מידע ש-Google רואה כסודי, ולגבי סודות מסחריים ומידע על לקוחותיה ללא הגבלת זמן. סעיף 16 מאפשר לה צו מניעה נגדנו בכל בית משפט, גם מחוץ לישראל.",
+   "neutralizes": null,
+   "breaking_fix": "להגביל את ההגנה ללא הגבלת זמן למידע שסומן ככזה",
+   "anchors": [
+    {
+     "document": "הסכם סודיות הדדי, התגובה שלנו לפני שליחה",
+     "clause": "סעיף 16",
+     "quote": "ואולם כל צד רשאי לבקש צו מניעה או סעד דחוף אחר בכל בית משפט מוסמך",
+     "anchor_type": "agreement"
+    }
+   ]
+  }
+ ],
+ "vague_terms": [],
+ "back_to_back_gaps": []
+}

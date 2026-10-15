@@ -1,0 +1,37 @@
+{
+ "meta": {
+  "transaction_id": "deal_supply-demo_2026-10-14"
+ },
+ "text_status": "our_unsent_response",
+ "numbering_map": {
+  "S01": "סעיף 1",
+  "S02": "סעיף 2",
+  "S03": "סעיף 3",
+  "S04": "סעיף 4",
+  "S05": "סעיף 5"
+ },
+ "clauses": [
+  {
+   "clause_id": "S01"
+  },
+  {
+   "clause_id": "S02"
+  },
+  {
+   "clause_id": "S03"
+  },
+  {
+   "clause_id": "S04"
+  },
+  {
+   "clause_id": "S05"
+  }
+ ],
+ "deliberate_concessions": [
+  {
+   "topic": "הצמדת המחיר",
+   "clause_ref": "S02",
+   "report_as": "accepted_risk"
+  }
+ ]
+}

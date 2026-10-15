@@ -1,0 +1,1194 @@
+{
+ "meta": {
+  "company": "EXAMPLECO",
+  "scope": "deal",
+  "transaction_id": "deal_yoetz_2026-10-14",
+  "party_terms": {
+   "we": "הלקוח, מקבל השירותים",
+   "they": "הספק, היועץ, נותן השירותים"
+  },
+  "scope_label": "הסכם שירותי ייעוץ עם נותן השירותים (השם לא מולא בהסכם), 14.10.2026",
+  "source_ref": "הסכם ייעוץ - EXAMPLECO - סבב 1 - 14.10.2026 - פנימי.docx",
+  "source_version": {
+   "file": "הסכם ייעוץ - EXAMPLECO - סבב 1 - 14.10.2026 - פנימי.docx",
+   "title": "התגובה שלנו לטיוטת נותן השירותים, 14.10.2026, טרם נשלחה",
+   "round": 1,
+   "date_in_document": null,
+   "other_versions_in_folder": [
+    "מהצד-שכנגד/הסכם שירותי ייעוץ מקצועי - מבט נותן השירותים (דוגמה).docx",
+    "05 הסכמי שירותים מקצועיים - דוגמאות/הסכם שירותי ייעוץ מקצועי - מבט נותן השירותים (דוגמה).docx (עותק זהה)"
+   ],
+   "compared_against": null,
+   "text_status": "our_unsent_response"
+  },
+  "annexes_reviewed": [
+   "הסכם שירותי ייעוץ מקצועי, טיוטת נותן השירותים",
+   "התגובה שלנו לטיוטה, בעקוב אחר שינויים"
+  ],
+  "annexes_missing": [
+   "הנספח: תחום הייעוץ, תעריפים, לוח זמנים ואבני דרך, תוצרים ואנשי צוות"
+  ],
+  "deal_value": {
+   "amount": 180000,
+   "currency": "ILS",
+   "basis": "כולל",
+   "source": "client",
+   "source_ref": "תשובת הלקוח לרכיב הנושא ונותן בעסקה זו: 'בהיקף של כ-180 אלף ש\"ח'"
+  },
+  "generated_at": "2026-10-14",
+  "last_updated": "2026-10-14",
+  "docAccess": {
+   "mode": "local",
+   "baseUrl": ""
+  },
+  "branding": {
+   "logo": "data:image/jpeg;base64,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"
+  },
+  "display_language": "he",
+  "prepared_for_counsel": "עורכת הדין",
+  "user_focus": null,
+  "counterparty": {
+   "name": "נותן השירותים (השם לא מולא בהסכם)",
+   "registration_no": "",
+   "country": "IL"
+  },
+  "document_title": "הסכם למתן שירותי ייעוץ מקצועי",
+  "position": "מקבלת השירותים",
+  "mutual_primary_role": null,
+  "playbook_ref": "מדיניות חוזית - מקבל השירותים (מסמך שמסרה החברה, טרם נקלט למערכת)",
+  "benchmark_status": "draft"
+ },
+ "documents": [
+  {
+   "file": "הסכם שירותי ייעוץ מקצועי - מבט נותן השירותים (דוגמה).docx",
+   "title": "הסכם שירותי ייעוץ מקצועי, טיוטת נותן השירותים",
+   "role": "counterparty_draft",
+   "webUrl": null,
+   "urlSource": "none"
+  },
+  {
+   "file": "הסכם ייעוץ - EXAMPLECO - סבב 1 - 14.10.2026 - פנימי.docx",
+   "title": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+   "role": "our_response",
+   "webUrl": null,
+   "urlSource": "none"
+  }
+ ],
+ "summary": {
+  "deal_one_line": "התקשרות של כחצי שנה לקבלת שירותי ייעוץ מקצועי לפרויקט פנימי, בתמורה של עד 180,000 ש\"ח.",
+  "bottom_line": [
+   "בהנחה שתתקבל במלואה, התגובה שלנו סוגרת את רוב החשיפות שבטיוטה של הצד השני, כולל העברת העבודה בכל סיום וחריג למחלוקת בזכות הסיום בהפרה.",
+   "נשארו פערים בתגובה עצמה: החריג אינו מכסה מחלוקת על מועד או קיזוז (סיכון 2), מועד התשלום אינו ודאי (סיכון 3), והנספח לא צורף (סיכון 1).",
+   "לא נמצא סיכון קריטי, ולא נמצאו טקסט מוסתר או שינוי שלא סומן במעקב."
+  ],
+  "sign_as_is": "with_fixes",
+  "key_dates": [
+   {
+    "date": null,
+    "time": "",
+    "window": "עד 24 שעות מהיוודע לצד השני",
+    "what": "הודעה לנו על אירוע אבטחת מידע",
+    "clause": "סודיות וסיום, סעיף 1ב(ד)",
+    "consequence": "קשה לעמוד בחובות הדיווח שלנו"
+   },
+   {
+    "date": null,
+    "time": "",
+    "window": "7 ימים מהודעת הפרה בכתב",
+    "what": "תקופת תיקון לפני סיום בהפרה",
+    "clause": "סודיות וסיום, סעיף 3",
+    "consequence": "סיום מיידי (סיכון 2)"
+   },
+   {
+    "date": null,
+    "time": "",
+    "window": "[60] יום מתום החודש של חשבונית מאושרת",
+    "what": "מועד התשלום",
+    "clause": "תמורה ותנאי תשלום, סעיף 1",
+    "consequence": "ריבית; טענת הפרה (סיכון 3)"
+   }
+  ],
+  "not_checked": [
+   {
+    "item": "הנספח: תחום, תעריפים, לוח זמנים, תוצרים וצוות",
+    "why": "לא נמסר; ההסכם מפנה אליו",
+    "who": "עורך הדין"
+   },
+   {
+    "item": "ביטוח האחריות המקצועית של הצד השני וכיסוי בביטוח שלנו לסיכונים 5 ו-6",
+    "why": "אין בתיק אישור קיום ביטוח או מסמך של מבטח",
+    "who": "ביטוח"
+   },
+   {
+    "item": "האם ההתקשרות היא מיקור חוץ לפי הוראות רשות שוק ההון, ביטוח וחיסכון לגוף מוסדי",
+    "why": "אין ברשימה המורשית דף רשמי של החוזר המאוחד בנושא; טעון בדיקה משפטית",
+    "who": "עורך הדין"
+   },
+   {
+    "item": "אם [60] יום מתום החודש הם מועד ש'אינו בלתי הוגן באופן חריג' לפי סעיף 3(ז) לחוק מוסר תשלומים לספקים",
+    "why": "שאלה של פרשנות; אין מחבר למאגר משפטי סגור, ולכן טעון בדיקה משפטית",
+    "who": "עורך הדין"
+   },
+   {
+    "item": "בדיקת הצד השני במרשמים הרשמיים",
+    "why": "לא התבקשה; שמו ומספר הרישום שלו לא מולאו בהסכם",
+    "who": "עורך הדין"
+   }
+  ],
+  "assumptions": [
+   "החברה היא 'עסק' כהגדרתו בחוק מוסר תשלומים לספקים (מוסד כספי, עוסק מורשה או עוסק פטור לפי חוק מס ערך מוסף), ולכן סעיף 3(ז) לחוק חל על התשלום לצד השני; המעמד אינו רשום בפרופיל (לאישור הכספים).",
+   "הצד השני יקבל גישה למאגר מידע של החברה, ולכן תקנה 15 לתקנות הגנת הפרטיות (אבטחת מידע) חלה; ההנחה לקוחה מהכרעה שנרשמה בעסקה (לאישור ממונה אבטחת המידע).",
+   "הסכום 180,000 ש\"ח נמסר בידי הלקוח; לא נמסר אם הוא כולל מע\"מ (לאישור הכספים).",
+   "מספר החברה שבתגובה נלקח מהפרופיל, ובפרופיל הוא מסומן כטעון אימות (לאישור עורך הדין)."
+  ]
+ },
+ "research": {
+  "mode": "approved_sources",
+  "set_at": "2026-10-14",
+  "case_law_connector": null,
+  "sources_checked": [
+   {
+    "id": "SRC-001",
+    "source": "נבו, נוסח חקיקה: חוק מוסר תשלומים לספקים, תשע\"ז-2017 (נוסח עדכני נכון ל-06.07.2025)",
+    "url": "https://www.nevo.co.il/law_html/law00/144599.htm",
+    "subject": "מועד תשלום לספק כשהמזמין הוא עסק, והאפשרות לקבוע בחוזה מועד אחר",
+    "taken": "ברירת המחדל לעסק היא 45 ימים מתום החודש שבו הומצא החשבון; מועד אחר רק כשנדרש בשל אופי ההתקשרות או אינו בלתי הוגן באופן חריג (סעיף 3(ז)); אין להתנות על החוק אלא לטובת הספק (סעיף 7).",
+    "date": "2026-10-14",
+    "finding": "חל בתנאי שהחברה היא 'עסק' כהגדרתו בחוק; אין בחוק מועד מאוחר ביותר קבוע לעסק.",
+    "excerpt": "סעיף 3(ז): \"מזמין שהוא עסק שהתקשר עם ספק בחוזה לביצוע עסקה, ישלם לספק את התמורה בעד העסקה לא יאוחר מ-45 ימים מתום החודש שבו הומצא לו החשבון, אלא אם כן קבעו הצדדים באופן מפורש בחוזה מועד אחר לתשלום\""
+   },
+   {
+    "id": "SRC-002",
+    "source": "נבו, נוסח חקיקה: תקנות הגנת הפרטיות (אבטחת מידע), תשע\"ז-2017 (נוסח עדכני נכון ל-18.09.2023)",
+    "url": "https://www.nevo.co.il/law_html/law00/144811.htm",
+    "subject": "מה חייב להיקבע בהסכם עם גורם חיצוני שמקבל גישה למאגר מידע",
+    "taken": "תקנה 15(א)(2) מחייבת לקבוע בהסכם את המידע ומטרות השימוש, המערכות, סוג העיבוד, משך ההתקשרות והשבת המידע, חובות האבטחה, התחייבות סודיות של בעלי ההרשאות, החלה על גורם נוסף, ודיווח אחת לשנה לפחות והודעה על אירוע.",
+    "date": "2026-10-14",
+    "finding": "חל בתנאי שהצד השני מקבל גישה למאגר מידע של החברה; התקנה אינה חלה על התקשרות עם יחיד (תקנה 15(ג)).",
+    "excerpt": "תקנה 15(א)(2)(א)-(ב): \"המידע שהגורם החיצוני רשאי לעבד ומטרות השימוש המותרות בו לצורכי ההתקשרות; מערכות המאגר שהגורם החיצוני רשאי לגשת אליהן\""
+   }
+  ],
+  "note": "בדיקה זו אינה תחליף לבדיקת נאותות פיננסית מלאה.",
+  "question": [
+   {
+    "id": "Q-1",
+    "requirement": "מועד תשלום לספק לפי חוק מוסר תשלומים לספקים כשהמזמין הוא עסק, ומה מותר לקבוע בחוזה",
+    "risk_ids": [
+     "RSK-003"
+    ],
+    "regulator": "שר הכלכלה והתעשייה ושר האוצר (הממונים על ביצוע החוק)",
+    "jurisdiction": "IL",
+    "answer_needed": "חל, לא חל או חל בתנאי, ומהו המועד המאוחר ביותר שמותר לקבוע, בנוסח שבתוקף",
+    "defined_at": "2026-10-14T11:20:00+03:00"
+   },
+   {
+    "id": "Q-2",
+    "requirement": "תוכן חובה בהסכם עם גורם חיצוני שמקבל גישה למאגר מידע",
+    "risk_ids": [
+     "RSK-004"
+    ],
+    "regulator": "הרשות להגנת הפרטיות",
+    "jurisdiction": "IL",
+    "answer_needed": "חל, לא חל או חל בתנאי, ואילו פרטים חייבים להיקבע בהסכם, בנוסח שבתוקף",
+    "defined_at": "2026-10-14T11:20:00+03:00"
+   }
+  ],
+  "search_log": [
+   {
+    "at": "2026-10-14T11:22:00+03:00",
+    "engine_or_source": "מנוע חיפוש, מוגבל ל-nevo.co.il ול-knesset.gov.il",
+    "query": "חוק מוסר תשלומים לספקים התשע\"ז-2017 נוסח",
+    "question_id": "Q-1",
+    "results": 6,
+    "opened": [
+     "https://www.nevo.co.il/law_html/law00/144599.htm"
+    ],
+    "result": "found"
+   },
+   {
+    "at": "2026-10-14T11:24:00+03:00",
+    "engine_or_source": "נבו",
+    "query": "פתיחה ישירה של דף נוסח החוק",
+    "question_id": "Q-1",
+    "results": 1,
+    "opened": [
+     "https://www.nevo.co.il/law_html/law00/144599.htm"
+    ],
+    "result": "found"
+   },
+   {
+    "at": "2026-10-14T11:30:00+03:00",
+    "engine_or_source": "מנוע חיפוש, מוגבל ל-nevo.co.il",
+    "query": "תקנות הגנת הפרטיות (אבטחת מידע), התשע\"ז-2017 נוסח",
+    "question_id": "Q-2",
+    "results": 10,
+    "opened": [
+     "https://www.nevo.co.il/law_html/law00/144811.htm"
+    ],
+    "result": "found"
+   },
+   {
+    "at": "2026-10-14T11:31:00+03:00",
+    "engine_or_source": "נבו",
+    "query": "פתיחה ישירה של דף נוסח התקנות",
+    "question_id": "Q-2",
+    "results": 1,
+    "opened": [
+     "https://www.nevo.co.il/law_html/law00/144811.htm"
+    ],
+    "result": "found"
+   }
+  ],
+  "raw_copies": [
+   {
+    "typed_url": "https://www.nevo.co.il/law_html/law00/144599.htm",
+    "final_url": "https://www.nevo.co.il/law_html/law00/144599.htm",
+    "saved_at": "2026-10-14T11:24:00+03:00",
+    "file": "research-raw/src1/law_144599.htm",
+    "title": "חוק מוסר תשלומים לספקים, תשע\"ז-2017",
+    "sha256": "73c79e3cc7b4503c668288eb420b79489c80777f557ec0791cd551adbfe13a1a"
+   },
+   {
+    "typed_url": "https://www.nevo.co.il/law_html/law00/144811.htm",
+    "final_url": "https://www.nevo.co.il/law_html/law00/144811.htm",
+    "saved_at": "2026-10-14T11:31:00+03:00",
+    "file": "research-raw/src2/reg_144811.htm",
+    "title": "תקנות הגנת הפרטיות (אבטחת מידע), תשע\"ז-2017",
+    "sha256": "676650c0515917869fc05037e0c8711fd80a5591306a101eece7539ed597c256"
+   }
+  ],
+  "confidence": [
+   {
+    "source_id": "SRC-001",
+    "label": "high",
+    "why": ""
+   },
+   {
+    "source_id": "SRC-002",
+    "label": "medium",
+    "why": "הדף מציין נוסח עדכני נכון ל-18.09.2023; עדכניות הנוסח אחרי תאריך זה לא נבדקה בהרצה."
+   }
+  ]
+ },
+ "coverage": [
+  {
+   "lens": "legal",
+   "status": "findings",
+   "note": "",
+   "risk_ids": [
+    "RSK-002",
+    "RSK-006",
+    "RSK-008"
+   ],
+   "topics_checked": [
+    "תוקף ואכיפות",
+    "אחריות ושיפוי",
+    "קניין רוחני",
+    "סיום",
+    "דין ושיפוט"
+   ]
+  },
+  {
+   "lens": "financial",
+   "status": "findings",
+   "note": "",
+   "risk_ids": [
+    "RSK-003",
+    "RSK-007"
+   ],
+   "topics_checked": [
+    "תמחור",
+    "תנאי תשלום ובטוחות",
+    "בלעדיות",
+    "תקרה לאורך זמן"
+   ]
+  },
+  {
+   "lens": "operational",
+   "status": "findings",
+   "note": "",
+   "risk_ids": [
+    "RSK-001"
+   ],
+   "topics_checked": [
+    "יכולת ביצוע",
+    "לוחות זמנים",
+    "קבלני משנה וצוות",
+    "המשכיות והעברת עבודה"
+   ]
+  },
+  {
+   "lens": "technology",
+   "status": "none_found",
+   "note": "הצפנה, הזדהות רב-שלבית ואיסור הזנה לכלי בינה מלאכותית (סודיות 1א, 1ג).",
+   "risk_ids": [],
+   "topics_checked": [
+    "גישה למערכות שלנו",
+    "אבטחת מידע",
+    "נעילה טכנולוגית",
+    "קוד מקור"
+   ]
+  },
+  {
+   "lens": "regulatory",
+   "status": "findings",
+   "note": "",
+   "risk_ids": [
+    "RSK-004"
+   ],
+   "topics_checked": [
+    "דרישות רגולטוריות שההסכם נשען עליהן",
+    "הגנת הפרטיות ועיבוד מידע",
+    "מידע פנים",
+    "גישת רשות מפקחת",
+    "סנקציות"
+   ]
+  },
+  {
+   "lens": "reputational",
+   "status": "none_found",
+   "note": "סודיות בלי הגבלת זמן ואיסור שימוש במידע פנים (סודיות 1, 1ד).",
+   "risk_ids": [],
+   "topics_checked": [
+    "הזיקה לצד השני",
+    "פרסום העסקה"
+   ]
+  },
+  {
+   "lens": "insurance",
+   "status": "findings",
+   "note": "",
+   "risk_ids": [
+    "RSK-005"
+   ],
+   "topics_checked": [
+    "דרישות ביטוח",
+    "החרגות מהתקרה שהביטוח אמור לכסות"
+   ]
+  },
+  {
+   "lens": "force_majeure",
+   "status": "none_found",
+   "note": "אין סעיף כוח עליון; סיום לנוחות שלנו ב-30 יום מאפשר יציאה.",
+   "risk_ids": [],
+   "topics_checked": [
+    "הגדרה",
+    "מועד קצה ויציאה",
+    "שרשרת אספקה ובקרת יצוא"
+   ]
+  }
+ ],
+ "risks": [
+  {
+   "id": "RSK-001",
+   "kind": "clause",
+   "name": "התחום, התעריפים והצוות תלויים בנספח שלא צורף",
+   "description": "בתגובה שלנו תחום הייעוץ, שיטת התמורה (שעות או ריטיינר), לוח הזמנים, התוצרים ואנשי הצוות מוגדרים בהפניה לנספח, והנספח לא נמסר. התגובה קובעת שהנספח יצורף לפני החתימה ושגוף ההסכם גובר עליו, ותקרת התמורה מגבילה את העלות, אבל עד שהנספח יוצג לא ידוע מה בדיוק נרכש ובאיזה מחיר לשעה.",
+   "primary_lens": "operational",
+   "lens": [
+    "financial"
+   ],
+   "inherent": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12,
+    "built_in": true,
+    "trigger_event_id": null
+   },
+   "controls": [
+    {
+     "type": "contractual",
+     "description": "גוף ההסכם גובר על הנספח ועל מסמך שיכין הצד השני, ושינוי בנספח טעון את הסכמתנו בכתב (היקף הייעוץ, סעיף 5)",
+     "in_place": true,
+     "basis": "proposed_text"
+    },
+    {
+     "type": "contractual",
+     "description": "תקרת תמורה כוללת, כולל הוצאות (תמורה ותנאי תשלום, סעיף 1)",
+     "in_place": true,
+     "basis": "proposed_text"
+    }
+   ],
+   "residual": {
+    "severity": 3,
+    "likelihood": 3,
+    "score": 9
+   },
+   "exposure": {
+    "contractual_cap": "פי שניים מהתמורה הכוללת לפי ההסכם (הגבלת אחריות, סעיף 1)",
+    "cap_exclusions": [
+     "זדון, מרמה ורשלנות חמורה",
+     "נזקי גוף ומוות",
+     "הפרת סודיות, קניין רוחני, הגנת הפרטיות ואבטחת מידע",
+     "חבות כלפי צד שלישי ושיפוי"
+    ],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה היא תפעולית: שירות שאינו מוגדר עד החתימה, ואי התאמה בין הציפייה לבין מה שהצד השני יכתוב בנספח. אין בהסכם סכום שמכמת אותה.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך של מבטח"
+   },
+   "scenario": "הנספח מגיע מהצד השני סמוך לחתימה ומגדיר תחום צר ושעות רבות לכל תוצר, והתקרה מתמלאת לפני שהפרויקט הושלם.",
+   "anchors": [
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "היקף הייעוץ, סעיף 1",
+     "quote": "בתחום המפורט בנספח",
+     "anchor_type": "agreement"
+    },
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "היקף הייעוץ, סעיף 5",
+     "quote": "הנספח יצורף להסכם זה לפני חתימתו ויהיה חלק בלתי נפרד ממנו",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "לקבל ולבדוק את הנספח לפני החתימה.",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": null,
+   "drafted_by": "company",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "severity_level": "high",
+   "risk_no": 1
+  },
+  {
+   "id": "RSK-002",
+   "kind": "clause",
+   "name": "סיום בהפרה אפשרי גם במחלוקת על מועד או בקיזוז",
+   "description": "התגובה שלנו קובעת שאי-תשלום של סכום שאנחנו חולקים עליו בתום לב, בהודעה מנומקת, אינו הפרה. החריג מנוסח על הסכום בלבד: מחלוקת על מועד התשלום, או סכום שקיזזנו לפי זכות הקיזוז שהוספנו, אינם 'סכום שהלקוח חולק עליו', ולכן קיים סיכון שתיטען הפרה שמאפשרת לצד השני לסיים בתוך 7 ימים מהודעה. העברת העבודה בכל סיום, שהוספנו, מגבילה את הנזק אבל אינה מונעת את עצירת הפרויקט.",
+   "primary_lens": "legal",
+   "lens": [],
+   "inherent": {
+    "severity": 4,
+    "likelihood": 3,
+    "score": 12,
+    "built_in": false,
+    "trigger_event_id": "TE-PAY"
+   },
+   "controls": [
+    {
+     "type": "contractual",
+     "description": "בכל סיום הצד השני מעביר את העבודה והתוצרים ואינו מעכב אותם בשל מחלוקת כספית (סודיות וסיום, סעיף 4)",
+     "in_place": true,
+     "basis": "proposed_text"
+    }
+   ],
+   "residual": {
+    "severity": 3,
+    "likelihood": 3,
+    "score": 9
+   },
+   "exposure": {
+    "contractual_cap": "פי שניים מהתמורה הכוללת לפי ההסכם (הגבלת אחריות, סעיף 1)",
+    "cap_exclusions": [
+     "זדון, מרמה ורשלנות חמורה",
+     "נזקי גוף ומוות",
+     "הפרת סודיות, קניין רוחני, הגנת הפרטיות ואבטחת מידע",
+     "חבות כלפי צד שלישי ושיפוי"
+    ],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה היא עצירת הייעוץ באמצע התקופה והצורך באיתור יועץ אחר. אין בהסכם סכום שמכמת אותה.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך של מבטח"
+   },
+   "scenario": "אנחנו מקזזים סכום שלטענתנו הצד השני חייב לנו, או משלמים במועד שלפי קריאתנו הוא המועד החל; הצד השני שולח הודעת הפרה, ובתום 7 ימים מסיים את ההסכם.",
+   "anchors": [
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "סודיות וסיום, סעיף 3",
+     "quote": "אי-תשלום של סכום שהלקוח חולק עליו בתום לב",
+     "anchor_type": "agreement"
+    },
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "תמורה ותנאי תשלום, סעיף 2",
+     "quote": "הלקוח רשאי לקזז מכל סכום המגיע ליועץ לפי הסכם זה כל סכום שהיועץ חייב ללקוח לפי הסכם זה",
+     "anchor_type": "agreement"
+    },
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "סודיות וסיום, סעיף 4",
+     "quote": "היועץ לא יעכב דבר מאלה מכל סיבה, לרבות מחלוקת כספית",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "להרחיב את החריג למחלוקת על מועד ולקיזוז.",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": null,
+   "drafted_by": "company",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "severity_level": "high",
+   "risk_no": 2
+  },
+  {
+   "id": "RSK-003",
+   "kind": "clause",
+   "name": "מועד התשלום פתוח לפרשנות",
+   "description": "התגובה שלנו קובעת [60] יום מתום החודש שבו הומצאה חשבונית שאישרנו, ובלבד שהתשלום לא יאוחר מהמועד המאוחר ביותר שהדין מתיר לקבוע. לפי חוק מוסר תשלומים לספקים, אצל מזמין שהוא עסק ברירת המחדל היא 45 ימים מתום החודש שבו הומצא החשבון, וצדדים רשאים לקבוע מועד אחר רק כשהוא נדרש בשל אופי ההתקשרות או אינו בלתי הוגן באופן חריג (סעיף 3(ז)); אין בחוק מועד מאוחר ביותר קבוע. הנוסח אינו מרע את מצבנו לעומת החוק, אבל הוא משאיר את המועד בפועל פתוח לפרשנות, והתנאי 'שאישר הלקוח' בלי פרק זמן עלול להיקרא כהתניה לרעת הספק (סעיף 7 לחוק), ואז המניין יתחיל מהמצאת החשבון. חל בתנאי שהחברה היא 'עסק' כהגדרתו בחוק (פרק 5).",
+   "primary_lens": "financial",
+   "lens": [
+    "regulatory"
+   ],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 3,
+    "score": 9,
+    "built_in": false,
+    "trigger_event_id": "TE-PAY"
+   },
+   "controls": [],
+   "residual": {
+    "severity": 3,
+    "likelihood": 3,
+    "score": 9
+   },
+   "exposure": {
+    "contractual_cap": "אין",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה היא מחלוקת על מועד התשלום, ריבית על איחור ושימוש במחלוקת כעילה לסיום. אין בהסכם סכום שמכמת אותה.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך של מבטח"
+   },
+   "scenario": "אנחנו משלמים ביום ה-60 לפי קריאתנו; הצד השני טוען שהמועד החל הוא ברירת המחדל שבחוק, דורש ריבית ושולח הודעת הפרה.",
+   "anchors": [
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "תמורה ותנאי תשלום, סעיף 1",
+     "quote": "שאישר הלקוח, ובלבד שהתשלום לא יבוצע מאוחר מהמועד המאוחר ביותר שהדין מתיר לקבוע בהסכם",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "מועד אחד ומוגדר, ופרק זמן לאישור חשבונית.",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [
+    "SRC-001"
+   ],
+   "side": null,
+   "drafted_by": "company",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "severity_level": "high",
+   "risk_no": 3,
+   "created_by_response": true
+  },
+  {
+   "id": "RSK-004",
+   "kind": "clause",
+   "name": "חסרים המידע, המערכות וסוג העיבוד המותרים",
+   "description": "תקנה 15 לתקנות הגנת הפרטיות (אבטחת מידע) מחייבת בעל מאגר שמתקשר עם גורם חיצוני לשירות הכרוך בגישה למאגר לקבוע במפורש בהסכם, בין היתר, את המידע שהגורם רשאי לעבד ומטרות השימוש, את מערכות המאגר שהוא רשאי לגשת אליהן ואת סוג העיבוד. התגובה שלנו מכסה החזרה והשמדה, אבטחה, סודיות של אנשי הצוות, קבלני משנה, דיווח והודעה על אירוע, אבל קובעת רק שהמידע ישמש 'לצורך מתן השירותים', בלי המידע, המערכות וסוג העיבוד. חל בתנאי שהצד השני יקבל גישה למאגר מידע של החברה (פרק 5).",
+   "primary_lens": "regulatory",
+   "lens": [
+    "technology"
+   ],
+   "inherent": {
+    "severity": 4,
+    "likelihood": 2,
+    "score": 8,
+    "built_in": false,
+    "trigger_event_id": null
+   },
+   "controls": [
+    {
+     "type": "contractual",
+     "description": "סעיפי הסודיות, הפרטיות ואבטחת המידע שהוספנו (סודיות וסיום, סעיפים 1א עד 1ג)",
+     "in_place": true,
+     "basis": "proposed_text"
+    }
+   ],
+   "residual": {
+    "severity": 4,
+    "likelihood": 2,
+    "score": 8
+   },
+   "exposure": {
+    "contractual_cap": "פי שניים מהתמורה הכוללת לפי ההסכם (הגבלת אחריות, סעיף 1)",
+    "cap_exclusions": [
+     "זדון, מרמה ורשלנות חמורה",
+     "נזקי גוף ומוות",
+     "הפרת סודיות, קניין רוחני, הגנת הפרטיות ואבטחת מידע",
+     "חבות כלפי צד שלישי ושיפוי"
+    ],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה היא רגולטורית: הסכם מיקור חוץ שאינו כולל את כל מה שהתקנה מחייבת, אצל חברה שהרשות להגנת הפרטיות מפקחת עליה.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך של מבטח"
+   },
+   "scenario": "בביקורת של הרשות להגנת הפרטיות מתברר שההסכם עם הצד השני אינו מגדיר לאילו מערכות ולאיזה מידע ניתנה לו גישה.",
+   "anchors": [
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "סודיות וסיום, סעיף 1ב",
+     "quote": "רק לצורך מתן השירותים",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "להשלים בנספח מידע, מערכות וסוג עיבוד.",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [
+    "SRC-002"
+   ],
+   "side": null,
+   "drafted_by": "company",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "severity_level": "medium",
+   "risk_no": 4
+  },
+  {
+   "id": "RSK-005",
+   "kind": "clause",
+   "name": "גבול הביטוח לא אושר ואין אישור קיום ביטוח",
+   "description": "ראשי הנזק החמורים מוחרגים מהתקרה, והמקור המעשי לפיצוי עליהם הוא ביטוח האחריות המקצועית של הצד השני. גבול הביטוח בתגובה מופיע בסוגריים מרובעים, כלומר טרם אושר אצלנו, ואין בתיק אישור קיום ביטוח. הביטוח שלנו לא נבדק.",
+   "primary_lens": "insurance",
+   "lens": [
+    "financial"
+   ],
+   "inherent": {
+    "severity": 4,
+    "likelihood": 2,
+    "score": 8,
+    "built_in": false,
+    "trigger_event_id": null
+   },
+   "controls": [
+    {
+     "type": "contractual",
+     "description": "חובת ביטוח אחריות מקצועית עם כיסוי לאירוע אבטחת מידע ואישור לפני תחילת השירותים (הגבלת אחריות, סעיף 4)",
+     "in_place": true,
+     "basis": "proposed_text"
+    }
+   ],
+   "residual": {
+    "severity": 4,
+    "likelihood": 2,
+    "score": 8
+   },
+   "exposure": {
+    "contractual_cap": "פי שניים מהתמורה הכוללת לפי ההסכם (הגבלת אחריות, סעיף 1)",
+    "cap_exclusions": [
+     "זדון, מרמה ורשלנות חמורה",
+     "נזקי גוף ומוות",
+     "הפרת סודיות, קניין רוחני, הגנת הפרטיות ואבטחת מידע",
+     "חבות כלפי צד שלישי ושיפוי"
+    ],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה היא נזק בראש נזק מוחרג מהתקרה, מול צד שני שהוא חברה קטנה ושאין מידע על ביטוחו.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך של מבטח"
+   },
+   "scenario": "מידע של החברה דולף אצל הצד השני; הנזק מוחרג מהתקרה, אבל לצד השני אין כיסוי ביטוחי מספיק.",
+   "anchors": [
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "הגבלת אחריות, סעיף 4",
+     "quote": "שלא יפחת מ-[2,000,000] ש\"ח",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "לאשר גבול ולקבל אישור קיום ביטוח.",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": null,
+   "drafted_by": "company",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "severity_level": "medium",
+   "risk_no": 5
+  },
+  {
+   "id": "RSK-006",
+   "kind": "clause",
+   "name": "השיפוי מותנה בהודעה 'בתוך זמן סביר' ובהגנה בידי הצד השני",
+   "description": "השיפוי שהוספנו מכסה גם הליך של רשות מוסמכת, אבל מותנה בכך שנודיע 'בתוך זמן סביר', שנאפשר לצד השני להתגונן ושלא נתפשר בלי לתת לו 20 יום להגיב. אצל חברה מפוקחת, הליך של רשות אינו הליך שאפשר תמיד למסור לניהול של נותן שירות, ו'זמן סביר' אינו רף מדיד; קיים סיכון שתיטען פרשנות לפיה השיפוי אבד.",
+   "primary_lens": "legal",
+   "lens": [
+    "regulatory"
+   ],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6,
+    "built_in": false,
+    "trigger_event_id": null
+   },
+   "controls": [],
+   "residual": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6
+   },
+   "exposure": {
+    "contractual_cap": "פי שניים מהתמורה הכוללת לפי ההסכם (הגבלת אחריות, סעיף 1)",
+    "cap_exclusions": [
+     "זדון, מרמה ורשלנות חמורה",
+     "נזקי גוף ומוות",
+     "הפרת סודיות, קניין רוחני, הגנת הפרטיות ואבטחת מידע",
+     "חבות כלפי צד שלישי ושיפוי"
+    ],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה היא אובדן השיפוי בתביעה או בהליך שעילתם במעשה של הצד השני. אין בהסכם סכום שמכמת אותה.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך של מבטח"
+   },
+   "scenario": "רשות פותחת בבירור מול החברה בעקבות אירוע אצל הצד השני; החברה מנהלת אותו בעצמה ומודיעה לצד השני רק בסיומו, והצד השני טוען שתנאי השיפוי לא קוימו.",
+   "anchors": [
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "הגבלת אחריות, סעיף 3",
+     "quote": "בתוך זמן סביר, אפשר לו להתגונן מפניה",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "פרק זמן מוגדר להודעה; הליך של רשות בניהולנו.",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": null,
+   "drafted_by": "company",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "severity_level": "medium",
+   "risk_no": 6,
+   "created_by_response": true
+  },
+  {
+   "id": "RSK-007",
+   "kind": "vague_term",
+   "name": "בסיס תקרת האחריות אינו מוגדר",
+   "description": "התקרה היא פי שניים מ'התמורה הכוללת לפי הסכם זה'. ההסכם קובע תקרה לתמורה, 180,000 ש\"ח, ומאפשר להתאים את התמורה כשהיקף השירותים משתנה, אבל אינו אומר אם בסיס התקרה הוא התמורה ששולמה בפועל או התמורה המוסכמת. בתחילת הפרויקט, כששולם מעט, ההבדל משמעותי. הפרשנות המיטיבה עם החברה היא תקרת התמורה המוסכמת; הנוסח הוא שלנו.",
+   "primary_lens": "financial",
+   "lens": [],
+   "inherent": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6,
+    "built_in": false,
+    "trigger_event_id": null
+   },
+   "controls": [
+    {
+     "type": "contractual",
+     "description": "החרגות רחבות מהתקרה (הגבלת אחריות, סעיף 1)",
+     "in_place": true,
+     "basis": "proposed_text"
+    }
+   ],
+   "residual": {
+    "severity": 3,
+    "likelihood": 2,
+    "score": 6
+   },
+   "exposure": {
+    "contractual_cap": "פי שניים מהתמורה הכוללת לפי ההסכם (הגבלת אחריות, סעיף 1)",
+    "cap_exclusions": [
+     "זדון, מרמה ורשלנות חמורה",
+     "נזקי גוף ומוות",
+     "הפרת סודיות, קניין רוחני, הגנת הפרטיות ואבטחת מידע",
+     "חבות כלפי צד שלישי ושיפוי"
+    ],
+    "amount": {
+     "value": 360000,
+     "currency": "ILS",
+     "text": "תקרת האחריות של הצד השני, לכל היותר",
+     "source": "contract",
+     "source_ref": "הגבלת אחריות, סעיף 1; תמורה ותנאי תשלום, סעיף 1",
+     "calc": "פי 2 מתקרת התמורה הכוללת של 180,000 ש\"ח = 360,000 ש\"ח"
+    },
+    "basis": "החשיפה היא תקרה נמוכה מהצפוי לנזק שאינו מוחרג.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך של מבטח"
+   },
+   "scenario": "בחודש השני ייעוץ רשלני גורם נזק שאינו מוחרג; הצד השני טוען שהתקרה היא פי שניים מהסכום ששולם עד אז.",
+   "anchors": [
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "הגבלת אחריות, סעיף 1",
+     "quote": "פי שניים מהתמורה הכוללת לפי הסכם זה",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "להגדיר את בסיס התקרה במפורש.",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": null,
+   "drafted_by": "company",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "severity_level": "medium",
+   "risk_no": 7
+  },
+  {
+   "id": "RSK-008",
+   "kind": "silence",
+   "name": "אין מנגנון לאישור התוצרים",
+   "description": "התגובה שלנו מחייבת את הצד השני לספק את התוצרים שבנספח, אבל ההסכם שותק בשאלה מתי תוצר נחשב שנמסר כנדרש, מה קורה כשהוא אינו עונה על הנדרש, ואם התמורה תלויה בכך. התמורה לפי שעות או ריטיינר משולמת לפי חשבונית מאושרת, בלי קשר לאישור התוצר.",
+   "primary_lens": "legal",
+   "lens": [],
+   "inherent": {
+    "severity": 2,
+    "likelihood": 3,
+    "score": 6,
+    "built_in": false,
+    "trigger_event_id": null
+   },
+   "controls": [],
+   "residual": {
+    "severity": 2,
+    "likelihood": 3,
+    "score": 6
+   },
+   "exposure": {
+    "contractual_cap": "אין",
+    "cap_exclusions": [],
+    "amount": {
+     "value": null,
+     "currency": "ILS",
+     "text": "",
+     "source": "none",
+     "source_ref": "",
+     "calc": ""
+    },
+    "basis": "החשיפה היא תשלום על תוצר שאינו עונה על הצורך, ומחלוקת על איכותו בלי אמת מידה מוסכמת.",
+    "insurance_checked": false,
+    "insurance_evidence_ref": "אין בתיק אישור קיום ביטוח או מסמך של מבטח"
+   },
+   "scenario": "תוצר הביניים שנמסר אינו מתאים לפרויקט; הצד השני טוען שהשירות ניתן במלואו ושהשעות מגיעות לו.",
+   "anchors": [
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "היקף הייעוץ, סעיף 3",
+     "quote": "התוצרים המפורטים בו",
+     "anchor_type": "agreement"
+    }
+   ],
+   "treatment_direction": "אמת מידה ופרק זמן לאישור כל תוצר.",
+   "playbook_flag": "none",
+   "certainty": "assessment",
+   "external_source_ids": [],
+   "side": null,
+   "drafted_by": "company",
+   "decision": {
+    "status": "open",
+    "note": "",
+    "decided_at": null
+   },
+   "severity_level": "medium",
+   "risk_no": 8
+  }
+ ],
+ "pre_send_fixes": [
+  {
+   "id": "PSF-01",
+   "kind": "incomplete",
+   "gap": "החריג למחלוקת בסיום בהפרה אינו חל על מחלוקת על מועד או על קיזוז שלנו.",
+   "where": "סודיות וסיום 3; תמורה 2",
+   "clause_ref": "D30",
+   "status": "open",
+   "risk_ids": [
+    "RSK-002"
+   ]
+  },
+  {
+   "id": "PSF-02",
+   "kind": "created_by_response",
+   "gap": "המועד שהצענו נקשר לתקרה שאינה קבועה בחוק ולאישור חשבונית בלי פרק זמן.",
+   "where": "תמורה 1",
+   "clause_ref": "D18",
+   "status": "open",
+   "risk_ids": [
+    "RSK-003"
+   ]
+  },
+  {
+   "id": "PSF-03",
+   "kind": "missing",
+   "gap": "הנספח (תחום, תעריפים, תוצרים, צוות) לא צורף, והתגובה נשענת עליו.",
+   "where": "היקף 1, 3, 5",
+   "clause_ref": "D06",
+   "status": "open",
+   "risk_ids": [
+    "RSK-001",
+    "RSK-008"
+   ]
+  },
+  {
+   "id": "PSF-04",
+   "kind": "incomplete",
+   "gap": "סעיף הפרטיות אינו קובע מידע, מערכות וסוג עיבוד מותרים.",
+   "where": "סודיות 1ב",
+   "clause_ref": "D26",
+   "status": "open",
+   "risk_ids": [
+    "RSK-004"
+   ]
+  },
+  {
+   "id": "PSF-05",
+   "kind": "created_by_response",
+   "gap": "השיפוי שהוספנו מותנה ב'זמן סביר' ובהגנה בידי הצד השני, גם מול רשות.",
+   "where": "אחריות 3",
+   "clause_ref": "N05",
+   "status": "open",
+   "risk_ids": [
+    "RSK-006"
+   ]
+  },
+  {
+   "id": "PSF-06",
+   "kind": "incomplete",
+   "gap": "שלושה ערכים עדיין בסוגריים: מועד התשלום, גבול הביטוח ומספר החברה.",
+   "where": "פתיח; תמורה 1; אחריות 4",
+   "clause_ref": "D01",
+   "status": "open",
+   "risk_ids": [
+    "RSK-003",
+    "RSK-005"
+   ]
+  }
+ ],
+ "document_defects": [
+  {
+   "id": "DEF-001",
+   "type": "missing_annex",
+   "title": "הנספח שההסכם מפנה אליו לא צורף",
+   "locations": [
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "היקף הייעוץ, סעיף 1",
+     "quote": "בתחום המפורט בנספח"
+    }
+   ],
+   "risk_created": "התחום, התמורה, התוצרים והצוות אינם ידועים עד שהנספח יוצג.",
+   "proposed_fix": "לצרף את הנספח לפני החתימה.",
+   "topic": "נספח השירותים",
+   "prevails": "none",
+   "prevails_basis": "גוף ההסכם גובר על הנספח (היקף הייעוץ, סעיף 5), אבל הנספח עצמו לא נמסר ולכן אין מה להשוות.",
+   "risk_ids": [
+    "RSK-001"
+   ],
+   "severity": 4,
+   "lens": [
+    "operational"
+   ]
+  },
+  {
+   "id": "DEF-002",
+   "type": "contradiction",
+   "title": "התשלום בסיום: מלא או יחסי",
+   "locations": [
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "סודיות וסיום, סעיף 2",
+     "quote": "תשלום בגין שירותים שניתנו עד הסיום ישולם במלואו."
+    },
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "סודיות וסיום, סעיף 4",
+     "quote": "ובריטיינר חודשי באופן יחסי לתקופה שבה ניתנו"
+    }
+   ],
+   "risk_created": "בריטיינר חודשי קיים סיכון שתיטען פרשנות לפיה בסיום לנוחות מגיע ריטיינר מלא לחודש שבו הסתיים ההסכם.",
+   "proposed_fix": "לקבוע במקום אחד שהתשלום בכל סיום הוא יחסי.",
+   "topic": "תשלום בסיום",
+   "prevails": "none",
+   "prevails_basis": "אין סדר עדיפות בין סעיפי הגוף; סעיף 4 חל 'בכל מקרה של סיום', וסעיף 2 ספציפי לסיום לנוחות.",
+   "risk_ids": [],
+   "severity": 2,
+   "lens": [
+    "financial"
+   ]
+  },
+  {
+   "id": "DEF-003",
+   "type": "inconsistent_term",
+   "title": "'התמורה הכוללת' משמשת גם כתקרת תמורה וגם כבסיס לתקרת האחריות",
+   "locations": [
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "תמורה ותנאי תשלום, סעיף 1",
+     "quote": "התמורה הכוללת בגין השירותים לא תעלה על 180,000 ש\"ח"
+    },
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "הגבלת אחריות, סעיף 1",
+     "quote": "פי שניים מהתמורה הכוללת לפי הסכם זה"
+    }
+   ],
+   "risk_created": "בסיס התקרה עלול להתפרש כסכום ששולם בפועל ולא כתקרת התמורה.",
+   "proposed_fix": "להגדיר את בסיס התקרה במפורש.",
+   "topic": "בסיס התקרה",
+   "prevails": "none",
+   "prevails_basis": "שני הסעיפים בגוף ההסכם, ואין הגדרה למונח.",
+   "risk_ids": [
+    "RSK-007"
+   ],
+   "severity": 3,
+   "lens": [
+    "financial"
+   ]
+  },
+  {
+   "id": "DEF-004",
+   "type": "blank_field",
+   "title": "שם הצד השני, מספר הרישום שלו ותאריך החתימה לא מולאו",
+   "locations": [
+    {
+     "document": "התגובה שלנו לטיוטה, בעקוב אחר שינויים",
+     "clause": "הפתיח",
+     "quote": "בין [שם הספק] בע\"מ"
+    }
+   ],
+   "risk_created": "לא ברור איזה תאגיד מתחייב, ואי אפשר לבדוק אותו.",
+   "proposed_fix": "לקבל את השם המלא ואת מספר הרישום לפני החתימה.",
+   "topic": "זהות הצד השני",
+   "prevails": "none",
+   "prevails_basis": "שדה ריק, אין מה להכריע.",
+   "risk_ids": [],
+   "severity": 3,
+   "lens": [
+    "legal"
+   ]
+  }
+ ],
+ "scenarios": [],
+ "entity_research": {
+  "status": "not_requested",
+  "counterparty_name": "נותן השירותים (השם לא מולא בהסכם)",
+  "is_new_counterparty": true,
+  "offered_at": "2026-10-14",
+  "missing_identifiers": [
+   "name",
+   "registration_no"
+  ],
+  "report_file": null,
+  "done_at": null,
+  "risks_up": [],
+  "risks_down": [],
+  "note": ""
+ },
+ "external_risks": [],
+ "dangerous_combinations": [
+  {
+   "combo_id": "CMB-001",
+   "type": "chain",
+   "risk_ids": [
+    "RSK-003",
+    "RSK-002"
+   ],
+   "clauses": [
+    "תמורה ותנאי תשלום, סעיפים 1 ו-2",
+    "סודיות וסיום, סעיף 3"
+   ],
+   "why_together": "המועד לתשלום אינו ודאי, והחריג בזכות הסיום מגן רק כשאנחנו חולקים על הסכום. מחלוקת על המועד או קיזוז שלנו עלולים להפוך לעילה לסיום בתוך 7 ימים, באמצע הפרויקט.",
+   "neutralizes": "",
+   "breaking_fix": "להחיל את החריג על כל מחלוקת בתום לב על תשלום, לרבות מועד וקיזוז.",
+   "anchors": []
+  },
+  {
+   "combo_id": "CMB-002",
+   "type": "combination",
+   "risk_ids": [
+    "RSK-005",
+    "RSK-006"
+   ],
+   "clauses": [
+    "הגבלת אחריות, סעיפים 1, 3 ו-4"
+   ],
+   "why_together": "ראשי הנזק החמורים מוחרגים מהתקרה ותלויים ביכולת הפירעון של הצד השני, אבל גבול הביטוח טרם אושר ואין אישור קיום ביטוח. השיפוי עצמו מותנה בהודעה 'בתוך זמן סביר', ולכן ההגנה בפועל רחוקה מהנוסח.",
+   "neutralizes": "",
+   "breaking_fix": "אישור קיום ביטוח בגבול שאושר, לפני תחילת השירותים.",
+   "anchors": []
+  },
+  {
+   "combo_id": "CMB-003",
+   "type": "combination",
+   "risk_ids": [
+    "RSK-001",
+    "RSK-008"
+   ],
+   "clauses": [
+    "היקף הייעוץ, סעיפים 1, 3 ו-5",
+    "תמורה ותנאי תשלום, סעיף 1"
+   ],
+   "why_together": "התחום, אבני הדרך והתוצרים יוגדרו בנספח שטרם נמסר, וההסכם אינו קובע מנגנון אישור לתוצר. תמורה לפי שעות או ריטיינר משולמת גם כשתוצר אינו עונה על הצורך.",
+   "neutralizes": "",
+   "breaking_fix": "לצרף נספח עם תוצרים ואמת מידה לאישורם לפני החתימה.",
+   "anchors": []
+  }
+ ],
+ "vague_terms": [],
+ "back_to_back_gaps": []
+}

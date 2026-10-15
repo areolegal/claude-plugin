@@ -1,0 +1,118 @@
+{
+ "transaction_id": "deal_fixture_nda_en",
+ "round": 1,
+ "received_sha256": "nda_en",
+ "lang": "en",
+ "author": "עורכת הדין לדוגמה",
+ "initials": "עד",
+ "_note": "הסכם סודיות הדדי באנגלית, שאינו קלט של סבב בדיקה. התגובה מחילה את נוסחי הריפוי (סעד דחוף בישראל, אחריות לחברות קשורות, \"without use of\" בפיתוח עצמאי), ואת כל מחלקות 2.22 באנגלית. עוברת את השער בשני המצבים.",
+ "decisions": [
+  {
+   "id": "E02a",
+   "op": "replace_span",
+   "para": 1,
+   "old": "the other party identified below",
+   "new": "EXAMPLECO Ltd., company number ________ (to be completed at signing) (\"EXAMPLECO\")",
+   "decision_code": "A2",
+   "conforming": true,
+   "external_comment": "We identified EXAMPLECO by name, so that it is clear who the contracting party is."
+  },
+  {
+   "id": "E02b",
+   "op": "replace_span",
+   "para": 1,
+   "old": "evaluate and possibly enter into a business transaction",
+   "new": "evaluate a potential technology collaboration between the parties, including its business and commercial terms",
+   "decision_code": "R1",
+   "external_comment": "We narrowed the Purpose to the collaboration under discussion, because a general business transaction would allow use of the information for any later deal. The Purpose still covers its business and commercial terms, so that the protected information is not narrowed."
+  },
+  {
+   "id": "E03",
+   "op": "replace_span",
+   "para": 2,
+   "old": "the date on which it is first received by Acme",
+   "new": "the date on which it has been signed by both parties, and it applies to Confidential Information disclosed before that date in connection with the Purpose",
+   "decision_code": "R1",
+   "external_comment": "The agreement starts when both parties sign it, because receipt by one party is not a clear date. It also covers information disclosed before signing, so that nothing shared in early meetings is left unprotected."
+  },
+  {
+   "id": "E04",
+   "op": "replace_span",
+   "para": 4,
+   "old": "who need to know it.",
+   "decision_code": "R1",
+   "new": "who need to know it and are bound by confidentiality obligations no less protective than this agreement. Each party is responsible for any breach of this agreement by any person to whom it discloses Confidential Information, including its affiliates and contractors.",
+   "external_comment": "Each party is responsible for any breach by the people it shares information with, including affiliates and contractors bound by confidentiality, because the information leaves the party that signed this agreement."
+  },
+  {
+   "id": "E05a",
+   "op": "replace_span",
+   "para": 5,
+   "old": "(d) is independently developed by the Recipient.",
+   "new": "(d) is independently developed by the Recipient without use of or reference to the Discloser's Confidential Information.",
+   "decision_code": "R1",
+   "external_comment": "Independent development now requires that the Confidential Information was not used, because otherwise the exception could cover work built on the other party's information."
+  },
+  {
+   "id": "E05b",
+   "op": "replace_span",
+   "para": 5,
+   "old": "if required by law, after giving the Discloser reasonable prior notice.",
+   "new": "if required by applicable law, by stock exchange rules or by a regulatory or supervisory authority, with prior notice to the Discloser where legally permitted and practicable, and may disclose it to its legal and financial advisers, auditors and internal auditors who are bound by confidentiality.",
+   "decision_code": "R1",
+   "external_comment": "EXAMPLECO is listed and supervised, so we added disclosure under stock exchange rules and to a regulator, advisers and auditors. Prior notice applies where legally permitted, since a listed company may have to report at once."
+  },
+  {
+   "id": "E06",
+   "op": "replace",
+   "para": 6,
+   "decision_code": "R1",
+   "new_text": "5. Term. The Recipient's duty to protect Confidential Information expires five years from disclosure, except that trade secrets and personal data remain protected for as long as they remain such.",
+   "external_comment": "Trade secrets and personal data stay protected for as long as they remain such, because their value and the risk to individuals do not end after five years."
+  },
+  {
+   "id": "E07",
+   "op": "replace",
+   "para": 7,
+   "decision_code": "R1",
+   "new_text": "6. Return. Upon request, the Recipient shall return or destroy all Confidential Information, except to the extent retention is required by law or by a regulator, in which case it remains subject to this agreement.",
+   "external_comment": "Return or destruction now excludes copies that law or a regulator requires a party to keep, because both parties are regulated and must keep records."
+  },
+  {
+   "id": "E08",
+   "op": "replace_span",
+   "para": 8,
+   "old": "Santa Clara County, California.",
+   "decision_code": "R1",
+   "new": "Santa Clara County, California. Notwithstanding any choice of law or forum, either party may seek urgent or injunctive relief in any court of competent jurisdiction, including the courts of Israel.",
+   "external_comment": "We accept California law and venue. Either party may seek urgent relief in any competent court, including in Israel, because a leak may need to be stopped where it happens."
+  },
+  {
+   "id": "E09",
+   "op": "replace",
+   "para": 9,
+   "decision_code": "R1",
+   "new_text": "8. Execution. This agreement is effective only when signed by authorised signatories of both parties, and may be signed in counterparts and electronically.",
+   "external_comment": "The agreement is signed by both parties' authorised signatories rather than accepted by a click, so that it is clear who is bound."
+  },
+  {
+   "id": "E10",
+   "op": "insert_paragraph",
+   "after_para": 9,
+   "decision_code": "N1",
+   "mandatory": true,
+   "text": "9. Customer Data. Personal data (as defined under applicable law), including information relating to a party's customers, insureds or employees, whether or not de-identified, shall be disclosed and processed only under a data processing agreement. Notwithstanding Section 5, the obligations in this Section 9 survive without limitation in time, and the Recipient shall not attempt to re-identify such information.",
+   "external_comment": "Personal data of customers and employees is protected whether or not it was de-identified, because de-identified data can often be re-identified. These obligations have no time limit, since the risk to the individuals does not expire."
+  },
+  {
+   "id": "E11",
+   "op": "replace_span",
+   "para": 10,
+   "old": "Other party: __________",
+   "decision_code": "A2",
+   "conforming": true,
+   "new": "EXAMPLECO Ltd.: ________ (to be completed at signing)",
+   "external_comment": "We completed EXAMPLECO's name in the signature block."
+  }
+ ]
+}

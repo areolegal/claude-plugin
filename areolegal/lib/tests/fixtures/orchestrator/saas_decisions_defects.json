@@ -1,0 +1,64 @@
+{
+ "transaction_id": "deal_fixture_saas_defects",
+ "round": 1,
+ "received_sha256": "saas",
+ "lang": "en",
+ "author": "עורכת הדין לדוגמה",
+ "initials": "עד",
+ "_note": "Same SaaS agreement, one defect per generic mechanism.",
+ "decisions": [
+  {
+   "id": "S01",
+   "op": "replace_span",
+   "para": 1,
+   "old": "[Customer name]",
+   "new": "EXAMPLECO Ltd.",
+   "decision_code": "A2",
+   "conforming": true,
+   "external_comment": "We completed the Customer's name, so that the contracting party is identified."
+  },
+  {
+   "id": "S03d",
+   "op": "replace_span",
+   "para": 3,
+   "old": "within the maximum period permitted by law.",
+   "decision_code": "R1",
+   "new": "within the latest time permitted by law, whichever is earlier.",
+   "external_comment": "We clarified the payment date."
+  },
+  {
+   "id": "S04d",
+   "op": "replace",
+   "para": 4,
+   "decision_code": "R1",
+   "new_text": "3. Either party may terminate this agreement for breach. A disputed amount is not a breach.",
+   "external_comment": "Both parties may terminate for breach."
+  },
+  {
+   "id": "S05d",
+   "op": "replace_span",
+   "para": 5,
+   "old": "shall not disclose it.",
+   "decision_code": "R1",
+   "new": "shall not disclose it to anyone.",
+   "external_comment": "Confidentiality applies to everyone."
+  },
+  {
+   "id": "S06d",
+   "op": "replace",
+   "para": 6,
+   "decision_code": "R1",
+   "new_text": "5. Provider's aggregate liability is limited to the total fees under this agreement.",
+   "external_comment": "We set the cap at the total fees, which is known in advance."
+  },
+  {
+   "id": "S07d",
+   "op": "replace_span",
+   "para": 7,
+   "old": "Customer: __________",
+   "decision_code": "A2",
+   "conforming": true,
+   "new": "EXAMPLECO Ltd.: ________ (to be completed at signing)"
+  }
+ ]
+}

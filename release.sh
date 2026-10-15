@@ -442,6 +442,23 @@ if bad:
 print("   every documented command is runnable and every script is present")
 PY
 
+echo "==> 1e/5 Running the shared reference library's own test suite"
+# areolegal/lib is Inbal's reference implementation, and it now ships to
+# clients, so it is never released untested. The step builds its own
+# environment and reuses it next time; pymupdf is required rather than
+# optional, because pypdf returns Hebrew in visual order and three tests
+# fail on it instead of skipping.
+LIBVENV="${TMPDIR:-/tmp}/areo-lib-venv"
+if [ ! -x "$LIBVENV/bin/python" ]; then
+  echo "   building the test environment once at $LIBVENV"
+  python3 -m venv "$LIBVENV" || { echo "   REFUSING: cannot create a venv"; exit 1; }
+  "$LIBVENV/bin/pip" -q install python-docx lxml pymupdf Pillow pytest \
+    || { echo "   REFUSING: cannot install the library's dependencies"; exit 1; }
+fi
+( cd areolegal/lib && "$LIBVENV/bin/python" -m pytest tests -q -p no:cacheprovider ) \
+  || { echo "   REFUSING: the reference library's tests do not pass"; exit 1; }
+echo "   reference library passes"
+
 echo "==> 2/5 Compiling bundled Python"
 find areolegal -name "*.py" -print0 | xargs -0 -n1 python3 -m py_compile
 echo "   all scripts compile"

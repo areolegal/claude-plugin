@@ -1,0 +1,116 @@
+{
+ "organization_type": "חברה ציבורית (נסחרת בבורסה)",
+ "public_market": {
+  "listed": true,
+  "venues": [
+   "ישראל",
+   "נאסד״ק",
+   "רישום דואלי"
+  ],
+  "dual_listing": true,
+  "dual_listing_note": "הדיווח נעשה לפי כללי הבורסה הזרה מכוח פרק ה׳3 לחוק ניירות ערך, ורשות ניירות ערך מפקחת במתכונת ההקלות"
+ },
+ "sector": {
+  "primary": "פיננסים",
+  "all": [
+   "פיננסים",
+   "ביטוח"
+  ],
+  "financial_activity": [
+   "מבטח",
+   "מנהל תיקים"
+  ]
+ },
+ "regulatory_footprint_primary": [
+  {
+   "regulator_name": "הרשות להגנת הפרטיות",
+   "applicability_status": "Confirmed",
+   "basis": "חוק הגנת הפרטיות, התשמ״א-1981; חל על כל ארגון"
+  },
+  {
+   "regulator_name": "רשות התחרות",
+   "applicability_status": "Potential",
+   "basis": "חל על כל ארגון, בדירוג Potential"
+  },
+  {
+   "regulator_name": "רשות ניירות ערך",
+   "applicability_status": "Confirmed",
+   "basis": "נסחרת בישראל; רישום דואלי, מתכונת רישום כפול לפי פרק ה׳3 לחוק ניירות ערך; וכן עיסוק מפוקח: מנהל תיקים"
+  },
+  {
+   "regulator_name": "רשות שוק ההון, ביטוח וחיסכון",
+   "applicability_status": "Confirmed",
+   "basis": "עיסוק מפוקח: מבטח"
+  },
+  {
+   "regulator_name": "SEC",
+   "applicability_status": "Confirmed",
+   "basis": "נסחרת בנאסד״ק"
+  },
+  {
+   "regulator_name": "רשות הגנת המידע באיחוד האירופי, GDPR",
+   "applicability_status": "Likely",
+   "basis": "שוק פעילות: האיחוד האירופי"
+  }
+ ],
+ "regulatory_footprint_secondary": [
+  {
+   "regulator_name": "רשות המסים",
+   "applicability_status": "Confirmed",
+   "basis": "ציר רוחבי, חל על כל ארגון"
+  },
+  {
+   "regulator_name": "רשם החברות, רשות התאגידים",
+   "applicability_status": "Confirmed",
+   "basis": "ציר רוחבי, חל על כל ארגון"
+  },
+  {
+   "regulator_name": "משרד העבודה, מינהל הסדרה ואכיפה",
+   "applicability_status": "Confirmed",
+   "basis": "ציר רוחבי, חל על כל ארגון"
+  },
+  {
+   "regulator_name": "המוסד לביטוח לאומי",
+   "applicability_status": "Confirmed",
+   "basis": "ציר רוחבי, חל על כל ארגון"
+  },
+  {
+   "regulator_name": "נציבות שוויון זכויות לאנשים עם מוגבלות",
+   "applicability_status": "Confirmed",
+   "basis": "ציר רוחבי, חל על כל ארגון"
+  },
+  {
+   "regulator_name": "הבורסה לניירות ערך בתל אביב",
+   "applicability_status": "Confirmed",
+   "basis": "נסחרת בישראל"
+  },
+  {
+   "regulator_name": "חוק ה-AI האירופי",
+   "applicability_status": "Likely",
+   "basis": "שוק פעילות: האיחוד האירופי"
+  },
+  {
+   "regulator_name": "FTC",
+   "applicability_status": "Likely",
+   "basis": "שוק פעילות: ארצות הברית"
+  },
+  {
+   "regulator_name": "DOJ תחת FCPA",
+   "applicability_status": "Likely",
+   "basis": "שוק פעילות: ארצות הברית"
+  },
+  {
+   "regulator_name": "OFAC",
+   "applicability_status": "Likely",
+   "basis": "שוק פעילות: ארצות הברית"
+  },
+  {
+   "regulator_name": "BIS",
+   "applicability_status": "Likely",
+   "basis": "שוק פעילות: ארצות הברית"
+  }
+ ],
+ "display_language": "he",
+ "deliverable_language": "he",
+ "organization_name": "EXAMPLECO"
+}

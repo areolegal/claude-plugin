@@ -1,0 +1,284 @@
+{
+ "_about": "קטע פלייבוק לבדיקת הכלליות של המנגנונים (הערות 5.5, החלטה 22). נתוני בדיקה בלבד.",
+ "family_id": "fam_lease_tenant",
+ "family_label": "הסכם שכירות משרדים (החברה שוכרת)",
+ "corpus_origin": "market_built",
+ "corpus_basis": {
+  "agreement_units": 0,
+  "templates": 0,
+  "band": "none",
+  "choice": "market"
+ },
+ "status_label": "פלייבוק מוצע, מבוסס מחקר שוק, טעון אישור",
+ "playbook_status": "Draft",
+ "scope_summary": {
+  "contract_families": [
+   {
+    "contract_family_id": "fam_lease_tenant",
+    "contract_family_name": "הסכם שכירות משרדים (החברה שוכרת)",
+    "company_role_code": "tenant",
+    "document_count": 0
+   }
+  ],
+  "total_document_count": 0,
+  "contracting_entity": {
+   "name": "חברת בדיקה",
+   "incorporation_country": "IL"
+  }
+ },
+ "market_research": {
+  "question": {
+   "engagement_purpose": "business"
+  },
+  "counts": {
+   "found": 10,
+   "opened": 8,
+   "read": 7,
+   "counted": 5
+  },
+  "disclosure": {
+   "fixed_sentence": "הפלייבוק נבנה לפי 5 משפחות תבנית של הסכמים שפורסמו ברשת ונספרו (מתוך 7 מסמכים שנקראו).",
+   "chat_message": "",
+   "word_chapter": true
+  },
+  "jurisdiction_note": "לא נמצא נוסח ישראלי שפורסם מהסוג הזה.",
+  "source_refs": [
+   {
+    "source_id": "W1",
+    "template_family": "F1",
+    "jurisdiction": "US",
+    "engagement_purpose": "business"
+   },
+   {
+    "source_id": "W2",
+    "template_family": "F2",
+    "jurisdiction": "US",
+    "engagement_purpose": "other"
+   },
+   {
+    "source_id": "W3",
+    "template_family": "F3",
+    "jurisdiction": "US",
+    "engagement_purpose": "business"
+   },
+   {
+    "source_id": "W4",
+    "template_family": "F4",
+    "jurisdiction": "US",
+    "engagement_purpose": "business"
+   }
+  ],
+  "ranges": [
+   {
+    "topic": "R-01",
+    "ours": {
+     "level": 1,
+     "source_ids": [
+      "W1",
+      "W2",
+      "W3"
+     ]
+    },
+    "middle": {
+     "level": 0,
+     "source_ids": [
+      "W1",
+      "W2",
+      "W4"
+     ]
+    }
+   }
+  ],
+  "unverified_findings": [
+   {
+    "rule_id": "R-01",
+    "level": -1,
+    "source_ids": [
+     "W4"
+    ],
+    "sources_found": 1,
+    "label": "ממצא לא מאומת, מקור אחד (W4)",
+    "reason": "נמצא מקור נספר אחד לנקודה \"לטובתם\""
+   }
+  ]
+ },
+ "regulatory_research": {
+  "facts": []
+ },
+ "rules": [
+  {
+   "rule_id": "R-01",
+   "topic_name": "עדכון דמי השכירות",
+   "topic_ids": [
+    "T01"
+   ],
+   "importance": "medium",
+   "activation_conditions": [],
+   "traffic_light": {
+    "green": {
+     "position": "עדכון שנתי לפי מדד המחירים לצרכן בלבד",
+     "match_criteria": [
+      "עדכון שנתי לפי מדד המחירים לצרכן בלבד"
+     ],
+     "proposed_clause": {
+      "he": "דמי השכירות יעודכנו פעם בשנה לפי שיעור השינוי במדד המחירים לצרכן.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "market_standard",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "company_effect": "עלות צפויה, בלי תוספת קבועה.",
+     "market_source_ids": [
+      "W1",
+      "W2",
+      "W3"
+     ],
+     "range_point": "ours"
+    },
+    "yellow": {
+     "position": "מדד, ותוספת של 2% בתום השנה השלישית",
+     "match_criteria": [
+      "מדד, ותוספת של 2% בתום השנה השלישית"
+     ],
+     "proposed_clause": {
+      "he": "דמי השכירות יעודכנו פעם בשנה לפי שיעור השינוי במדד המחירים לצרכן, ובתום השנה השלישית יעלו בשיעור נוסף של 2%.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "company_effect": "עלות גבוהה מעט יותר מהשנה הרביעית.",
+     "fallback_wording": {
+      "text": "דמי השכירות יעודכנו פעם בשנה לפי שיעור השינוי במדד המחירים לצרכן, ובתום השנה השלישית יעלו בשיעור נוסף של 2%.",
+      "source": "areo_proposal"
+     }
+    },
+    "red": {
+     "position": "תוספת קבועה של יותר מ-5% בשנה, נוסף על המדד",
+     "match_criteria": [
+      "תוספת קבועה של יותר מ-5% בשנה, נוסף על המדד"
+     ],
+     "proposed_clause": {
+      "he": "דמי השכירות יעודכנו לפי מדד המחירים לצרכן בלבד.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "company_effect": "עלות שאינה צפויה."
+    }
+   },
+   "round1_posture": "offer_yellow",
+   "legal_review_required": [],
+   "statutory_override": [],
+   "policy_status": "Inferred",
+   "walk_away": false
+  },
+  {
+   "rule_id": "R-02",
+   "topic_name": "אופציה להארכה",
+   "topic_ids": [
+    "T02"
+   ],
+   "importance": "critical",
+   "activation_conditions": [],
+   "traffic_light": {
+    "green": {
+     "position": "אופציה לשוכר להאריך ב-5 שנים, בהודעה 6 חודשים מראש",
+     "match_criteria": [
+      "אופציה לשוכר להאריך ב-5 שנים, בהודעה 6 חודשים מראש"
+     ],
+     "proposed_clause": {
+      "he": "לשוכר תהיה אופציה להאריך את תקופת השכירות ב-5 שנים נוספות, בהודעה בכתב 6 חודשים לפני תום התקופה.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "company_effect": "ודאות במשרדים לטווח ארוך.",
+     "assumptions": [
+      "החברה מתכננת להישאר באזור לפחות 5 שנים."
+     ]
+    },
+    "yellow": {
+     "position": "אופציה ל-3 שנים, בהודעה 9 חודשים מראש",
+     "match_criteria": [
+      "אופציה ל-3 שנים, בהודעה 9 חודשים מראש"
+     ],
+     "proposed_clause": {
+      "he": "לשוכר תהיה אופציה להאריך את תקופת השכירות ב-3 שנים נוספות, בהודעה בכתב 9 חודשים לפני תום התקופה.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "company_effect": "ודאות קצרה יותר.",
+     "fallback_wording": {
+      "text": "לשוכר תהיה אופציה להאריך את תקופת השכירות ב-3 שנים נוספות, בהודעה בכתב 9 חודשים לפני תום התקופה.",
+      "source": "areo_proposal"
+     }
+    },
+    "red": {
+     "position": "אין אופציה להארכה",
+     "match_criteria": [
+      "אין אופציה להארכה"
+     ],
+     "proposed_clause": {
+      "he": "לשוכר תהיה אופציה להארכת תקופת השכירות.",
+      "en": "",
+      "source_language": "he"
+     },
+     "basis": "areo_proposal",
+     "label": "הצעת Areo (לא מבוסס על מסמכי הלקוח)",
+     "company_effect": "החברה עלולה להידרש לעבור."
+    }
+   },
+   "round1_posture": "hold_green",
+   "legal_review_required": [
+    {
+     "track": "green",
+     "clause_refs": [
+      "R-02"
+     ],
+     "concern": "רישום הערת אזהרה על האופציה.",
+     "label": "טעון בדיקה משפטית"
+    }
+   ],
+   "statutory_override": [],
+   "policy_status": "Inferred",
+   "walk_away": true,
+   "walk_away_source": "client_answer"
+  }
+ ],
+ "validation_queue": [
+  {
+   "id": "Q-01",
+   "topic": "שאלה מכריעה",
+   "scope": "rule",
+   "rule_id": "R-02",
+   "severity": "גבוהה",
+   "question": "כמה שנים להארכה?",
+   "why": "נדרשת הכרעה של הלקוח.",
+   "recommendation": "5 שנים.",
+   "options": [
+    "5 שנים",
+    "3 שנים"
+   ],
+   "answered": false,
+   "answer_verbatim": "",
+   "status": "open"
+  }
+ ],
+ "handoff": {
+  "status": "built",
+  "family_id": "fam_lease_tenant",
+  "playbook_status": "Draft",
+  "status_label": "פלייבוק מוצע, מבוסס מחקר שוק, טעון אישור",
+  "counted_sources": 5
+ },
+ "produced_with": {
+  "skill_version": "3.2",
+  "notes_version": "5.5",
+  "refs_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+ }
+}

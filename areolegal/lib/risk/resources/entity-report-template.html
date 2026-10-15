@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Areo Workspace | חקר ישות</title>
+<!--
+תבנית קנונית v1 (14.10.2026) של דוח חקר הישות: Areo Workspace | חקר ישות, עד שני עמודי A4.
+הנתונים: entity-report.json בלבד, מוזרק פעם אחת בשורת const DATA. אפס תלות ברשת. הסימון בתיבות השוליים של @page.
+הסדר קבוע: ממצאים חוסמים, מי זה, מה זה משנה בדוח הסיכונים, מה לא נבדק (משימות לעורך הדין), טבלת המקורות.
+-->
+<style>
+:root{--ink:#0E1016;--muted:#5B6472;--line:#D7DBE0;--red:#B3423A;--red-bg:#FBEAE8;--brand:#0B8C66}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",Arial,"Arial Hebrew","Noto Sans Hebrew",David,sans-serif;color:var(--ink);background:#fff;font-size:12.5px;line-height:1.6;padding:18px 22px}
+html[dir="ltr"] body{direction:ltr;text-align:left}
+.band{color:#9a3412;font-size:11px;font-weight:600;border-bottom:1px solid #fed7aa;padding-bottom:6px;margin-bottom:10px}
+h1{font-size:17px;font-weight:800;margin-bottom:2px}
+.sub{color:var(--muted);font-size:11.5px;margin-bottom:12px}
+h2{font-size:13.5px;font-weight:800;margin:12px 0 6px;break-after:avoid}
+.block{background:var(--red-bg);border:1px solid #EFC7C2;border-radius:8px;padding:8px 10px;margin-bottom:6px}
+.none{color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th,td{border-bottom:1px solid var(--line);padding:4px 6px;vertical-align:top;text-align:start}
+th{font-weight:700;color:var(--muted)}
+tr{break-inside:avoid}
+a{color:var(--brand);word-break:break-all}
+@page{size:A4;margin:14mm 12mm 16mm}
+@media print{body{padding:0}}
+</style>
+</head>
+<body>
+<div class="band" id="band"></div>
+<h1 id="title"></h1><div class="sub" id="sub"></div>
+<div id="main"></div>
+<script>
+const DATA = __ENTITY_DATA__;
+const M=DATA.meta||{}; const LANG=M.display_language==='en'?'en':'he';
+document.documentElement.setAttribute('dir',LANG==='en'?'ltr':'rtl'); document.documentElement.lang=LANG;
+const L=LANG==='en'?{t:'Entity check',draft:'Draft, subject to approval',priv:'Privileged: legal department work product, prepared at the request of {c} for the purpose of legal advice to {co}',nopriv:'No counsel was named; privilege may not apply',blk:'1. Blocking findings',noblk:'No blocking finding: no match was found in the official sources below.',who:'2. Who this is',eff:'3. What it changes in the risk report',noeff:'No risk was raised or lowered.',up:'raised',down:'lowered',nc:'4. Not checked, and tasks for counsel',nonc:'None.',src:'5. Sources',th:['#','Official source','What was taken from it','Link','Date'],reg:'Registration no.',risk:'Risk'}
+:{t:'חקר ישות',draft:'טיוטה, טעונה אישור',priv:'חסוי: מסמך עבודה של המחלקה המשפטית, הוכן לבקשת עו״ד {c} לצורך מתן ייעוץ משפטי ל{co}',nopriv:'לא צוין עורך דין שהדוח הוכן עבורו; קיים ספק אם יחול חיסיון',blk:'1. ממצאים חוסמים',noblk:'אין ממצא חוסם: לא נמצאה התאמה במקורות הרשמיים שבטבלה.',who:'2. מי זה',eff:'3. מה זה משנה בדוח הסיכונים',noeff:'אף סיכון לא עלה ולא ירד.',up:'עלה',down:'ירד',nc:'4. מה לא נבדק, ומשימות לעורך הדין',nonc:'אין.',src:'5. המקורות',th:['#','מקור רשמי','מה נלקח ממנו','קישור','תאריך'],reg:'מספר רישום',risk:'סיכון'};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function fmtD(iso){if(!iso)return'';const p=String(iso).split('T')[0].split('-');return p.length===3?`${+p[2]}.${+p[1]}.${p[0]}`:iso;}
+const counsel=String(M.prepared_for_counsel||'').trim();
+const PRIV=counsel?L.priv.replace('{c}',counsel).replace('{co}',M.company||''):L.nopriv;
+const MARK=L.draft+' · '+PRIV;
+document.getElementById('band').textContent=MARK;
+(function(){const s=MARK.replace(/[\\"]/g,'\\$&');const b='content:"'+s+'";font-size:8px;color:#9a3412;font-family:"Segoe UI",Arial,sans-serif';const st=document.createElement('style');st.textContent='@page{@top-center{'+b+'}@bottom-center{'+b+'}}';document.head.appendChild(st);})();
+const cp=M.counterparty||{};
+document.getElementById('title').textContent='Areo Workspace | '+L.t+': '+(cp.name||'');
+document.getElementById('sub').textContent=[cp.registration_no?L.reg+' '+cp.registration_no:(LANG==='en'?'Checked by name only: no registration number was provided':'הבדיקה רצה לפי השם בלבד, כי מספר הרישום לא נמסר'),cp.country||'',fmtD(M.done_at)].filter(Boolean).join(' · ');
+const SRC=DATA.sources||[]; const nos=a=>(a||[]).map(n=>'['+n+']').join(' ');
+const href=u=>/^https?:\/\//i.test(String(u||''))?esc(u):'';
+const flags=(DATA.red_flags||[]).slice().sort((a,b)=>(b.blocking?1:0)-(a.blocking?1:0));
+const blocking=flags.filter(f=>f.blocking);
+let h=`<h2>${esc(L.blk)}</h2>`+(blocking.length?blocking.map(f=>`<div class="block"><b>${esc(f.summary)}</b> ${esc(nos(f.source_nos))}</div>`).join(''):`<div class="none">${esc(L.noblk)}</div>`);
+h+=`<h2>${esc(L.who)}</h2><div>${esc((DATA.who||{}).text||'')} ${esc(nos((DATA.who||{}).source_nos))}</div>`;
+const other=flags.filter(f=>!f.blocking);
+if(other.length) h+=`<ul style="margin:6px 0 0;padding-inline-start:18px">${other.map(f=>`<li>${esc(f.summary)} ${esc(nos(f.source_nos))}</li>`).join('')}</ul>`;
+const eff=(DATA.effect_on_risks||[]).filter(e=>e.change&&e.change!=='none');
+h+=`<h2>${esc(L.eff)}</h2>`+(eff.length?`<ul style="padding-inline-start:18px">${eff.map(e=>`<li>${esc(L.risk)} ${esc(e.risk_no||e.risk_id||'')}: ${esc(e.change==='up'?L.up:L.down)}. ${esc(e.why||'')}</li>`).join('')}</ul>`:`<div class="none">${esc(L.noeff)}</div>`);
+const nc=DATA.not_checked||[];
+h+=`<h2>${esc(L.nc)}</h2>`+(nc.length?`<ul style="padding-inline-start:18px">${nc.map(n=>`<li><b>${esc(n.item)}</b>: ${esc(n.why||'')}${n.task?' · '+esc(n.task):''}</li>`).join('')}</ul>`:`<div class="none">${esc(L.nonc)}</div>`);
+h+=`<h2>${esc(L.src)}</h2><table><thead><tr>${L.th.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${SRC.map(s=>`<tr><td>${esc(s.no)}</td><td>${esc(s.source)}</td><td>${esc(s.taken)}</td><td>${href(s.url)?`<a href="${href(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.url)}</a>`:esc(s.url)}</td><td>${esc(fmtD(s.date))}</td></tr>`).join('')}</tbody></table>`;
+document.getElementById('main').innerHTML=h;
+</script>
+</body>
+</html>

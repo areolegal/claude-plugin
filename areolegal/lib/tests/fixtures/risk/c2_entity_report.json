@@ -1,0 +1,324 @@
+{
+ "meta": {
+  "company": "EXAMPLECO",
+  "counterparty": {
+   "name": "Google LLC",
+   "registration_no": "",
+   "country": ""
+  },
+  "requested_at": "2026-10-14",
+  "done_at": "2026-10-14",
+  "prepared_for_counsel": "עורכת הדין"
+ },
+ "question": {
+  "identifiers": {
+   "name": "Google LLC",
+   "registration_no": "",
+   "country": "",
+   "entity_type": "LLC (לפי השם בהסכם)"
+  },
+  "checks": [
+   "identity",
+   "status",
+   "sanctions",
+   "insolvency",
+   "public_filings"
+  ],
+  "defined_at": "2026-10-14T14:43"
+ },
+ "raw_copies": [
+  {
+   "typed_url": "https://icis.corp.delaware.gov/ecorp/entitysearch/namesearch.aspx",
+   "final_url": "https://icis.corp.delaware.gov/ecorp/entitysearch/namesearch.aspx",
+   "saved_at": "2026-10-14T14:43",
+   "file": "raw/ENT-02.htm",
+   "title": "",
+   "sha256": "df28c7fc25337b631cb6040196bb77abdd1b310fa791732e4fc0260ca308a2b1",
+   "stored": "match_window"
+  },
+  {
+   "typed_url": "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN.CSV",
+   "final_url": "https://wc2h-sls-prod-public-published.s3.us-gov-west-1.amazonaws.com/Published/6587caa5-3bc2-4d77-9b1e-d5f07a77aa34/2026-10-09/18481303-b580-4142-ba6b-503bf8ba1351/SDN.CSV",
+   "saved_at": "2026-10-14T14:43",
+   "file": "raw/ENT-03.csv",
+   "title": "",
+   "sha256": "a472434fd73854d52b8c0e53d4348f50a73c2cd5651cb2db1d6b8917e6b7f405",
+   "stored": "match_window"
+  },
+  {
+   "typed_url": "https://scsanctions.un.org/resources/xml/en/consolidated.xml",
+   "final_url": "https://unsolprodfiles.blob.core.windows.net/publiclegacyxmlfiles/EN/consolidatedLegacyByPRN.xml?rscd=attachment%3B+filename%3D%22consolidatedLegacyByPRN.xml%22",
+   "saved_at": "2026-10-14T14:44",
+   "file": "raw/ENT-04.xml",
+   "title": "",
+   "sha256": "4311d8ce38ccbd359c91e0aa8f63e16477f695af8b6c16547791f7c51890fef9",
+   "stored": "match_window"
+  },
+  {
+   "typed_url": "https://webgate.ec.europa.eu/fsd/fsf/public/files/csvFullSanctionsList_1_1/content",
+   "final_url": "https://webgate.ec.europa.eu/fsd/fsf/public/files/csvFullSanctionsList_1_1/content",
+   "saved_at": "2026-10-14T14:44",
+   "file": "raw/ENT-05.htm",
+   "title": "",
+   "sha256": "90b0565c0cc4fda5dd5c28c57ec77ca7760976ce86a728b1214893367bed7822",
+   "stored": "match_window"
+  },
+  {
+   "typed_url": "https://www.gov.uk/government/publications/the-uk-sanctions-list",
+   "final_url": "https://www.gov.uk/government/publications/the-uk-sanctions-list",
+   "saved_at": "2026-10-14T14:44",
+   "file": "raw/ENT-06.htm",
+   "title": "",
+   "sha256": "7d58407a422d046096975448a4e444aa4e918377895362216a757b6c3eeb6874",
+   "stored": "match_window"
+  },
+  {
+   "typed_url": "https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.csv",
+   "final_url": "https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.csv",
+   "saved_at": "2026-10-14T14:44",
+   "file": "raw/ENT-07.csv",
+   "title": "",
+   "sha256": "f99f3befeedd0cd3f8da345697da29cb21780e52f32d6d1d4b193b32c513358a",
+   "stored": "match_window"
+  },
+  {
+   "typed_url": "https://nbctf.mod.gov.il/he/MinisterSanctions/Announcements/Pages/nbctfDownloads.aspx",
+   "final_url": "https://nbctf.mod.gov.il/he/MinisterSanctions/Announcements/Pages/nbctfDownloads.aspx",
+   "saved_at": "2026-10-14T14:44",
+   "file": "raw/ENT-08.htm",
+   "title": "",
+   "sha256": "d02032286070b4dd9d8fbd985a7bdca8af8edf52b89ff177db3bfcb2c8a9c43d",
+   "stored": "match_window"
+  },
+  {
+   "typed_url": "https://data.gov.il/api/3/action/package_show?id=ica_companies",
+   "final_url": "https://data.gov.il/api/3/action/package_show?id=ica_companies",
+   "saved_at": "2026-10-14T14:44",
+   "file": "raw/ENT-09.json",
+   "title": "",
+   "sha256": "070954ba07e4cd24a04d55af1046d66a896b2a446e72b67e80b91ebd3da9d6ad",
+   "stored": "match_window"
+  },
+  {
+   "typed_url": "https://data.gov.il/api/3/action/datastore_search?resource_id=f004176c-b85f-4542-8901-7b3176f9a054&q=GOOGLE+LLC&limit=50",
+   "final_url": "https://data.gov.il/api/3/action/datastore_search?resource_id=f004176c-b85f-4542-8901-7b3176f9a054&q=GOOGLE+LLC&limit=50",
+   "saved_at": "2026-10-14T14:45",
+   "file": "raw/ENT-10.json",
+   "title": "",
+   "sha256": "0617e03b5bbd5fafd5031070c3f21f074f432a6ac58bcc11f942b577f8cce7d8",
+   "stored": "match_window"
+  },
+  {
+   "typed_url": "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/ALT.CSV",
+   "final_url": "https://wc2h-sls-prod-public-published.s3.us-gov-west-1.amazonaws.com/Published/6587caa5-3bc2-4d77-9b1e-d5f07a77aa34/2026-10-09/18481303-b580-4142-ba6b-503bf8ba1351/ALT.CSV",
+   "saved_at": "2026-10-14T14:45",
+   "file": "raw/ENT-11.csv",
+   "title": "",
+   "sha256": "d23c57050401072b80e99d128470d0ae61bad2b5cde2d1c546940a140e1d38c9",
+   "stored": "match_window"
+  }
+ ],
+ "confidence": [
+  {
+   "source_no": 1,
+   "label": "high",
+   "why": "המקור הרשמי עצמו, הקובץ מתאריך העדכון שבו; הקטע נמצא בעותק שנשמר"
+  },
+  {
+   "source_no": 2,
+   "label": "high",
+   "why": "המקור הרשמי עצמו, הקובץ מתאריך העדכון שבו; הקטע נמצא בעותק שנשמר"
+  },
+  {
+   "source_no": 3,
+   "label": "high",
+   "why": "המקור הרשמי עצמו, הקובץ מתאריך העדכון שבו; הקטע נמצא בעותק שנשמר"
+  },
+  {
+   "source_no": 4,
+   "label": "high",
+   "why": "המקור הרשמי עצמו, הקובץ מתאריך העדכון שבו; הקטע נמצא בעותק שנשמר"
+  },
+  {
+   "source_no": 5,
+   "label": "high",
+   "why": "המקור הרשמי עצמו, הקובץ מתאריך העדכון שבו; הקטע נמצא בעותק שנשמר"
+  },
+  {
+   "source_no": 6,
+   "label": "medium",
+   "why": "חיפוש לפי השם באנגלית בלבד; רישום בתעתיק עברי לא נבדק"
+  }
+ ],
+ "who": {
+  "text": "ההסכם נוקב בצד אחד: Google LLC, בלי מספר רישום, מדינת התאגדות או כתובת. בטיוטה היא התקשרה \"בשמה ובשם חברות הבת והשותפים העצמאיים שלה\", והתגובה שלנו מחקה זאת; החברה הבת הישראלית של הקבוצה אינה צד להסכם ולא נבדקה. זהותה ומעמדה של Google LLC לא אושרו במרשם רשמי בהרצה הזו, כי שני המרשמים הרלוונטיים חסמו גישה אוטומטית.",
+  "source_nos": []
+ },
+ "red_flags": [],
+ "sources": [
+  {
+   "no": 1,
+   "source": "OFAC, משרד האוצר האמריקאי: רשימת SDN (קובץ ראשי)",
+   "url": "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN.CSV",
+   "taken": "לא נמצאה רשומה בשם Google LLC; שתי רשומות שבהן המילה מופיעה בהערות (כתובת דואר אלקטרוני, וכינוי של אדם) נבדקו ואינן תואמות",
+   "date": "2026-10-14",
+   "excerpt": "a.k.a. 'GOOGLE, Mahdi'"
+  },
+  {
+   "no": 2,
+   "source": "OFAC, משרד האוצר האמריקאי: רשימת SDN (כינויים)",
+   "url": "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/ALT.CSV",
+   "taken": "לא נמצא כינוי Google בקובץ הכינויים",
+   "date": "2026-10-14",
+   "excerpt": "\"aka\",\"AERO-CARIBBEAN\""
+  },
+  {
+   "no": 3,
+   "source": "מועצת הביטחון של האו\"ם: הרשימה המאוחדת",
+   "url": "https://scsanctions.un.org/resources/xml/en/consolidated.xml",
+   "taken": "לא נמצאה רשומה בשם Google, נכון לקובץ מ-13.10.2026",
+   "date": "2026-10-14",
+   "excerpt": "dateGenerated=\"2026-10-13T23:00:01.949Z\""
+  },
+  {
+   "no": 4,
+   "source": "הנציבות האירופית: הרשימה המאוחדת של סנקציות פיננסיות",
+   "url": "https://webgate.ec.europa.eu/fsd/fsf/public/files/csvFullSanctionsList_1_1/content",
+   "taken": "לא נמצאה רשומה בשם Google בשדות השם, נכון לקובץ מ-12.10.2026",
+   "date": "2026-10-14",
+   "excerpt": "fileGenerationDate;Entity_LogicalId"
+  },
+  {
+   "no": 5,
+   "source": "ממשלת בריטניה (FCDO): רשימת הסנקציות הבריטית",
+   "url": "https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.csv",
+   "taken": "לא נמצאה רשומה בשם Google בשדות השם, נכון לדוח מ-12.10.2026",
+   "date": "2026-10-14",
+   "excerpt": "Report Date: 12-Oct-2026"
+  },
+  {
+   "no": 6,
+   "source": "רשם החברות, מאגר חברות ב-data.gov.il",
+   "url": "https://data.gov.il/api/3/action/datastore_search?resource_id=f004176c-b85f-4542-8901-7b3176f9a054&q=GOOGLE+LLC&limit=50",
+   "taken": "לא נמצאה רשומה בשם GOOGLE LLC, נכון לעדכון המאגר מ-14.10.2026",
+   "date": "2026-10-14",
+   "excerpt": "\"total\": 0"
+  }
+ ],
+ "effect_on_risks": [
+  {
+   "risk_id": "RSK-011",
+   "change": "none",
+   "why": "הזהות לא אושרה במרשם, ולכן הצורך להשלים את פרטי הרישום בהסכם נשאר"
+  },
+  {
+   "risk_id": "RSK-001",
+   "change": "none",
+   "why": "אין ממצא רשמי שנוגע למוניטין"
+  }
+ ],
+ "not_checked": [
+  {
+   "item": "זהות, מעמד ומדינת התאגדות של Google LLC",
+   "why": "נחסם",
+   "task": "עורך הדין: חיפוש ידני ב-Delaware Division of Corporations וב-SEC EDGAR, וצירוף מספר הרישום להסכם"
+  },
+  {
+   "item": "רשימות ההכרזה הישראליות של המטה הלאומי ללוחמה כלכלית בטרור",
+   "why": "נחסם",
+   "task": "עורך הדין או הציות: בדיקה ידנית ברשימה הרשמית"
+  },
+  {
+   "item": "הליכים משפטיים",
+   "why": "אין מחבר משפטי",
+   "task": "עורך הדין, דרך מאגר משפטי סגור"
+  },
+  {
+   "item": "הליכי חדלות פירעון בארצות הברית",
+   "why": "אין מרשם ברשימה",
+   "task": "עורך הדין, אם יידרש"
+  }
+ ],
+ "lookups": [
+  {
+   "source": "SEC EDGAR, חיפוש חברה",
+   "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=Google+LLC&type=&dateb=&owner=include&count=40",
+   "date": "2026-10-14T14:43",
+   "query": "Google LLC, ארצות הברית",
+   "result": "blocked",
+   "note": "החזיר 403 לגישה אוטומטית"
+  },
+  {
+   "source": "Delaware Division of Corporations, חיפוש ישות",
+   "url": "https://icis.corp.delaware.gov/ecorp/entitysearch/namesearch.aspx",
+   "date": "2026-10-14T14:43",
+   "query": "לא נשלחה שאילתה",
+   "result": "blocked",
+   "note": "דף החיפוש דורש CAPTCHA; לא נעקף"
+  },
+  {
+   "source": "OFAC, SDN",
+   "url": "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN.CSV",
+   "date": "2026-10-14T14:43",
+   "query": "Google LLC (חיפוש מקומי בקובץ)",
+   "result": "not_found"
+  },
+  {
+   "source": "OFAC, כינויים",
+   "url": "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/ALT.CSV",
+   "date": "2026-10-14T14:45",
+   "query": "Google LLC (חיפוש מקומי בקובץ)",
+   "result": "not_found"
+  },
+  {
+   "source": "האו\"ם, רשימה מאוחדת",
+   "url": "https://scsanctions.un.org/resources/xml/en/consolidated.xml",
+   "date": "2026-10-14T14:44",
+   "query": "Google LLC (חיפוש מקומי בקובץ)",
+   "result": "not_found"
+  },
+  {
+   "source": "האיחוד האירופי, רשימה מאוחדת",
+   "url": "https://webgate.ec.europa.eu/fsd/fsf/public/files/csvFullSanctionsList_1_1/content",
+   "date": "2026-10-14T14:44",
+   "query": "Google LLC (חיפוש מקומי בקובץ)",
+   "result": "not_found"
+  },
+  {
+   "source": "ממשלת בריטניה, דף הרשימה",
+   "url": "https://www.gov.uk/government/publications/the-uk-sanctions-list",
+   "date": "2026-10-14T14:44",
+   "query": "פתיחת הדף לאיתור הקובץ הרשמי",
+   "result": "found"
+  },
+  {
+   "source": "FCDO, רשימת הסנקציות",
+   "url": "https://sanctionslist.fcdo.gov.uk/docs/UK-Sanctions-List.csv",
+   "date": "2026-10-14T14:44",
+   "query": "Google LLC (חיפוש מקומי בקובץ)",
+   "result": "not_found"
+  },
+  {
+   "source": "המטה הלאומי ללוחמה כלכלית בטרור, רשימות הכרזה",
+   "url": "https://nbctf.mod.gov.il/he/MinisterSanctions/Announcements/Pages/nbctfDownloads.aspx",
+   "date": "2026-10-14T14:44",
+   "query": "לא נשלחה שאילתה",
+   "result": "blocked",
+   "note": "הגנת בוטים; לא נעקפה"
+  },
+  {
+   "source": "data.gov.il, תיאור מאגר החברות",
+   "url": "https://data.gov.il/api/3/action/package_show?id=ica_companies",
+   "date": "2026-10-14T14:44",
+   "query": "פתיחת תיאור המאגר",
+   "result": "found"
+  },
+  {
+   "source": "data.gov.il, מאגר החברות",
+   "url": "https://data.gov.il/api/3/action/datastore_search?resource_id=f004176c-b85f-4542-8901-7b3176f9a054&q=GOOGLE+LLC&limit=50",
+   "date": "2026-10-14T14:45",
+   "query": "GOOGLE LLC",
+   "result": "not_found"
+  }
+ ]
+}
