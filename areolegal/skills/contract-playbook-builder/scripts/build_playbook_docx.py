@@ -11,7 +11,7 @@
 כותרת תחתונה עם מספר עמוד, וכיווניות מימין לשמאל בכל פסקה, ריצה, טבלה וסעיף.
 
     python3 build_playbook_docx.py --model Areo-נתונים/playbook-model.json \\
-        --profile Areo-נתונים/פרופיל-לקוח.json --version short --out "<שם>.docx"
+        --profile Areo-נתונים/פרופיל-לקוח.json --out "<שם>.docx"
 """
 import argparse
 import datetime
@@ -286,7 +286,8 @@ def cover(doc, m):
     run(para(doc, after=0), "פלייבוק חוזי", 30, True, NAVY)
     run(para(doc, after=14), m["family"], 16, False, INK_SOFT)
     bar(para(doc, after=16), BRAND, 26, "top")
-    run(para(doc, after=6), "הגרסה המלאה" if m["full"] else "הגרסה המקוצרת", 11, True, BRAND)
+    run(para(doc, after=6), {"one": "חלק א: המדיניות. חלק ב: הנימוקים והנספחים", True: "הגרסה המלאה",
+                             False: "הגרסה המקוצרת"}[m["full"]], 11, True, BRAND)
     # שורת הבסיס: על כמה הסכמים הפלייבוק נשען, ובאיזה מסלול נבנה. אותו
     # נוסח בדיוק בפס הבסיס בארטיפקט, ולכן הוא נגזר ב-`basis_line.py`
     # ואינו מנוסח כאן. הוא אינו מספר הקבצים בתיקייה
@@ -390,32 +391,44 @@ def topic(doc, r, n, full):
             run(p, s(blk["meaning"]), 9.5, False, INK_SOFT, italic=True)
 
     pr = r.get("policy_rationale") or {}
-    if not full:
+    if full == "card":
+        if pr.get("executive_policy_rationale"):
+            h3(doc, "נימוק משפטי")
+            para(doc, s(pr["executive_policy_rationale"], 900), 10.5, after=6)
+        anchors(doc, r, 160)
+        p = para(doc, after=6)
+        run(p, "הנימוק המלא והראיות: בחלק ב, נושא %d." % n, 9.5, False, INK_SOFT, italic=True)
+    elif not full:
         if pr.get("executive_policy_rationale"):
             h3(doc, "נימוק משפטי")
             para(doc, s(pr["executive_policy_rationale"], 900), 10.5, after=6)
         anchors(doc, r, 160)
     else:
-        cp = r.get("company_perspective") or {}
-        if any(cp.get(k) for k, _ in PERSP):
-            h3(doc, "פרספקטיבת החברה")
-            for k, label in PERSP:
-                if cp.get(k):
-                    p = para(doc, after=4)
-                    run(p, label + ": ", 10, True, INK_SOFT)
-                    run(p, s(cp[k]), 10, False, INK)
-        if any(pr.get(k) for k, _ in RAT):
-            h3(doc, "מדוע נבחרה מדיניות זו")
-            for k, label in RAT:
-                if pr.get(k):
-                    p = para(doc, after=4)
-                    run(p, label + ": ", 10, True, INK_SOFT)
-                    run(p, s(pr[k]), 10, False, INK)
-        anchors(doc, r, None)
-        if r.get("evidence"):
-            h3(doc, "הראיות מהמאגר")
-            ev_table(doc, r["evidence"])
+        rationale(doc, r, pr)
     bar(para(doc, before=6, after=10), LINE, 6, "top")
+
+
+def rationale(doc, r, pr):
+    """הנימוק המלא של נושא: פרספקטיבת החברה, מדוע נבחרה המדיניות, העיגונים והראיות."""
+    cp = r.get("company_perspective") or {}
+    if any(cp.get(k) for k, _ in PERSP):
+        h3(doc, "פרספקטיבת החברה")
+        for k, label in PERSP:
+            if cp.get(k):
+                p = para(doc, after=4)
+                run(p, label + ": ", 10, True, INK_SOFT)
+                run(p, s(cp[k]), 10, False, INK)
+    if any(pr.get(k) for k, _ in RAT):
+        h3(doc, "מדוע נבחרה מדיניות זו")
+        for k, label in RAT:
+            if pr.get(k):
+                p = para(doc, after=4)
+                run(p, label + ": ", 10, True, INK_SOFT)
+                run(p, s(pr[k]), 10, False, INK)
+    anchors(doc, r, None)
+    if r.get("evidence"):
+        h3(doc, "הראיות מהמאגר")
+        ev_table(doc, r["evidence"])
 
 
 def footer(doc, m):
@@ -464,12 +477,24 @@ def build(d, prof, out, full):
             bar(q, AMBER, 12)
             run(q, s(x), 10, False, INK_SOFT)
 
-    h1(doc, "מדיניות לפי נושא", "2")
-    for i, r in enumerate(d["rules"], 1):
-        topic(doc, r, i, full)
+    if full == "one":
+        # קובץ אחד בשני חלקים (word-export-spec.md, "קובץ Word אחד לכל פלייבוק, בשני חלקים"):
+        # חלק א הוא מה שעורך דין פותח באמצע משא ומתן, וחלק ב הנימוקים והנספחים
+        h1(doc, "חלק א: המדיניות לפי נושא", "2")
+        for i, r in enumerate(d["rules"], 1):
+            topic(doc, r, i, "card")
+        h1(doc, "חלק ב: הנימוקים", "3")
+        for i, r in enumerate(d["rules"], 1):
+            h2(doc, "%d. %s" % (i, s(r.get("topic_name"))))
+            rationale(doc, r, r.get("policy_rationale") or {})
+            bar(para(doc, before=6, after=10), LINE, 6, "top")
+    else:
+        h1(doc, "מדיניות לפי נושא", "2")
+        for i, r in enumerate(d["rules"], 1):
+            topic(doc, r, i, full)
 
     if full and d.get("source_log"):
-        h1(doc, "נספח: ההסכמים שנותחו", "3")
+        h1(doc, "נספח: ההסכמים שנותחו", "4" if full == "one" else "3")
         t = doc.add_table(rows=1, cols=3)
         table_borders(t)
         for i, head in enumerate(["ההסכם", "הצד שכנגד", "מעמד הקריאה"]):
@@ -488,8 +513,9 @@ def main():
     ap = argparse.ArgumentParser(description="בונה את מסמך הפלייבוק ב-Word מהמודל הקנוני")
     ap.add_argument("--model", required=True, help="playbook-model.json")
     ap.add_argument("--profile", required=True, help="פרופיל-לקוח.json")
-    ap.add_argument("--version", required=True, choices=["short", "full"],
-                    help="short = הגרסה המקוצרת, full = הגרסה המלאה")
+    ap.add_argument("--version", default="one", choices=["one", "short", "full"],
+                    help="one (ברירת המחדל) = קובץ אחד בשני חלקים: המדיניות, ואחריה הנימוקים והנספחים. "
+                         "short ו-full נשארו לפלייבוקים ישנים")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
     d = json.load(io.open(a.model, encoding="utf-8"))
@@ -497,9 +523,9 @@ def main():
     if not d.get("rules"):
         print("במודל אין כללים. אין ממה לבנות מסמך.")
         return 1
-    build(d, prof, a.out, a.version == "full")
-    print("נבנה %s (%s, %d נושאים)" % (a.out, "מלאה" if a.version == "full" else "מקוצרת",
-                                      len(d["rules"])))
+    build(d, prof, a.out, {"one": "one", "full": True, "short": False}[a.version])
+    print("נבנה %s (%s, %d נושאים)" % (a.out, {"one": "קובץ אחד בשני חלקים", "full": "מלאה",
+                                               "short": "מקוצרת"}[a.version], len(d["rules"])))
     return 0
 
 

@@ -26,7 +26,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS = ROOT / "plugin" / "areolegal" / "skills" / "playbook-workspace" / "scripts"
+SCRIPTS = ROOT / "plugin" / "areolegal" / "skills" / "contract-playbook-builder" / "scripts"
 CONTENT = ROOT / "server" / "content" / "playbook-workspace"
 PAYLOAD = SCRIPTS / "build_workspace_payload.py"
 BUILD = SCRIPTS / "build_dashboard.py"

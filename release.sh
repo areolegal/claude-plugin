@@ -91,7 +91,7 @@ import pathlib, re, sys
 # license_status, so all three pieces are checked together.
 GATED = {"contract-drafter", "contract-negotiation-orchestrator",
          "contract-playbook-builder", "contract-risk-assessor",
-         "legal-contract-translator", "negotiation-strategist", "playbook-workspace"}
+         "legal-contract-translator", "negotiation-strategist"}
 bad = []
 
 mcp = pathlib.Path("areolegal/mcp/areolegal_mcp.py").read_text(encoding="utf-8")
@@ -448,6 +448,9 @@ else:
                     {p.name for p in pathlib.Path("areolegal").rglob("*.js")}
     for spec in sorted(content.rglob("*.md")) + sorted(content.rglob("*.json")):
         owner = spec.relative_to(content).parts[0]
+        # סביבת העבודה אוחדה לתוך בונה הפלייבוק (הערות הפלייבוק 5.5, שינוי 1): התוכן
+        # שלה נשאר בשירות תחת השם הישן, והסקריפטים שלה ארוזים עם הבונה
+        owner = {"playbook-workspace": "contract-playbook-builder"}.get(owner, owner)
         if owner not in skills:
             continue
         text = spec.read_text(encoding="utf-8", errors="ignore")
@@ -463,7 +466,9 @@ else:
         # register_playbook.py"), and those hid three missing scripts from the
         # check above. A bare name is accepted when it exists anywhere in the
         # package, because specs legitimately name library modules too.
-        for name in sorted(set(re.findall(r"[\w-]+\.(?:py|js)(?![\w])", text))):
+        # השם מתחיל באות לטינית, כדי שאות שימוש בעברית ("ו-qa_artifact.js") אינה חלק
+        # ממנו, ונקודה בתוכו (chart.umd.js) היא חלק מהשם ולא גבול שלו
+        for name in sorted(set(re.findall(r"(?<![A-Za-z0-9_.])([A-Za-z_][\w.-]*\.(?:py|js))(?![\w])", text))):
             if name not in shipped_names:
                 bad.append("%s: names %s, which is not shipped anywhere in the package"
                            % (spec.relative_to(content), name))
@@ -525,6 +530,11 @@ echo "==> 3/5 Checking nothing secret is bundled"
 if grep -rIlE "AREO-[A-Za-z0-9_-]{20,}|re_[A-Za-z0-9]{20,}|x-api-key" \
      --exclude-dir=.git --exclude="release.sh" . 2>/dev/null | grep -q .; then
   echo "   REFUSING: a key-shaped string is present in the plugin repo"; exit 1
+fi
+# קובצי גיבוב ועבודה (.bak, .orig) אינם נארזים: הם גרסה ישנה של קוד שרץ אצל הלקוח
+# אם מישהו מפנה אליה (הערות הפלייבוק 5.5, שינוי 63.2)
+if find areolegal \( -name "*.bak*" -o -name "*.orig" -o -name "*.rej" \) | grep -q .; then
+  echo "   REFUSING: backup files in the package:"; find areolegal \( -name "*.bak*" -o -name "*.orig" -o -name "*.rej" \); exit 1
 fi
 echo "   clean"
 

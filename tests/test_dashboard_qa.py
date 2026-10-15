@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """בדיקות הקבלה של סביבת העבודה, בדפדפן מדומה, כחלק מכל שחרור.
 
-שמונה רתמות ה-JS שבתיקיית `playbook-workspace/scripts` בודקות את הדף כמו
+שמונה רתמות ה-JS של סביבת העבודה (`contract-playbook-builder/scripts`) בודקות את הדף כמו
 שמשתמש רואה אותו: כל מסך נרנדר, כל כפתור נלחץ בלי שגיאה, הערות נשמרות
 ונמחקות, אין מקפים ארוכים ואין קודים פנימיים בטקסט הגלוי. עד עכשיו הן לא
 רצו בשגרה, ושתיים מהן מעולם לא רצו בפועל: לא היה דף שיש בו סגמנטים, ולא
@@ -28,7 +28,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-WS = ROOT / "plugin" / "areolegal" / "skills" / "playbook-workspace" / "scripts"
+WS = ROOT / "plugin" / "areolegal" / "skills" / "contract-playbook-builder" / "scripts"
 CONTENT = ROOT / "server" / "content" / "playbook-workspace"
 BASIS = (ROOT / "plugin" / "areolegal" / "skills" / "contract-playbook-builder"
          / "scripts" / "basis_line.py")

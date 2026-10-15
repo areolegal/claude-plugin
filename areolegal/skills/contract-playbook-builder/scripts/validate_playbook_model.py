@@ -640,6 +640,7 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
     warnings = []
     content = content_findings(data, errors, warnings, core=core,
                               index_entry=index_entry, word=word, workspace=workspace)
+    handoff_findings(data, errors)
 
     if errors:
         print("INVALID")
@@ -655,6 +656,41 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
         print("(content checks from the shared library ran: %d findings, none blocking)"
               % len(warnings))
     return 0
+
+
+def handoff_findings(data, errors):
+    """בנייה לבקשת הנושא ונותן (הערות הפלייבוק 5.5, שינוי 73): התשובה לשאלת המסלול
+    חוזרת ב-handoff.route_answer כשנשאלה בבונה, ועד שלוש החלטות ב-decisions_now[],
+    כל אחת עם המלצה. ואין בתור השאלות פריט שמבקש לאשר בחירה שנעשתה באותה הפעלה."""
+    req = (data.get("meta") or {}).get("build_request") or {}
+    if req.get("requested_by") != "negotiation_orchestrator":
+        return
+    h = data.get("handoff")
+    if not isinstance(h, dict):
+        add(errors, "handoff: a build for the negotiator returns a handoff record")
+        return
+    asked = req.get("route_answer")
+    if asked and h.get("route_answer") != asked:
+        add(errors, "handoff.route_answer: the route question was answered in the builder "
+                    "(meta.build_request.route_answer) and must be returned as is")
+    for k in ("asked_in", "answer_verbatim", "choice"):
+        if asked and k not in asked:
+            add(errors, "meta.build_request.route_answer.%s is required" % k)
+    dn = h.get("decisions_now")
+    if dn is None:
+        add(errors, "handoff.decisions_now[] is required (up to three decisions, each with a recommendation)")
+    elif len(dn) > 3:
+        add(errors, "handoff.decisions_now has %d items; at most three" % len(dn))
+    else:
+        for i, d in enumerate(dn):
+            if not (isinstance(d, dict) and d.get("recommendation")):
+                add(errors, "handoff.decisions_now[%d]: every decision carries a recommendation" % i)
+    if asked:
+        for q in data.get("validation_queue") or []:
+            text = "%s %s" % (q.get("question") or "", q.get("why") or "")
+            if "לאשר את הבחירה" in text or "לאשר?" in text and "בחירה" in text:
+                add(errors, "validation_queue %s: asks to confirm a choice the client already made in this "
+                            "session (route_answer)" % q.get("id"))
 
 
 def content_findings(data, errors, warnings, core=None, index_entry=None,

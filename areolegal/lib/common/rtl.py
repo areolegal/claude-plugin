@@ -370,9 +370,21 @@ def audit_docx(path, run_date=None, require_hebrew=True):
                 problems.append('מאפייני הקובץ: "python-docx" ב-core.xml')
             if run_date:
                 for tag in ('created', 'modified'):
-                    m = re.search(r'<dcterms:%s[^>]*>(\d{4}-\d{2}-\d{2})' % tag, core)
-                    if m and m.group(1) < run_date.isoformat():
-                        problems.append('מאפייני הקובץ: %s=%s מוקדם מיום ההפקה' % (tag, m.group(1)))
+                    m = re.search(r'<dcterms:%s[^>]*>([^<]+)<' % tag, core)
+                    if not m:
+                        continue
+                    # הזמן ב-core.xml הוא UTC ("Z"). בין חצות לשלוש לפנות בוקר בישראל התאריך ב-UTC
+                    # הוא עדיין אתמול, ולכן משווים את התאריך המקומי, ולא את המחרוזת.
+                    # תיקון מקומי של ניל, לדיווח לענבל
+                    raw = m.group(1).strip()
+                    try:
+                        import datetime as _dtm
+                        t = _dtm.datetime.fromisoformat(raw.replace('Z', '+00:00'))
+                        day = (t.astimezone() if t.tzinfo else t).date().isoformat()
+                    except ValueError:
+                        day = raw[:10]
+                    if day < run_date.isoformat():
+                        problems.append('מאפייני הקובץ: %s=%s מוקדם מיום ההפקה' % (tag, day))
         if require_hebrew and not has_hebrew:
             problems.append('אין טקסט עברי במסמך: הבדיקה חלה על מסמכים בעברית')
     return problems

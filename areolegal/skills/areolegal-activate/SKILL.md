@@ -47,8 +47,7 @@ Tell the user what is now available, one short line each. Keep it to this list; 
 components and do not promise anything outside it.
 
 - **contract-setup-diagnostician**: builds the Organization Profile from a short questionnaire (company, incorporation, sector, markets, regulators, interface language). Recommend running this FIRST, once. Every other component is gated on it.
-- **contract-playbook-builder**: builds a Green/Yellow/Red contract playbook from a folder of signed agreements, with evidence and source quotes. Exports designed Word (short and full), Excel and a PowerPoint summary.
-- **playbook-workspace**: Areo Workspace | playbook: an interactive HTML workspace over the playbook model.
+- **contract-playbook-builder**: builds a Green/Yellow/Red contract playbook from a folder of signed agreements, with evidence and source quotes. Produces one Word playbook in two parts and the interactive Areo Workspace, which it builds itself.
 - **contract-negotiation-orchestrator**: applies the playbook to the counterparty's redlines on their own draft: a work file with track changes, reasoned comment bubbles and an internal layer, and a send copy derived from it after the quality gate.
 - **contract-risk-assessor**: maps exposures across six lenses and produces Areo Workspace | risks.
 - **negotiation-strategist**: balance of power, sequencing, concession packages, an interactive prep centre and a sparring simulation.
