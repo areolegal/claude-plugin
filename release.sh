@@ -434,6 +434,26 @@ for md in sorted(pathlib.Path("areolegal/skills").glob("*/SKILL.md")):
         if not (base / ref).exists():
             where = f"{owner}/{ref}" if owner else ref
             bad.append(f"{skill}: references {where}, which is not shipped")
+# The same check against the server's content tree, which is the other half of
+# every skill: a spec that says "run scripts/x.py" fails at the client exactly
+# the same way, and that is how compare_rounds.py was documented for a release
+# in which it did not exist. The content lives in the sibling repo; when it is
+# not checked out here, say so rather than passing quietly.
+content = pathlib.Path("../server/content")
+if not content.is_dir():
+    print("   NOTE: ../server/content is not checked out; content references unchecked")
+else:
+    skills = {d.name for d in pathlib.Path("areolegal/skills").iterdir() if d.is_dir()}
+    for spec in sorted(content.rglob("*.md")) + sorted(content.rglob("*.json")):
+        owner = spec.relative_to(content).parts[0]
+        if owner not in skills:
+            continue
+        text = spec.read_text(encoding="utf-8", errors="ignore")
+        for ref in sorted(set(re.findall(r"scripts/[\w.-]+\.(?:py|js)", text))):
+            if not (pathlib.Path("areolegal/skills") / owner / ref).exists():
+                bad.append("%s: references %s, which is not shipped in %s"
+                           % (spec.relative_to(content), ref, owner))
+
 if bad:
     print("   REFUSING TO RELEASE:")
     for b in bad:
