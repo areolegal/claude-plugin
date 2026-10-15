@@ -429,7 +429,7 @@ for md in sorted(pathlib.Path("areolegal/skills").glob("*/SKILL.md")):
     # a reference may be the skill's own (scripts/x.py) or another skill's
     # (other-skill/scripts/x.py); resolve each against the right folder
     for owner, ref in sorted(set(re.findall(
-            r"(?:([a-z][\w-]*)/)?(scripts/[\w.-]+\.(?:py|js))", text))):
+            r"(?:([a-z][\w-]*)/)?(scripts/[\w.-]+\.(?:py|js))(?![\w])", text))):
         base = md.parent.parent / owner if owner else md.parent
         if not (base / ref).exists():
             where = f"{owner}/{ref}" if owner else ref
@@ -444,15 +444,25 @@ if not content.is_dir():
     print("   NOTE: ../server/content is not checked out; content references unchecked")
 else:
     skills = {d.name for d in pathlib.Path("areolegal/skills").iterdir() if d.is_dir()}
+    shipped_names = {p.name for p in pathlib.Path("areolegal").rglob("*.py")} | \
+                    {p.name for p in pathlib.Path("areolegal").rglob("*.js")}
     for spec in sorted(content.rglob("*.md")) + sorted(content.rglob("*.json")):
         owner = spec.relative_to(content).parts[0]
         if owner not in skills:
             continue
         text = spec.read_text(encoding="utf-8", errors="ignore")
-        for ref in sorted(set(re.findall(r"scripts/[\w.-]+\.(?:py|js)", text))):
+        for ref in sorted(set(re.findall(r"scripts/[\w.-]+\.(?:py|js)(?![\w])", text))):
             if not (pathlib.Path("areolegal/skills") / owner / ref).exists():
                 bad.append("%s: references %s, which is not shipped in %s"
                            % (spec.relative_to(content), ref, owner))
+        # A spec also names scripts without the scripts/ prefix ("run
+        # register_playbook.py"), and those hid three missing scripts from the
+        # check above. A bare name is accepted when it exists anywhere in the
+        # package, because specs legitimately name library modules too.
+        for name in sorted(set(re.findall(r"[\w-]+\.(?:py|js)(?![\w])", text))):
+            if name not in shipped_names:
+                bad.append("%s: names %s, which is not shipped anywhere in the package"
+                           % (spec.relative_to(content), name))
 
 if bad:
     print("   REFUSING TO RELEASE:")

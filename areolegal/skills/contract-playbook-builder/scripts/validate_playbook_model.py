@@ -203,7 +203,7 @@ def validate_rationale(errors, rationale, prefix, min_spec, applicability_min=2)
         add(errors, f"{prefix} invalid market_practice_basis")
 
 
-def main(path, core=None, index_entry=None):
+def main(path, core=None, index_entry=None, word=None, workspace=None):
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
     except Exception as exc:
@@ -638,7 +638,8 @@ def main(path, core=None, index_entry=None):
                        ", ".join(str(r) for r in walk_away_rules[:8])))
 
     warnings = []
-    content = content_findings(data, errors, warnings, core=core, index_entry=index_entry)
+    content = content_findings(data, errors, warnings, core=core,
+                              index_entry=index_entry, word=word, workspace=workspace)
 
     if errors:
         print("INVALID")
@@ -656,7 +657,8 @@ def main(path, core=None, index_entry=None):
     return 0
 
 
-def content_findings(data, errors, warnings, core=None, index_entry=None):
+def content_findings(data, errors, warnings, core=None, index_entry=None,
+                     word=None, workspace=None):
     """בדיקות התוכן של ספריית הייחוס, לצד בדיקות הסכמה שלמעלה.
 
     חוסר של הספרייה אינו עובר בשקט: מודל שלא נבדקו בו המנגנונים אינו
@@ -664,6 +666,7 @@ def content_findings(data, errors, warnings, core=None, index_entry=None):
     """
     try:
         import areo_lib  # noqa: F401
+        from playbook.status import check_consistency
         from playbook.validate_model import validate
     except ImportError as exc:
         add(errors, "the shared library (areolegal/lib) is not importable, so the "
@@ -682,6 +685,19 @@ def content_findings(data, errors, warnings, core=None, index_entry=None):
             add(errors, line)
         else:
             warnings.append(line)
+
+    # המעמד והתווית חייבים להיות אותו דבר בכל שכבה, ו-check_consistency הוא
+    # מה שמודד את זה: המודל, הגרעין, הרשומה באינדקס, ה-handoff, התאים, וגם
+    # ה-Word וסביבת העבודה כשנתיביהם נמסרו. מודל שאומר "מדיניות מאושרת"
+    # בעוד הגרעין אומר "טעון אישור" אינו מודל תקף, ולכן אלה שגיאות
+    try:
+        drift = check_consistency(data, core, index_entry,
+                                  cells=None, word_path=word, workspace_path=workspace)
+    except Exception as exc:
+        add(errors, "the cross-layer status check raised %s: %s" % (type(exc).__name__, exc))
+        return True
+    for d in drift:
+        add(errors, "status drift: %s" % d)
     return True
 
 
@@ -701,7 +717,10 @@ if __name__ == "__main__":
     ap.add_argument("model")
     ap.add_argument("--core", help="playbook-core.json, compared against the model")
     ap.add_argument("--index", help="the playbook's entry in playbooks/index.json")
+    ap.add_argument("--word", help="the playbook .docx, checked for a stale status")
+    ap.add_argument("--workspace", help="the workspace file, checked for a stale status")
     a = ap.parse_args()
     raise SystemExit(main(a.model,
                           core=_load(a.core, "the core") if a.core else None,
-                          index_entry=_load(a.index, "the index entry") if a.index else None))
+                          index_entry=_load(a.index, "the index entry") if a.index else None,
+                          word=a.word, workspace=a.workspace))
