@@ -1,17 +1,16 @@
 /* בדיקת עשן לתבנית דוח הסיכונים.
 
-   הרתמה אינה מכוילת לנתוני לקוח: היא רצה על מרשם מינימלי
-   (risk_smoke_fixture.json), ובודקת שהדוח נטען בלי שגיאות ריצה, שכל
-   מסך בתפריט מרונדר, ושאין בו טעינת סקריפט או תמונה מהרשת. הגופן
-   מ-Google Fonts מותר בתבנית הזאת.
+   הרתמה אינה מכוילת לנתוני לקוח: היא רצה על מרשם לדוגמה בסכמה 3.6
+   (קוד הייחוס, tests/fixtures/risk/c2_register.json), ובודקת שהדוח נטען בלי
+   שגיאות ריצה, שכל מסך בתפריט מרונדר, ושאין בו שום טעינה מהרשת, גם לא
+   גופן. הבדיקה המלאה, בדפדפן אמיתי, היא risk/render_check.py.
 
    בלי הבדיקה הזאת שינוי בתבנית נבדק רק בעין, וכך נשברו בעבר וידג'ט
    הקליטה ותבנית הסיכונים: שורת פרוזה בתוך <script> שוברת את כל הדף.
 
    בנייה והרצה:
-     python3 build_risk_report.py --data risk_smoke_fixture.json \
-         --template <תבנית> --out /tmp/risk.html
-     JSDOM_PATH=<נתיב ל-jsdom> node qa_risk_smoke.js /tmp/risk.html  */
+     python3 build_risk_report.py --data <תיקיית עסקה>/risk-register.json --template <תבנית>
+     JSDOM_PATH=<נתיב ל-jsdom> node qa_risk_smoke.js "<תיקיית עסקה>/Areo Workspace - סיכונים.html"  */
 const {JSDOM, VirtualConsole} = require(process.env.JSDOM_PATH);
 const fs = require('fs');
 const errs = [];
@@ -50,11 +49,11 @@ setTimeout(() => {
     if (!wrap || wrap.innerHTML.length < 30) bad.push(v + ': ריק');
   });
   out.push(['כל מסך מרונדר', bad.length === 0, bad.join(' | ')]);
-  /* גופן מ-Google Fonts מותר בתבנית הזאת; סקריפט או תמונה מהרשת אינם */
+  /* שום דבר מהרשת: לא סקריפט, לא תמונה ולא גופן */
   const ext = [...d.querySelectorAll('script[src],img[src],link[href]')]
     .map(e => e.getAttribute('src') || e.getAttribute('href') || '')
-    .filter(u => /^https?:/i.test(u) && !/^https:\/\/fonts\.(googleapis|gstatic)\.com/.test(u));
-  out.push(['אין סקריפט או תמונה מהרשת', ext.length === 0, ext.slice(0, 2).join(' | ')]);
+    .filter(u => /^https?:/i.test(u));
+  out.push(['אין טעינה מהרשת', ext.length === 0, ext.slice(0, 2).join(' | ')]);
   let n = 0;
   out.forEach(([t, ok, note]) => {
     if (!ok) n++;

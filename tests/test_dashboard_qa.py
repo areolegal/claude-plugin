@@ -177,14 +177,19 @@ def test_the_page_harness_passes(pages, page, harness, extra):
 
 RISK = ROOT / "plugin" / "areolegal" / "skills" / "contract-risk-assessor" / "scripts"
 RISK_TPL = ROOT / "server" / "content" / "contract-risk-assessor" / "risk-report-template.html"
+RISK_FX = ROOT / "plugin" / "areolegal" / "lib" / "tests" / "fixtures" / "risk" / "c2_register.json"
 
 
 def test_the_risk_report_loads_and_renders_every_screen(tmp_path):
     """דוח הסיכונים: שורת פרוזה אחת בתוך הסקריפט כבר רוקנה את כל הדף פעם."""
     _need_jsdom()
-    out = tmp_path / "risk.html"
-    _py(RISK / "build_risk_report.py", ["--data", RISK / "risk_smoke_fixture.json",
-                                        "--template", RISK_TPL, "--out", out])
+    # מרשם בסכמה 3.6 (סבב 2 של ענבל), בתיקיית עסקה בשם המזהה שלו: הבונה כותב רק לשם
+    reg = json.loads(RISK_FX.read_text(encoding="utf-8"))
+    deal = tmp_path / reg["meta"]["transaction_id"]
+    deal.mkdir()
+    (deal / "risk-register.json").write_text(json.dumps(reg, ensure_ascii=False), encoding="utf-8")
+    _py(RISK / "build_risk_report.py", ["--data", deal / "risk-register.json", "--template", RISK_TPL])
+    out = deal / "Areo Workspace - סיכונים.html"
     r = subprocess.run(["node", str(RISK / "qa_risk_smoke.js"), str(out)],
                        capture_output=True, text=True, timeout=180,
                        env=dict(os.environ, JSDOM_PATH=JSDOM))

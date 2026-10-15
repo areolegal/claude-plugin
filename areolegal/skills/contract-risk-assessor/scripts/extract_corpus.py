@@ -7,7 +7,7 @@
 הסקריפט קורא אותם **מחוץ להקשר** ומפיק קובץ אחד עם הפסקאות בלבד, בנוסחן המדויק,
 כדי שהציטוטים יישארו מילוליים ולא יידרש מעבר שני על המקור.
 
-    python3 extract_corpus.py <תיקיית ההסכמים> --out corpus-extract.json
+    python3 extract_corpus.py <תיקיית ההסכמים, או מסמך אחד> --out <תיקייה זמנית>/corpus.json
 
 **הקריאה עצמה היא של ספריית הייחוס** (`areolegal/lib/risk/extract_corpus.py`,
 שנכתב כדי להחליף את הגרסה הקודמת של הקובץ הזה): הטקסט של כל פסקה בנוסח "קבל
@@ -223,12 +223,16 @@ def main() -> int:
     args = ap.parse_args()
 
     root = Path(args.root).expanduser().resolve()
-    if not root.is_dir():
-        print("לא נמצאה תיקייה: %s" % root); return 1
+    if not root.exists():
+        print("לא נמצאו תיקייה או קובץ: %s" % root); return 1
+    # גם מסמך יחיד עובר חילוץ (הערות מעריך הסיכונים 3.6, שינוי 21.3)
+    files = [root] if root.is_file() else sorted(root.rglob("*"))
+    if root.is_file():
+        root = root.parent
 
     engine = pdf_engine()
     docs, unreadable, seen = [], [], {}
-    for f in sorted(root.rglob("*")):
+    for f in files:
         if not f.is_file() or f.name.startswith((".", "~$")):
             continue
         if any(part in SKIP_DIRS for part in f.parts):
