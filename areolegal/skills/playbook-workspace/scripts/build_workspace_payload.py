@@ -9,6 +9,15 @@
 
   python3 build_workspace_payload.py playbook-model.json payload.json
 
+**סביבת עבודה אחת לכל הפלייבוקים של החברה** (`dashboard_spec.md`, "בורר
+סוג ההסכם"): עם `--data` הסקריפט קורא את `playbooks/index.json`, ממיר כל
+פלייבוק בנפרד, ומחזיר דף אחד ובו `books{}`, פלייבוק לכל סוג הסכם ופוזיציה,
+ו-`playbooks[]` לבורר. כל סוג נשאר שלם ונפרד, ואין מיזוג עמדות בין סוגים:
+הבורר מחליף את כל מה שמוצג, ולא מסנן רשימה אחת מעורבבת.
+
+  python3 build_workspace_payload.py --data Areo-נתונים payload.json \
+      [--current <family_id>]
+
 ואחר כך:
   python3 validate_data.py --data payload.json
   python3 build_dashboard.py <תבנית> payload.json dashboard.html
@@ -16,6 +25,7 @@
 import argparse
 import io
 import json
+import os
 import re
 import sys
 
@@ -436,24 +446,122 @@ def convert(m):
     return payload
 
 
+def index_models(data_dir):
+    """כל הפלייבוקים שבאינדקס, כ-(רשומה, נתיב המודל). פלייבוק שהמודל שלו
+    חסר אינו נבלע בשקט: הוא מדווח, כי בורר שחסר בו סוג נראה כמו מדיניות
+    שאינה קיימת."""
+    path = os.path.join(data_dir, "playbooks", "index.json")
+    if not os.path.exists(path):
+        sys.exit("אין %s. סביבת עבודה לכל הפלייבוקים נבנית מהאינדקס, "
+                 "וכל פלייבוק נרשם בו ב-register_playbook.py" % path)
+    idx = json.load(io.open(path, encoding="utf-8"))
+    entries = idx.get("playbooks") if isinstance(idx, dict) else idx
+    out = []
+    for e in entries or []:
+        rel = e.get("core_path") or e.get("path")
+        if not rel:
+            warn("רשומה באינדקס בלי core_path: %s" % json.dumps(e, ensure_ascii=False)[:100])
+            continue
+        mp = os.path.join(data_dir, os.path.dirname(rel), "playbook-model.json")
+        if not os.path.exists(mp):
+            warn("לרשומה %s אין playbook-model.json (%s), והיא אינה בסביבת העבודה"
+                 % (e.get("family_id") or rel, mp))
+            continue
+        out.append((e, mp))
+    return out
+
+
+def book_id(m, entry=None):
+    return (pick(m, "family_id", "playbook_id")
+            or pick(entry or {}, "family_id") or "playbook")
+
+
+def build_book(m, entry=None):
+    """פלייבוק אחד, שלם, כפי שהדף מציג סוג הסכם אחד. `pb` מזהה אותו לבורר
+    ולאשף, ו-rules[].pb משייך אליו כל סעיף."""
+    b = convert(m)
+    bid = book_id(m, entry)
+    fam = (pick(b.get("scope") or {}, "contract_families") or [{}])[0] or {}
+    b["pb"] = {"id": bid,
+               "family": pick(fam, "contract_family_name", "label")
+               or pick(entry or {}, "family_name") or bid,
+               "role": pick(fam, "company_role") or pick(entry or {}, "company_role_code") or ""}
+    for r in b["rules"]:
+        r["pb"] = bid
+    b.pop("playbooks", None)
+    return b
+
+
+def merge_books(books, current=None, company_key=None):
+    """הדף כולו: הפלייבוק שנבחר כברירת מחדל בשורש (כך כל קורא ישן של הדף
+    רואה דף שלם ותקין), ולצדו כל הספרים והרשימה לבורר."""
+    if not books:
+        sys.exit("אין אף פלייבוק להציג")
+    ids = [b["pb"]["id"] for b in books]
+    if current and current not in ids:
+        sys.exit("--current %s אינו באינדקס. הקיימים: %s" % (current, ", ".join(ids)))
+    if not current:
+        current = max(books, key=lambda b: str(b["meta"].get("updated") or ""))["pb"]["id"]
+    cur = next(b for b in books if b["pb"]["id"] == current)
+    payload = json.loads(json.dumps(cur))
+    payload["books"] = {b["pb"]["id"]: b for b in books}
+    payload["playbooks"] = [{
+        "id": b["pb"]["id"], "family": b["pb"]["family"], "role": b["pb"]["role"],
+        "rules": len(b["rules"]), "segments": len(b.get("segments") or []),
+        "scanned": (b["meta"].get("build_path") or {}).get("n") or 0,
+        "updated": b["meta"].get("updated") or "",
+        "status_label": b["meta"].get("status_label") or "",
+        "current": b["pb"]["id"] == current} for b in books]
+    # המפתח של הדף כולו (הבחירה בבורר, יום ולילה) הוא של החברה, ולא של
+    # פלייבוק אחד. ההערות נשמרות לכל פלייבוק במפתח שלו, שבתוך הספר
+    company = payload["meta"].get("company") or company_key or "company"
+    payload["meta"]["page_key"] = "playbooks_" + ls_key(company)
+    return payload
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("model")
+    ap.add_argument("model", nargs="?", help="playbook-model.json, לפלייבוק אחד")
     ap.add_argument("out")
+    ap.add_argument("--data", help="תיקיית Areo-נתונים: כל הפלייבוקים שבאינדקס, בדף אחד")
+    ap.add_argument("--current", help="family_id של הפלייבוק שנפתח ראשון. "
+                                      "ברירת מחדל: זה שעודכן אחרון")
     ap.add_argument("--meta", help="שדות הצגה שאינם במודל, למשל הודעת הדגמה או docAccess")
     a = ap.parse_args()
-    m = json.load(io.open(a.model, encoding="utf-8"))
-    payload = convert(m)
+    if bool(a.model) == bool(a.data):
+        sys.exit("יש לתת מודל אחד, או --data לכל הפלייבוקים, ולא את שניהם")
+    if a.data:
+        books = []
+        for entry, mp in index_models(a.data):
+            books.append(build_book(json.load(io.open(mp, encoding="utf-8")), entry))
+        payload = merge_books(books, current=a.current)
+    else:
+        m = json.load(io.open(a.model, encoding="utf-8"))
+        payload = convert(m)
     if a.meta:
         extra = json.loads(io.open(a.meta, encoding="utf-8").read())
-        # תוספות הצגה בלבד. הן אינן יוצרות עמדה, ראיה או מספר
+        # תוספות הצגה בלבד. הן אינן יוצרות עמדה, ראיה או מספר. בדף של כמה
+        # פלייבוקים הן חלות על כולם, כי הן של הדף ולא של סוג הסכם
+        # זהות הספר אינה תוספת הצגה: מפתח שמירה משותף לשני ספרים היה
+        # מציג הערה על סעיף בהסכמי סודיות גם בהסכמי שירותים
+        identity = ("id", "slug", "ls_key", "title", "wizard_href", "page_key")
+        books = list((payload.get("books") or {}).values())
         for k, v in (extra.get("meta") or extra).items():
-            payload["meta"][k] = v
+            if not books or k not in identity:
+                payload["meta"][k] = v
+            for b in books:
+                if k not in identity:
+                    b["meta"][k] = v
     io.open(a.out, "w", encoding="utf-8").write(
         json.dumps(payload, ensure_ascii=False, indent=2))
     print("נכתב %s: %d סעיפים, %d ציטוטים, %d מקורות, %d סגמנטים"
           % (a.out, len(payload["rules"]), len(payload["cites"]),
              len(payload["sources"]), len(payload["segments"])))
+    if payload.get("books"):
+        print("פלייבוקים בדף: %d" % len(payload["books"]))
+        for p in payload["playbooks"]:
+            print("  %s %s · %s (%d סעיפים)" % ("*" if p["current"] else " ",
+                                                p["family"], p["role"], p["rules"]))
     bp = payload["meta"].get("build_path")
     if bp:
         print("פס הבסיס: %d הסכמים, מסלול %s" % (bp["n"], bp["path"]))

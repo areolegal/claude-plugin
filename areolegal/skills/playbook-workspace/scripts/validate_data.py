@@ -265,10 +265,17 @@ def validate(data):
         for x in (data.get("rules") or []):
             if x.get("pb") and x["pb"] not in known:
                 r.err("rules[%s]" % x.get("id"), "pb %r אינו קיים ב-playbooks" % x["pb"])
+        shelves = data.get("books") or {}
         for b in books:
-            if not any(x.get("pb") == b["id"] for x in (data.get("rules") or [])):
+            # בדף של כמה פלייבוקים כל סוג הוא ספר שלם ב-books{}, והסעיפים
+            # שבשורש הם רק של הסוג שנפתח ראשון
+            pool = (shelves.get(b["id"]) or {}).get("rules") if shelves else data.get("rules")
+            if not any(x.get("pb") == b["id"] for x in (pool or [])):
                 r.warn("playbooks[%s]" % b["id"],
                        "אין בקובץ אף סעיף של הפלייבוק הזה. הבורר יציג מסך ריק מוסבר")
+        for bid in shelves:
+            if bid not in known:
+                r.err("books[%s]" % bid, "ספר שאין לו שורה ב-playbooks, ולכן אין אליו מעבר בבורר")
 
     tracked = set()
     for c in data.get("cites") or []:
@@ -420,6 +427,16 @@ def main():
         sys.exit(1)
 
     r = validate(data)
+    # כל ספר הוא פלייבוק שלם שהדף מציג לבד כשבוחרים בו, ולכן כל אחד נבדק
+    # בדיוק כמו דף של פלייבוק אחד
+    for bid, book in sorted((data.get("books") or {}).items()):
+        sub = dict(book)
+        sub["playbooks"] = data.get("playbooks") or []
+        sub.pop("books", None)
+        br = validate(sub)
+        r.errors += [("books[%s].%s" % (bid, w), m) for w, m in br.errors]
+        r.warns += [("books[%s].%s" % (bid, w), m) for w, m in br.warns
+                    if not w.startswith("playbooks[")]
     if r.errors:
         print("נמצאו %d שגיאות חוסמות. אין להזריק לתבנית לפני תיקונן:" % len(r.errors))
         for where, msg in r.errors:
