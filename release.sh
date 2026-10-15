@@ -451,10 +451,14 @@ else:
         if owner not in skills:
             continue
         text = spec.read_text(encoding="utf-8", errors="ignore")
-        for ref in sorted(set(re.findall(r"scripts/[\w.-]+\.(?:py|js)(?![\w])", text))):
-            if not (pathlib.Path("areolegal/skills") / owner / ref).exists():
+        # a spec may point at another skill's script (other-skill/scripts/x.py),
+        # and that resolves against that skill, not the owning one
+        for other, ref in sorted(set(re.findall(
+                r"(?:([a-z][\w-]*)/)?(scripts/[\w.-]+\.(?:py|js))(?![\w])", text))):
+            base = pathlib.Path("areolegal/skills") / (other or owner)
+            if not (base / ref).exists():
                 bad.append("%s: references %s, which is not shipped in %s"
-                           % (spec.relative_to(content), ref, owner))
+                           % (spec.relative_to(content), ref, other or owner))
         # A spec also names scripts without the scripts/ prefix ("run
         # register_playbook.py"), and those hid three missing scripts from the
         # check above. A bare name is accepted when it exists anywhere in the
