@@ -5,7 +5,12 @@ from pathlib import Path
 
 VALID_STATUS = {"Confirmed", "Inferred", "Unclear"}
 VALID_CONF = {"High", "Medium", "Low"}
-VALID_PB_STATUS = {"Draft", "Approved", "Superseded", "Invalid"}
+VALID_PB_STATUS = {"Draft", "PartiallyApproved", "Approved", "Superseded", "Invalid"}
+# מאיפה בא round1_posture: מברירת המחדל לפי החשיבות, מהצהרת התמורה, או
+# מתשובת הלקוח (שינוי 69; קודם לכן הערך הראשון נקרא default)
+VALID_POSTURE_SOURCE = {"importance", "tradeoff_statement", "client_answer"}
+VALID_POSTURE = {"hold_green", "offer_yellow", "not_applicable"}
+WALK_AWAY_MAX = 5
 VALID_REG_STATUS = {"NotResearched", "NoSpecificSourceIdentified", "ApplicableSourcesFound"}
 VALID_PRESENCE = {"Required", "Optional", "Prohibited", "Conditional"}
 VALID_MISSING_COLOR = {"Green", "Yellow", "Red", "NotApplicable"}
@@ -213,15 +218,33 @@ def main(path):
 
     # הבונה כותב תמיד Draft (שינוי 27). אישור מדיניות אינו מתואר, אינו
     # מתועד ואינו נכתב כאן, ולכן מודל שיוצא מהבונה בכל ערך אחר נפסל
+    # בבנייה הערך תמיד Draft. PartiallyApproved ו-Approved נגזרים בקוד אחרי
+    # קליטה של גיליון העמדות, ולכן מותרים רק כשיש רשומת קליטה (שינוי 68)
     status = data.get("playbook_status")
+    records = data.get("approval_records")
+    ingested = isinstance(records, list) and bool(records)
     if status not in VALID_PB_STATUS:
         add(errors, "invalid playbook_status")
-    elif status != "Draft":
-        add(errors, f"playbook_status must be Draft, got {status}: the builder never marks "
-                    f"a playbook as approved and never records who approved it")
+    elif status in ("PartiallyApproved", "Approved") and not ingested:
+        add(errors, f"playbook_status is {status} with no approval_records[]: the builder "
+                    f"writes Draft, and the status is derived only after a positions "
+                    f"sheet is ingested")
+    elif status not in ("Draft", "PartiallyApproved", "Approved"):
+        add(errors, f"playbook_status must be Draft on build, got {status}")
+    # התווית היא שדה אחד, ושתי תוויות באותה רשומה הן תקלה (שינוי 79)
+    if not nonempty(data.get("status_label")):
+        add(errors, "missing status_label: it is the only field that states the "
+                    "playbook's status, and every component prints it as it is")
+    if "presentation_label" in json.dumps(data, ensure_ascii=False):
+        add(errors, "presentation_label must not appear anywhere: status_label is the "
+                    "only label field (two labels in one record is a defect)")
+    if not nonempty(data.get("produced_with")):
+        add(errors, "missing produced_with: the skill version, the notes version and "
+                    "refs_sha256 of the run that produced this model")
     for key in ["approved_by", "approved_at", "confirmed_by", "approved_version"]:
         if nonempty(data.get(key)):
-            add(errors, f"{key} must not be written: approval of policy is not recorded")
+            add(errors, f"{key} must not be written: who approved is recorded in "
+                        f"approval_records[], not in a field of its own")
     if data.get("output_language") not in VALID_OUTPUT_LANGUAGE:
         add(errors, "invalid output_language")
 
@@ -437,6 +460,7 @@ def main(path):
 
     rule_ids = set()
     confirmed_segment_variants = 0
+    walk_away_rules = []
     for i, rule in enumerate(rules):
         prefix = f"rules[{i}]"
         if not isinstance(rule, dict):
@@ -465,6 +489,33 @@ def main(path):
                     add(errors, f"{prefix}.company_perspective missing {key}")
 
         validate_rationale(errors, rule.get("policy_rationale"), f"{prefix}.policy_rationale", RATIONALE_MIN, 2)
+
+        # מה מציעים בסבב הראשון, ומאיפה הערך בא (שינוי 69). ברירת המחדל
+        # נקבעת לפי החשיבות, ולכן המקור נקרא importance ולא default
+        posture = rule.get("round1_posture")
+        if posture is None:
+            add(errors, f"{prefix} missing round1_posture")
+        elif posture not in VALID_POSTURE:
+            add(errors, f"{prefix} invalid round1_posture: {posture}")
+        src = rule.get("round1_posture_source")
+        if src is None:
+            add(errors, f"{prefix} missing round1_posture_source")
+        elif src == "default":
+            add(errors, f"{prefix} round1_posture_source is 'default': the value was "
+                        f"renamed to 'importance', because the default follows importance")
+        elif src not in VALID_POSTURE_SOURCE:
+            add(errors, f"{prefix} invalid round1_posture_source: {src}")
+
+        # שובר עסקה: חובה בכל כלל, ומקור רשום כשהערך true (שינוי 84)
+        wa = rule.get("walk_away")
+        if not isinstance(wa, bool):
+            add(errors, f"{prefix} walk_away must be true or false on every rule")
+        elif wa:
+            walk_away_rules.append(rid)
+            if not nonempty(rule.get("walk_away_source")):
+                add(errors, f"{prefix} walk_away is true without walk_away_source: a "
+                            f"deal breaker needs a recorded source (statute, a company "
+                            f"document, or the client's answer)")
         if data.get("playbook_status") == "Approved" and isinstance(rule.get("policy_rationale"), dict):
             if rule["policy_rationale"].get("rationale_status") != "Confirmed":
                 add(errors, f"Approved playbook requires confirmed rationale for {prefix}")
@@ -577,6 +628,13 @@ def main(path):
         if isinstance(rule, dict) and rule.get("policy_status") == "Unclear":
             if rule.get("rule_id") not in queue_rule_ids and not nonempty(rule.get("validation_question")):
                 add(errors, f"rules[{i}] Unclear rule lacks validation queue item/question")
+
+    # לכל היותר חמישה שוברי עסקה בפלייבוק (שינוי 84). פלייבוק שבו כל כלל
+    # שובר עסקה אינו מדיניות, אלא רשימת תנאים שאין איתה משא ומתן
+    if len(walk_away_rules) > WALK_AWAY_MAX:
+        add(errors, "%d rules have walk_away: true, the limit is %d (%s)"
+                    % (len(walk_away_rules), WALK_AWAY_MAX,
+                       ", ".join(str(r) for r in walk_away_rules[:8])))
 
     if errors:
         print("INVALID")
