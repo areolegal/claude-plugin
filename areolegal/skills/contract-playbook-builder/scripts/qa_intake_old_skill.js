@@ -19,7 +19,6 @@ out.push(['אין הודעת מחקר קבוע', !vis('reg-fixed')]);
 out.push(['שאלת התבנית כן מוצגת', vis('q-tpl')&&vis('q-all')]);
 [...d.querySelectorAll('#pos .chip')][0].onclick();
 [...d.querySelectorAll('#dep .chip')][0].onclick();
-[...d.querySelectorAll('#fmt .chip')][3].onclick();
 [...d.querySelectorAll('#cmp .chip')][1].onclick();
 [...d.querySelectorAll('#tpl .chip')][2].onclick();
 [...d.querySelectorAll('#all .chip')][0].onclick();

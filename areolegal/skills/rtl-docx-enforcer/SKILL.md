@@ -155,7 +155,7 @@ add_rtl_numbered_list(doc, [
 
 add_mixed_rtl_paragraph(doc, [
     ("לפרטים נוספים פנו לכתובת ", "rtl"),
-    ("info@highlaw.co.il", "ltr"),
+    ("info@example.co.il", "ltr"),
     (" או בטלפון המשרד.", "rtl"),
 ])
 

@@ -47,7 +47,6 @@ out.push(['ב-4 הסכמים המחקר הוא חלק מהבנייה', vis('reg-
 /* הפוזיציה כבר מסומנת מההנחה; בוחרים אחרת, ולא מכבים את הקיימת */
 [...d.querySelectorAll('#pos .chip')][0].onclick();
 [...d.querySelectorAll('#dep .chip')][0].onclick();
-[...d.querySelectorAll('#fmt .chip')][3].onclick();
 [...d.querySelectorAll('#cmp .chip')][1].onclick();
 [...d.querySelectorAll('#tpl .chip')][2].onclick();
 [...d.querySelectorAll('#all .chip')][0].onclick();
@@ -59,6 +58,7 @@ d.getElementById('go').onclick();
 const sent=w.__sent||'';
 out.push(['אחרי הבחירה נשלחה שורה', !!sent]);
 out.push(['המסלול שנבחר נשלח', sent.indexOf('מסלול: שילוב עם מחקר שוק')>0, sent.slice(0,150)]);
+out.push(['אין שאלת פורמט: שני התוצרים תמיד', !d.getElementById('fmt') && sent.indexOf('פורמטים')<0]);
 out.push(['מספר ההסכמים נשלח', sent.indexOf('הסכמים: 4')>0]);
 out.push(['המחקר הרגולטורי נגזר ולא נשאל', sent.indexOf('חלק מהבנייה')>0]);
 /* אפס הסכמים: המסלול השני */
