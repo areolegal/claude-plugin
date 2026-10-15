@@ -262,7 +262,7 @@ def main() -> int:
     print("  הערות לצד שכנגד: %d" % len(commented))
     print("  לא אותרו       : %d" % len(missed))
     for m in missed:
-        print("     · %s — %s" % (m["clause"], m["reason"]))
+        print("     · %s - %s" % (m["clause"], m["reason"]))
     if missed:
         print("  יש לטפל בהם ידנית. הם לא סומנו, ולא נוחשה עבורם פסקה.")
 

@@ -70,7 +70,7 @@ def main(argv=None):
     res["source_label"] = source_label(res, activation_answer_kind=a.answer_kind)
 
     print("משפחה: %s   פוזיציה: %s" % (family, role))
-    print("תוצאה: %s" % res.get("result", "—"))
+    print("תוצאה: %s" % res.get("result", "-"))
     if res.get("chosen"):
         print("נבחר : %s" % res["chosen"])
     if res.get("reason"):
