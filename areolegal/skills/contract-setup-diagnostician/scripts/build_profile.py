@@ -31,7 +31,7 @@ import uuid
 from datetime import datetime
 
 SCHEMA_VERSION = "1.0"
-CORE_VERSION = "2.0.0"
+CORE_VERSION = "2.1.0"
 
 # הרשימה הסגורה שמוצגת למשתמש. כל היתר נשמרים ואינם מוצגים.
 PRIMARY_DISPLAY = [
