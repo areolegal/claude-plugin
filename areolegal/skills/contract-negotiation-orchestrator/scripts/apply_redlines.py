@@ -51,6 +51,7 @@ accept) ו-`decision_code`, והשדות של אותה פעולה. הקובץ נ
 import datetime as _dt
 import json
 import os
+import re
 import shutil
 import sys
 
@@ -61,6 +62,7 @@ import common.docx_tracked as dt  # noqa: E402
 from common import gap_checks, paths  # noqa: E402
 from orchestrator import qa_gate  # noqa: E402
 from lawyer import lawyer_view  # noqa: E402
+import threads  # noqa: E402
 
 
 def load(path, what):
@@ -78,6 +80,28 @@ def load(path, what):
 def side_paths(out):
     stem = out[:-5] if out.lower().endswith(".docx") else out
     return stem + ".expected.json", stem + ".as_produced.docx"
+
+
+def sentences(text):
+    return [x.strip() for x in re.split(r"(?<=[.!?;])\s+", text or "") if len(x.strip()) >= 20]
+
+
+def mark_survivors(draft, dec):
+    """שינוי 30: בהחלפה של פסקה שלמה, כל משפט מהנוסח שלהם ששרד בנוסח החדש נרשם בבועה הפנימית,
+    כדי שעורך הדין יאשר אותו במפורש, ולא יעבור כחלק מנוסח שנראה כולו שלנו."""
+    paras = dt.received_paragraphs(draft)
+    out = []
+    for d in dec.get("decisions") or []:
+        if d.get("op") != "replace" or not isinstance(d.get("para"), int) or d["para"] >= len(paras):
+            continue
+        new = re.sub(r"\s+", " ", d.get("new_text") or "")
+        kept = [x for x in sentences(paras[d["para"]]) if re.sub(r"\s+", " ", x) in new]
+        if kept:
+            note = "נשאר מהנוסח שלהם, לאישור: " + " | ".join(kept)
+            d["internal_comment"] = ((d.get("internal_comment") or "") + " " + note).strip()
+            d["survived_sentences"] = kept
+            out.append((d.get("id"), kept))
+    return out
 
 
 def main(argv=None):
@@ -120,6 +144,16 @@ def main(argv=None):
               "שאלו מי חותם על ההערות לצד שכנגד, ושמרו בפרופיל.")
         return 2
 
+    # מכרז לפני הגשה ותנאים מקוונים: אין סימון בגוף ואין בועות (overview.md, שלב ד; שינוי 7)
+    paper = None
+    if a.deal and os.path.exists(os.path.join(a.deal, "negotiation_state.json")):
+        with open(os.path.join(a.deal, "negotiation_state.json"), encoding="utf-8") as fh:
+            st = json.load(fh)
+        paper = st.get("paper_type") or (st.get("meta") or {}).get("paper_type")
+    if paper in ("tender_pre_bid", "standard_form_online"):
+        print("סוג הנייר הוא %s: אין סימון בגוף ואין בועות. התוצרים נבנים ב-scripts/tender_outputs.py." % paper)
+        return 2
+
     errors = dt.validate_decisions(dec)
     if errors:
         print("קובץ ההכרעות אינו עומד בחוזה, ולא נכתב קובץ (%d):" % len(errors))
@@ -154,7 +188,11 @@ def main(argv=None):
         print("סירוב: %s" % exc)
         return 1
 
+    survivors = mark_survivors(a.draft, dec)
     res = dt.apply_decisions(a.draft, dec, out_path=out, author=author, initials=initials)
+    replies = [(d["reply_to_comment"], d.get("external_comment") or "") for d in dec["decisions"]
+               if d.get("reply_to_comment") and d.get("external_comment")]
+    thread_res = threads.apply_threads(out, replies, author) if replies and not res.get("errors") else []
     if res.get("errors"):
         print("קובץ ההכרעות נדחה: %s" % "; ".join(res["errors"]))
         return 2
@@ -170,6 +208,10 @@ def main(argv=None):
         print("    לא סומנה %s: %s" % (nm["id"], nm["reason"]))
     for v in res["verify"]:
         print("  בדיקת הלוך ושוב: %s" % v)
+    for did, sents in survivors:
+        print("  משפטים מהנוסח שלהם ששרדו בהחלפה %s (לאישור מפורש): %s" % (did, " | ".join(sents)))
+    for cid, what in thread_res:
+        print("  בועה %s שלהם: %s" % (cid, what))
     print("  נוסחי היעד לשער: %s" % expected_path)
     print("  העותק כפי שהופק: %s" % produced_path)
     if send_path:

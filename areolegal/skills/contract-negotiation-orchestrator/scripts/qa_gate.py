@@ -41,6 +41,7 @@ from common.cli import OutputRefused, guard_out, no_bytecode, parser  # noqa: E4
 from common import paths  # noqa: E402
 from orchestrator import pre_send, qa_gate  # noqa: E402
 from lawyer import lawyer_view  # noqa: E402
+import content_checks  # noqa: E402
 
 
 def load(path, what, required=True):
@@ -91,6 +92,8 @@ def main(argv=None):
     ap.add_argument("--expected-accept",
                     help="JSON עם מערך נוסחי היעד, פסקה לפסקה. בלעדיו בדיקת "
                          "ההלוך ושוב של \"קבל הכול\" אינה רצה, והדבר נאמר בפלט")
+    ap.add_argument("--core", help="playbook-core.json: סימני האדום של הכללים (content_checks)")
+    ap.add_argument("--manifest", help="corpus-manifest.json: שמות הצדדים בהסכמים החתומים (content_checks)")
     ap.add_argument("--lang", choices=("he", "en"),
                     help="שפת ההסכם. בלעדיו: נגזרת מהטיוטה שהתקבלה")
     a = ap.parse_args(argv)
@@ -116,7 +119,30 @@ def main(argv=None):
     if expected is None:
         print("הערה: בלי --expected-accept, בדיקת \"קבל הכול\" (RT_ACCEPT) אינה רצה.")
 
-    if a.mode == "work":
+    # בדיקות התוכן של הסבב (content_checks.py, הערות הנושא ונותן 4.0 עד 4.7): ממצא חוסם הוא כשל
+    # בשער, ובמצב משלוח העותק אינו מופק כלל
+    extra_fail, extra_warn = [], []
+    if decisions is None:
+        print("הערה: בלי --decisions, בדיקות התוכן של הסבב (content_checks) אינן רצות.")
+    else:
+        lawyer = [profile.get("lawyer_name"), profile.get("lawyer_name_en")] + list(profile.get("lawyer_aliases") or [])
+        found = content_checks.run_checks(
+            a.work, a.received, decisions.get("decisions", []) if isinstance(decisions, dict) else decisions,
+            state=state, core=load(a.core, "הגרעין", required=False),
+            manifest=load(a.manifest, "המניפסט", required=False), profile={"lawyer_names": lawyer})
+        extra_fail = [dict(f, code=f["code"]) for f in found if f["blocking"]]
+        extra_warn = [dict(f, code=f["code"]) for f in found if not f["blocking"]]
+
+    if a.mode == "send" and extra_fail:
+        if not a.send:
+            print("ב--mode send דרוש --send: הנתיב שאליו ישונה שם העותק אם יעבור")
+            return 2
+        previous = a.send if os.path.exists(a.send) else None
+        res = {"mode": "send", "passed": False, "failures": extra_fail, "warnings": extra_warn, "info": {},
+               "send_copy": None}
+        if previous:
+            res["retracted"] = pre_send.retract_send_copy(previous, state, "he", deal_dir=a.deal)
+    elif a.mode == "work":
         res = qa_gate.run_gate(a.work, a.received, "work", profile, state=state,
                                expected_accept=expected, register=register,
                                decisions=decisions, lang=a.lang)
@@ -145,6 +171,12 @@ def main(argv=None):
             res["retracted"] = pre_send.retract_send_copy(
                 previous, state, res.get("info", {}).get("lang", "he"), deal_dir=a.deal)
 
+    if extra_fail or extra_warn:
+        if not (a.mode == "send" and res.get("failures") is extra_fail):
+            res["failures"] = list(res.get("failures") or []) + extra_fail
+            res["warnings"] = list(res.get("warnings") or []) + extra_warn
+        if extra_fail:
+            res["passed"] = False
     report(res)
     if a.mode == "send":
         if res.get("send_copy"):

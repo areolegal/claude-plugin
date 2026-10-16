@@ -149,8 +149,19 @@ def page_check(a, data):
     page = os.path.join(work, "Areo Workspace - %s.html" % K["name"])
     with io.open(page, "w", encoding="utf-8") as fh:
         fh.write(build_report(tpl, data, K["placeholder"]))
-    res = RC.run_check(page, work, RC.band_text_from_register(data), markers=K["markers"],
-                       body_limit=K["body_limit"])
+    res = None
+    for attempt in (1, 2):
+        # תקלה של הדפדפן עצמו (פסק זמן, חיבור שנפל) אינה כשל של הדוח: ניסיון חוזר אחד, ואם גם הוא
+        # נכשל, הבדיקה לא הושלמה, וזה נאמר, כמו כשאין דפדפן במחשב
+        try:
+            res = RC.run_check(page, work, RC.band_text_from_register(data), markers=K["markers"],
+                               body_limit=K["body_limit"])
+            break
+        except Exception as exc:  # noqa: BLE001
+            err = "%s: %s" % (type(exc).__name__, exc)
+    if res is None:
+        print("  בדיקת העמודים לא הושלמה: תקלה בדפדפן (%s)" % err[:120])
+        return None
     if res.get("verdict") == "PASS":
         return "עברה (%s עמודים בגוף, עד %d)" % (res.get("body_pages"), K["body_limit"])
     print("הדוח לא נכתב: בדיקת העמודים נכשלה (%s)." % ", ".join(res.get("fails") or ["?"]))
@@ -207,7 +218,7 @@ def main(argv=None):
         print("מקף ארוך זלג לדוח (מהתבנית): %s. יש לתקן את התבנית." % html_path)
         return 3
     print("הדוח: %s" % html_path)
-    print("  בדיקת העמודים: %s" % (checked if checked else "לא רצה, אין Chrome או Edge במחשב הזה"))
+    print("  בדיקת העמודים: %s" % (checked if checked else "לא הושלמה (אין Chrome או Edge, או תקלה בדפדפן)"))
     print("הנתונים לצדו: %s" % json_path)
     for x in notes:
         print("  %s" % x)

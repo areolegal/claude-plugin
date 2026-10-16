@@ -1,0 +1,10 @@
+[
+ {"name": "תקרת אחריות ושיפוי", "a": "תקרת|הגבלת אחריות|limitation of liability|liability cap|aggregate liability", "b": "שיפוי|לשפות|indemnif"},
+ {"name": "תקרת אחריות והחרגות מהתקרה", "a": "תקרת|הגבלת אחריות|liability cap|aggregate liability", "b": "למעט|לא יחול|excluding|shall not apply to"},
+ {"name": "תקופה, חידוש וסיום", "a": "תקופת ההסכם|יתחדש|חידוש|term of this agreement|renew", "b": "סיום|לסיים|ביטול|terminat"},
+ {"name": "תשלום וקיזוז", "a": "תשלום|ישולם|תמורה|payment|fees", "b": "קיזוז|לקזז|set.?off|withhold"},
+ {"name": "סודיות ושרידות", "a": "סודיות|מידע סודי|confidential", "b": "תישאר בתוקף|ימשיכו לחול|survive"},
+ {"name": "קניין רוחני ורישיון", "a": "קניין רוחני|זכויות יוצרים|intellectual property|ownership", "b": "רישיון|licen[cs]e"},
+ {"name": "אחריות לטיב וסעד", "a": "אחריות לטיב|תקופת אחריות|warrant", "b": "סעד|תיקון|החלפה|remed"},
+ {"name": "דין ושיפוט", "a": "הדין החל|דיני מדינת|governing law", "b": "סמכות שיפוט|בית המשפט המוסמך|jurisdiction|arbitration|בוררות"}
+]

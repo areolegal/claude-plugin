@@ -11,6 +11,7 @@
   חיצוניות, ועד שמונה עמודים.
 """
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -179,3 +180,23 @@ def test_a_single_document_is_extracted_and_its_quotes_are_checked_against_it(tm
     r = _run("validate_data.py", "--data", FX / "c1b_register.json", "--corpus", out)
     assert r.returncode == 3 and "אין טקסט מקור למסמך" in r.stdout
     assert "אינו במבנה של הסכמה" not in r.stdout
+
+
+def test_the_word_report_has_the_same_structure_and_the_privilege_band(tmp_path):
+    docx = pytest.importorskip("docx")
+    import zipfile
+    d, _ = _deal(tmp_path)
+    r = _run("build_risk_docx.py", "--data", d / "risk-register.json")
+    assert r.returncode == 0, r.stdout + r.stderr
+    out = next(d.glob("*דוח סיכונים*.docx"))
+    text = "\n".join(p.text for p in docx.Document(str(out)).paragraphs)
+    order = ["התמונה במבט אחד", "השורה התחתונה", "1. הסיכונים", "2. סתירות", "3. צירופים", "4. הסיכונים הקריטיים",
+             "5. מה לא נבדק", "נספח: ציטוטים מילוליים"]
+    pos = [text.index(x) for x in order]
+    assert pos == sorted(pos)
+    with zipfile.ZipFile(out) as z:
+        names = z.namelist()
+        hdr = "".join(z.read(n).decode("utf-8") for n in names if re.match(r"word/(header|footer)\d*\.xml", n))
+        rels = z.read("word/_rels/document.xml.rels").decode("utf-8")
+    assert "טיוטה, טעונה אישור" in hdr
+    assert "nevo.co.il" in rels and "TargetMode=\"External\"" in rels
