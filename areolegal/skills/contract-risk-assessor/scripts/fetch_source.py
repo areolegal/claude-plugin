@@ -52,15 +52,19 @@ MAX_PER_QUESTION = 10
 
 
 def run_dir_for(deal):
-    """מצב ההרצה (חסימות ומונה לשאלה) נשמר בתיקייה זמנית, ולא בתיקיית הלקוח."""
-    d = os.path.join(tempfile.gettempdir(), "areo-net", re.sub(r"[^\w.-]", "_", os.path.basename(
-        os.path.normpath(deal))))
+    """מצב ההרצה (חסימות ומונה לשאלה) נשמר בתיקייה זמנית, ולא בתיקיית הלקוח. המפתח הוא הנתיב
+    המלא של העסקה, כדי ששתי עסקאות באותו שם לא יחלקו מונה."""
+    import hashlib
+    key = hashlib.sha256(os.path.abspath(deal).encode("utf-8")).hexdigest()[:16]
+    d = os.path.join(tempfile.gettempdir(), "areo-net", key)
     os.makedirs(d, exist_ok=True)
     return d
 
 
 def count_question(run_dir, question):
-    p = os.path.join(run_dir, "questions.json")
+    # המונה הוא להרצה, ולא לנצח: קובץ ליום, כך שהרצה של מחר מתחילה מאפס
+    import datetime as _dt
+    p = os.path.join(run_dir, "questions-%s.json" % _dt.date.today().isoformat())
     try:
         with io.open(p, encoding="utf-8") as fh:
             counts = json.load(fh)
