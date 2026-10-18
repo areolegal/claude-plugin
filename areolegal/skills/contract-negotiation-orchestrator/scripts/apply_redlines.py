@@ -13,9 +13,14 @@
   שלנו" ואין צבע. המסלול ומזהי הכללים נרשמים בקובץ המצב בלבד.
 * **השינויים וההערות של הצד שכנגד נשארים במקומם**, עם המחבר והתאריך שלהם.
   שום דבר שלהם אינו מתקבל או נמחק בשקט.
-* **שכבה פנימית בקובץ העבודה:** בועה פנימית ליד כל תיקון, במחבר
-  "פנימי, למחיקה לפני המשלוח", וכותרת "טיוטת עבודה פנימית, לא למשלוח". העותק
-  למשלוח נגזר ממנו ב-`qa_gate.py --mode send`, ולא כאן.
+* **בקובץ רק הבועות לצד שכנגד.** הנימוק הפנימי, המסלול וקוד ההכרעה נרשמים
+  בקובץ המצב ובריכוז שבצ'אט, ולא בבועות (הכרעת ניל, 18.10.2026). מי שרוצה
+  את השכבה הפנימית של ענבל בקובץ (בועות "פנימי, למחיקה לפני המשלוח" והכותרת
+  "טיוטת עבודה פנימית") מבקש אותה ב-`--internal-layer`; אז העותק למשלוח נגזר
+  ב-`qa_gate.py --mode send`. בלעדיה, השער רץ ישירות במצב משלוח.
+* **כירורגי, ולא פסקה במקום פסקה.** לכל הכרעה מודפס איזה חלק מהפסקה סומן.
+  הכרעת `replace` שמסמנת את רוב הפסקה כשרוב המילים נשארו היא לא סימון כירורגי,
+  ושער האיכות עוצר אותה: במקרה כזה כותבים `replace_span` למילים שמשתנות.
 * **"עקוב אחר שינויים" דולק בקובץ**, והשעה בכל שינוי היא שעת ההרצה.
 * **בדיקת הלוך ושוב:** "דחה הכול" חייב להחזיר את הטיוטה שהתקבלה, ו"קבל
   הכול" את נוסחי היעד. הכרעה שאינה ניתנת לסימון בבטחה אינה מוחלת חלקית:
@@ -86,6 +91,26 @@ def sentences(text):
     return [x.strip() for x in re.split(r"(?<=[.!?;])\s+", text or "") if len(x.strip()) >= 20]
 
 
+def marked_shares(draft, dec):
+    """לכל הכרעת replace: איזה חלק מהפסקה סומן (מחיקה והוספה יחד, מול אורך הפסקה), וכמה מהמילים
+    המקוריות נשארו. סימון של רוב הפסקה כשרוב המילים נשארו אינו כירורגי."""
+    paras = dt.received_paragraphs(draft)
+    out = []
+    for d in dec.get("decisions") or []:
+        if d.get("op") != "replace" or not isinstance(d.get("para"), int) or d["para"] >= len(paras):
+            continue
+        orig, new = paras[d["para"]], d.get("new_text") or ""
+        ops = dt.char_ops(orig, new)
+        marked = sum((o[2] - o[1]) for o in ops if o[0] == "delete") + sum(len(o[3]) for o in ops if o[0] == "insert")
+        tok_o = [t for t in re.findall(r"\w+", orig)]
+        tok_n = set(re.findall(r"\w+", new))
+        overlap = (sum(1 for t in tok_o if t in tok_n) / len(tok_o)) if tok_o else 0.0
+        pct = int(round(100.0 * marked / max(1, len(orig) + len(new))))
+        d["marked_share"], d["token_overlap"] = pct, round(overlap, 2)
+        out.append((d.get("id"), pct, overlap))
+    return out
+
+
 def mark_survivors(draft, dec):
     """שינוי 30: בהחלפה של פסקה שלמה, כל משפט מהנוסח שלהם ששרד בנוסח החדש נרשם בבועה הפנימית,
     כדי שעורך הדין יאשר אותו במפורש, ולא יעבור כחלק מנוסח שנראה כולו שלנו."""
@@ -115,6 +140,8 @@ def main(argv=None):
     ap.add_argument("--author", help="שם עורך הדין, כשאינו בפרופיל או בקובץ ההכרעות")
     ap.add_argument("--initials", help="ראשי התיבות לבועות")
     ap.add_argument("--report", help="דוח ההרצה (JSON)")
+    ap.add_argument("--internal-layer", action="store_true",
+                    help="לכתוב את השכבה הפנימית לקובץ: בועות פנימיות וכותרת פנימית")
     ap.add_argument("--deal", help="תיקיית העסקה: שם הקובץ נגזר לפי הכלל")
     ap.add_argument("--agreement-type", help="סוג ההסכם, בשם המקוצר")
     ap.add_argument("--company", help="שם החברה המקוצר, בלי סיומת התאגדות")
@@ -189,7 +216,13 @@ def main(argv=None):
         return 1
 
     survivors = mark_survivors(a.draft, dec)
-    res = dt.apply_decisions(a.draft, dec, out_path=out, author=author, initials=initials)
+    if not a.internal_layer:
+        # הנימוק הפנימי נשאר בקובץ ההכרעות (לקובץ המצב), ואינו נכנס לבועה
+        for d in dec["decisions"]:
+            d["internal_note"] = d.pop("internal_comment", None)
+    res = dt.apply_decisions(a.draft, dec, out_path=out, author=author, initials=initials,
+                             internal_header=bool(a.internal_layer))
+    shares = marked_shares(a.draft, dec)
     replies = [(d["reply_to_comment"], d.get("external_comment") or "") for d in dec["decisions"]
                if d.get("reply_to_comment") and d.get("external_comment")]
     thread_res = threads.apply_threads(out, replies, author) if replies and not res.get("errors") else []
@@ -208,6 +241,9 @@ def main(argv=None):
         print("    לא סומנה %s: %s" % (nm["id"], nm["reason"]))
     for v in res["verify"]:
         print("  בדיקת הלוך ושוב: %s" % v)
+    for did, pct, overlap in shares:
+        print("  %s: סומנו %d%% מהפסקה%s" % (did, pct, ", ורוב המילים נשארו: לסמן ב-replace_span רק את מה שמשתנה"
+                                           if pct >= 80 and overlap >= 0.4 else ""))
     for did, sents in survivors:
         print("  משפטים מהנוסח שלהם ששרדו בהחלפה %s (לאישור מפורש): %s" % (did, " | ".join(sents)))
     for cid, what in thread_res:

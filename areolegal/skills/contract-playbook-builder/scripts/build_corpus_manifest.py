@@ -43,6 +43,35 @@ AMENDMENT = re.compile(r"תיקון\s*(מס'?\s*)?\d*\s*ל|נספח תיקון|�
 RENEWAL_TOKENS = {"חידוש", "מחודש", "הארכה", "הארכת", "renewal", "renewed",
                   "extension", "extended", "new"}
 BANDS = [(20, None, "full"), (7, 19, "below20"), (1, 6, "below7"), (0, 0, "none")]
+# כינויי הצדדים, מהפתיח של ההסכם: הגדרה בסוגריים ("המשכיר" או "Landlord"), או כינוי מוכר.
+# מהם הבונה לומד מה סוגי הצדדים בסוג ההסכם (שוכר ומשכיר, מעסיק ומועסק), ורק אז שואל
+# את המשתמש איזה צד הוא מייצג
+DEFINED_PARTY = re.compile(r'\(\s*(?:להלן:?\s*|the\s+|hereinafter\s+)?["״“]([^"״”]{2,40})["״”]'
+                           r'(?:\s*(?:או|or)\s*["״“]([^"״”]{2,40})["״”])?\s*\)')
+PARTY_WORDS = ["הספק", "הלקוח", "המזמין", "נותן השירותים", "מקבל השירותים", "הצד המגלה", "הצד המקבל", "המפיץ",
+               "היצרן", "הזכיין", "המעסיק", "העובד", "היועץ", "הקבלן", "המשכיר", "השוכר", "המוכר", "הקונה",
+               "המלווה", "הלווה", "המשקיע", "החברה", "Supplier", "Vendor", "Customer", "Client", "Provider",
+               "Licensor", "Licensee", "Discloser", "Recipient", "Receiving Party", "Disclosing Party", "Buyer",
+               "Seller", "Contractor", "Consultant", "Distributor", "Lessor", "Lessee", "Landlord", "Tenant",
+               "Employer", "Employee", "Lender", "Borrower", "Investor", "Company"]
+NOT_A_ROLE = re.compile(r"^(?:ההסכם|הסכם|החוזה|חוזה|המוצר|השירותים|השירות|המידע|הנכס|המושכר|Agreement|Services|"
+                        r"Product|Effective Date|Term|Confidential Information|Purpose)$", re.I)
+
+
+def parties_hint(text):
+    """כינויי הצדדים בפתיח (עד 2500 תווים): קודם הגדרות בסוגריים, ואחריהן כינויים מוכרים. עד ארבעה."""
+    head = (text or "")[:2500]
+    found = []
+    for m in DEFINED_PARTY.finditer(head):
+        for g in m.groups():
+            g = (g or "").strip()
+            if g and not NOT_A_ROLE.match(g) and len(g.split()) <= 3 and g not in found:
+                found.append(g)
+    if len(found) < 2:
+        for w in PARTY_WORDS:
+            if re.search(r"(?<![\w\u0590-\u05FF])" + re.escape(w) + r"(?![\w\u0590-\u05FF])", head) and w not in found:
+                found.append(w)
+    return found[:4]
 
 
 def band_of(units):
@@ -149,6 +178,7 @@ def scan(root):
             "text_read": text is not None,
             "text_sha256": hashlib.sha256(norm.encode("utf-8")).hexdigest() if norm else None,
             "title_hint": title_hint(text, p.name),
+            "parties_hint": parties_hint(text),
             "doc_role": "agreement",
         }
         is_tpl, signs = looks_like_template(p.name, text)
@@ -263,6 +293,17 @@ def main():
                 claimed.add(p)
             fam = {k: f.get(k) for k in ("contract_family_id", "label", "company_role_code")}
             fam["corpus_basis"] = count([by_path[p] for p in picked], a.near) if picked else None
+            # סוגי הצדדים בסוג הזה, משני הסכמים (ולא מכולם): מה שמופיע בשניהם קודם
+            roles, seen = [], []
+            for p_ in picked:
+                if by_path[p_]["doc_role"] != "agreement" or len(seen) >= 2:
+                    continue
+                seen.append(p_)
+                for r_ in by_path[p_].get("parties_hint") or []:
+                    if r_ not in roles:
+                        roles.append(r_)
+            fam["roles_hint"] = roles[:4]
+            fam["roles_read_from"] = seen
             if missing:
                 fam["paths_not_found"] = missing
                 print("אזהרה: בסוג %s יש %d נתיבים שאינם בתיקייה: %s"

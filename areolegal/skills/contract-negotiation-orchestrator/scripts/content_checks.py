@@ -32,6 +32,8 @@
 | THEIR_INTERNAL_COMMENT | 11 | בועה שלהם שנראית פנימית, ואינה רשומה ב-`meta.exposed_comments` | כן |
 | THEIR_COMMENT_UNANSWERED | 10 | בועה שלהם שאין לה מענה ואין לה הכרעה | לא |
 | COMBO | 56 | שתי הכרעות באותו צירוף, בלי בדיקה רשומה ב-`meta.combo_checks` | לא |
+| PARAGRAPH_REPLACED | ניל 18.10 | מחיקת פסקה והוספת פסקה במקומה, כשרוב המילים נשארו: לא כירורגי | כן |
+| REPLACE_COLLAPSED | ניל 18.10 | replace שסימן את רוב הפסקה כשרוב המילים נשארו: להשתמש ב-replace_span | כן |
 
 הפונקציה `run_checks` מחזירה רשימת ממצאים `{code, message, where, blocking}`.
 `qa_gate.py` מריץ אותה בשני המצבים: ממצא חוסם הוא כשל בשער, והעותק למשלוח
@@ -483,6 +485,31 @@ def run_checks(work, received, decisions, state=None, core=None, manifest=None, 
         if open_pairs:
             finding(out, "COMBO", "צירוף \"%s\": %s מול %s. לבדוק אותם יחד, ולרשום ב-meta.combo_checks" %
                     (combo["name"], ", ".join(a), ", ".join(b)), "")
+    # כירורגי, ולא פסקה במקום פסקה (ניל, 18.10.2026): שינוי של כמה מילים מסומן רק בהן
+    deleted = {d.get("para"): d for d in decisions if d.get("op") == "delete_paragraph"}
+    for d in decisions:
+        if d.get("op") != "insert_paragraph" or not isinstance(d.get("after_para"), int):
+            continue
+        for p in (d["after_para"], d["after_para"] + 1):
+            old = deleted.get(p)
+            if old is None or p >= len(theirs):
+                continue
+            tok_o = re.findall(r"\w+", theirs[p])
+            tok_n = set(re.findall(r"\w+", d.get("text") or ""))
+            if tok_o and sum(1 for t in tok_o if t in tok_n) / len(tok_o) >= 0.4:
+                finding(out, "PARAGRAPH_REPLACED", "הפסקה נמחקה ונכתבה מחדש (%s ו-%s), ורוב המילים נשארו: לסמן "
+                        "ב-replace_span רק את מה שמשתנה" % (old.get("id"), d.get("id")), "פסקה %d" % p, blocking=True)
+    for d in decisions:
+        if d.get("op") == "replace" and isinstance(d.get("para"), int) and d["para"] < len(theirs):
+            orig, new = theirs[d["para"]], d.get("new_text") or ""
+            ops = dt.char_ops(orig, new)
+            marked = sum((o[2] - o[1]) for o in ops if o[0] == "delete") + sum(len(o[3]) for o in ops if o[0] == "insert")
+            tok_o = re.findall(r"\w+", orig)
+            tok_n = set(re.findall(r"\w+", new))
+            overlap = (sum(1 for t in tok_o if t in tok_n) / len(tok_o)) if tok_o else 0.0
+            if marked >= 0.8 * (len(orig) + len(new)) and overlap >= 0.4:
+                finding(out, "REPLACE_COLLAPSED", "ההכרעה מסמנת את רוב הפסקה אף שרוב המילים נשארו: לסמן "
+                        "ב-replace_span רק את מה שמשתנה", d.get("id"), blocking=True)
     for d in decisions:
         if d.get("op") in ("replace", "replace_span", "insert_paragraph") and not (d.get("plain_effect")
                                                                                   and d.get("position_effect")):

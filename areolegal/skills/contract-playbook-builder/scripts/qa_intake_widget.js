@@ -4,7 +4,7 @@
 const {JSDOM,VirtualConsole}=require(process.env.JSDOM_PATH); const fs=require('fs');
 const FAMS=[
  {n:"הסכם שירותים", p:"הצד המספק / הנותן", u:24, d:"2 כפילויות"},
- {n:"הסכם סודיות", p:"הצד המזמין / הרוכש", u:9},
+ {n:"הסכם סודיות", p:"הצד המזמין / הרוכש", u:9, r:["המשכיר","השוכר"]},
  {n:"הסכם הפצה", p:"הצד המספק / הנותן", u:4},
  {n:"הסכם רישוי", p:"הצד המזמין / הרוכש", u:0}];
 function load(){
@@ -31,6 +31,8 @@ out.push(['המספר והניכוי בכפתור', chips[0].textContent.indexOf
 chips[0].onclick();
 out.push(['ב-24 הסכמים אין רצועה', !vis('band-mid')&&!vis('band-low')&&!vis('band-zero')]);
 out.push(['ב-24 הסכמים אין הודעת מחקר קבוע', !vis('reg-fixed')]);
+out.push(['ב-24 הסכמים אין הערת 15', !vis('band-under15')]);
+out.push(['אין שאלת "כל ההסכמים"', !d.getElementById('all') && !d.getElementById('q-all')]);
 out.push(['שאלת הפוזיציה נבנתה לסוג שנבחר', !!d.getElementById('pos')]);
 out.push(['הנחת הפוזיציה סומנה', [...d.querySelectorAll('#pos .chip')]
   .some(b=>b.getAttribute('aria-pressed')==='true')]);
@@ -38,6 +40,15 @@ out.push(['הנחת הפוזיציה סומנה', [...d.querySelectorAll('#pos .
 chips[1].onclick();
 out.push(['ב-9 הסכמים מוצגת רצועת האמצע', vis('band-mid')&&!vis('band-low')]);
 out.push(['המספר נכתב ברצועה', d.querySelector('#band-mid .n').textContent==='9']);
+out.push(['ב-9 הסכמים מוצגת הערת 20 הסכמים וטיוטות', vis('band-under15') &&
+  d.querySelector('#band-under15 .help').textContent.indexOf('20 הסכמים וטיוטות')>0]);
+/* הצדדים של הסוג נקראו משני הסכמים: הכפתורים הם הם, ועוד הדדי ו"לא מופיע ברשימה" */
+const roleChips=[...d.querySelectorAll('#pos .chip')].map(b=>b.textContent);
+out.push(['כפתורי הצד הם הצדדים שנקראו מההסכמים', roleChips[0]==='המשכיר' && roleChips[1]==='השוכר' &&
+  roleChips.length===4, roleChips.join(' | ')]);
+out.push(['בסוג בלי צדדים שנקראו, שלוש התוויות הכלליות', (()=>{chips[0].onclick();
+  const c=[...d.querySelectorAll('#pos .chip')].map(b=>b.textContent); chips[1].onclick();
+  return c.length===4 && c[0]==='הצד המזמין / הרוכש';})()]);
 out.push(['בחירה יחידה: הסוג הקודם כבר אינו מסומן',
   chips[0].getAttribute('aria-pressed')==='false']);
 /* 4 הסכמים: בחירת מסלול, והיא חוסמת */
@@ -49,7 +60,6 @@ out.push(['ב-4 הסכמים המחקר הוא חלק מהבנייה', vis('reg-
 [...d.querySelectorAll('#dep .chip')][0].onclick();
 [...d.querySelectorAll('#cmp .chip')][1].onclick();
 [...d.querySelectorAll('#tpl .chip')][2].onclick();
-[...d.querySelectorAll('#all .chip')][0].onclick();
 d.getElementById('go').onclick();
 out.push(['בלי בחירת מסלול לא נשלח דבר', !w.__sent &&
   d.getElementById('err').textContent.indexOf('כיצד לבנות')>=0, d.getElementById('err').textContent]);
@@ -60,6 +70,8 @@ out.push(['אחרי הבחירה נשלחה שורה', !!sent]);
 out.push(['המסלול שנבחר נשלח', sent.indexOf('מסלול: שילוב עם מחקר שוק')>0, sent.slice(0,150)]);
 out.push(['אין שאלת פורמט: שני התוצרים תמיד', !d.getElementById('fmt') && sent.indexOf('פורמטים')<0]);
 out.push(['מספר ההסכמים נשלח', sent.indexOf('הסכמים: 4')>0]);
+out.push(['"כל ההסכמים" אינו נשלח', sent.indexOf('כל ההסכמים')<0]);
+out.push(['ב-4 הסכמים מוצגת הערת 20 הסכמים וטיוטות', vis('band-under15')]);
 out.push(['המחקר הרגולטורי נגזר ולא נשאל', sent.indexOf('חלק מהבנייה')>0]);
 /* אפס הסכמים: המסלול השני */
 chips[3].onclick();

@@ -52,10 +52,12 @@ def deal(tmp_path):
     return d
 
 
-def _apply(d):
+def _apply(d, *extra):
+    # רוב הבדיקות כאן הן על הזרימה המלאה של ענבל, עם השכבה הפנימית בקובץ
     return _run("apply_redlines.py", "--draft", d / "טיוטה שהתקבלה.docx",
                 "--decisions", d / "decisions_round_1.json",
-                "--out", d / "תגובת החברה - סבב 1.docx", "--profile", d / "profile.json")
+                "--out", d / "תגובת החברה - סבב 1.docx", "--profile", d / "profile.json",
+                *(extra or ("--internal-layer",)))
 
 
 def test_the_whole_chain_ends_in_a_send_copy_and_a_valid_ledger(deal):
@@ -292,3 +294,26 @@ def test_the_clean_copy_is_the_agreed_text_with_no_marks_and_no_comments(deal):
     st = json.loads((deal / "negotiation_state.json").read_text(encoding="utf-8"))
     assert st["signing_checklist"]["clean_copy_path"].endswith("לחתימה.docx")
     assert len(st["signing_checklist"]["agreed_version_sha256"]) == 64
+
+
+
+def test_by_default_the_file_carries_only_the_bubbles_to_the_other_side(deal):
+    """הכרעת ניל, 18.10.2026: בלי --internal-layer אין בקובץ בועות פנימיות ואין כותרת פנימית,
+    והשער רץ ישירות במצב משלוח."""
+    r = _apply(deal, "--no-such-flag") if False else _run(
+        "apply_redlines.py", "--draft", deal / "טיוטה שהתקבלה.docx", "--decisions", deal / "decisions_round_1.json",
+        "--out", deal / "תגובת החברה - סבב 1.docx", "--profile", deal / "profile.json")
+    assert r.returncode == 0, r.stdout + r.stderr
+    work = deal / "תגובת החברה - סבב 1.docx"
+    parts = dt.read_package(str(work))
+    assert not [c for c in dt.read_comments(parts) if c["author"] == dt.INTERNAL_AUTHOR]
+    headers = "".join(parts[n].decode("utf-8", "ignore") for n in parts if n.startswith("word/header"))
+    assert dt.INTERNAL_HEADER_TEXT not in headers
+    assert [c for c in dt.read_comments(parts) if c["author"] != dt.INTERNAL_AUTHOR]   # הבועות לצד שכנגד נשארו
+    assert "סומנו" in r.stdout   # איזה חלק מכל פסקה סומן
+    send = deal / "למשלוח.docx"
+    g = _run("qa_gate.py", "--mode", "send", "--work", work, "--received", deal / "טיוטה שהתקבלה.docx",
+             "--profile", deal / "profile.json", "--expected-accept", deal / "תגובת החברה - סבב 1.expected.json",
+             "--decisions", deal / "decisions_round_1.json", "--send", send)
+    assert g.returncode == 0, g.stdout + g.stderr
+    assert send.exists()

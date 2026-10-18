@@ -379,3 +379,19 @@ def test_their_hidden_text_is_deleted_with_tracking_and_the_rest_stays(tmp_path)
     work = str(tmp_path / "work.docx")
     assert dt.accept_all(work)[2] == "3. התמורה. הלקוח ישלם את התמורה בתוך 30 יום."
     assert dt.reject_all(work)[2] == dt.received_paragraphs(rec)[2]
+
+
+
+def test_a_paragraph_rewritten_with_most_words_kept_is_not_surgical(tmp_path):
+    """הכרעת ניל, 18.10.2026: עקוב אחר שינויים כירורגי, לא פסקה במקום פסקה."""
+    orig = BASE[2]   # "3. התמורה. הלקוח ישלם את התמורה בתוך 30 יום."
+    rewrite = [{"id": "W1", "op": "replace", "para": 2, "decision_code": "A3",
+                "new_text": "3. התמורה. הלקוח ישלם את התמורה בתוך 45 יום, ובניכוי כל סכום שמגיע לו.",
+                "external_comment": "45 יום.", "plain_effect": "x", "position_effect": "y"}]
+    found = run(tmp_path, rewrite)
+    assert "REPLACE_COLLAPSED" not in codes(found, True)   # הבדל של מילים: הסימון כירורגי מאליו
+    pair = [{"id": "D1", "op": "delete_paragraph", "para": 2, "decision_code": "R1", "external_comment": "מחקנו."},
+            {"id": "I1", "op": "insert_paragraph", "after_para": 2, "decision_code": "N1",
+             "text": "3. התמורה. הלקוח ישלם את התמורה בתוך 45 יום.", "external_comment": "הוספנו.",
+             "plain_effect": "x", "position_effect": "y"}]
+    assert "PARAGRAPH_REPLACED" in codes(run(tmp_path, pair), True)
