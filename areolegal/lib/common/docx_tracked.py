@@ -358,6 +358,51 @@ def _mark(p):
     return None
 
 
+def _revision_of(node, p):
+    """(סוג, כותב) של השינוי הקרוב ביותר שעוטף את צומת הטקסט בתוך הפסקה: ('ins'|'del', author) או None.
+    מחיקה שלנו של הוספה שלהם נראית כ-del שלנו, כי היא העוטפת הקרובה."""
+    out = []
+    for a in node.iterancestors():
+        if a is p:
+            break
+        if a.tag in (W + 'ins', W + 'del'):
+            out.append((local(a.tag), a.get(W + 'author')))
+    return out
+
+
+def reject_ours_view(root, author):
+    """הטיוטה כפי שהתקבלה, אחרי דחיית השינויים שלנו בלבד: הוספה שלנו יוצאת, מחיקה שלנו חוזרת, והשינויים
+    הפתוחים של הצד שכנגד נשארים בדיוק כמו בטיוטה שהתקבלה (כמו para_text: ההוספות שלהם בטקסט, המחיקות שלהם
+    לא). פסקה שאנחנו הוספנו נעלמת ומתמזגת עם הבאה; סימני פסקה שלהם אינם ממזגים, כמו ב-para_text.
+
+    תיקון מקומי של ניל, לדיווח לענבל: verify_roundtrip ו-RT_REJECT השוו את "דחה הכול" ל-para_text של
+    הטיוטה שהתקבלה. "דחה הכול" דוחה גם את ההוספות של הצד שכנגד, ולכן כל טיוטה שהגיעה עם שינויים פתוחים
+    נכשלה, גם כשההכרעה היחידה הייתה בועה (20.10.2026)."""
+    out, buf = [], ''
+    for p in body_paragraphs(root):
+        txt = ''
+        for n, anc in _text_nodes(p):
+            revs = _revision_of(n, p)
+            ours = [k for k, who in revs if who == author]
+            theirs = [k for k, who in revs if who != author]
+            if ours:
+                keep = ours[0] == 'del'          # מחיקה שלנו חוזרת, הוספה שלנו יוצאת
+            else:
+                keep = 'del' not in theirs and local(n.tag) != 'delText'
+            if keep:
+                txt += _node_text(n)
+        rpr = p.find(W + 'pPr/' + W + 'rPr')
+        mark_ins = rpr.find(W + 'ins') if rpr is not None else None
+        buf += txt
+        if mark_ins is not None and mark_ins.get(W + 'author') == author:
+            continue
+        out.append(buf)
+        buf = ''
+    if buf:
+        out.append(buf)
+    return out
+
+
 def paragraph_views(root, mode):
     """הטלה של המסמך לרשימת פסקאות: accept (קבל הכול), reject (דחה הכול), או reject_del_only (מקבלים
     הוספות ודוחים מחיקות, המצב שבו הצד שכנגד דוחה רק את המחיקות). פסקה שסימן הפסקה שלה נעלם בהטלה
@@ -893,7 +938,8 @@ class TrackedDocx:
         self.finalize()
         fails = []
         for view, expected in (('accept', self.expected_accept()), ('reject', self.orig_texts)):
-            got = paragraph_views(self.root, view)
+            # "דחה" הוא דחיית השינויים שלנו בלבד: השינויים הפתוחים של הצד שכנגד נשארים כפי שהתקבלו
+            got = paragraph_views(self.root, view) if view == 'accept' else reject_ours_view(self.root, self.author)
             if got != expected:
                 for i in range(max(len(got), len(expected))):
                     g = got[i] if i < len(got) else None

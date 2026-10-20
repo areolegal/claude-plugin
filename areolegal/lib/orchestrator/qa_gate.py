@@ -205,7 +205,7 @@ def initials_for(profile, lang='he'):
 
 
 # --------------------------------------------------------------------------------------- חבילה
-def check_package(parts, root, profile, received_comment_ids, window, work_path=None, author=None):
+def check_package(parts, root, profile, received_comment_ids, window, work_path=None, author=None, received_authors=()):
     F, info = [], {}
     author = author or profile['lawyer_name']
     st = etree.fromstring(parts['word/settings.xml'])
@@ -227,7 +227,9 @@ def check_package(parts, root, profile, received_comment_ids, window, work_path=
             F.append(_f('PKG_NAMESPACE_UNDECLARED', 'קידומות ב-mc:Ignorable שאינן מוצהרות: %s' % missing, name))
     revs = [e for e in root.iter(W + 'ins', W + 'del')]
     ours = [e for e in revs if e.get(W + 'author') == author]
-    others = {e.get(W + 'author') for e in revs} - {author}
+    # השינויים הפתוחים של הצד שכנגד מגיעים עם הטיוטה, ונשארים בקובץ שלנו כמו שהם. מחבר אחר הוא תקלה רק כשאינו
+    # בטיוטה שהתקבלה. תיקון מקומי של ניל, לדיווח לענבל: לפני כן כל טיוטה עם שינויים פתוחים נכשלה כאן (20.10.2026)
+    others = {e.get(W + 'author') for e in revs} - {author} - set(received_authors or ())
     if others:
         F.append(_f('PKG_AUTHOR', 'סימוני מעקב במחבר אחר: %s' % sorted(x for x in others if x)))
     lo, hi = window
@@ -608,9 +610,12 @@ def run_gate(path, received, mode, profile, state=None, expected_accept=None, wi
     window = window or (now - _dt.timedelta(days=2), now + _dt.timedelta(minutes=5))
     author = author_for(profile, lang)
     F, Wn = [], []
-    f, info = check_package(parts, root, profile, received_ids, window, work_path or path, author)
+    received_authors = {e.get(W + 'author') for e in rroot.iter(W + 'ins', W + 'del')}
+    f, info = check_package(parts, root, profile, received_ids, window, work_path or path, author,
+                            received_authors=received_authors)
     F += f
-    rej = dt.paragraph_views(root, 'reject')
+    # דחיית השינויים שלנו בלבד, ולא "דחה הכול": השינויים הפתוחים של הצד שכנגד נשארים כפי שהתקבלו
+    rej = dt.reject_ours_view(root, author)
     if rej != orig:
         F.append(_f('RT_REJECT', '"דחה הכול" אינו מחזיר את הטיוטה שהתקבלה'))
     acc = dt.paragraph_views(root, 'accept')
@@ -646,7 +651,11 @@ def run_gate(path, received, mode, profile, state=None, expected_accept=None, wi
         Wn += pre_send.polish_warnings(register)
     F += check_structure(root, author)
     headers = ''.join(parts[n].decode('utf-8', 'ignore') for n in parts if n.startswith('word/header'))
-    if mode == 'work' and dt.INTERNAL_HEADER_TEXT not in headers:
+    # הכותרת הפנימית נדרשת רק כשבקובץ העבודה יש שכבה פנימית (בועות פנימיות). מאז 18.10.2026 השכבה הפנימית
+    # אינה מופקת כברירת מחדל (apply_redlines --internal-layer), ולכן הדרישה הגורפת הכשילה כל קובץ עבודה.
+    # תיקון מקומי של ניל, לדיווח לענבל
+    has_internal = any(c['author'] == dt.INTERNAL_AUTHOR for c in dt.read_comments(parts) if c['id'] not in received_ids)
+    if mode == 'work' and has_internal and dt.INTERNAL_HEADER_TEXT not in headers:
         F.append(_f('INT_HEADER_MISSING', 'חסרה הכותרת הפנימית בקובץ העבודה'))
     if mode == 'send':
         if dt.INTERNAL_HEADER_TEXT in headers:

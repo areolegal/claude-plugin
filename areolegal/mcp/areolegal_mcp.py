@@ -32,7 +32,7 @@ from pathlib import Path
 
 DEFAULT_API_URL = "https://areo.co.il"
 PROTOCOL_VERSION = "2024-11-05"
-PLUGIN_VERSION = "1.21.0"   # kept in step with plugin.json by release.sh
+PLUGIN_VERSION = "1.21.1"   # kept in step with plugin.json by release.sh
 SERVER_INFO = {"name": "areolegal", "version": "1.0.4"}
 # הוראות השרת נכנסות להנחיות המערכת של כל שיחה שהתוסף פעיל בה (initialize.instructions), ולכן הן
 # המקום החזק ביותר לכלל השפה. בהרצה חיה (20.10.2026) Claude כתב ללקוח הודעות ביניים באנגלית ("Now

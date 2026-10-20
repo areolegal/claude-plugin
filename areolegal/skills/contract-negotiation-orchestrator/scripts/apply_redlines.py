@@ -281,7 +281,7 @@ def main(argv=None):
     for nm in res["not_marked"]:
         print("    לא סומנה %s: %s" % (nm["id"], nm["reason"]))
     for v in res["verify"]:
-        print("  בדיקת הלוך ושוב: %s" % v)
+        print("  בדיקת הלוך ושוב: %s" % (v,))
     for did, pct, overlap in shares:
         print("  %s: סומנו %d%% מהפסקה%s" % (did, pct, ", ורוב המילים נשארו: לסמן ב-replace_span רק את מה שמשתנה"
                                            if pct >= 80 and overlap >= 0.4 else ""))
