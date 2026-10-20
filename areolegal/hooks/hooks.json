@@ -1,0 +1,28 @@
+{
+  "description": "Areo research guard: while a playbook market or legal research session is open, every web search is checked for client details before it is sent, and pages are read only through the research script. And when a Hebrew conversation that used Areo ends with an English message, Claude rewrites it in Hebrew.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "WebSearch|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/research_guard.py\"",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/language_guard.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

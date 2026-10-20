@@ -109,11 +109,21 @@ def agreements_counted(model):
     return 0
 
 
+NON_COMPANY_BASES = ('market_standard', 'areo_proposal')
+
+
 def company_backed_tracks(model):
+    """מסלולים שנשענים על מסמך של החברה: כל basis שאינו שוק ואינו הצעת Areo.
+
+    תיקון מקומי של ניל, לדיווח לענבל: COMPANY_BASES לא הכיר את own_paper_repeated, own_evidence, single,
+    client_answer ועוד ערכים של playbook-schema.md, ולכן פלייבוק שנבנה מהסכמי החברה קיבל בהרצה חיה את התווית
+    "מבוסס מחקר שוק" (20.10.2026). רשימה של ערכי חברה נשחקת עם כל ערך חדש; רשימת הערכים שאינם של החברה קצרה
+    וסגורה."""
     n = 0
     for rule in model.get('rules') or []:
         for t in TRACKS:
-            if ((rule.get('traffic_light') or {}).get(t) or {}).get('basis') in COMPANY_BASES:
+            basis = ((rule.get('traffic_light') or {}).get(t) or {}).get('basis')
+            if basis and basis not in NON_COMPANY_BASES:
                 n += 1
     return n
 

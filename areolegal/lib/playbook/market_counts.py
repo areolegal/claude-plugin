@@ -13,11 +13,16 @@ count_claims() מחזיר כל סתירה.
 import re
 
 _NOUN = r'(הסכמים|גופים|משפחות(?:\s+תבנית)?|מסמכים)'
-_CLAIM = re.compile(r'(?:מ-)?(\d+)\s+' + _NOUN + r'(?=(?P<tail>[^.;:()\d]{0,40}))')
-_VERB = re.compile(r'(נמצאו|נפתחו|נקראו|נספרו)\s+(\d+)')
+# תיקון מקומי של ניל, לדיווח לענבל: טענה היא מספר ושם עצם באותה שורה. הטקסט של ה-Word מחובר
+# פסקה-פסקה ב-"\n", ו-`\s+` חיבר את "4" שבסוף שורה בטבלה ל"מסמכים" שבראש השורה הבאה
+_CLAIM = re.compile(r'(?:מ-)?(\d+)[^\S\n]+' + _NOUN + r'(?=(?P<tail>[^.;:()\d\n]{0,40}))')
+_VERB = re.compile(r'(נמצאו|נפתחו|נקראו|נספרו)[^\S\n]+(\d+)')
+# "<N> הסכמים שלכם" ו"<N> הסכמים של החברה" הם הסכמי החברה, ולא מחקר השוק. "של החברה" הוא הנוסח של
+# שורת הבסיס במפרט ("נבנה מ-<N> הסכמים של החברה"), ובלעדיו כל פלייבוק בשילוב מחקר שוק נכשל על השער שלו
+_OWN = ('שלכם', 'של החברה')
 _VERB_KEY = {'נמצאו': 'found', 'נפתחו': 'opened', 'נקראו': 'read', 'נספרו': 'counted'}
 # יחיד (1.2.0): "משפחת תבנית אחת", "הסכם אחד", "גוף אחד", "מסמך אחד" הם הטענה 1
-_ONE = re.compile(r'(משפחת(?:\s+תבנית)?|הסכם|גוף|מסמך)\s+(?:אחת|אחד)(?=(?P<tail>[^.;:()\d]{0,40}))')
+_ONE = re.compile(r'(משפחת(?:\s+תבנית)?|הסכם|גוף|מסמך)\s+(?:אחת|אחד)(?=(?P<tail>[^.;:()\d\n]{0,40}))')
 
 
 def counts(model):
@@ -67,14 +72,14 @@ def count_claims(text, model):
         return []
     out = []
     for m in _CLAIM.finditer(text):
-        if 'שלכם' in m.group('tail')[:12]:
+        if any(w in m.group('tail')[:12] for w in _OWN):
             continue                      # "3 הסכמים שלכם": ההסכמים של החברה, לא מחקר השוק
         key = _expected(m.group('tail'), c)
         want = c.get(key)
         if want is not None and int(m.group(1)) != want:
             out.append('"%s": %s, ובספירה %s=%d' % (m.group(0).strip()[:60], m.group(1), key, want))
     for m in _ONE.finditer(text):
-        if 'שלכם' in m.group('tail')[:12]:
+        if any(w in m.group('tail')[:12] for w in _OWN):
             continue
         key = 'read' if m.group(1) == 'מסמך' and 'שנקרא' in m.group('tail') else _expected(m.group('tail'), c)
         want = c.get(key)

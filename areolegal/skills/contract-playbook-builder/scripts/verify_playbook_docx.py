@@ -23,8 +23,8 @@
 ונכנסת לשורת הסיכום שהמפרט מבקש להציג ללקוח.
 
     python3 scripts/verify_playbook_docx.py --docx "<הפלייבוק>.docx" \\
-        --model playbook-model.json [--artifact <סביבת העבודה>.html] \\
-        [--run-date 2026-10-15] [--out <דוח>.json]
+        --model playbook-model.json [--profile פרופיל-לקוח.json] \\
+        [--artifact <סביבת העבודה>.html] [--run-date 2026-10-15] [--out <דוח>.json]
 
 קוד יציאה: **0** עבר, **3** נכשל (ואין למסור), **2** קלט חסר.
 """
@@ -49,8 +49,10 @@ REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 PKG_REL = "{http://schemas.openxmlformats.org/package/2006/relationships}"
 
 # מחזיקי מקום: הנוסח שהמפרט נוקב בו, וכל סוגריים מרובעים שנשארו ריקים
-PLACEHOLDERS = ("טרם נכתב", "יושלם במעבר", "יושלם בהמשך", "להשלים", "TBD", "TODO",
-                "[●]", "XXX")
+PLACEHOLDERS = ("טרם נכתב", "יושלם במעבר", "יושלם בהמשך", "TBD", "TODO", "[●]", "XXX")
+# "להשלים" הוא מחזיק מקום רק כשהוא עומד לבד ("[להשלים]", "להשלים." בסוף שדה), ולא הפועל בתוך משפט
+# ("מבקשים להשלים את ההתקנה"). בהרצה חיה ה-Word נכשל על המשפט הרגיל (20.10.2026)
+PLACEHOLDER_RX = re.compile(r"\[\s*להשלים\s*\]|(?:^|:\s*)להשלים\s*[.]?\s*$", re.M)
 # מבנה נתונים שהודפס במקום נוסח: "{'he'", "{\"he\"", "dict(", "None"
 AS_DATA = (re.compile(r"\{\s*['\"]he['\"]"), re.compile(r"\{\s*['\"]en['\"]"),
            re.compile(r"\bdict\("), re.compile(r"(?<![\w])None(?![\w])"),
@@ -111,6 +113,8 @@ def check_content(lines, model):
     for ph in PLACEHOLDERS:
         if ph in joined:
             bad.append('מחזיק מקום במסמך: "%s"' % ph)
+    if PLACEHOLDER_RX.search(joined):
+        bad.append('מחזיק מקום במסמך: "להשלים"')
     for rx in AS_DATA:
         m = rx.search(joined)
         if m:
@@ -126,9 +130,13 @@ def check_content(lines, model):
     return bad
 
 
-def check_sources_and_label(parts, lines, model, st):
-    """5 ו-8: פרק המקורות, התווית מילה במילה, ואין "מאושר" ליד עמדה."""
-    bad = list(R.check_surfaces(st, word_path=None, model=model) or ())
+def check_sources_and_label(parts, lines, model, st, docx=None):
+    """5 ו-8: פרק המקורות, התווית מילה במילה בכותרת העליונה ובגוף, ואין "מאושר" ליד עמדה.
+
+    התווית נקראת מה-Word עצמו (`check_surfaces` עם `word_path`). בלי הנתיב
+    הבדיקה הזו לא קראה את הכותרת העליונה כלל, ומסמך בלי תווית עבר אותה.
+    """
+    bad = list(R.check_surfaces(st, word_path=docx, model=model) or ())
     joined = "\n".join(lines)
     research = (model.get("market_research") or {})
     if research and research.get("status") not in (None, "not_run", "skipped"):
@@ -158,8 +166,13 @@ def check_sources_and_label(parts, lines, model, st):
 
 
 def _is_status_line(line, st):
+    """שורת מעמד: התווית, "מעמד העמדות: ..." או "מעמד העמדה: ...". אלה נגזרים בקוד,
+    ו-`check_surfaces` משווה אותם לגזירה, ולכן "מאושר" בהם הוא המעמד עצמו."""
     label = st.get("label") or ""
-    return bool(label) and (label in line or line.strip() in (label, label + "."))
+    t = line.strip()
+    if t.startswith((R.SUMMARY_PREFIX.strip(), R.CELL_PREFIX.strip())):
+        return True
+    return bool(label) and (label in line or t in (label, label + "."))
 
 
 def check_brief(lines, model):
@@ -228,11 +241,22 @@ def check_links(parts, model):
 
 
 def _iter_sources(model):
+    """כל רשומות המקור שקישור במסמך יכול להוביל אליהן: מקורות השוק (source_refs, כולל final_url),
+    מקורות הדין, ו-external_sources. לפני כן source_refs ומקורות הדין לא נקראו כאן, וכל קישור לחיץ
+    בפרק המקורות נכשל כ"אינו ברשומה"."""
     research = model.get("market_research") or {}
-    for key in ("sources", "external_sources", "findings"):
+    for key in ("sources", "external_sources", "findings", "source_refs"):
         for item in research.get(key) or ():
             if isinstance(item, dict):
                 yield item
+                if item.get("final_url"):
+                    yield {"url": item["final_url"]}
+    for item in (model.get("regulatory_research") or {}).get("sources") or ():
+        if isinstance(item, dict):
+            yield item
+    for item in model.get("external_sources") or ():
+        if isinstance(item, dict):
+            yield item
     for row in (model.get("external_sources_table") or ()):
         if isinstance(row, dict):
             yield row
@@ -287,7 +311,7 @@ def check_visual(path, run_date):
         shutil.rmtree(out_dir, ignore_errors=True)
 
 
-def check_properties(parts, model):
+def check_properties(parts, model, company=""):
     """9, המשך ל-audit_docx: המחבר הוא שם החברה, או ריק.
 
     כשאין במודל שם חברה אין מול מה להשוות, וזה דילוג ולא הצלחה: מסמך
@@ -299,7 +323,8 @@ def check_properties(parts, model):
     text = core.decode("utf-8", "replace")
     m = re.search(r"<dc:creator[^>]*>([^<]*)</dc:creator>", text)
     author = (m.group(1) if m else "").strip()
-    company = (model.get("company_name") or model.get("organization_name") or "").strip()
+    company = (company or model.get("company_name") or model.get("organization_name")
+               or (model.get("company") or {}).get("name") or "").strip()
     if not author:
         return [], None
     if not company:
@@ -316,6 +341,7 @@ def main(argv=None):
     ap.add_argument("--model", required=True, help="playbook-model.json")
     ap.add_argument("--artifact", help="סביבת העבודה, לבדיקת השוויון")
     ap.add_argument("--run-date", help="יום ההפקה (YYYY-MM-DD). ברירת מחדל: היום")
+    ap.add_argument("--profile", help="פרופיל-לקוח.json: שם החברה, להשוואה למחבר הקובץ")
     a = ap.parse_args(argv)
 
     for p, what in ((a.docx, "ה-Word"), (a.model, "המודל")):
@@ -342,12 +368,23 @@ def main(argv=None):
     res.add(3, "שוויון מול הארטיפקט", par, skip)
     vis, skip = check_visual(a.docx, run_date)
     res.add(4, "בדיקה חזותית", vis, skip)
-    res.add(5, "מקורות ותווית", check_sources_and_label(parts, lines, model, st))
+    res.add(5, "מקורות ותווית", check_sources_and_label(parts, lines, model, st, a.docx))
     res.add(6, "מספור והפניות", check_numbering(lines, model))
     res.add(7, "קישורים חיצוניים", check_links(parts, model))
     brief, skip = check_brief(lines, model)
     res.add(8, "תווית ומעמד", brief, skip)
-    props, skip = check_properties(parts, model)
+    company = ""
+    if a.profile:
+        try:
+            with open(a.profile, encoding="utf-8") as fh:
+                company = (json.load(fh).get("organization_name") or "").strip()
+        except (OSError, ValueError):
+            pass
+        # כמו בשער: פרט שטרם הושלם בפרופיל ("ח.פ [●]") אינו חלק מהשם
+        for sep in (", ח.פ", " ח.פ"):
+            if sep in company and "[" in company.split(sep, 1)[1][:20]:
+                company = company.split(sep, 1)[0].strip(" ,")
+    props, skip = check_properties(parts, model, company)
     res.add(9, "מאפייני הקובץ", props, skip)
 
     for c in res.checks:

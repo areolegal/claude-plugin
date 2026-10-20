@@ -54,7 +54,9 @@ def nonempty(v):
 
 def wording_of(cell):
     """הנוסח שיוחל, בכל אחת מהצורות שהבונה כותב בהן."""
-    for key in ("wording", "preferred_wording", "text", "clause_text", "wording_he"):
+    # proposed_clause ו-fallback_wording הם השדות של playbook-schema.md; בלעדיהם כל מודל לפי הסכמה נכשל כאן
+    for key in ("wording", "preferred_wording", "proposed_clause", "fallback_wording", "text", "clause_text",
+                "wording_he"):
         v = cell.get(key)
         if isinstance(v, dict):
             v = v.get("he") or v.get("en")
@@ -72,11 +74,13 @@ def rule_findings(rule, core_rule):
 
     if not nonempty(rule.get("rule_id")):
         out.append("כלל בלי rule_id: אין לו שם בשום הכרעה ובשום קובץ מצב")
-    if not nonempty(rule.get("topic")):
-        say("אין topic. הנושא הוא מה שמוצג ללקוחה ומה שנרשם בקובץ המצב")
+    # playbook-schema.md מגדיר topic_name ואת rule_id, ולא topic ו-policy_ref. בלי הקריאה הזו כל מודל
+    # שנבנה לפי הסכמה נכשל בחוזה (הרצה חיה, 20.10.2026). מספר הכלל בבועה הוא rule_id כשאין policy_ref
+    if not (nonempty(rule.get("topic")) or nonempty(rule.get("topic_name"))):
+        say("אין topic_name. הנושא הוא מה שמוצג ללקוחה ומה שנרשם בקובץ המצב")
     if not nonempty(rule.get("importance")):
         say("אין importance. הדרגה בפקטור 1 נשענת עליה")
-    if not nonempty(rule.get("policy_ref")):
+    if not (nonempty(rule.get("policy_ref")) or nonempty(rule.get("rule_id"))):
         say("אין policy_ref. מספר הכלל נכנס לבועה החיצונית")
 
     posture = _val(rule, core_rule, "round1_posture")
@@ -152,8 +156,12 @@ def main(argv=None):
     for field in TOP:
         if not nonempty(model.get(field)):
             errors.append("אין %s במודל" % field)
+    fams = [f for f in ((model.get("scope_summary") or {}).get("contract_families") or ()) if isinstance(f, dict)]
+    derived = {"company_role_code": next((f.get("company_role_code") for f in fams if f.get("company_role_code")), None),
+               "family_code": model.get("family_id")}
     for field in MATCH:
-        if not nonempty(model.get(field)) and not nonempty((core or {}).get(field)):
+        if not nonempty(model.get(field)) and not nonempty((core or {}).get(field)) \
+                and not nonempty(derived.get(field)):
             errors.append("אין %s במודל ולא בגרעין. בלעדיו האיתור אינו מתאים "
                           "את הפלייבוק למשפחה ולצד" % field)
     for field in STATUS:

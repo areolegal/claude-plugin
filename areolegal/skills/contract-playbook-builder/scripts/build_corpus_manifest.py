@@ -164,10 +164,19 @@ def looks_like_template(name, text):
     return ("file name" in hits) or (len(hits) >= 2), hits
 
 
+# התיקייה של Areo עצמה (הפרופיל, המודלים, החילוץ, סביבת העבודה) ותיקיות מוסתרות אינן הסכמים. בהרצה חיה
+# הסריקה ספרה את קובצי ה-JSON שבתוך Areo-נתונים כהסכמים, וצריך היה להריץ אותה על עותק (20.10.2026)
+AREO_DIRS = ("Areo-נתונים", "Areo-data")
+
+
+def _skipped(rel):
+    return any(part in AREO_DIRS or part.startswith(".") for part in rel.parts[:-1])
+
+
 def scan(root):
     rows = []
     for p in sorted(root.rglob("*")):
-        if not p.is_file() or p.name.startswith("~$") or p.name == ".DS_Store":
+        if not p.is_file() or p.name.startswith(("~$", ".")) or _skipped(p.relative_to(root)):
             continue
         text = read_text(p)
         norm = normalize(text) if text else None

@@ -44,7 +44,7 @@ import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import quote, urlencode, urlsplit, urlunsplit
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -203,6 +203,25 @@ except ImportError:  # pragma: no cover - הרצה כשהשורש אינו ב-sy
     from risk.entity_store import strip_secrets  # type: ignore
 
 
+def to_uri(url):
+    """כתובת עם עברית או רווחים, כמו שהיא מגיעה מהחיפוש (".../attachment/<מזהה>/חוברת המכרז"), לכתובת
+    שאפשר לשלוח: הנתיב והשאילתה בקידוד אחוזים, והמארח ב-IDNA. קידוד קיים (%D7%9E) נשמר כמו שהוא.
+
+    תיקון מקומי של ניל, לדיווח לענבל: urllib שולח את הנתיב כמו שהוא, ונכשל ב-UnicodeEncodeError (עברית)
+    או ב-InvalidURL (רווח). כך נפל כל מסמך של מינהל הרכש ו-gov.il בבדיקה החיה (20.10.2026)."""
+    try:
+        p = urlsplit(url)
+        host = p.hostname.encode('idna').decode('ascii') if p.hostname else ''
+    except (UnicodeError, ValueError):
+        return url
+    netloc = host + (':%d' % p.port if p.port else '')
+    if p.username:
+        netloc = p.username + (':' + p.password if p.password else '') + '@' + netloc
+    safe = "/%:@!$&'()*+,;=-._~"
+    return urlunsplit((p.scheme, netloc, quote(p.path, safe=safe), quote(p.query, safe=safe + '?'),
+                       quote(p.fragment, safe=safe)))
+
+
 def _host(url):
     return (urlsplit(url).hostname or '').lower()
 
@@ -294,6 +313,7 @@ def fetch(url, purpose, allowed_domains=None, store=None, source_id=None, excerp
     if run_dir and run_dir != _run['dir']:
         _run['dir'] = run_dir
         _load_blocks(run_dir)
+    url = to_uri(url)
     clean, removed = strip_secrets(url)
     host = _host(url)
     dom = registrable_domain(host)

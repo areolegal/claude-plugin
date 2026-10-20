@@ -114,7 +114,20 @@ def main(argv=None):
     blocked_names = names_from(a.profile)
     if a.counterparty and a.kind == "regulatory":
         blocked_names.append(a.counterparty)
-    query = unquote(urlsplit(a.url).query or "") + " " + unquote(urlsplit(a.url).path) + " " + a.purpose
+    # הנתיב של כתובת ממקור מורשה נושא את מספר המסמך (נבו: /law_html/law00/144811.htm, EDGAR: CIK), ולכן
+    # בדיקת "מספר בן 5 ספרות ומעלה" חלה רק על מחרוזת השאילתה ועל המטרה. בנתיב נבדקים שמות הלקוח
+    # ומספר חברה או זהות עם ספרת ביקורת. לפני כן כל כתובת חוק בנבו נחסמה כ"פרט של הלקוח" (הרצה חיה,
+    # 20.10.2026), בדיוק כמו כתובות EDGAR במחקר השוק של הבונה
+    path = unquote(urlsplit(a.url).path)
+    for name in blocked_names:
+        if name and name in path:
+            return out({"status": None, "blocked": False, "stored": None,
+                        "reason": "refused: פרט של הלקוח או של העסקה בכתובת (%s)" % name}, 3)
+    for num in re.findall(r"(?<!\d)\d{9}(?!\d)", path):
+        if net._id_check_digit(num) and num != (a.registration_no or ""):
+            return out({"status": None, "blocked": False, "stored": None,
+                        "reason": "refused: מספר חברה או זהות בכתובת (%s)" % num}, 3)
+    query = unquote(urlsplit(a.url).query or "") + " " + a.purpose
     if a.kind == "entity":
         # בחקר ישות השאילתה בנויה רק משם, מספר רישום ומדינה של הצד שכנגד: הם אינם פרט של הלקוח
         if not (a.counterparty or a.registration_no):

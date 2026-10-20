@@ -4,6 +4,9 @@ description: "בונה פלייבוק חוזי מתיקיית הסכמים: רמ
 ---
 # בונה פלייבוק חוזי
 
+> **שפה, לפני הכול:** כל טקסט שנכתב בשיחה הוא בשפת הממשק של הלקוח (עברית, אלא אם הפרופיל אומר אחרת), כולל הודעת התקדמות של שתי מילים בין כלי לכלי. "Active.", "Now the spec..." או "Let me check" בשיחה עברית נראים ללקוח כתקלה. בהרצה חיה (20.10.2026) זו הייתה הסטייה השכיחה ביותר.
+
+
 פעל כיועץ משפטי ראשי ואסטרטג מדיניות חוזית. בנה מדיניות ניתנת לביקורת לסוג החוזים ולפוזיציה, נתמכת בראיות מן ההסכמים עצמם. בטקסטים הפונים למשתמש השתמש במונח "רכיבי המערכת", לא SKILL.
 
 
@@ -217,6 +220,7 @@ python3 scripts/extract_corpus.py <תיקיית ההסכמים> --out Areo-נת�
 כשאחת נכשלה, כדי שהדוח יראה את כל הבעיות ולא את הראשונה:
 
 ```
+python3 scripts/build_playbook_core.py --model <model>
 python3 scripts/validate_playbook_model.py <model> --core <core> \
     --index <רשומת האינדקס> --word "<הפלייבוק>.docx" --workspace "<סביבה>.html"
 python3 ../contract-negotiation-orchestrator/scripts/check_playbook_contract.py \
@@ -417,8 +421,8 @@ python3 scripts/ingest_approval.py --signed "<הגיליון החתום>.docx" \
 
 ```
 python3 scripts/verify_playbook_docx.py --docx "<הפלייבוק>.docx" \
-    --model <playbook-model.json> --artifact "<סביבת העבודה>.html" \
-    --out <דוח-קבלה>.json
+    --model <playbook-model.json> --profile Areo-נתונים/פרופיל-לקוח.json \
+    --artifact "<סביבת העבודה>.html" --out <דוח-קבלה>.json
 ```
 
 תשע הבדיקות של `word-export-spec.md` רצות בו: כיווניות, תוכן, שוויון מול
@@ -476,16 +480,21 @@ python3 scripts/verify_playbook_docx.py --docx "<הפלייבוק>.docx" \
 כשרץ מחקר שוק (`market-research.md`), ארבעה צעדים רצים בסקריפט, באותו סדר:
 
 ```
+python3 scripts/market_research.py start --family-dir "<playbooks/<family_id>>" \
+    --corpus "<חילוץ ההסכמים>.json" --profile "<פרופיל-לקוח.json>"
+python3 scripts/market_research.py query --query "<השאילתה>" --purpose market
 python3 scripts/market_research.py fetch --family-dir "<playbooks/<family_id>>" --source-id W1 --url "<המסמך>" \
-    --query "<השאילתה, מילה במילה>" --purpose market --topic "<הנושא>" --corpus "<חילוץ ההסכמים>.json" \
-    --profile "<פרופיל-לקוח.json>"
+    --source-type public_filing --query "<השאילתה, מילה במילה>" --purpose market --topic "<הנושא>"
+python3 scripts/market_research.py stop
 python3 scripts/market_research.py ranges  --model <playbook-model.json>
 python3 scripts/market_research.py links   --model <playbook-model.json> --family-dir "<playbooks/<family_id>>"
 python3 scripts/market_research.py message --model <playbook-model.json>
 python3 scripts/market_research.py check   --model <playbook-model.json> --word "<הפלייבוק>.docx" --final
 ```
 
-- **`fetch`** לכל מסמך: השאילתה נבדקת לפני השליחה (אין בה רצף מילים או מספר מההסכמים, שם צד, שם הלקוח, מוצר או פרויקט), והעותק נשמר ב-`market-research/sources/`. שאילתה רגולטורית היא `--purpose legal`, ושם חוק מהרשימה הסגורה מותר בה (`--statute`). הפלט נכנס ל-`search_log[]` ול-`source_refs[]`.
+- **`start`** לפני החיפוש הראשון, ו-**`stop`** אחרי האחרון. בזמן המושב כל חיפוש ברשת נבדק לפני שהוא נשלח, וחיפוש עם פרט של הלקוח נעצר; קריאת דף בכלי הקריאה של Claude נעצרת, והקריאה רק ב-`fetch`.
+- **`query`** לפני כל חיפוש, ואז חיפוש **בדיוק בנוסח שעבר**. `fetch` מסרב למסמך שהשאילתה שלו לא עברה כאן (או בבדיקה האוטומטית של המושב).
+- **`fetch`** לכל מסמך, עם סוג המקור: `tender` (מכרז ציבורי), `public_filing` (EDGAR, מאיה, מגנ"א), `vendor_terms` (תנאים שספק מפרסם, עם `--vendor`) או `model_agreement` (הסכם מודל). אתר שאינו ברשימה של הסוג נדחה לפני הבקשה, וגם אחרי הפניה. מאגר מצרף כמו Law Insider משמש לאיתור בלבד: את המסמך קוראים במקור המקורי. השאילתה נבדקת לפני השליחה (אין בה רצף מילים או מספר מההסכמים, שם צד, שם הלקוח, מוצר או פרויקט), והעותק נשמר ב-`market-research/sources/`. שאילתה רגולטורית היא `--purpose legal`, ושם חוק מהרשימה הסגורה מותר בה (`--statute`). הפלט נכנס ל-`search_log[]` ול-`source_refs[]`.
 - **`ranges`** אחרי הקידוד: הטווח, תווית הוודאות ומתי מותר "מקובל", מ-`coding[]` ו-`source_refs[]`. אין לחשב טווח בעצמך.
 - **`links`** אחרי שה-Word וסביבת העבודה נבנו, ולפני ההודעה: כל קישור נבדק שוב; קישור שנכשל מוציא את המקור מהספירה, והטווח מחושב מחדש.
 - **`message`** בונה את הודעת המסירה בתבנית הקבועה, עם המשפט הקבוע מהספירה, ושומר אותה ב-`market_research.disclosure`. **מסור את ההודעה כפי שהיא.**
@@ -521,7 +530,7 @@ python3 scripts/market_research.py check   --model <playbook-model.json> --word 
 ריצות העדכון כפופות לכל האיסורים הנוקשים, ללא יציאה לרשת בסריקה.
 ## רכיבים ממשיכים
 
-תוצרי הרכיב משמשים את: contract-negotiation-orchestrator (הרמזור והקטלוג, כולל בדיקת העדכניות שהוא מבצע מול last_updated), negotiation-strategist (העמדות והסגמנטים), contract-risk-assessor (בסיס הסריקה) ו-contract-drafter (בסיס המדיניות לניסוח). **גרעין ההפעלה:** בכל הרצה שבה נשמר `playbook-model.json`, ובאותה פעולה, גזור ושמור גם `Areo-נתונים/playbook-core.json` לפי `get_resource(skill="contract-playbook-builder", name="playbook-core-schema.md")`. הגרעין מכיל את המסלול, הקו האדום, הנוסח המוצע, נוסח הנסיגה והסגמנטים בלבד, בלי הנימוקים והראיות, והוא מה שרכיבי המשא ומתן, האסטרטגיה והניסוח טוענים כברירת מחדל במקום המודל המלא. **גרעין שאינו מסונכרן עם המודל הוא תקלה**, ואימותו נעשה ב-`scripts/validate_playbook_model.py`.
+תוצרי הרכיב משמשים את: contract-negotiation-orchestrator (הרמזור והקטלוג, כולל בדיקת העדכניות שהוא מבצע מול last_updated), negotiation-strategist (העמדות והסגמנטים), contract-risk-assessor (בסיס הסריקה) ו-contract-drafter (בסיס המדיניות לניסוח). **גרעין ההפעלה:** בכל הרצה שבה נשמר `playbook-model.json`, ובאותה פעולה, בנה את הגרעין בסקריפט, ולעולם לא בעצמך: `python3 scripts/build_playbook_core.py --model <playbooks/<family_id>/playbook-model.json>`. הסקריפט כותב את `playbook-core.json` לצד המודל, לפי `playbook-core-schema.md`. הגרעין מכיל את המסלול, הקו האדום, הנוסח המוצע, נוסח הנסיגה והסגמנטים בלבד, בלי הנימוקים והראיות, והוא מה שרכיבי המשא ומתן, האסטרטגיה והניסוח טוענים כברירת מחדל במקום המודל המלא. **גרעין שאינו מסונכרן עם המודל הוא תקלה**, ואימותו נעשה ב-`scripts/validate_playbook_model.py`.
 
 ודא שהמודל הקנוני נשמר במיקום שכולם יודעים לטעון ממנו, לפי `get_resource(skill="contract-playbook-builder", name="playbook-schema.md")`, שהוא הסכמה המחייבת של `playbook-model.json`. **כל רכיב שצורך את המודל מסתמך על הסכמה הזאת**, ולכן שינוי בה מחייב עדכון של הרכיבים הצורכים. המודל כולל תמיד את `meta.folders`, רשימת התיקיות שנסרקו בפועל, כדי שסביבת העבודה תוכל להציג אותה למשתמש ולוודא שהמאגר שלם.
 

@@ -129,6 +129,45 @@ def mark_survivors(draft, dec):
     return out
 
 
+def _bare(s):
+    return re.sub(r"[\s\u200e\u200f.)\-]+", "", s or "")
+
+
+def _strip_once(text, num):
+    """הטקסט בלי המספר שבראשו, או None כשהטקסט אינו נפתח במספר הזה (12.3 אינו 12)."""
+    got, i = "", 0
+    while i < len(text) and got != num:
+        if _bare(text[i]):
+            if not num.startswith(got + text[i]):
+                return None
+            got += text[i]
+        i += 1
+    if got != num:
+        return None
+    j = i
+    while j < len(text) and not _bare(text[j]):
+        j += 1
+    rest = text[j:]
+    # אחרי המספר בא מפריד ואז טקסט, או אותו מספר שוב ("5א.5א."). ספרה מיד אחריו היא תת-סעיף
+    if j == i and rest:
+        return None
+    if rest[:1].isdigit() and _strip_once(rest, num) is None:
+        return None
+    return rest
+
+
+def strip_repeated_number(d):
+    """סעיף חדש עם number, שהטקסט שלו כבר נפתח באותו מספר, יצא "5א.5א." (הרצה חיה, 20.10.2026).
+    המספר נכתב פעם אחת: מהשדה number, והטקסט מתחיל אחריו."""
+    if d.get("op") != "insert_paragraph" or not d.get("number") or not d.get("text"):
+        return
+    num = _bare(d["number"])
+    rest = _strip_once(d["text"], num) if num else None
+    while rest is not None:
+        d["text"] = rest
+        rest = _strip_once(rest, num)
+
+
 def main(argv=None):
     no_bytecode()
     sys.stdout.reconfigure(encoding="utf-8")
@@ -216,6 +255,8 @@ def main(argv=None):
         return 1
 
     survivors = mark_survivors(a.draft, dec)
+    for d in dec["decisions"]:
+        strip_repeated_number(d)
     if not a.internal_layer:
         # הנימוק הפנימי נשאר בקובץ ההכרעות (לקובץ המצב), ואינו נכנס לבועה
         for d in dec["decisions"]:

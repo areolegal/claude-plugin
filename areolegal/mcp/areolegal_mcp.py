@@ -32,8 +32,16 @@ from pathlib import Path
 
 DEFAULT_API_URL = "https://areo.co.il"
 PROTOCOL_VERSION = "2024-11-05"
-PLUGIN_VERSION = "1.20.0"   # kept in step with plugin.json by release.sh
+PLUGIN_VERSION = "1.21.0"   # kept in step with plugin.json by release.sh
 SERVER_INFO = {"name": "areolegal", "version": "1.0.4"}
+# הוראות השרת נכנסות להנחיות המערכת של כל שיחה שהתוסף פעיל בה (initialize.instructions), ולכן הן
+# המקום החזק ביותר לכלל השפה. בהרצה חיה (20.10.2026) Claude כתב ללקוח הודעות ביניים באנגלית ("Now
+# the playbook rules themselves", "Mapping is done"), גם כשהכלל היה בראש כל SKILL.md
+SERVER_INSTRUCTIONS = (
+    "AreoLegal: write every message the user sees in the user's interface language: Hebrew unless the "
+    "client profile (display_language) says English. This includes short progress notes between tool "
+    "calls ('בודק את הטיוטה', 'בונה את המודל'). An English line in a Hebrew conversation looks like a "
+    "malfunction to the client. כל טקסט שהלקוח רואה, גם הודעת ביניים של שתי מילים, הוא בעברית.")
 TIMEOUT = 60
 
 
@@ -405,6 +413,7 @@ def handle(msg: dict):
                 "protocolVersion": client_ver,
                 "capabilities": {"tools": {}},
                 "serverInfo": SERVER_INFO,
+                "instructions": SERVER_INSTRUCTIONS,
             },
         }
     if method == "notifications/initialized":

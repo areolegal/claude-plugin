@@ -15,7 +15,11 @@ WALK_AWAY_MAX = 5
 VALID_REG_STATUS = {"NotResearched", "NoSpecificSourceIdentified", "ApplicableSourcesFound"}
 VALID_PRESENCE = {"Required", "Optional", "Prohibited", "Conditional"}
 VALID_MISSING_COLOR = {"Green", "Yellow", "Red", "NotApplicable"}
-VALID_RESEARCH_STATUS = {"NotRequested", "Declined", "Completed", "Partial"}
+# playbook-schema.md: "סטטוס המחקר, בשוק ובדין, מאותו סט: Performed | Partial | NotPerformed". הערכים
+# הישנים נשארים מותרים, כדי שפלייבוק קיים לא ייפסל. לפני כן הסט של הסכמה נפסל כאן, ותבנית סביבת העבודה
+# קיבלה רק אותו, ולכן בהרצה חיה צריך היה למפות ביד (20.10.2026)
+VALID_RESEARCH_STATUS = {"Performed", "Partial", "NotPerformed", "NotRequested", "Declined", "Completed"}
+RESEARCH_DONE = {"Performed", "Completed", "Partial"}
 VALID_QA_STATUS = {"NotRun", "Partial", "Completed"}
 VALID_SEG_STATUS = {"NotDetected", "Candidate", "Confirmed"}
 VALID_RATIONALE_STATUS = {"Draft", "Confirmed"}
@@ -34,7 +38,11 @@ BAND_CHOICE_FIELD = {"full": {"not_asked"}, "below20": {"not_asked"},
                      "below7": {"combine", "own_only"}, "none": {"market"}}
 CHOICE_ORIGIN = {"own_only": "own", "combine": "own_plus_market", "market": "market_built"}
 # הבסיס של כל מסלול: ראיה מההסכמים, נוסח שוק, או הצעה של Areo כשאין פשרה בראיות
-VALID_TRACK_BASIS = {"own_evidence", "own_paper_repeated", "market_standard", "areo_proposal"}
+# כל הערכים של playbook-schema.md ("basis: מקור המסלול"), ו-own_evidence מהגרסה הקודמת. לפני כן רק ארבעה
+# ערכים, ומודל שנכתב לפי הסכמה ("template", "established", "single") נפסל (הרצה חיה, 20.10.2026)
+VALID_TRACK_BASIS = {"own_evidence", "own_paper_repeated", "template", "company_request", "client_answer",
+                     "established", "single", "offered_unexecuted", "company_source", "struck",
+                     "rejected_comment", "never_accepted", "bid_condition", "market_standard", "areo_proposal"}
 VALID_FALLBACK_SOURCE = {"signed_compromise", "single_compromise", "offered_not_signed",
                          "client_answer", "areo_proposal"}
 VALID_ACCEPTANCE_MODE = {"negotiated", "imposed", "unnegotiated", "unknown"}
@@ -185,9 +193,27 @@ def validate_traffic_light(errors, light, prefix, segment_ids):
         validate_previous(errors, block.get("previous_agreements_where_language_accepted", []), cp, segment_ids)
 
 
+# policy-rationale.md, "שני מעברים": במעבר א (rationale_status: Draft) נכתבים רק השדות הקצרים האלה, ויתר
+# השדות ריקים ורשומים ב-pass_b_pending. האורכים במפרט הם תקרות, "ולעולם לא יעד". לפני כן המאמת דרש אורך
+# מינימלי גם בטיוטה, ובהרצה חיה הבונה מתח את הנימוקים כדי לעבור אותו (20.10.2026)
+PASS_A_FIELDS = ("executive_policy_rationale", "green_boundary_rationale", "yellow_boundary_rationale",
+                 "red_boundary_rationale", "internal_evidence_rationale")
+
+
 def validate_rationale(errors, rationale, prefix, min_spec, applicability_min=2):
     if not isinstance(rationale, dict) or not rationale:
         add(errors, f"{prefix} missing/non-object rationale")
+        return
+    if rationale.get("rationale_status") == "Draft" and min_spec is RATIONALE_MIN:
+        pending = set(rationale.get("pass_b_pending") or ())
+        for key in PASS_A_FIELDS:
+            if not nonempty(rationale.get(key)):
+                add(errors, f"{prefix} missing {key} (pass A)")
+        for key in min_spec:
+            if key not in PASS_A_FIELDS and not nonempty(rationale.get(key)) and key not in pending:
+                add(errors, f"{prefix}.{key} is empty and not listed in pass_b_pending")
+        if rationale.get("rationale_status") not in VALID_RATIONALE_STATUS:
+            add(errors, f"{prefix} invalid rationale_status")
         return
     for key, minimum in min_spec.items():
         if not nonempty(rationale.get(key)):
@@ -354,9 +380,11 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
         status = rr.get("status")
         if status not in VALID_RESEARCH_STATUS:
             add(errors, "regulatory_research invalid status")
-        if status in {"Completed", "Partial"}:
-            if rr.get("requested_by_user") is not True:
-                add(errors, "regulatory research cannot be Completed/Partial without requested_by_user=true")
+        if status in RESEARCH_DONE:
+            # playbook-schema.md: המחקר הרגולטורי רץ לפי מספר ההסכמים ואינו נשאל, ו-requested_by_user יוצא.
+            # הדרישה הישנה פסלה כל מחקר רגולטורי שהמפרט עצמו מחייב (1 עד 6 הסכמים, או אין)
+            if rr.get("trigger") not in ("band_below7", "band_none") and rr.get("requested_by_user") is not True:
+                add(errors, "regulatory research Performed/Partial requires trigger band_below7 or band_none")
             if not nonempty(rr.get("checked_at")):
                 add(errors, "completed/partial regulatory research requires checked_at")
 
@@ -566,8 +594,17 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
                 add(errors, f"{ep} citation_id {cid} is not in citations[]")
             if track in {"green", "yellow"} and ref in excluded:
                 add(errors, f"{ep} a green/yellow track cannot rest on an exception, a replaced wording or a statutory override")
-        if rule.get("evidence_count") is not None and rule.get("evidence_count") != ev_count:
-            add(errors, f"{prefix}.evidence_count says {rule.get('evidence_count')} but {ev_count} entries were found")
+        # playbook-schema.md: evidence_count הוא {independent_negotiations, on_company_paper}, ספירה של משאים
+        # ומתנים ולא של שורות ראיה. רק מספר שלם (צורה ישנה) מושווה למספר השורות; אובייקט נבדק לצורתו
+        ec = rule.get("evidence_count")
+        if isinstance(ec, bool) or (ec is not None and not isinstance(ec, (int, dict))):
+            add(errors, f"{prefix}.evidence_count must be {{independent_negotiations, on_company_paper}}")
+        elif isinstance(ec, int) and ec != ev_count:
+            add(errors, f"{prefix}.evidence_count says {ec} but {ev_count} entries were found")
+        elif isinstance(ec, dict):
+            ind, own = ec.get("independent_negotiations"), ec.get("on_company_paper")
+            if not isinstance(ind, int) or not isinstance(own, int) or own > ind:
+                add(errors, f"{prefix}.evidence_count needs integers independent_negotiations >= on_company_paper")
 
         validate_traffic_light(errors, rule.get("traffic_light"), prefix, segment_ids)
 

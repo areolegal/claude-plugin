@@ -5,6 +5,9 @@ description: Activate and onboard the AreoLegal legal suite. Use when the user w
 
 # AreoLegal Setup & Onboarding
 
+> **שפה, לפני הכול:** כל טקסט שנכתב בשיחה הוא בשפת הממשק של הלקוח (עברית, אלא אם הפרופיל אומר אחרת), כולל הודעת התקדמות של שתי מילים בין כלי לכלי. "Active.", "Now the spec..." או "Let me check" בשיחה עברית נראים ללקוח כתקלה. בהרצה חיה (20.10.2026) זו הייתה הסטייה השכיחה ביותר.
+
+
 Guide the user through activating the AreoLegal suite on this machine. Speak the user's language (Hebrew by default for Hebrew speakers).
 
 ## Step 0, Which path is this session on
