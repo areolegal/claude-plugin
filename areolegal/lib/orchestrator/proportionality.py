@@ -56,7 +56,10 @@ def _concession_candidates(decisions, context=None):
     c = [d for d in decisions if d.get('decision_code') in REJECTION_CODES + (ADDITION_CODE,)
          and _counted(d) and not d.get('mandatory') and d.get('tier') != 'deal_breaker'
          and not d.get('client_priority') and not d.get('never_concede')]
-    return sorted(c, key=lambda d: (-IMPORTANCE_RANK.get(d.get('importance', 'medium'), 2),
+    # הערות ענבל 22.10.2026, כללים 10 ו-11: סעיף שהנוסח המקורי שלהם בו כבר בצהוב הוא ויתור מתוכנן, ולכן הוא מוצע
+    # ראשון: הנוסח שלהם ממילא מקובל עלינו, והוויתור הוא החזרה אליו
+    return sorted(c, key=lambda d: (0 if d.get('their_track') == 'yellow' else 1,
+                                    -IMPORTANCE_RANK.get(d.get('importance', 'medium'), 2),
                                     FRICTION_RANK.get(d.get('expected_friction', 'medium'), 1), d.get('id', '')))
 
 

@@ -370,6 +370,11 @@ def _revision_of(node, p):
     return out
 
 
+def received_reject_text(p):
+    """הטקסט של פסקה בטיוטה שהתקבלה, אחרי דחיית כל השינויים הפתוחים בה (ההוספות יוצאות, המחיקות חוזרות)."""
+    return ''.join(_node_text(n) for n, anc in _text_nodes(p) if 'ins' not in anc)
+
+
 def reject_ours_view(root, author):
     """הטיוטה כפי שהתקבלה, אחרי דחיית השינויים שלנו בלבד: הוספה שלנו יוצאת, מחיקה שלנו חוזרת, והשינויים
     הפתוחים של הצד שכנגד נשארים בדיוק כמו בטיוטה שהתקבלה (כמו para_text: ההוספות שלהם בטקסט, המחיקות שלהם
@@ -483,6 +488,18 @@ def comment_paragraphs(root):
     return where
 
 
+def comment_paragraph_spans(root):
+    """לכל מזהה בועה: (הפסקה הראשונה, הפסקה האחרונה) שהטווח שלה עובר בהן. בועה של אשכול (כלל 8) מכסה כמה
+    פסקאות, והשער סופר אותה ככיסוי של כל אחת מהן."""
+    start, end = {}, {}
+    for i, p in enumerate(body_paragraphs(root)):
+        for s in p.iter(W + 'commentRangeStart'):
+            start.setdefault(s.get(W + 'id'), i)
+        for e in p.iter(W + 'commentRangeEnd'):
+            end[e.get(W + 'id')] = i
+    return {cid: (i, max(i, end.get(cid, i))) for cid, i in start.items()}
+
+
 def revision_text(p, kind, author=None):
     """הטקסט שהוכנס (kind=ins) או נמחק (kind=del) בפסקה, ובמחבר מסוים כשנמסר."""
     out = []
@@ -528,6 +545,8 @@ class TrackedDocx:
         self.body = self.root.find(W + 'body')
         self.paras = body_paragraphs(self.root)
         self.orig_texts = [para_text(p) for p in self.paras]
+        self.received_texts = list(self.orig_texts)   # כפי שהתקבלו, לפני שהוכרעו השינויים הפתוחים שלהם
+        self.resolved = {}                             # פסקה: accept או reject
         self.author = author
         self.initials = initials or ''.join(w[0] for w in author.split()[:2])
         self.clock = clock or RevisionClock()
@@ -668,6 +687,73 @@ class TrackedDocx:
         if ''.join(u.text for u in units) != para_text(p):
             raise UnsupportedEdit('מבנה הפסקה אינו נתמך (טקסט מחוץ לריצות)')
         return units
+
+    # ----------------------------------------------------------------- השינויים הפתוחים של הצד שכנגד
+    # בסבב 2 ואילך השינויים שלהם יושבים בדיוק בסעיפים שעונים עליהם, והמנוע סירב לסמן בפסקה כזו
+    # (UnsupportedEdit), ולכן ההכרעות החשובות של הסבב נמסרו לסימון ידני (הרצה חיה, 20.10.2026). עכשיו,
+    # כמו עורך דין ב-Word, השינוי שלהם בפסקה מוכרע קודם: נדחה (reject) או מתקבל (accept), ועליו
+    # מסמנים את השינוי שלנו. תוספת מקומית של ניל, לדיווח לענבל.
+    def _their(self, el):
+        return el.get(W + 'author') != self.author
+
+    def has_their_revisions(self, idx):
+        p = self.paras[idx]
+        return any(self._their(e) for e in p.iter(W + 'ins', W + 'del', W + 'moveFrom', W + 'moveTo'))
+
+    def snapshot_para(self, idx):
+        import copy
+        return copy.deepcopy(self.paras[idx]), self.orig_texts[idx], self.resolved.get(idx)
+
+    def restore_para(self, idx, snap):
+        """מחזיר פסקה למצב שלפני resolve_theirs: הכרעה שלא סומנה אינה מוחלת, גם לא חלקית."""
+        el, text, mode = snap
+        cur = self.paras[idx]
+        cur.getparent().replace(cur, el)
+        self.paras[idx] = el
+        self.orig_texts[idx] = text
+        if mode is None:
+            self.resolved.pop(idx, None)
+        else:
+            self.resolved[idx] = mode
+
+    def resolve_theirs(self, idx, mode):
+        """מכריע את השינויים הפתוחים של הצד שכנגד בפסקה: reject מוחק את ההוספות שלהם ומחזיר את המחיקות
+        שלהם לטקסט רגיל; accept משאיר את ההוספות כטקסט רגיל ומוחק את מה שמחקו. כמו "דחה" ו"קבל" ב-Word,
+        ההכרעה עצמה אינה מסומנת; השינוי שלנו מסומן אחריה, מול הטקסט שנוצר. עוגני ההערות שלהם נשמרים."""
+        if mode not in ('accept', 'reject'):
+            raise UnsupportedEdit('their_changes: %r אינו accept או reject' % (mode,))
+        p = self.paras[idx]
+        mark = p.find(W + 'pPr/' + W + 'rPr')
+        if mark is not None and any(m is not None and self._their(m)
+                                    for m in (mark.find(W + 'ins'), mark.find(W + 'del'))):
+            raise UnsupportedEdit('הצד שכנגד פיצל או איחד כאן פסקאות: לסמן ידנית')
+        if any(self._their(e) for e in p.iter(W + 'moveFrom', W + 'moveTo')):
+            raise UnsupportedEdit('הצד שכנגד העביר כאן טקסט ממקום למקום: לסמן ידנית')
+        anchors = (W + 'commentRangeStart', W + 'commentRangeEnd', W + 'bookmarkStart', W + 'bookmarkEnd')
+        for e in list(p.iter(W + 'ins', W + 'del')):
+            parent = e.getparent()
+            if parent is None or parent.tag == W + 'rPr' or not self._their(e):
+                continue
+            keep = (e.tag == W + 'ins') == (mode == 'accept')
+            pos = parent.index(e)
+            if keep:
+                if e.tag == W + 'del':
+                    for x in e.iter(W + 'delText'):
+                        x.tag = W + 't'
+                    for x in e.iter(W + 'delInstrText'):
+                        x.tag = W + 'instrText'
+                moved = list(e)
+            else:
+                # הטקסט יוצא, אבל עוגני ההערות והסימניות שלהם נשארים במקומם
+                moved = [x for x in e.iter() if x.tag in anchors] + \
+                        [r for r in e.iter(W + 'r') if r.find(W + 'commentReference') is not None]
+            for ch in moved:
+                parent.insert(pos, ch)
+                pos += 1
+            parent.remove(e)
+        self.orig_texts[idx] = para_text(p)
+        self.resolved[idx] = mode
+        return self.orig_texts[idx]
 
     # ----------------------------------------------------------------- פעולות
     def _check_idx(self, idx):
@@ -1230,7 +1316,27 @@ DECISIONS_SCHEMA = {
                                       'description': 'מזהה שורת pre_send_fixes שההכרעה נפתחה בגללה, או רשימה כששתי '
                                                      'שורות חלות על אותו סעיף (4.9, שינוי 80; 1.2.0)'},
                 'decision_code': {'enum': ['A1', 'A2', 'A3', 'R1', 'R2', 'R3', 'N1']},
+                'their_changes': {'enum': ['reject', 'accept', 'keep'],
+                                  'description': 'פסקה עם שינויים פתוחים של הצד שכנגד: לדחות אותם ולסמן את שלנו מול '
+                                                 'הנוסח שלפניהם, לקבל אותם ולסמן מעליהם, או להשאיר אותם פתוחים (בועה '
+                                                 'בלבד). בלי השדה: קבלה ב-A1 עד A3, keep ב-comment_only, ודחייה בשאר. '
+                                                 'ב-reject, old ו-new_text נכתבים מול הנוסח שלפני השינויים שלהם'},
                 'rule_ids': {'type': 'array', 'items': {'type': 'string'}},
+                # הערות ענבל לנושא ונותן, 22.10.2026
+                'cluster_id': {'type': 'string', 'description': 'כלל 8: כל השינויים של אותו כלל באותו סעיף הם אשכול '
+                                                                'אחד, עם בועה אחת שמעוגנת על כל הקטע. רק הכרעה אחת '
+                                                                'באשכול נושאת external_comment'},
+                'regime': {'enum': ['mutuality', 'cost', 'period', 'definition', 'cap_or_exception', 'law_or_forum'],
+                           'description': 'כלל 2: ההכרעה משנה משטר, ולכן כל סעיף שתלוי בה מוכרע באותו סבב'},
+                'dependents': {'type': 'array', 'items': {'type': 'object'},
+                               'description': 'כלל 2: {para, decision} (מזהה ההכרעה שמטפלת בו) או {para, keep: true, '
+                                              'reason} לכל סעיף תלוי'},
+                'fact_source': {'enum': ['profile', 'user_answer', 'agreement'],
+                                'description': 'כלל 6: המקור לעובדה על אחד הצדדים שהבועה נשענת עליה'},
+                'their_track': {'enum': ['green', 'yellow', 'red'],
+                                'description': 'כלל 10: המסלול של הנוסח המקורי שלהם, לפני הסימון'},
+                'fallback': {'enum': ['their_wording', 'playbook'],
+                             'description': 'כלל 10: עמדת הנסיגה. בנוסח שלהם שבצהוב: their_wording'},
                 'policy_gate': {'type': 'object'},
                 'safe_wording': {'type': 'object'},
                 'mandatory': {'type': 'boolean'},
@@ -1245,6 +1351,13 @@ def validate_decisions(dec):
         if k not in dec:
             errs.append('חסר %s' % k)
     seen = set()
+    bubbled = {}
+    for d in dec.get('decisions', []):
+        if d.get('cluster_id') and d.get('external_comment'):
+            bubbled.setdefault(d['cluster_id'], []).append(d.get('id', '?'))
+    for cl, ids in sorted(bubbled.items()):
+        if len(ids) > 1:
+            errs.append('אשכול %s: יותר מבועה חיצונית אחת (%s). לאשכול בועה אחת על כל הקטע' % (cl, ', '.join(ids)))
     for d in dec.get('decisions', []):
         did = d.get('id', '?')
         if did in seen:
@@ -1267,8 +1380,14 @@ def validate_decisions(dec):
             errs.append('%s: נושא חסר שנוסף נרשם N1, ולא R1 עד R3' % did)
         if op != 'insert_paragraph' and d.get('decision_code') == 'N1':
             errs.append('%s: N1 רק לנושא חסר שנוסף' % did)
-        if op in ('replace', 'replace_span', 'insert_paragraph', 'delete_paragraph') and not d.get('external_comment'):
-            if d.get('conforming') or d.get('structural'):
+        cl = d.get('cluster_id')
+        if op in ('replace', 'replace_span', 'insert_paragraph', 'delete_paragraph') and not d.get('external_comment') \
+                and cl and cl in bubbled:
+            pass   # כלל 8: הבועה של האשכול נמצאת בהכרעה אחרת, ומכסה גם את השינוי הזה
+        elif op in ('replace', 'replace_span', 'insert_paragraph', 'delete_paragraph') and not d.get('external_comment'):
+            if cl:
+                errs.append('%s: לאשכול %s אין בועה חיצונית באף הכרעה' % (did, cl))
+            elif d.get('conforming') or d.get('structural'):
                 errs.append('%s: שינוי טכני בלי בועה חיצונית קצרה (כל שינוי שהצד שכנגד רואה מקבל בועה)' % did)
             else:
                 errs.append('%s: שינוי מהותי בלי בועה חיצונית' % did)
@@ -1284,17 +1403,45 @@ def validate_decisions(dec):
     return errs
 
 
+def their_changes_mode(d):
+    """מה עושים בשינויים הפתוחים של הצד שכנגד בפסקה שההכרעה נוגעת בה. השדה their_changes גובר; בלעדיו:
+    בועה בלבד משאירה אותם פתוחים; הכרעת קבלה (A1 עד A3, או op accept) מקבלת אותם; כל הכרעה שמסמנת נוסח
+    דוחה אותם ומסמנת את שלנו מול הנוסח שלפניהם (הנוסח שלנו מהסבב הקודם)."""
+    if d.get('their_changes'):
+        return d['their_changes']
+    if d.get('op') == 'comment_only':     # בועה בלבד אינה משנה טקסט: השינוי שלהם נשאר פתוח, כפי שהגיע
+        return 'keep'
+    if d.get('op') == 'accept' or d.get('decision_code') in ACCEPT_CODES:
+        return 'accept'
+    return 'reject'
+
+
 def mark_decisions(doc, dec):
     """מסמן את ההכרעות על TrackedDocx פתוח, בלי בדיקת החוזה. מחזיר not_marked. apply_decisions קורא לה אחרי
     validate_decisions; הבדיקות משתמשות בה כדי לשחזר תגובה ישנה שאינה עומדת בחוזה הנוכחי."""
     not_marked = []
+    inserted = {}
     by_para = {}
     for d in dec['decisions']:
         if d['op'] == 'replace_span':
             by_para.setdefault(d['para'], []).append(d)
     for d in dec['decisions']:
+        snap = None
         try:
             op = d['op']
+            para = d.get('para')
+            if op != 'insert_paragraph' and isinstance(para, int) and 0 <= para < len(doc.paras) \
+                    and doc.has_their_revisions(para):
+                mode = their_changes_mode(d)
+                received = doc.orig_texts[para]
+                if mode != 'keep':
+                    snap = (para, doc.snapshot_para(para))
+                    base = doc.resolve_theirs(para, mode)
+                    # old שנכתב מול הנוסח שלהם, כשהשינויים שלהם נדחו: ההודעה אומרת מה לעשות, ולא רק "לא נמצא"
+                    if op == 'replace_span' and d.get('old') and d['old'] not in base and d['old'] in received:
+                        raise UnsupportedEdit('"%s" הוא מהנוסח של הצד שכנגד, והשינויים שלהם בפסקה נדחו '
+                                              '(their_changes: reject). כתבו את old מול הנוסח שלפני השינויים שלהם, '
+                                              'או קבעו their_changes: accept' % d['old'][:40])
             if op == 'replace':
                 doc.set_text(d['para'], d['new_text'], d.get('external_comment'), d.get('internal_comment'))
             elif op == 'replace_span':
@@ -1303,8 +1450,9 @@ def mark_decisions(doc, dec):
                     doc.edit_spans(d['para'], [(g['old'], g['new'], g.get('external_comment'),
                                                 g.get('internal_comment')) for g in group])
             elif op == 'insert_paragraph':
-                doc.insert_paragraph(d['after_para'], d['text'], d.get('number'), d.get('template_para'),
-                                     d.get('external_comment'), d.get('internal_comment'))
+                inserted[d['id']] = doc.insert_paragraph(d['after_para'], d['text'], d.get('number'),
+                                                         d.get('template_para'), d.get('external_comment'),
+                                                         d.get('internal_comment'))
             elif op == 'delete_paragraph':
                 doc.delete_paragraph(d['para'], d.get('external_comment'), d.get('internal_comment'))
             elif op == 'accept':
@@ -1312,8 +1460,79 @@ def mark_decisions(doc, dec):
             else:
                 doc.comment_only(d['para'], d.get('external_comment'), d.get('internal_comment'))
         except UnsupportedEdit as e:
+            if snap is not None:
+                doc.restore_para(*snap)
             not_marked.append({'id': d['id'], 'reason': str(e)})
+    span_clusters(doc, dec, inserted, {x['id'] for x in not_marked})
     return not_marked
+
+
+def span_clusters(doc, dec, inserted, skipped=()):
+    """כלל 8 (הערות ענבל, 22.10.2026): הבועה של אשכול נפרשת מתחילת הפסקה הראשונה של האשכול ועד סוף האחרונה,
+    כך שבועה אחת מכסה את כל השינויים של אותו כלל באותו סעיף, ואין צורך בבועות הפניה. השער סופר בועה כזו ככיסוי של
+    כל פסקה בטווח (comment_paragraph_spans)."""
+    clusters = {}
+    for d in dec['decisions']:
+        if d.get('cluster_id') and d['id'] not in skipped and d['op'] != 'accept':
+            clusters.setdefault(d['cluster_id'], []).append(d)
+    if not any(len(v) > 1 for v in clusters.values()):
+        return
+    used = set()
+    for members in clusters.values():
+        lead = next((d for d in members if d.get('external_comment')), None)
+        if lead is None or len(members) < 2:
+            continue
+        cid = next((c[0] for c in doc.comments if c[1] == doc.author and c[3] == lead['external_comment']
+                    and c[0] not in used), None)
+        if cid is None:
+            continue
+        used.add(cid)
+        # פסקה שהוספנו עוד אינה בעץ (finalize מכניס אותה אחרי העוגן), ולכן הסדר לוגי: (עוגן, מקום אחריו)
+        elems = []
+        for d in members:
+            key = p = None
+            if d['op'] == 'insert_paragraph' and inserted.get(d['id']) is not None:
+                p = inserted[d['id']]
+                chain = [q for q, _ in doc.inserted.get(d['after_para'], [])]
+                key = (d['after_para'], 1 + next((k for k, q in enumerate(chain) if q is p), 0))
+            elif isinstance(d.get('para'), int) and 0 <= d['para'] < len(doc.paras):
+                p, key = doc.paras[d['para']], (d['para'], 0)
+            if p is not None and all(p is not q for _, q in elems):
+                elems.append((key, p))
+        elems = [p for _, p in sorted(elems, key=lambda kp: kp[0])]
+        if len(elems) < 2:
+            continue
+        first = elems[0]
+        last = next((p for p in reversed(elems) if _mark(p) != 'del'), elems[-1])
+        trees = [doc.root] + [q for items in doc.inserted.values() for q, _ in items]
+        start = next((x for t in trees for x in t.iter(W + 'commentRangeStart') if x.get(W + 'id') == cid), None)
+        end = next((x for t in trees for x in t.iter(W + 'commentRangeEnd') if x.get(W + 'id') == cid), None)
+        if start is None or end is None:
+            continue
+        ref = end.getnext()
+        run = ref
+        if ref is not None and local(ref.tag) in ('ins', 'del'):
+            run = next((r for r in ref if r.find(W + 'commentReference') is not None), None)
+        if run is None or run.find(W + 'commentReference') is None:
+            continue
+        start.getparent().remove(start)
+        ppr = first.find(W + 'pPr')
+        first.insert(list(first).index(ppr) + 1 if ppr is not None else 0, start)
+        end.getparent().remove(end)
+        if ref is not run:
+            ref.remove(run)
+            if not len(ref) and ref.getparent() is not None:
+                ref.getparent().remove(ref)
+        elif run.getparent() is not None:
+            run.getparent().remove(run)
+        last.append(end)
+        mark = _mark(last)
+        if mark in ('ins', 'del'):
+            wrap = doc._rev(mark)
+            wrap.append(run)
+            last.append(wrap)
+        else:
+            last.append(run)
 
 
 def apply_decisions(received, dec, out_path=None, author=None, initials=None, now=None, internal_header=True):

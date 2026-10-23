@@ -18,7 +18,12 @@ ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 ENUMS = {
     "risk.severity": {"critical", "high", "medium", "low"},
     "node.side": {"us", "them"},
-    "node.level": {"hard", "soft", "open", "bridge"},
+    # המסלול של שורה בעץ התגובות: סולם ירוק-צהוב-אדום (prep_center_spec.md, ד). התבנית צובעת לפי
+    # LVL שלה. עד 23.10.2026 הבודק התיר כאן hard, soft, open ו-bridge, שהתבנית אינה מכירה, וכל
+    # שורה בעץ הוצגה באפור (הערות ענבל 22.10, כלל 14: הבודק והתבנית מתואמים)
+    "node.level": {"green", "yellow", "red"},
+    # מקור ניסוח הגשר (כלל 13): הנוסח שלהם, הפלייבוק, או הצעה של המערכת
+    "bridge.source": {"their_wording", "playbook", "system_proposal"},
     "dialogue.who": {"us", "them"},
     "docAccess.mode": {"local", "connector", "base", "none"},
 }
@@ -132,6 +137,13 @@ def validate(data):
             key = "wording" if L == "bridge" else "what"
             if not band.get(key):
                 r.err("%s.lines.%s" % (where, L), "%s ריק. תא הקו יוצג ריק" % key)
+            if L == "bridge":
+                # כלל 13: לכל גשר יש מקור. גשר בלי מקור אינו מראה אם נבדק מול הנוסח שלהם
+                if band.get("source") in (None, ""):
+                    r.warn("%s.lines.bridge" % where, "source חסר. לכל גשר נרשם מקור: their_wording, "
+                                                       "playbook או system_proposal")
+                else:
+                    check_enum(r, "%s.lines.bridge" % where, "source", band.get("source"), "bridge.source")
         check_refs(where, c.get("refs"))
         for j, n in enumerate(c.get("tree") or []):
             nw = "%s.tree[%d]" % (where, j)

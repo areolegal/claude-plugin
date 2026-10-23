@@ -168,6 +168,29 @@ def strip_repeated_number(d):
         rest = _strip_once(rest, num)
 
 
+def record_dependents(draft, decisions_path):
+    """כלל 2 של הערות ענבל (22.10.2026): לכל הכרעה שמשנה משטר (regime), הסקריפט מחשב את הסעיפים שתלויים בה
+    (הפניה לסעיף, מונח שהגדרתו שונתה, same_topic) ורושם אותם בקובץ ההכרעות, ב-dependents_found. שער האיכות
+    (content_checks.py, DEPENDENT_UNDECIDED) אינו מאשר משלוח כל עוד יש תלוי בלי הכרעה."""
+    import content_checks
+    with open(decisions_path, encoding="utf-8") as fh:
+        raw = json.load(fh)
+    items = raw.get("decisions", []) if isinstance(raw, dict) else raw
+    theirs = dt.received_paragraphs(draft)
+    labels = content_checks.numbered_labels(draft)
+    out, changed = [], False
+    for d in items:
+        deps = content_checks.dependents_of(d, theirs, labels)
+        if deps:
+            out.append((d.get("id"), d.get("regime"), deps))
+            if d.get("dependents_found") != deps:
+                d["dependents_found"], changed = deps, True
+    if changed:
+        with open(decisions_path, "w", encoding="utf-8") as fh:
+            json.dump(raw, fh, ensure_ascii=False, indent=1)
+    return out
+
+
 def main(argv=None):
     no_bytecode()
     sys.stdout.reconfigure(encoding="utf-8")
@@ -289,6 +312,9 @@ def main(argv=None):
         print("  משפטים מהנוסח שלהם ששרדו בהחלפה %s (לאישור מפורש): %s" % (did, " | ".join(sents)))
     for cid, what in thread_res:
         print("  בועה %s שלהם: %s" % (cid, what))
+    for did, regime, deps in record_dependents(a.draft, a.decisions):
+        print("  סעיפים תלויים ב-%s (%s): פסקאות %s. לכל אחד הכרעה, או dependents עם keep ו-reason"
+              % (did, regime, ", ".join(map(str, deps))))
     print("  נוסחי היעד לשער: %s" % expected_path)
     print("  העותק כפי שהופק: %s" % produced_path)
     if send_path:

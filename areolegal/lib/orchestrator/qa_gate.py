@@ -616,7 +616,14 @@ def run_gate(path, received, mode, profile, state=None, expected_accept=None, wi
     F += f
     # דחיית השינויים שלנו בלבד, ולא "דחה הכול": השינויים הפתוחים של הצד שכנגד נשארים כפי שהתקבלו
     rej = dt.reject_ours_view(root, author)
-    if rej != orig:
+    # בפסקה שבה הוכרעו השינויים הפתוחים שלהם (דחייה וסימון שלנו), הבסיס הוא הנוסח שלפני השינויים שלהם,
+    # ובקבלה הוא הנוסח שהתקבל. כל פסקה צריכה להתאים לאחד מהשניים
+    orig_rej = [dt.received_reject_text(p) for p in dt.body_paragraphs(rroot)]
+    if len(rej) == len(orig):
+        rej_ok = all(a == b or a == c for a, b, c in zip(rej, orig, orig_rej))
+    else:
+        rej_ok = rej == orig
+    if not rej_ok:
         F.append(_f('RT_REJECT', '"דחה הכול" אינו מחזיר את הטיוטה שהתקבלה'))
     acc = dt.paragraph_views(root, 'accept')
     if expected_accept is not None and acc != expected_accept:
@@ -625,10 +632,13 @@ def run_gate(path, received, mode, profile, state=None, expected_accept=None, wi
     comments = [c for c in dt.read_comments(parts) if c['id'] not in received_ids]
     ext = [c for c in comments if c['author'] == author]
     intc = [c for c in comments if c['author'] == dt.INTERNAL_AUTHOR]
-    where = dt.comment_paragraphs(root)
+    # בועה של אשכול (כלל 8, הערות ענבל 22.10.2026) נפרשת על כמה פסקאות, ומכסה כל אחת מהן
+    spans = dt.comment_paragraph_spans(root)
     ext_by_para = {}
     for c in ext:
-        ext_by_para.setdefault(where.get(c['id']), []).append(c['text'])
+        first, last = spans.get(c['id'], (None, None))
+        for i in (range(first, last + 1) if first is not None else (None,)):
+            ext_by_para.setdefault(i, []).append(c['text'])
     ctx = dict(context or {})
     ctx.setdefault('waived', sorted(waived_gap_codes(state)))
     F += check_bubbles(ext, accept_text, state, '\n'.join(rej), lang)

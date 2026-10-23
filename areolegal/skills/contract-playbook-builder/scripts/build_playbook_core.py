@@ -87,6 +87,8 @@ def clause(rule):
            "policy_ref": rule.get("policy_ref") or rule.get("rule_id"),
            "importance": rule.get("importance") or "",
            "activation_conditions": rule.get("activation_conditions") or [],
+           # בדיקת התוצאה של הכלל, שהנושא ונותן מריץ על הנוסח המתקבל (הערות ענבל 22.10.2026, כלל 3)
+           "post_checks": rule.get("post_checks") or [],
            "green": blocks["green"], "yellow": blocks["yellow"], "red": blocks["red"],
            # השדות השטוחים: עותק של הבלוקים, לתאימות עם הנושא ונותן והמנסח
            "red_line": blocks["red"]["red_line"],

@@ -43,7 +43,12 @@ def deal(tmp_path):
     d = tmp_path / "Areo-נתונים" / "transactions" / "deal_c1b_2026-10-15"
     d.mkdir(parents=True)
     (d / "טיוטה שהתקבלה.docx").write_bytes(Path(H.DRAFT).read_bytes())
-    (d / "decisions_round_1.json").write_bytes((FX / "c1b_decisions_round3_clean.json").read_bytes())
+    dec = json.loads((FX / "c1b_decisions_round3_clean.json").read_text(encoding="utf-8"))
+    for x in dec["decisions"]:
+        if x["id"] == "D06":
+            # הבועה אומרת "עובדיכם": עובדה על הצד שכנגד, שמקורה בהסכם עצמו (הערות ענבל 22.10.2026, כלל 6)
+            x["fact_source"] = "agreement"
+    (d / "decisions_round_1.json").write_text(json.dumps(dec, ensure_ascii=False), encoding="utf-8")
     # הפרופיל כמו שרכיב ההקמה כותב אותו: השם תחת branding, ולא בשורש
     prof = {k: v for k, v in H.PROFILE.items() if not k.startswith("lawyer_")}
     prof["branding"] = {"lawyer_name": H.PROFILE["lawyer_name"],

@@ -117,3 +117,50 @@ def test_a_round_trip_failure_is_printed_and_not_a_crash(received, monkeypatch, 
                  "--out", str(received["dir"] / "w2.docx")])
     assert "בדיקת הלוך ושוב: ('reject', 0, 'a', 'b')" in capsys.readouterr().out
     assert rc == 3
+
+
+# ---------------------------------------------------------------- סימון בתוך פסקה עם שינויים פתוחים שלהם
+def _revs(path):
+    x = zipfile.ZipFile(path).read("word/document.xml").decode()
+    return [(k, a, t) for k, a, t in re.findall(
+        r'<w:(ins|del) [^>]*w:author="([^"]*)"[^>]*>.*?<w:(?:t|delText)[^>]*>([^<]*)<', x, re.S)]
+
+
+def _gate(r, out, dec):
+    return subprocess.run([sys.executable, "-B", str(ORCH / "qa_gate.py"), "--mode", "work", "--work", str(out),
+                           "--received", str(r["draft"]), "--profile", str(r["profile"]), "--decisions", str(dec),
+                           "--expected-accept", str(out).replace(".docx", ".expected.json")],
+                          capture_output=True, text=True)
+
+
+@pytest.mark.parametrize("mode,old,deleted", [("reject", "30", "30"), ("accept", "90", "90")])
+def test_we_answer_inside_their_change(received, mode, old, deleted):
+    """הם שינו 30 ל-90, ואנחנו מציעים 45: דוחים את שלהם ומסמנים מול 30, או מקבלים ומסמנים מעל 90."""
+    dec = _decisions(received, [{"id": "D1", "op": "replace_span", "decision_code": "R2", "para": 1, "old": old,
+                                 "new": "45", "their_changes": mode,
+                                 "external_comment": "הצענו שוטף + 45 ימים, כדי לאזן בין שני הצדדים."}])
+    p, out = _apply(received, dec)
+    assert p.returncode == 0, p.stdout + p.stderr
+    revs = _revs(out)
+    assert ("del", US.replace('"', "&quot;"), deleted) in revs and ("ins", US.replace('"', "&quot;"), "45") in revs
+    assert not [r for r in revs if r[1] == THEM and r[2] in ("30", "90")]      # השינוי שלהם בפסקה הוכרע
+    assert any(r[1] == THEM for r in revs)                                      # ושינוי שלהם בפסקה אחרת נשאר
+    root = etree.fromstring(dt.read_package(str(out))["word/document.xml"])
+    assert dt.paragraph_views(root, "accept")[1] == "2. התשלום יבוצע בתנאי שוטף + 45 ימים."
+    assert _gate(received, out, dec).returncode == 0
+
+
+def test_by_default_a_counter_rejects_theirs_and_a_comment_keeps_it(received):
+    sys.path.insert(0, str(LIB))
+    assert dt.their_changes_mode({"op": "replace_span", "decision_code": "R2"}) == "reject"
+    assert dt.their_changes_mode({"op": "comment_only", "decision_code": "A2"}) == "keep"
+    assert dt.their_changes_mode({"op": "accept", "decision_code": "A1"}) == "accept"
+    assert dt.their_changes_mode({"op": "replace", "decision_code": "R1", "their_changes": "accept"}) == "accept"
+
+
+def test_old_written_against_their_wording_is_explained_and_nothing_is_applied(received):
+    dec = _decisions(received, [{"id": "D1", "op": "replace_span", "decision_code": "R2", "para": 1, "old": "90",
+                                 "new": "45", "external_comment": "הצענו שוטף + 45 ימים."}])
+    p, out = _apply(received, dec)
+    assert p.returncode == 3 and "their_changes: accept" in p.stdout
+    assert _revs(out) == _revs(received["draft"])        # שום דבר לא הוחל, גם לא דחיית השינוי שלהם

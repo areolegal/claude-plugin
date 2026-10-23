@@ -34,6 +34,23 @@
 | COMBO | 56 | שתי הכרעות באותו צירוף, בלי בדיקה רשומה ב-`meta.combo_checks` | לא |
 | PARAGRAPH_REPLACED | ניל 18.10 | מחיקת פסקה והוספת פסקה במקומה, כשרוב המילים נשארו: לא כירורגי | כן |
 | REPLACE_COLLAPSED | ניל 18.10 | replace שסימן את רוב הפסקה כשרוב המילים נשארו: להשתמש ב-replace_span | כן |
+| STRUCT_ORPHAN_PROVISO | ענבל 22.10, 1 | הפניה לסייג ("הסייג שלהלן", "the foregoing proviso") בלי סייג בנוסח המתקבל | כשהסייג נמחק אצלנו |
+| STRUCT_BACKREF | ענבל 22.10, 1 | הפסקה שאחרי פסקה שמחקנו נפתחת ב"כאמור לעיל" | כן |
+| STRUCT_LIST_EMPTY | ענבל 22.10, 1 | כל פריטי רשימה נמחקו ונשאר משפט הפתיחה שלה | כן |
+| STRUCT_DANGLING_CONJ | ענבל 22.10, 1 | "או", "and" לפני פריט שכבר אינו קיים | כן |
+| STRUCT_PROVISO_ROLE | ענבל 22.10, 1 | סייג שהכנסנו ובו התחייבות או איסור | לא |
+| DEPENDENT_UNDECIDED, DEPENDENT_KEEP_NO_REASON | ענבל 22.10, 2 | סעיף תלוי בהכרעה שמשנה משטר, בלי הכרעה או בלי נימוק להשארה | כן |
+| POST_CHECK_FAILED, POST_CHECK_MANUAL | ענבל 22.10, 3 | בדיקת התוצאה של כלל שהוחל (post_checks בגרעין) | בכלל קריטי |
+| TIME_ANCHOR | ענבל 22.10, 4 | מועד תחולה או התחלה שעבר, או עוגן ריק, שלא נרשם ב-time_anchors | כן |
+| VAGUE_TERM | ענבל 22.10, 5 | מונח עמום בנוסח שלנו בלי מבחן מוגדר (common/vague_terms.py) | לא |
+| FACT_WITHOUT_SOURCE | ענבל 22.10, 6 | בועה שנשענת על עובדה על צד, בלי fact_source | כן |
+| ENTITY_PROFILE_FACT, ENTITY_RULE_UNCONFIRMED | ענבל 22.10, 7 | עובדה מהפרופיל או כלל של דין ורגולציה, כשהישות בנייר לא אושרה | כן |
+| REF_BUBBLE, BUBBLE_SAME_TOPIC | ענבל 22.10, 8 | בועת הפניה, או כמה בועות לאותו כלל באותו סעיף | כן |
+| WEAKNESS_IN_BUBBLE | ענבל 22.10, 9 | נימוק שחושף חולשה שלנו | לא |
+| THEIR_GREEN_MARKED | ענבל 22.10, 10 | סימון של נוסח שלהם שכבר בירוק | כן |
+| THEIR_YELLOW_NOT_CHIP, THEIR_TRACK_MISSING | ענבל 22.10, 10 | נוסח שלהם בצהוב שלא סומן כמטבע חליפין, או הכרעה בלי סיווג | לא |
+| PROPORTIONALITY_UNASKED, FIGHT_LIST_MISSING | ענבל 22.10, 11 | יותר בקשות מרשימת המאבק, והמשתמש לא נשאל | כן |
+| COUNTERPARTY_KIND_UNDECIDED | ענבל 22.10, 12 | כלל דין, שפה, מטבע או מס מול צד זר, בלי תנאי הפעלה לצד זר ובלי הכרעה | כן |
 
 הפונקציה `run_checks` מחזירה רשימת ממצאים `{code, message, where, blocking}`.
 `qa_gate.py` מריץ אותה בשני המצבים: ממצא חוסם הוא כשל בשער, והעותק למשלוח
@@ -514,7 +531,406 @@ def run_checks(work, received, decisions, state=None, core=None, manifest=None, 
         if d.get("op") in ("replace", "replace_span", "insert_paragraph") and not (d.get("plain_effect")
                                                                                   and d.get("position_effect")):
             finding(out, "EFFECT_FIELDS", "הכרעה שמכניסה נוסח בלי plain_effect ו-position_effect", d.get("id"))
+    review_2210(out, theirs, decisions, state, core, received)
     return out
+
+
+# --------------------------------------------------------------------------- הערות ענבל 22.10.2026
+# כללים 1 עד 12 של ההערות לנושא ונותן. הבדיקות רצות על הנוסח שמתקבל אחרי ההכרעות (result_view), במספור של
+# הטיוטה שהתקבלה, כך שידוע לכל פסקה אם היא שלנו. כל מה שתלוי בעסקה מגיע מקובץ ההכרעות, ממצב העסקה ומהגרעין.
+PROVISO_REF = re.compile(r"הסייג (?:האמור|ה?נ[\"״]ל|שלעיל|שלהלן|הבא|דלעיל)|בכפוף לסייג|"
+                         r"the (?:foregoing|above|following|said|preceding) proviso|subject to the proviso", re.I)
+PROVISO_MARK = re.compile(r"ובלבד ש|בתנאי ש|ואולם|אלא אם|provided(?:,)? (?:however,? )?that|provided always that|"
+                          r"except that", re.I)
+BACKREF = re.compile(r"^\s*(?:\(?[א-תa-z0-9]{1,3}[.)]\s*)?(?:כאמור לעיל|האמור לעיל|על אף האמור לעיל|בנוסף לאמור לעיל|"
+                     r"מבלי לגרוע מהאמור לעיל|The foregoing|Notwithstanding the foregoing|In addition to the foregoing|"
+                     r"Without limiting the foregoing)", re.I)
+LEAD_IN = re.compile(r"(?::|שלהלן|כדלקמן|as follows|the following)\s*:?\s*$", re.I)
+LIST_ITEM = re.compile(r"^\s*(?:\(?[א-י]\)|\(?[a-z]\)|\(?\d{1,2}\)|[א-י]['׳]?[.)]|[a-z][.)]|\(?[ivx]{1,4}\))\s", re.I)
+DANGLING_END = re.compile(r"(?:,|;|\s)(?:או|וכן|or|and)\s*[;:]?\s*$", re.I)
+DANGLING_MID = re.compile(r"(?:,|\s)(?:או|or|and)\s*[.;](?:\s|$)", re.I)
+TAIL_CONJ = re.compile(r"[;,]\s*(?:או|וכן|or|and)\s*$", re.I)
+OBLIGATION = re.compile(r"\bshall\b|\bmust\b|יתחייב|מתחייב|תתחייב|מחויב|חייב(?:ת|ים)?\s|אסור|לא יהיה רשאי|לא תהיה רשאית",
+                        re.I)
+REF_BUBBLE = re.compile(r"רא(?:ו|ה) (?:את )?הערת(?:נו|י)|כאמור בהערת(?:נו|י)|כמפורט בהערת(?:נו|י)|ר' הערת|"
+                        r"see (?:our )?(?:comment|note)|as per our (?:comment|note)|as noted above|"
+                        r"part of the same change|same as (?:above|our comment)", re.I)
+FACT_THEM = re.compile(r"מאחר ש(?:אתם|אתן|הנכם|החברה שלכם)|הואיל ואתם|בהיותכם|כפי שידוע(?: לנו)? ש|"
+                       r"אתם (?:פועלים|נסחרים|מעסיקים|מפוקחים|רשומים|מתחרים)|לקוחותיכם|עובדיכם|מתחריכם|המתחרים שלכם|"
+                       r"הרגולטור (?:שלכם|החל עליכם)|"
+                       r"given that you|since you (?:are|operate|have)|as you (?:are|operate)|you operate|you employ|"
+                       r"you are (?:a |an )?(?:public|listed|regulated|subject to)|"
+                       r"your (?:customers|clients|employees|competitors|regulator)", re.I)
+FACT_US = re.compile(r"(?:החברה|אנו|אנחנו) (?:היא )?(?:חברה ציבורית|נסחרת|נסחרים|פועלת ב(?!התאם|אופן|מסגרת|הקשר)|"
+                     r"פועלים ב(?!התאם|אופן|מסגרת|הקשר)|מעסיקה|מעסיקים|"
+                     r"מפוקחת|מפוקחים|כפופה לפיקוח|רשומה ב)|כחברה (?:ציבורית|נסחרת|בורסאית|זרה|מפוקחת)|"
+                     r"we are (?:a )?(?:public|listed|regulated)|we operate in|we employ|as a (?:public|listed|regulated) "
+                     r"(?:company|entity)|our (?:customers|employees|regulator)", re.I)
+FACT_SOURCES = ("profile", "user_answer", "agreement")
+WEAKNESS = re.compile(r"אין לנו ברירה|אין לנו חלופה|אין בידינו חלופה|קשה לנו לגבות|יקשה עלינו לגבות|קשה לגבות|"
+                      r"אנו תלויים|אנחנו תלויים|תלויים בכם|לחץ זמנים|לוח הזמנים שלנו לחוץ|תזרים|"
+                      r"we have no (?:choice|alternative)|we (?:depend|rely) (?:heavily )?on you|"
+                      r"we are under (?:time )?pressure|cash ?flow|difficult (?:for us )?to collect|we cannot afford", re.I)
+LAW_TOPIC = re.compile(r"דין|שיפוט|פורום|סמכות|בוררות|שפה|מטבע|מס(?:ים)?\b|מיסוי|ניכוי במקור|פרטיות|מידע אישי|ניירות ערך|"
+                       r"רגולצ|governing law|jurisdiction|forum|arbitration|language|currency|tax|withholding|privacy|"
+                       r"data protection|securities|regulat", re.I)
+# כלל 12: נושאים שהעמדה בהם תלויה בזהות הצד שכנגד (דין ופורום, שפה גוברת, מטבע ומסים)
+CP_TOPIC = re.compile(r"דין|שיפוט|פורום|סמכות|בוררות|שפה|מטבע|מס(?:ים)?\b|מיסוי|ניכוי במקור|governing law|"
+                      r"jurisdiction|forum|arbitration|language|currency|tax|withholding", re.I)
+HE_MONTHS = {"ינואר": 1, "פברואר": 2, "מרץ": 3, "מרס": 3, "אפריל": 4, "מאי": 5, "יוני": 6, "יולי": 7, "אוגוסט": 8,
+             "ספטמבר": 9, "אוקטובר": 10, "נובמבר": 11, "דצמבר": 12}
+EN_MONTHS = {m: i + 1 for i, m in enumerate(("january", "february", "march", "april", "may", "june", "july", "august",
+                                              "september", "october", "november", "december"))}
+ANCHOR_CTX = re.compile(r"תחילת|תחולת|יחול|ייכנס לתוקף|ייכנסו לתוקף|נכנס לתוקף|מועד התחילה|מועד התחולה|מועד הקובע|"
+                        r"תקופת ההסכם|יתחיל|תתחיל|החל מיום|החל מתאריך|effective|commenc|start date|as of|"
+                        r"term (?:of this agreement )?(?:shall )?(?:begin|start)", re.I)
+DATE_RX = [
+    (re.compile(r"(?<!\d)(\d{1,2})[./](\d{1,2})[./](\d{4})(?!\d)"), "dmy"),
+    (re.compile(r"(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)"), "ymd"),
+    (re.compile(r"(?<!\d)(\d{1,2})\s+ב?(%s),?\s+(\d{4})" % "|".join(HE_MONTHS)), "d_he_y"),
+    (re.compile(r"(?<!\d)(\d{1,2})(?:st|nd|rd|th)?\s+(%s),?\s+(\d{4})" % "|".join(EN_MONTHS), re.I), "d_en_y"),
+    (re.compile(r"\b(%s)\s+(\d{1,2}),?\s+(\d{4})" % "|".join(EN_MONTHS), re.I), "en_d_y"),
+]
+EMPTY_ANCHOR = re.compile(r"(?:מיום|מתאריך|החל מיום|ביום|effective(?: as of)?|dated|as of|commencing on)\s*"
+                          r"(?:_{2,}|\[\s*[•·.\s]*\]|\.{3,}|__\s*/\s*__)", re.I)
+
+
+def result_view(theirs, decisions):
+    """הנוסח שמתקבל אחרי ההכרעות, במספור של הטיוטה שהתקבלה. מחזיר רשימת (מקור, טקסט, שלנו): מקור הוא אינדקס
+    הפסקה שלהם, או ("ins", after_para) לפסקה שהוספנו. פסקה שנמחקה אינה ברשימה."""
+    res = list(theirs)
+    ours = set()
+    gone = set()
+    ins = {}
+    for d in decisions:
+        p, op = d.get("para"), d.get("op")
+        if op == "insert_paragraph" and isinstance(d.get("after_para"), int):
+            ins.setdefault(d["after_para"], []).append(d.get("text") or "")
+        if not isinstance(p, int) or not 0 <= p < len(res):
+            continue
+        if op == "replace" and d.get("new_text") is not None:
+            res[p] = d["new_text"]
+            ours.add(p)
+        elif op == "replace_span" and d.get("old") and d["old"] in res[p]:
+            res[p] = res[p].replace(d["old"], d.get("new") or "", 1)
+            ours.add(p)
+        elif op == "delete_paragraph":
+            gone.add(p)
+    out = []
+    for i, t in enumerate(res):
+        if i not in gone:
+            out.append((i, t, i in ours))
+        for t2 in ins.get(i, []):
+            out.append((("ins", i), t2, True))
+    return out, gone
+
+
+def _dates(text):
+    import datetime as _dt
+    for rx, kind in DATE_RX:
+        for m in rx.finditer(text):
+            g = m.groups()
+            try:
+                if kind == "dmy":
+                    d = _dt.date(int(g[2]), int(g[1]), int(g[0]))
+                elif kind == "ymd":
+                    d = _dt.date(int(g[0]), int(g[1]), int(g[2]))
+                elif kind == "d_he_y":
+                    d = _dt.date(int(g[2]), HE_MONTHS[g[1]], int(g[0]))
+                elif kind == "d_en_y":
+                    d = _dt.date(int(g[2]), EN_MONTHS[g[1].lower()], int(g[0]))
+                else:
+                    d = _dt.date(int(g[2]), EN_MONTHS[g[0].lower()], int(g[1]))
+            except (ValueError, KeyError):
+                continue
+            yield m, d
+
+
+def time_anchors(theirs, today=None):
+    """כלל 4: עוגני זמן בנייר שלהם שנמצאים בעבר או ריקים. לכל ממצא: para, text, issue (past / empty), date."""
+    import datetime as _dt
+    today = today or _dt.date.today()
+    out = []
+    for i, t in enumerate(theirs):
+        for m in EMPTY_ANCHOR.finditer(t):
+            out.append({"para": i, "text": m.group(0), "issue": "empty", "date": None})
+        for m, d in _dates(t):
+            before = t[max(0, m.start() - 60):m.start()]
+            if d < today and ANCHOR_CTX.search(before):
+                out.append({"para": i, "text": t[max(0, m.start() - 40):m.end()].strip(), "issue": "past",
+                            "date": d.isoformat()})
+    return out
+
+
+def _terms_in(text):
+    out = set()
+    for rx in DEF_PATTERNS:
+        for m in rx.finditer(text or ""):
+            out.update(g.strip() for g in m.groups() if g)
+    return out
+
+
+def _term_rx(term):
+    stem = term[1:] if term.startswith("ה") and len(term) > 3 else term
+    if stem != term:
+        return re.compile(r"(?<![א-ת])[ולבכמש]{0,2}ה?" + re.escape(stem) + r"(?![א-ת])")
+    return re.compile(re.escape(term))
+
+
+def dependents_of(d, theirs, labels):
+    """כלל 2: הסעיפים שתלויים בהכרעה שמשנה משטר. מחזיר רשימת אינדקסים בטיוטה שהתקבלה, בלי הפסקה עצמה.
+    תלוי: פסקה שמפנה לסעיף ששונה, פסקה שמשתמשת במונח שהגדרתו שונתה, ופסקאות ש-same_topic מונה."""
+    p = d.get("para")
+    if not isinstance(p, int) or not 0 <= p < len(theirs):
+        return []
+    # רק הכרעה שהסקיל הצהיר שהיא משנה משטר (regime). השלמת שם או הוספת כינוי בפסקת הגדרות אינן משנות את
+    # המשמעות, ולכן אין הנחה אוטומטית; הכרעה שנוגעת בהגדרה בלי regime מקבלת אזהרה (REGIME_UNDECLARED)
+    regime = d.get("regime")
+    terms = _terms_in(theirs[p])
+    if regime in (None, "", "none"):
+        return []
+    deps = set()
+    lab = labels[p] if p < len(labels) else None
+    if lab:
+        for j, t in enumerate(theirs):
+            if j == p:
+                continue
+            for rx in (REF_HE, REF_EN):
+                if any(m.group(1) == lab for m in rx.finditer(t)):
+                    deps.add(j)
+    if regime == "definition":
+        for term in terms:
+            trx = _term_rx(term)
+            deps.update(j for j, t in enumerate(theirs) if j != p and trx.search(t))
+    deps.update(x for x in d.get("same_topic") or [] if isinstance(x, int) and x != p)
+    return sorted(deps)
+
+
+def _rule_index(core):
+    return {(r.get("id") or r.get("rule_id")): r for r in (core or {}).get("clauses") or (core or {}).get("rules") or []}
+
+
+def _kinds(meta):
+    v = ((meta.get("deal_context") or {}).get("counterparty_kind"))
+    return set(v if isinstance(v, list) else [v] if v else [])
+
+
+def _reviewed(state, code, para):
+    """בדיקה מבנית היא היוריסטיקה. עורך הדין שבדק ומצא שההפניה תקינה רושם זאת ב-checks_reviewed, עם נימוק."""
+    return any(isinstance(x, dict) and x.get("code") == code and x.get("para") == para and x.get("reason")
+               for x in state.get("checks_reviewed") or [])
+
+
+def review_2210(out, theirs, decisions, state, core, received):
+    meta = state.get("meta") or {}
+    by_para = {}
+    for d in decisions:
+        if isinstance(d.get("para"), int):
+            by_para.setdefault(d["para"], []).append(d)
+    view, gone = result_view(theirs, decisions)
+    vtexts = [t for _, t, _ in view]
+
+    # כלל 1: שלמות מבנית
+    for k, (src, t, ours) in enumerate(view):
+        if PROVISO_REF.search(t):
+            window = " ".join(vtexts[max(0, k - 1):k + 2])
+            if not PROVISO_MARK.search(window):
+                i = src if isinstance(src, int) else src[1]
+                before = " ".join(theirs[max(0, i - 1):i + 2])
+                caused = (bool(PROVISO_MARK.search(before)) or ours) and not _reviewed(state, "STRUCT_ORPHAN_PROVISO", i)
+                finding(out, "STRUCT_ORPHAN_PROVISO", "הפניה לסייג (\"%s\") בלי סייג שהיא מפנה אליו בנוסח המתקבל"
+                        % PROVISO_REF.search(t).group(0), "פסקה %s" % (i,), blocking=caused)
+        nxt_text = vtexts[k + 1] if k + 1 < len(vtexts) else ""
+        if ours and (DANGLING_MID.search(t) or (DANGLING_END.search(t) and not LIST_ITEM.search(nxt_text))):
+            finding(out, "STRUCT_DANGLING_CONJ", "בנוסח שלנו נשארה מילת חיבור (\"או\", \"and\") בלי פריט אחריה",
+                    "פסקה %s" % (src if isinstance(src, int) else src[1],), blocking=True)
+    alive = [i for i in range(len(theirs)) if i not in gone]
+    for p in sorted(gone):
+        nxt = next((i for i in alive if i > p), None)
+        prv = next((i for i in reversed(alive) if i < p), None)
+        if nxt is not None and BACKREF.search(theirs[nxt]) and not _reviewed(state, "STRUCT_BACKREF", nxt):
+            finding(out, "STRUCT_BACKREF", "הפסקה שאחרי הפסקה שמחקנו מפנה \"לעיל\", ומה שהיא הפנתה אליו נמחק",
+                    "פסקה %d" % nxt, blocking=True)
+        last_item = nxt is None or not LIST_ITEM.search(theirs[nxt])
+        if prv is not None and last_item and LIST_ITEM.search(theirs[p]):
+            if LEAD_IN.search(theirs[prv]) and all(j in gone for j in range(prv + 1, p + 1)):
+                finding(out, "STRUCT_LIST_EMPTY", "כל פריטי הרשימה נמחקו, ונשאר משפט הפתיחה שלה (\"%s\")"
+                        % theirs[prv][-40:], "פסקה %d" % prv, blocking=True)
+            elif TAIL_CONJ.search(theirs[prv]):
+                finding(out, "STRUCT_DANGLING_CONJ", "מחקנו את הפריט האחרון ברשימה, ו\"או\" או \"and\" נשארו לפני "
+                        "פריט שכבר אינו קיים", "פסקה %d" % prv, blocking=True)
+    for d in decisions:
+        txt = (d.get("text") if d.get("op") == "insert_paragraph" else d.get("new")) or ""
+        if PROVISO_MARK.match(txt.strip()) and OBLIGATION.search(txt):
+            finding(out, "STRUCT_PROVISO_ROLE", "נוסח שהכנסנו כסייג כולל התחייבות או איסור. התחייבות מקבלת פסקה "
+                    "משלה, וסייג צריך לסייג", d.get("id"))
+
+    # כלל 2: סעיפים תלויים
+    labels = numbered_labels(received)
+    for d in decisions:
+        p = d.get("para")
+        if d.get("regime") in (None, "") and d.get("op") in ("replace", "replace_span", "delete_paragraph") and \
+                isinstance(p, int) and 0 <= p < len(theirs):
+            spans = [m.span() for rx in DEF_PATTERNS for m in rx.finditer(theirs[p])]
+            at = theirs[p].find(d.get("old") or "\x00") if d.get("op") == "replace_span" else -1
+            touched_def = spans and (d.get("op") != "replace_span" or (
+                at >= 0 and any(a0 < at + len(d["old"]) and at < b0 for a0, b0 in spans)))
+            if touched_def:
+                finding(out, "REGIME_UNDECLARED", "ההכרעה נוגעת בהגדרה: לקבוע regime (definition, או none כשהמשמעות "
+                        "אינה משתנה), כדי שהסעיפים התלויים ייבדקו", d.get("id"))
+        deps = dependents_of(d, theirs, labels)
+        if not deps:
+            continue
+        handled, no_reason = set(), []
+        for x in d.get("dependents") or []:
+            if not isinstance(x, dict) or not isinstance(x.get("para"), int):
+                continue
+            if x.get("decision") or (x.get("keep") and x.get("reason")):
+                handled.add(x["para"])
+            elif x.get("keep"):
+                no_reason.append(x["para"])
+        missing = [j for j in deps if j not in handled and not any(e is not d for e in by_para.get(j, []))]
+        missing = [j for j in missing if j not in no_reason]
+        if no_reason:
+            finding(out, "DEPENDENT_KEEP_NO_REASON", "סעיף תלוי שהוחלט להשאיר בלי נימוק: פסקאות %s"
+                    % ", ".join(map(str, no_reason)), d.get("id"), blocking=True)
+        if missing:
+            finding(out, "DEPENDENT_UNDECIDED", "ההכרעה משנה משטר (%s), ויש סעיפים תלויים בלי הכרעה: פסקאות %s"
+                    % (d.get("regime") or "definition", ", ".join(map(str, missing))), d.get("id"), blocking=True)
+
+    # כלל 3: בדיקת התוצאה של כל כלל שהוחל
+    rules = _rule_index(core)
+    applied = {r for d in decisions for r in d.get("rule_ids") or []}
+    done = {(x.get("rule_id"), x.get("id")): x for x in state.get("post_checks_done") or [] if isinstance(x, dict)}
+    annex_at = next((k for k, t in enumerate(vtexts) if re.match(r"^\s*(?:נספח|Annex|Schedule|Exhibit|Appendix)\s", t)),
+                    len(vtexts))
+    for rid in sorted(applied):
+        rule = rules.get(rid) or {}
+        for pc in rule.get("post_checks") or []:
+            if not isinstance(pc, dict):
+                continue
+            block = pc.get("on_fail") == "block" or (pc.get("on_fail") is None and
+                                                      str(rule.get("importance", "")).lower() == "critical")
+            scope = pc.get("scope") or "whole_agreement"
+            if scope == "definitions":
+                text = "\n".join(t for t in vtexts if _terms_in(t))
+            elif scope == "annexes":
+                text = "\n".join(vtexts[annex_at:])
+            else:
+                text = "\n".join(vtexts)
+            cond = pc.get("pass_when")
+            where = "%s/%s" % (rid, pc.get("id", "?"))
+            if isinstance(cond, dict):
+                bad = [x for x in cond.get("absent") or [] if re.search(x, text, re.I)]
+                lack = [x for x in cond.get("present") or [] if not re.search(x, text, re.I)]
+                if bad or lack:
+                    finding(out, "POST_CHECK_FAILED", "בדיקת התוצאה של הכלל נכשלה (%s)%s%s" % (
+                        pc.get("intent") or "", ": נמצא %s" % ", ".join(bad) if bad else "",
+                        ": חסר %s" % ", ".join(lack) if lack else ""), where, blocking=block)
+            else:
+                rec = done.get((rid, pc.get("id")))
+                if rec is None:
+                    finding(out, "POST_CHECK_MANUAL", "בדיקת תוצאה שאינה אוטומטית, ולא נרשמה ב-post_checks_done: %s"
+                            % (pc.get("intent") or cond or ""), where)
+                elif rec.get("result") == "fail":
+                    finding(out, "POST_CHECK_FAILED", "בדיקת התוצאה נרשמה כנכשלת: %s" % (pc.get("intent") or ""),
+                            where, blocking=block)
+
+    # כלל 4: עוגני זמן
+    known = {(x.get("para"), x.get("issue")) for x in state.get("time_anchors") or []
+             if isinstance(x, dict) and x.get("status") in ("answered", "accepted", "fixed")}
+    for a in time_anchors(theirs):
+        if (a["para"], a["issue"]) not in known:
+            finding(out, "TIME_ANCHOR", "עוגן זמן %s בנייר שלהם (\"%s\"): שאלה לפני ההכרעה, ורישום ב-time_anchors"
+                    % ("שכבר עבר" if a["issue"] == "past" else "ריק", a["text"][:80]), "פסקה %d" % a["para"],
+                    blocking=True)
+
+    # כלל 5: מונחים עמומים בנוסח שלנו
+    from common import vague_terms
+    for d, txt in our_texts(decisions):
+        for f in vague_terms.undefined(txt):
+            finding(out, "VAGUE_TERM", "מונח עמום בנוסח שלנו (\"%s\") בלי מבחן מוגדר: תקן, הוראות בכתב, רף מספרי או "
+                    "נספח" % f["term"], d.get("id"))
+
+    # כללים 6 ו-7: עובדה על הצדדים, והישות בנייר
+    ent = meta.get("entity_check") or {}
+    mismatch = ent.get("match") in ("related", "none") and not ent.get("facts_confirmed")
+    for d in decisions:
+        bub = d.get("external_comment") or ""
+        m = FACT_THEM.search(bub) or FACT_US.search(bub)
+        if m and d.get("fact_source") not in FACT_SOURCES:
+            finding(out, "FACT_WITHOUT_SOURCE", "הבועה נשענת על עובדה על אחד הצדדים (\"%s\") בלי מקור ב-fact_source "
+                    "(profile, user_answer או agreement)" % m.group(0), d.get("id"), blocking=True)
+        if mismatch and d.get("fact_source") == "profile":
+            finding(out, "ENTITY_PROFILE_FACT", "הישות בנייר אינה הישות שבפרופיל, והמשתמש לא אישר שהעובדות חלות עליה: "
+                    "אין להשתמש בעובדה מהפרופיל", d.get("id"), blocking=True)
+        if mismatch and not (d.get("decision_required") or {}).get("required"):
+            for rid in d.get("rule_ids") or []:
+                title = (rules.get(rid) or {}).get("title") or ""
+                if LAW_TOPIC.search(title):
+                    finding(out, "ENTITY_RULE_UNCONFIRMED", "כלל שתלוי במקום, בדין, ברגולציה או ברישום (%s), כשהישות "
+                            "בנייר לא אושרה: נדרשת הכרעתך" % (title or rid), d.get("id"), blocking=True)
+
+    # כלל 8: בועה אחת לכל נושא
+    seen = {}
+    for d in decisions:
+        bub = d.get("external_comment") or ""
+        if bub and REF_BUBBLE.search(bub):
+            finding(out, "REF_BUBBLE", "בועת הפניה (\"%s\"). כל השינויים של אותו כלל באותו סעיף מקבלים בועה אחת "
+                    "(cluster_id)" % REF_BUBBLE.search(bub).group(0), d.get("id"), blocking=True)
+        if bub and isinstance(d.get("para"), int) and d.get("rule_ids") and not d.get("cluster_id"):
+            seen.setdefault((d["para"], tuple(sorted(d["rule_ids"]))), []).append(d.get("id"))
+    for (p, rids), ids in sorted(seen.items(), key=lambda kv: str(kv[0])):
+        if len(ids) > 1:
+            finding(out, "BUBBLE_SAME_TOPIC", "כמה בועות לאותו כלל באותו סעיף (%s): אשכול אחד עם בועה אחת"
+                    % ", ".join(ids), "פסקה %d" % p, blocking=True)
+
+    # כלל 9: חולשה שלנו בנימוק
+    for d in decisions:
+        m = WEAKNESS.search(d.get("external_comment") or "")
+        if m:
+            finding(out, "WEAKNESS_IN_BUBBLE", "הנימוק בבועה חושף חולשה שלנו (\"%s\"). לנסח כאינטרס של העסקה או "
+                    "כהגינות, והחשש נשאר בשכבה הפנימית" % m.group(0), d.get("id"))
+
+    # כלל 10: קודם מסווגים את הנוסח שלהם
+    for d in decisions:
+        changes = d.get("op") in ("replace", "replace_span", "delete_paragraph")
+        if d.get("their_track") == "green" and changes and not d.get("mandatory"):
+            finding(out, "THEIR_GREEN_MARKED", "הנוסח שלהם כבר בירוק, ובכל זאת סומן. נוסח בירוק אינו מסומן",
+                    d.get("id"), blocking=True)
+        elif d.get("their_track") == "yellow" and d.get("decision_code") in ("R1", "R2") and changes and not (
+                d.get("tier") == "tradeable" and d.get("fallback") == "their_wording"):
+            finding(out, "THEIR_YELLOW_NOT_CHIP", "הנוסח שלהם בצהוב וביקשנו יותר: ההכרעה היא מטבע חליפין "
+                    "(tier: tradeable), ועמדת הנסיגה היא הנוסח שלהם (fallback: their_wording)", d.get("id"))
+        elif changes and d.get("rule_ids") and not d.get("their_track"):
+            finding(out, "THEIR_TRACK_MISSING", "הכרעה לפי כלל בלי סיווג של הנוסח שלהם (their_track)", d.get("id"))
+
+    # כלל 11: רשימת המאבק, לפני הסימון
+    from orchestrator import proportionality as P
+    prop = (meta.get("deal_context") or {}).get("proportionality") or {}
+    asks = P.count_asks(decisions)["asks"]
+    size = prop.get("fight_list_size")
+    if isinstance(size, int) and asks > size and prop.get("user_choice") in (None, "", "unanswered"):
+        finding(out, "PROPORTIONALITY_UNASKED", "%d בקשות מול רשימת מאבק של %d, והמשתמש לא נשאל לפני הסימון (מצב 4, "
+                "עם שלושה ויתורים מוצעים)" % (asks, size), "", blocking=True)
+    elif not isinstance(size, int) and asks > 7:
+        finding(out, "FIGHT_LIST_MISSING", "%d בקשות, ולא נרשם גודל רשימת המאבק (deal_context.proportionality."
+                "fight_list_size)" % asks, "")
+
+    # כלל 12: עמדה שתלויה בזהות הצד שכנגד
+    if "foreign" in _kinds(meta):
+        for d in decisions:
+            if (d.get("decision_required") or {}).get("required") or \
+                    (d.get("user_decision") or {}).get("answer_kind") == "explicit":
+                continue
+            for rid in d.get("rule_ids") or []:
+                rule = rules.get(rid) or {}
+                conds = [c for c in rule.get("activation_conditions") or [] if isinstance(c, dict)]
+                kinds = {c.get("counterparty_kind") for c in conds if c.get("counterparty_kind")}
+                dependent = bool(kinds) or bool(CP_TOPIC.search(rule.get("title") or ""))
+                if dependent and not kinds & {"foreign", "any"}:
+                    finding(out, "COUNTERPARTY_KIND_UNDECIDED", "הכלל %s תלוי בזהות הצד שכנגד, ואין לו תנאי הפעלה "
+                            "לצד זר: נדרשת הכרעתך" % (rule.get("title") or rid), d.get("id"), blocking=True)
 
 
 def main(argv=None):
@@ -528,7 +944,15 @@ def main(argv=None):
     ap.add_argument("--core")
     ap.add_argument("--manifest", help="corpus-manifest.json: שמות הצדדים בהסכמים החתומים")
     ap.add_argument("--hidden-only", action="store_true", help="רק סריקת הטקסט המוסתר בטיוטה שהתקבלה")
+    ap.add_argument("--anchors", action="store_true",
+                    help="בקליטה: עוגני הזמן בנייר שלהם שכבר עברו או ריקים (כלל 4). כל ממצא הוא שאלה במנת השאלות")
     a = ap.parse_args(argv)
+    if a.anchors:
+        if not a.received or not os.path.exists(a.received):
+            print("אינו קיים או חסר: %s" % a.received)
+            return 2
+        print(json.dumps(time_anchors(dt.received_paragraphs(a.received)), ensure_ascii=False, indent=1))
+        return 0
     need = (a.received,) if a.hidden_only else (a.work, a.received, a.decisions)
     for p in need:
         if not p or not os.path.exists(p):

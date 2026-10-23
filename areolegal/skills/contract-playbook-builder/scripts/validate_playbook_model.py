@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -198,6 +199,49 @@ def validate_traffic_light(errors, light, prefix, segment_ids):
 # מינימלי גם בטיוטה, ובהרצה חיה הבונה מתח את הנימוקים כדי לעבור אותו (20.10.2026)
 PASS_A_FIELDS = ("executive_policy_rationale", "green_boundary_rationale", "yellow_boundary_rationale",
                  "red_boundary_rationale", "internal_evidence_rationale")
+
+
+# הערות ענבל לנושא ונותן, 22.10.2026: כלל 12 (תנאי הפעלה לפי סוג הצד שכנגד) וכלל 3 (בדיקת תוצאה לכל כלל)
+VALID_COUNTERPARTY_KIND = {"local", "foreign", "large", "small", "any"}
+VALID_POST_SCOPE = {"whole_agreement", "definitions", "annexes"}
+VALID_POST_ON_FAIL = {"block", "warn"}
+
+
+def validate_activation_and_post_checks(errors, rule, prefix):
+    for j, c in enumerate(rule.get("activation_conditions") or []):
+        if isinstance(c, dict) and c.get("counterparty_kind") not in (None, "") and \
+                c["counterparty_kind"] not in VALID_COUNTERPARTY_KIND:
+            add(errors, f"{prefix}.activation_conditions[{j}].counterparty_kind invalid "
+                        f"({', '.join(sorted(VALID_COUNTERPARTY_KIND))})")
+    pcs = rule.get("post_checks")
+    if pcs is None:
+        return
+    if not isinstance(pcs, list):
+        add(errors, f"{prefix}.post_checks must be a list")
+        return
+    for j, pc in enumerate(pcs):
+        pp = f"{prefix}.post_checks[{j}]"
+        if not isinstance(pc, dict):
+            add(errors, f"{pp} must be an object")
+            continue
+        if not nonempty(pc.get("id")) or not nonempty(pc.get("intent")):
+            add(errors, f"{pp} missing id or intent")
+        cond = pc.get("pass_when")
+        if isinstance(cond, dict):
+            pats = list(cond.get("absent") or []) + list(cond.get("present") or [])
+            if not pats:
+                add(errors, f"{pp}.pass_when needs absent[] or present[]")
+            for x in pats:
+                try:
+                    re.compile(x)
+                except (re.error, TypeError):
+                    add(errors, f"{pp}.pass_when has an invalid pattern: {x!r}")
+        elif not nonempty(cond):
+            add(errors, f"{pp}.pass_when missing (text for a manual check, or {{absent, present}})")
+        if pc.get("scope") not in (None, "") and pc["scope"] not in VALID_POST_SCOPE:
+            add(errors, f"{pp}.scope invalid ({', '.join(sorted(VALID_POST_SCOPE))})")
+        if pc.get("on_fail") not in (None, "") and pc["on_fail"] not in VALID_POST_ON_FAIL:
+            add(errors, f"{pp}.on_fail invalid (block, warn)")
 
 
 def validate_rationale(errors, rationale, prefix, min_spec, applicability_min=2):
@@ -495,6 +539,7 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
         if not isinstance(rule, dict):
             add(errors, f"{prefix} must be object")
             continue
+        validate_activation_and_post_checks(errors, rule, prefix)
         for legacy in sorted(LEGACY_RULE_KEYS):
             if legacy in rule:
                 add(errors, f"{prefix} contains prohibited legacy field {legacy}")
