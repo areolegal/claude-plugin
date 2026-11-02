@@ -1,0 +1,2 @@
+{"type_code": "employment", "end_date_expected": false, "label": "העסקה וקבלנות", "aliases": ["העסקה", "עבודה", "קבלן עצמאי", "employment"],
+ "type_fields": [{"key": "notice", "label": "הודעה מוקדמת", "kind": "text"}, {"key": "non_compete_term", "label": "תקופת אי-תחרות", "kind": "text"}]}

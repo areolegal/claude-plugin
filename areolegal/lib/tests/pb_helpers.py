@@ -159,3 +159,22 @@ def workspace_html(path, model, label, disclaimer=None):
     with io.open(path, 'w', encoding='utf-8') as fh:
         fh.write(html)
     return path
+
+
+def with_founding_blocks(model):
+    """שני בלוקים שכל מודל נקי נושא מאז כללי היסוד (playbook-qa.md סעיף 16 b-c, wf1-scope-corpus-extraction.md:182):
+    ספר כיסוי מאוזן (coverage: כל סעיף ממופה לנושא) ו-sufficiency שנשאל (playbook/sufficiency.record). ה-fixtures
+    נכתבו לפני הכללים האלה; העזר משלים אותם בלי לשנות את שאר התוכן."""
+    from playbook import sufficiency as SU
+    m = copy.deepcopy(model)
+    rules = [r for r in m.get('rules') or [] if isinstance(r, dict)]
+    n = len(rules)
+    m.setdefault('coverage', {'by_rule': {r['rule_id']: 1 for r in rules},
+        'inventory_ref': 'clause-inventory.json', 'units': n, 'topic_units': n, 'technical_units': 0,
+        'unique_units': 0, 'unmapped_units': 0, 'unassigned_units': 0, 'topics': n, 'topics_with_rule': n,
+        'topics_new': sum(1 for r in rules if r.get('topic_origin') == 'corpus_derived'),
+        'technical_items': [], 'unmapped': [], 'unique_clauses': [], 'by_agreement': []})
+    res = SU.assess(m.get('source_log'), m.get('rules'))
+    if res['level'] != 'sufficient' or res['requests']:
+        m.setdefault('sufficiency', SU.record(res, client_response='declined', asked_at='2026-10-14T10:00:00+03:00'))
+    return m

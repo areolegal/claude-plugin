@@ -104,9 +104,10 @@ def test_real_dates_with_dateutc(built):
     offset = _dt.datetime.now().astimezone().utcoffset()
     for e in revs:
         d, u = e.get(W + 'date'), e.get(dt.DATE_UTC_ATTR)
-        assert re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', d)
+        # w:date: שעה מקומית בלי Z (Z על שעה מקומית הציג את השינויים בעתיד, ביקורת 30.10.2026); dateUtc: UTC עם Z
+        assert re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d', d)
         assert re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', u)
-        loc = _dt.datetime.strptime(d, dt.DATE_FMT)
+        loc = _dt.datetime.strptime(d, dt.DATE_FMT_LOCAL)
         assert now - _dt.timedelta(hours=1) <= loc <= now + _dt.timedelta(minutes=1)
         assert loc - _dt.datetime.strptime(u, dt.DATE_FMT) == offset
     assert len({e.get(W + 'date') for e in revs}) > 1  # לא כל השינויים באותה שנייה

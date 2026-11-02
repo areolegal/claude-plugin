@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """playbook/surfaces_render.py: המעמד בכל משטח: ה-Word וה-Workspace מופקים מחדש אחרי כל קליטה.
 
-הבעיה (סבב 3, ממצא 2 של המהנדס, 3 של מנכ"ל ארגון היועמ"שים, 5 של השותף): ה-Word וה-Workspace נכתבו
+הבעיה: ה-Word וה-Workspace נכתבו
 ב-17:18, הקליטה המוצלחת נעשתה ב-17:28, ואף אחד מהם לא הופק מחדש. הכותרת העליונה של ה-Word אמרה
 "טעון אישור", ובגוף "0 מתוך 63 עמדות מאושרות" ו-63 פעמים "מעמד העמדה: לא מאושרת"; ה-Workspace אמר
 label_now "טעון אישור" ו-approved_count 0; ושם הקובץ אמר "פלייבוק מוצע".
@@ -12,7 +12,7 @@ label_now "טעון אישור" ו-approved_count 0; ושם הקובץ אמר "�
 - areo:status_summary  "מעמד העמדות: ..." (פסקה אחת בתמונת המצב);
 - areo:cell_status:<rule_id>|<segment>|<track>  "מעמד העמדה: ..." ליד כל מסלול.
 add_status_control() הוא העזר שהבונה קורא לו. restamp_docx() מחליף את תוכן הבקרים לפי status.derive_status,
-כך שאין צורך לבנות את כל המסמך מחדש כדי לעדכן מעמד. במסמך ישן בלי בקרים (כמו של סבב 3), הפונקציה מחליפה
+כך שאין צורך לבנות את כל המסמך מחדש כדי לעדכן מעמד. במסמך ישן בלי בקרים, הפונקציה מחליפה
 לפי הקידומות הקבועות; וכשמספר שורות "מעמד העמדה" אינו מספר התאים, היא נכשלת (RerenderError): את המסמך
 יש לבנות מחדש מהמודל.
 
@@ -22,6 +22,11 @@ presentation_label.
 
 check_surfaces() קורא את שני הקבצים ומשווה למעמד המחושב, וגם בודק שהמספרים בשורת השקיפות תואמים
 לספירת מחקר השוק (market_counts).
+
+שתי שפות: כל משטח מוצג בשפה שלו. ה-Word נושא את שפתו במאפייני הקובץ (core.xml, language: he-IL או en-US,
+ובהיעדרם bidi במקטע), וה-Workspace ב-meta.lang. restamp ו-check_surfaces ממירים את המעמד לשפת המשטח
+(status.in_lang), כך שהתווית זהה במשמעות ובמספרים, בעברית או באנגלית. ב-Word באנגלית כל טקסט מעמד נכתב
+בריצה LTR, בלי bidi ובלי rtl ("Position status: ...", "Status of positions: ...").
 """
 import io
 import json
@@ -48,7 +53,12 @@ SUMMARY_TAG = 'areo:status_summary'
 CELL_TAG = 'areo:cell_status:'
 SUMMARY_PREFIX = 'מעמד העמדות: '
 CELL_PREFIX = 'מעמד העמדה: '
-_PARTIAL_RE = re.compile(r'^(%s); \d+ מתוך \d+ עמדות מאושרות' % '|'.join(re.escape(x) for x in S.BASE_LABELS))
+PREFIXES = {'he': {'summary': SUMMARY_PREFIX, 'cell': CELL_PREFIX},
+            'en': {'summary': 'Status of positions: ', 'cell': 'Position status: '}}
+SUMMARY_PREFIXES = tuple(PREFIXES[g]['summary'].strip() for g in ('he', 'en'))
+CELL_PREFIXES = tuple(PREFIXES[g]['cell'].strip() for g in ('he', 'en'))
+_PARTIAL_RE = re.compile(r'^(%s); \d+ (?:מתוך|of) \d+ (?:עמדות מאושרות|positions approved)'
+                         % '|'.join(re.escape(x) for x in S.BASE_LABELS))
 _DATA_MARKERS = (re.compile(r'const\s+D\s*=\s*'), re.compile(r'/\*__DATA__\*/'))
 
 CELL_TEXT = {
@@ -59,39 +69,94 @@ CELL_TEXT = {
     'open': 'פתוחה ({reason})',
     'not_signed': 'לא מאושרת: העמודה לא נחתמה',
 }
+CELL_TEXT_EN = {
+    'approved': 'approved, {date}',
+    'approved_modified': 'approved with a change made by legal counsel, {date}',
+    'pending_choice': 'awaiting a choice in the sheet ({reason})',
+    'pending_legal_review': 'awaiting legal review ("Reviewed by" and date)',
+    'open': 'open ({reason})',
+    'not_signed': 'not approved: the column was not signed',
+}
+CELL_WORDS = {
+    'he': {'none': 'מחכה לאישור שלכם', 'simulated': 'לא מאושרת (החתימה נקלטה בסימולציה)',
+           'blocked': 'ממתינה להכרעה בשאלה מכריעה פתוחה', 'not_approved': 'לא מאושרת (%s)',
+           'missing': 'חסרה דוגמה מההסכמים, או שעורך דין עוד לא עבר עליה', 'summary_all': '%s. כל %d העמדות מאושרות.',
+           'summary_part': '%s. %d מתוך %d עמדות מאושרות.'},
+    'en': {'none': 'awaiting your approval', 'simulated': 'not approved (the signature was ingested in a simulation)',
+           'blocked': 'awaiting a decision on an open decisive question', 'not_approved': 'not approved (%s)',
+           'missing': "no example from your agreements, or a lawyer hasn't reviewed it yet", 'summary_all': '%s. All %d positions are approved.',
+           'summary_part': '%s. %d of %d positions approved.'},
+}
+# הסיבות שהקליטה רושמת בתא (ingest_approval) נכתבות בעברית. בתוצר באנגלית הן מוצגות באנגלית; סיבה שאינה
+# ברשימה מוחלפת בסיבה הכללית, כדי שלא תדלוף עברית לתוצר אנגלי
+REASON_EN = [
+    (re.compile(r'^העמודה לא נחתמה$'), 'the column was not signed'),
+    (re.compile(r'^השורה (\S+) לא נמצאה בקובץ$'), r'row \1 was not found in the file'),
+    (re.compile(r'^תוכן התא נמחק'), 'the cell content was deleted: reject the track, or require other wording?'),
+    (re.compile(r'^טעון בדיקה משפטית'), 'legal review required: reviewer name and review date were not recorded'),
+    (re.compile(r'^הנחה שלא אושרה בתא'), 'an assumption in the cell was not confirmed'),
+    (re.compile(r'^הערת Areo פתוחה בשורה (\S+)'), r'an open Areo comment in row \1'),
+    (re.compile(r'^לא נבחרה אפשרות בשאלה (\S+)'), r'no option was chosen in question \1'),
+    (re.compile(r'^נבחרה יותר מאפשרות אחת בשאלה (\S+)'), r'more than one option was chosen in question \1'),
+    (re.compile(r'^לא נבחרה אפשרות'), 'no option was chosen'),
+]
+_HEB = re.compile('[\u0590-\u05ff]')
+
+
+def reason_text(reason, lang='he'):
+    """הסיבה שבתא, בשפת המשטח. כמה סיבות מופרדות ב-"; "."""
+    if lang != 'en' or not reason or not _HEB.search(reason):
+        return reason or ''
+    out = []
+    for part in [x.strip() for x in reason.split(';') if x.strip()]:
+        for rx, en in REASON_EN:
+            if rx.search(part):
+                part = rx.sub(en, part) if '\\' in en else en
+                break
+        out.append(part if not _HEB.search(part) else CELL_WORDS['en']['missing'])
+    return '; '.join(out)
+
+
+def surface_lang(st=None, lang=None):
+    return S.norm_lang(lang) or (st or {}).get('lang') or 'he'
 
 
 class RerenderError(RuntimeError):
     """אי אפשר לעדכן את המעמד במסמך הקיים בלי לבנות אותו מחדש מהמודל."""
 
 
-def _d(iso):
+def _d(iso, lang='he'):
     try:
-        return S._he_date(iso)
+        return S.fmt_date(iso, lang)
     except (ValueError, TypeError):
         return str(iso or '')
 
 
-def cell_status_text(cell, st=None, key=None):
-    """"מעמד העמדה: ..." לתא אחד, מאותה גזירה שהמעמד הכללי נשען עליה."""
+def cell_status_text(cell, st=None, key=None, lang=None):
+    """"מעמד העמדה: ..." לתא אחד, מאותה גזירה שהמעמד הכללי נשען עליה. lang: שפת המשטח (ברירת מחדל: של st)."""
+    lang = surface_lang(st, lang)
+    pre, W = PREFIXES[lang]['cell'], CELL_WORDS[lang]
     if not cell:
-        return CELL_PREFIX + 'טעונה אישור'
+        return pre + W['none']
     if cell.get('simulated'):
-        return CELL_PREFIX + 'לא מאושרת (החתימה נקלטה בסימולציה)'
+        return pre + W['simulated']
     s = cell.get('status')
+    reason = reason_text(cell.get('reason'), lang)
     if s in S.APPROVED and st is not None and key is not None and key not in st['approved_keys']:
         if S.cell_counts(cell):
-            return CELL_PREFIX + 'ממתינה להכרעה בשאלה מכריעה פתוחה'
-        return CELL_PREFIX + 'לא מאושרת (%s)' % (cell.get('reason') or 'חסרה ראיה או בדיקה משפטית')
-    fmt = CELL_TEXT.get(s, 'טעונה אישור')
-    return CELL_PREFIX + fmt.format(date=_d(cell.get('approved_at')), reason=cell.get('reason') or '')
+            return pre + W['blocked']
+        return pre + W['not_approved'] % (reason or W['missing'])
+    fmt = (CELL_TEXT_EN if lang == 'en' else CELL_TEXT).get(s, W['none'])
+    return pre + fmt.format(date=_d(cell.get('approved_at'), lang), reason=reason)
 
 
-def summary_text(st):
+def summary_text(st, lang=None):
+    lang = surface_lang(st, lang)
+    st = S.in_lang(st, lang)
+    W = CELL_WORDS[lang]
     if st['playbook_status'] == S.STATUS_APPROVED:
-        return SUMMARY_PREFIX + '%s. כל %d העמדות מאושרות.' % (st['label'], st['positions_count'])
-    return SUMMARY_PREFIX + '%s. %d מתוך %d עמדות מאושרות.' % (st['label'], st['approved_count'],
-                                                               st['positions_count'])
+        return PREFIXES[lang]['summary'] + W['summary_all'] % (st['label'], st['positions_count'])
+    return PREFIXES[lang]['summary'] + W['summary_part'] % (st['label'], st['approved_count'], st['positions_count'])
 
 
 def status_texts(model, st, cells):
@@ -101,15 +166,98 @@ def status_texts(model, st, cells):
 
 
 # ------------------------------------------------------------------ Word
-def add_status_control(paragraph, tag, text, size=None):
-    """העזר של בונה ה-Word: טקסט מעמד בתוך בקר תוכן עם תגית, בריצה RTL."""
+def add_status_control(paragraph, tag, text, size=None, lang='he'):
+    """העזר של בונה ה-Word: טקסט מעמד בתוך בקר תוכן עם תגית. בעברית בריצה RTL, באנגלית בריצה LTR."""
     sz = '<w:sz w:val="%d"/><w:szCs w:val="%d"/>' % (size * 2, size * 2) if size else ''
+    if lang == 'en':
+        fonts, mark = '<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>', ''
+    else:
+        fonts, mark = '<w:rFonts w:ascii="David" w:hAnsi="David" w:cs="David"/>', '<w:rtl/>'
     xml = ('<w:sdt %s><w:sdtPr><w:tag w:val="%s"/></w:sdtPr><w:sdtContent><w:r><w:rPr>'
-           '<w:rFonts w:ascii="David" w:hAnsi="David" w:cs="David"/>%s<w:rtl/></w:rPr><w:t xml:space="preserve">%s'
-           '</w:t></w:r></w:sdtContent></w:sdt>') % (nsdecls('w'), tag, sz, _xml_escape(text))
+           '%s%s%s</w:rPr><w:t xml:space="preserve">%s'
+           '</w:t></w:r></w:sdtContent></w:sdt>') % (nsdecls('w'), tag, fonts, sz, mark, _xml_escape(text))
     paragraph._p.append(parse_xml(xml))
-    rtl.set_paragraph_rtl(paragraph)
+    if lang == 'en':
+        set_paragraph_ltr(paragraph)
+    else:
+        rtl.set_paragraph_rtl(paragraph)
     return paragraph
+
+
+# ------------------------------------------------------------------ Word באנגלית: LTR מלא
+# common/rtl אוכף RTL; מסמך באנגלית צריך את ההפך, בלי שום שארית של bidi או rtl (language-policy.md: "en: LTR,
+# בלי אכיפת RTL"). העזרים כאן משמשים את גיליון העמדות, את בונה הפלייבוק ואת restamp_docx.
+def _ltr_el(el):
+    """מסיר w:bidi מפסקה, w:rtl מריצה, w:bidiVisual מטבלה, ו-bidi ו-rtlGutter ממקטע."""
+    for tag in ('w:bidi', 'w:rtl', 'w:bidiVisual', 'w:rtlGutter'):
+        for x in el.iter(qn(tag)):
+            x.getparent().remove(x)
+
+
+def set_paragraph_ltr(paragraph):
+    _ltr_el(paragraph._p)
+    return paragraph
+
+
+def is_ltr_doc(doc):
+    """True כשהמסמך באנגלית: language במאפייני הקובץ, ובהיעדרו מקטע בלי bidi."""
+    lang = (doc.core_properties.language or '').lower()
+    if lang:
+        return lang.startswith('en')
+    sect = doc.element.body.find(qn('w:sectPr'))
+    return sect is not None and sect.find(qn('w:bidi')) is None
+
+
+def doc_lang(doc):
+    return 'en' if is_ltr_doc(doc) else 'he'
+
+
+def enforce_ltr_document(doc, author='', title=None, language='en-US'):
+    """המקבילה של rtl.enforce_document למסמך באנגלית: אין bidi, rtl, bidiVisual או rtlGutter בשום מקום (גוף,
+    טבלאות, כותרות, הערות), סגנון Normal בלי rtl, ומאפייני קובץ נקיים עם language=en-US."""
+    roots = [doc.element.body]
+    for sec in doc.sections:
+        for hf in (sec.header, sec.footer):
+            roots.append(hf._element)
+    try:
+        roots.append(doc.part._comments_part.element)
+    except Exception:  # pragma: no cover  אין הערות
+        pass
+    for root in roots:
+        _ltr_el(root)
+        keep_hebrew_rtl(root)
+    _ltr_el(doc.styles.element)
+    rtl.clean_metadata(doc, author=author, title=title)
+    doc.core_properties.language = language
+    return doc
+
+
+_HEB_RE = re.compile('[֐-׿]')
+
+
+def hebrew_dominant(text):
+    """True כשיש בטקסט לפחות כמו אותיות עבריות כמו אותיות לטיניות: פסקה כזו RTL. פסקה לטינית עם מילה עברית אחת
+    ("Company's side: הלקוח") נשארת LTR, והמילה העברית בה היא ריצת rtl."""
+    heb = len(_HEB_RE.findall(text))
+    return heb > 0 and heb >= len(re.findall('[A-Za-z]', text))
+
+
+def keep_hebrew_rtl(root):
+    """בתוך מסמך באנגלית, פסקה שיש בה עברית (ציטוט מקור, שם נושא, נימוק שנכתב בעברית) נשארת RTL: bidi בפסקה ו-rtl
+    בכל ריצה עם אות עברית. בלי זה Word מציג אותה משמאל לימין, עם הפיסוק והמספרים במקום הלא נכון. פסקה בלי עברית
+    נשארת LTR כמו שהיא. מחזיר את מספר הפסקאות העבריות."""
+    n = 0
+    for p in root.iter(qn('w:p')):
+        text = _p_text(p)
+        if not _HEB_RE.search(text):
+            continue
+        n += 1
+        if hebrew_dominant(text):
+            rtl._ppr_rtl(p)
+        for r in p.iter(qn('w:r')):
+            if _HEB_RE.search(''.join(t.text or '' for t in r.iter(qn('w:t')))):
+                rtl._rpr_rtl(r)
+    return n
 
 
 def _xml_escape(s):
@@ -151,25 +299,35 @@ def _roots(doc):
 
 def _is_label(text):
     t = text.strip()
-    return t in S.BASE_LABELS or t.startswith(S.APPROVED_PREFIX) or bool(_PARTIAL_RE.match(t))
+    return t in S.BASE_LABELS or t.startswith(S.APPROVED_PREFIXES) or bool(_PARTIAL_RE.match(t))
+
+
+FILE_WORDS = {
+    'he': {S.STATUS_DRAFT: 'פלייבוק מוצע', S.STATUS_PARTIAL: 'פלייבוק מאושר בחלקו',
+           S.STATUS_APPROVED: 'מדיניות מאושרת'},
+    'en': {S.STATUS_DRAFT: 'Proposed playbook', S.STATUS_PARTIAL: 'Partially approved playbook',
+           S.STATUS_APPROVED: 'Approved policy'},
+}
 
 
 def surface_filename(path, st):
-    """שם הקובץ אומר את המעמד: "פלייבוק מוצע" כל עוד לא אושר, "מדיניות מאושרת" כשאושר."""
+    """שם הקובץ אומר את המעמד: "פלייבוק מוצע" כל עוד לא אושר, "מדיניות מאושרת" כשאושר. באנגלית: "Proposed
+    playbook", "Partially approved playbook", "Approved policy". המילים מוחלפות בשפה שבה הן כתובות בשם."""
     d, base = os.path.split(path)
-    words = {S.STATUS_DRAFT: 'פלייבוק מוצע', S.STATUS_PARTIAL: 'פלייבוק מאושר בחלקו',
-             S.STATUS_APPROVED: 'מדיניות מאושרת'}
-    want = words[st['playbook_status']]
-    for w in words.values():
-        if w in base:
-            return os.path.join(d, base.replace(w, want))
+    for words in FILE_WORDS.values():
+        want = words[st['playbook_status']]
+        for w in words.values():
+            if w in base:
+                return os.path.join(d, base.replace(w, want))
     return path
 
 
 def restamp_docx(src, model, st, cells, dst=None):
     """מעדכן כל טקסט מעמד ב-Word. מחזיר (נתיב חדש, ספירת החלפות)."""
-    texts = status_texts(model, st, cells)
     doc = Document(src)
+    lang = doc_lang(doc)
+    st = S.in_lang(st, lang)       # כל משטח בשפה שלו
+    texts = status_texts(model, st, cells)
     done = {'label': 0, 'summary': 0, 'cells': 0}
     tagged = set()
     for root in _roots(doc):
@@ -205,10 +363,10 @@ def restamp_docx(src, model, st, cells, dst=None):
             if _is_label(s):
                 _set_runs_text(p, texts['label'])
                 done['label'] += 1
-            elif s.startswith(SUMMARY_PREFIX.strip()):
+            elif s.startswith(SUMMARY_PREFIXES):
                 _set_runs_text(p, texts['summary'])
                 done['summary'] += 1
-            elif s.startswith(CELL_PREFIX.strip()):
+            elif s.startswith(CELL_PREFIXES):
                 legacy_cells.append(p)
             else:
                 for r in p.iter(qn('w:t')):
@@ -225,11 +383,16 @@ def restamp_docx(src, model, st, cells, dst=None):
         for p, k in zip(legacy_cells, keys):
             _set_runs_text(p, texts['cells'][k])
             done['cells'] += 1
-    for root in _roots(doc):
-        for p in root.iter(qn('w:p')):
-            for r in p.iter(qn('w:r')):
-                rtl._rpr_rtl(r)
+    if lang == 'en':
+        for root in _roots(doc):
+            _ltr_el(root)
+    else:
+        for root in _roots(doc):
+            for p in root.iter(qn('w:p')):
+                for r in p.iter(qn('w:r')):
+                    rtl._rpr_rtl(r)
     rtl.clean_metadata(doc, author=doc.core_properties.author or '', title=doc.core_properties.title)
+    doc.core_properties.language = 'en-US' if lang == 'en' else 'he-IL'
     out = dst or surface_filename(src, st)
     doc.save(out)
     if os.path.abspath(out) != os.path.abspath(src) and dst is None and os.path.exists(src):
@@ -240,7 +403,8 @@ def restamp_docx(src, model, st, cells, dst=None):
 def read_docx_status(path):
     """{'header': [...], 'labels': [...], 'summary': [...], 'cells': {...}, 'text': ...} מתוך Word שמור."""
     doc = Document(path)
-    out = {'header': [], 'labels': [], 'summary': [], 'cells': {}, 'cell_lines': [], 'text': ''}
+    out = {'header': [], 'labels': [], 'summary': [], 'cells': {}, 'cell_lines': [], 'text': '',
+           'lang': doc_lang(doc)}
     texts = []
     for i, root in enumerate(_roots(doc)):
         for sdt in root.iter(qn('w:sdt')):
@@ -258,9 +422,9 @@ def read_docx_status(path):
                 out['labels'].append(s)
                 if i > 0:
                     out['header'].append(s)
-            elif s.startswith(SUMMARY_PREFIX.strip()):
+            elif s.startswith(SUMMARY_PREFIXES):
                 out['summary'].append(s)
-            elif s.startswith(CELL_PREFIX.strip()):
+            elif s.startswith(CELL_PREFIXES):
                 out['cell_lines'].append(s)
     out['text'] = '\n'.join(texts)
     return out
@@ -286,12 +450,15 @@ def restamp_workspace(src, st, dst=None):
         html = fh.read()
     data, start, end = _find_payload(html)
     meta = data.setdefault('meta', {})
+    st = S.in_lang(st, meta.get('lang'))      # התווית בשפת הדף
     for f in S.DUAL_FIELDS:
         meta.pop(f, None)
     old_status = meta.get('status')
     meta.update({'status_label': st['label'], 'label_now': st['label'], 'status': st['label'],
                  'playbook_status': st['playbook_status'], 'approved_count': st['approved_count'],
                  'positions_count': st['positions_count']})
+    if 'labels' in meta:   # התווית בשתי השפות (build_workspace_payload.py), מאותה גזירה
+        meta['labels'] = {g: S.label_for(st, g) for g in ('he', 'en')}
     for k in ('evidence_disclaimer',):
         v = meta.get(k)
         if isinstance(v, str):
@@ -318,9 +485,11 @@ def read_workspace_status(path):
 def check_surfaces(st, word_path=None, workspace_path=None, model=None):
     """סטיות בין המעמד המחושב לבין מה שה-Word וה-Workspace מציגים. ריקה = עקבי."""
     out = []
-    stale = [x for x in S.BASE_LABELS if not st['label'].startswith(x)]
+    st0 = st
     if word_path:
         w = read_docx_status(word_path)
+        st = S.in_lang(st0, w['lang'])    # ה-Word מושווה למעמד בשפה שלו
+        stale = [x for x in S.BASE_LABELS if not st['label'].startswith(x)]
         if not w['header']:
             out.append('Word: אין תווית בכותרת העליונה')
         for h in w['header']:
@@ -335,14 +504,16 @@ def check_surfaces(st, word_path=None, workspace_path=None, model=None):
         for old in stale:
             if old in w['text']:
                 out.append('Word: נשארה התווית הישנה "%s"' % old)
-        if st['playbook_status'] != S.STATUS_DRAFT and 'נקלט בסימולציה' in w['text'] and not any(
-                'סימולציה' in v for v in w['cells'].values()):
+        if st['playbook_status'] != S.STATUS_DRAFT and ('נקלט בסימולציה' in w['text'] or
+                                                       'ingested in a simulation' in w['text']) and not any(
+                'סימולציה' in v or 'simulation' in v for v in w['cells'].values()):
             out.append('Word: נשאר משפט על קליטה בסימולציה')
         if model is not None:
             out += ['Word: ' + p for p in MC.count_claims(w['text'], model)]
     if workspace_path:
         data = read_workspace_status(workspace_path)
         meta = data.get('meta') or {}
+        st = S.in_lang(st0, meta.get('lang'))
         for f in S.DUAL_FIELDS:
             if f in meta:
                 out.append('Workspace: meta.%s: שדה תווית כפול' % f)

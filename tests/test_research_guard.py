@@ -49,29 +49,41 @@ def _hook(event, tmp):
 
 
 # ---------------------------------------------------------------- סוג המקור
+# מאז 1.23 סוג המקור הוא תווית בלבד: מותר רק אתר שברשימת המקורות המאושרים (mr1-question-sources-coding.md,
+# "ארבעה סוגי מקורות בלבד, וכולם רק מרשימת המקורות המאושרים"; market_research.py, SOURCE_TYPES). אין עוד רשימת
+# אתרים לכל סוג. הרשימה היא העותק שנארז בתוסף (lib/מקורות-מאושרים.json), שנקרא כשלא נמסר --approved-sources.
 @pytest.mark.parametrize("url,stype,vendor,ok", [
     ("https://www.sec.gov/Archives/edgar/data/1/x.htm", "public_filing", None, True),
     ("https://maya.tase.co.il/reports/details/1", "public_filing", None, True),
     ("https://www.example-blog.com/nda", "public_filing", None, False),
-    ("https://www.gov.il/he/departments/x", "tender", None, True),
-    ("https://commonpaper.com/standards/mutual-nda/1.0/", "model_agreement", None, True),
+    # gov.il מאושר רק בנתיבים שהרשימה מונה, ולא כל דף בדומיין
+    ("https://www.gov.il/he/departments/x", "tender", None, False),
+    # אתרים שהיו ברשימת הסוג הישנה ואינם ברשימת המקורות המאושרים: נדחים
+    ("https://commonpaper.com/standards/mutual-nda/1.0/", "model_agreement", None, False),
+    ("https://www.salesforce.com/company/legal/", "vendor_terms", "Salesforce", False),
     ("https://some-template-site.com/nda", "model_agreement", None, False),
     ("https://www.lawinsider.com/clause/x", "public_filing", None, False),
     ("https://en.wikipedia.org/wiki/NDA", "vendor_terms", "Wiki", False),
-    ("https://www.salesforce.com/company/legal/", "vendor_terms", "Salesforce", True),
-    ("https://www.salesforce.com/company/legal/", "vendor_terms", None, False),
+    # תנאים שצד מפרסם: גם באתר מאושר, רק עם שם הצד
+    ("https://www.sec.gov/Archives/edgar/data/1/x.htm", "vendor_terms", "Example Corp", True),
+    ("https://www.sec.gov/Archives/edgar/data/1/x.htm", "vendor_terms", None, False),
     ("https://www.sec.gov/x", None, None, False),
 ])
-def test_each_source_type_has_its_own_sites(url, stype, vendor, ok):
+def test_only_the_approved_list_decides_which_sites_are_read(url, stype, vendor, ok):
     problem, allowed = MR.source_type_problem(url, stype, vendor)
     assert (problem is None) is ok, problem
     if ok:
         assert allowed
+    else:
+        assert allowed is None
 
 
-def test_vendor_terms_stay_on_the_vendor_site_after_redirects():
-    _, allowed = MR.source_type_problem("https://www.salesforce.com/company/legal/", "vendor_terms", "Salesforce")
-    assert allowed == ("salesforce.com",)
+def test_the_network_layer_gets_the_approved_rules_so_a_redirect_off_the_list_is_refused():
+    from risk.validate_register import approved_domains, domain_ok
+    _, allowed = MR.source_type_problem("https://www.sec.gov/Archives/edgar/data/1/x.htm", "vendor_terms",
+                                        "Example Corp")
+    assert tuple(allowed) == tuple(approved_domains()[0]) and allowed
+    assert not domain_ok("https://www.salesforce.com/company/legal/", allowed)
 
 
 def test_a_market_fetch_without_a_source_type_is_refused():
@@ -131,7 +143,8 @@ def test_fetch_passes_the_allowed_sites_to_the_network_layer(research, monkeypat
     rc = MR.main(["fetch", "--family-dir", str(research["fam"]), "--source-id", "W1",
                   "--url", "https://www.sec.gov/x", "--query", "mutual NDA exhibit", "--purpose", "market",
                   "--source-type", "public_filing"])
-    assert rc == 0 and seen["allowed_domains"] == MR.SOURCE_DOMAINS["public_filing"]
+    from risk.validate_register import approved_domains
+    assert rc == 0 and tuple(seen["allowed_domains"]) == tuple(approved_domains()[0])
     assert json.loads(capsys.readouterr().out)["source_type"] == 2
 
 
@@ -208,7 +221,7 @@ def test_a_large_document_gets_a_reading_copy_and_the_excerpt_is_saved_without_a
         research, monkeypatch, capsys):
     """PDF של מכרז מעל 200 קילובייט נקרא ולא נשמר, והטקסט לא הגיע אל הבונה: אי אפשר היה לבחור קטע."""
     from common import net
-    url = "https://www.gov.il/BlobFolder/x/he/מכרז.htm"
+    url = "https://www.sec.gov/Archives/edgar/data/1/מכרז.htm"   # אתר שברשימת המקורות המאושרים
     body = ("<html><body>" + "מבוא " * 60000 +
             "<p>התחייבות זו תמשיך לחול אף לאחר תום תקופת ההסכם</p></body></html>").encode("utf-8")
     calls = []
@@ -224,7 +237,7 @@ def test_a_large_document_gets_a_reading_copy_and_the_excerpt_is_saved_without_a
     MR.main(["query", "--query", q, "--purpose", "market"])
     capsys.readouterr()
     args = ["fetch", "--family-dir", str(research["fam"]), "--source-id", "W7", "--url", url, "--query", q,
-            "--purpose", "market", "--source-type", "tender"]
+            "--purpose", "market", "--source-type", "public_filing"]
     assert MR.main(args) == 0
     first = json.loads(capsys.readouterr().out)
     assert "תום תקופת ההסכם" in Path(first["reading_copy"]).read_text(encoding="utf-8")
@@ -266,7 +279,7 @@ def test_link_check_keeps_an_edgar_exhibit_whose_title_is_the_file_name(tmp_path
     p.write_text(json.dumps(m), encoding="utf-8")
     monkeypatch.setattr(net, "fetch", lambda url, purpose, **kw: {
         "status": 200, "blocked": False, "text": page, "sha256": "abc" if url.endswith("/1") else "zzz"})
-    args = type("A", (), {"model": str(p), "family_dir": str(tmp_path / "fam")})
+    args = type("A", (), {"model": str(p), "family_dir": str(tmp_path / "fam"), "approved_sources": None})
     assert MR.cmd_links(args) == 0
 
 

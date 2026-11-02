@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 """common/net.py: שכבת הגישה האחת לרשת, לכל רכיב שיוצא לרשת (מעריך הסיכונים, בונה הפלייבוק).
 
-הבעיה (סבב 3): אין בחבילה שכבת רשת, וכל רץ כתב שולף משלו (שבעה שולפים, שבע מדיניות). ב-C1 הבקשה הראשונה
-לנבו נשלחה עם מחרוזת user-agent של דפדפן, והבקשה הבאה החזירה 403 "כתובת IP חסומה"; אחר כך גם C2 נחסם.
-מהנדס הסקילים 13, המנהל המסחרי 7, מנכ"ל 12, השותף הבכיר 13; סיכום C1, פרק 7.
-
-הכללים (הערות מעריך הסיכונים 3.6; הכללים המשותפים 3.5, איסור 2.25; גרסה 1.2.0 של החבילה):
+הכללים:
 1. מזהה אחד, גלוי ומזוהה, לכל בקשה, לפי בקשת הגישה ההוגנת של SEC EDGAR (שם הארגון וכתובת קשר):
    USER_AGENT = "AreoLegal-research/<גרסה> (AreoLegal automated legal research; contact: <email>)". לעולם לא
    מזהה דפדפן, ואין פרמטר לכותרות. הערך היחיד שאפשר לקבוע הוא כתובת הקשר, מהתצורה: configure(contact_email),
@@ -13,22 +9,31 @@
    תקינה אין בקשה יוצאת (refused).
 2. קצב: מרווח מינימלי בין בקשות לאותו דומיין רשום (MIN_INTERVAL; בנבו 10 שניות), ותקרת בקשות לדומיין בהרצה.
 3. חסימה: 401, 403, 407, 429, 451, או דף אתגר שחוזר בקוד 2xx (CAPTCHA, Cloudflare, Incapsula, "verify you are
-   human", דף ה-anomaly של DuckDuckGo בקוד 202, וכל קוד 2xx חריג, כמו 247 של הכנסת) -> עוצרים. אין ניסיון
-   חוזר, אין החלפת מזהה, אין שרת מתווך. הדומיין הרשום (registrable_domain: knesset.gov.il, ולא
-   main.knesset.gov.il) מסומן חסום עד סוף ההרצה, ובקשה נוספת אליו, מכל מארח שלו, אינה יוצאת. כשנמסרה תיקיית
-   הרצה (start_run(run_dir) או run_dir=), מצב החסימה נשמר בה (net-blocks.json), ותהליך אחר באותה הרצה קורא
-   אותו. התוצאה blocked: True, עם lawyer_task מוכן לפרק 5 (why מתחיל ב"נחסם").
+   human", דף ה-anomaly של DuckDuckGo בקוד 202, וכל קוד 2xx חריג) -> עוצרים. אין ניסיון חוזר, אין החלפת מזהה,
+   אין שרת מתווך. הדומיין הרשום (registrable_domain: knesset.gov.il, ולא main.knesset.gov.il) מסומן חסום עד סוף
+   ההרצה, ובקשה נוספת אליו, מכל מארח שלו, אינה יוצאת. כשנמסרה תיקיית הרצה (start_run(run_dir) או run_dir=),
+   מצב החסימה נשמר בה (net-blocks.json), ותהליך אחר באותה הרצה קורא אותו. התוצאה blocked: True, עם
+   lawyer_task מוכן לפרק 5 (why מתחיל ב"נחסם").
 4. שגיאת רשת (ניתוק, פסק זמן): ניסיון חוזר אחד בלבד.
 5. רישום: כל קריאה מחזירה log שנכנס כמו שהוא ל-research.search_log או ל-lookups: הזמן (ISO עם היסט),
    הכתובת בלי טוקנים, המטרה, השיטה, הקוד, user_agent, הגודל וה-SHA-256.
 6. שמירה: רק דרך EntityStore (store=..., source_id=...), עם התקרות שלו (200 קילובייט לקטע, 2 מגה-בייט לעסקה).
    בלי store שום דבר אינו נכתב לדיסק (חוץ מ-net-blocks.json בתיקיית ההרצה).
-7. דומיינים: allowed_domains (למשל הרשימה המורשית של הרכיב) נבדק לפני הבקשה ואחרי הפניות.
+7. פסיקה: כתובת של אתר בית משפט, מאגר פסיקה או מדור פסיקה (common.case_law.case_law_url) נדחית בכל מטרה, לפני
+   הבקשה ושוב על הכתובת הסופית אחרי הפניות. פסיקה רק ממחבר פסיקה סגור שהלקוח חיבר (כלל 1.1).
+8. כללי כתובת: allowed_domains (למשל הכללים של approved_domains מהרשימה המאושרת) נבדק לפני הבקשה ושוב על
+   הכתובת הסופית, בדומיין ובנתיב (url_allowed). גם נתיבי HOST_POLICY נבדקים שוב אחרי הפניה.
    נבו: רק נתיבי נוסח החקיקה (/law_html/, /HakikaSearch.aspx), בקצב איטי.
-8. POST (form=...): רק לטופס חיפוש רשמי שמופיע ב-HOST_POLICY[...]['post_paths'] (למשל טופס חיפוש החקיקה של
+9. POST (form=...): רק לטופס חיפוש רשמי שמופיע ב-HOST_POLICY[...]['post_paths'] (למשל טופס חיפוש החקיקה של
    נבו), תחת אותם כללים: מזהה, קצב, חסימה, דומיינים מורשים ורישום.
-9. client_detail_in_query(query): פרט של הלקוח בשאילתה (מספר חברה או זהות עם ספרת ביקורת תקינה, טלפון, מספר
+10. client_detail_in_query(query): פרט של הלקוח בשאילתה (מספר חברה או זהות עם ספרת ביקורת תקינה, טלפון, מספר
    ארוך בלי הקשר רשמי). מזהה רשמי של חוק או תקנה (CELEX, LawItemId, ס"ח, ק"ת, U.S.C., CFR) אינו פרט של הלקוח.
+
+תחביר כלל כתובת (rule_matches, url_allowed), אחד לכל הספרייה:
+  "host" או "host/path": המארח ותתי-הדומיינים שלו. "=host" או "=host/path": המארח עצמו (או www שלו) בלבד.
+  "...path?key=value": גם הפרמטר הזה בשאילתה. "!rule": כתובת שמתאימה נדחית תמיד (מדור פסיקה, case_law_only).
+  הנתיב מנורמל (פענוח אחוזים, "." ו-".." ו-"//") ומושווה בלי רישיות ובגבול של מקטע: "/law_html" מתיר את
+  "/law_html" ואת "/law_html/..." אבל לא את "/law_htmlX".
 
 הממשק: fetch(url, purpose, ...) -> dict(status, text|None, blocked, reason, ...). ספרייה סטנדרטית בלבד.
 הבדיקות: שרת HTTP מקומי או opener מדומה בלבד; אין בהן גישה לרשת.
@@ -37,6 +42,7 @@ import hashlib
 import ipaddress
 import json
 import os
+import posixpath
 import re
 import socket
 import sys
@@ -44,7 +50,7 @@ import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
-from urllib.parse import quote, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, quote, unquote, urlencode, urlsplit, urlunsplit
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -198,17 +204,18 @@ def now_iso():
 
 try:  # strip_secrets אחד לכל החבילה
     from risk.entity_store import strip_secrets  # type: ignore
+    from common.case_law import case_law_url  # type: ignore
 except ImportError:  # pragma: no cover - הרצה כשהשורש אינו ב-sys.path
     sys.path.insert(0, ROOT)
     from risk.entity_store import strip_secrets  # type: ignore
+    from common.case_law import case_law_url  # type: ignore
 
 
 def to_uri(url):
-    """כתובת עם עברית או רווחים, כמו שהיא מגיעה מהחיפוש (".../attachment/<מזהה>/חוברת המכרז"), לכתובת
+    """כתובת עם עברית או רווחים, כמו שהיא מגיעה מהחיפוש (".../attachment/<מזהה>/חוברת ההליך"), לכתובת
     שאפשר לשלוח: הנתיב והשאילתה בקידוד אחוזים, והמארח ב-IDNA. קידוד קיים (%D7%9E) נשמר כמו שהוא.
 
-    תיקון מקומי של ניל, לדיווח לענבל: urllib שולח את הנתיב כמו שהוא, ונכשל ב-UnicodeEncodeError (עברית)
-    או ב-InvalidURL (רווח). כך נפל כל מסמך של מינהל הרכש ו-gov.il בבדיקה החיה (20.10.2026)."""
+    urllib שולח את הנתיב כמו שהוא, ונכשל ב-UnicodeEncodeError (עברית) או ב-InvalidURL (רווח)."""
     try:
         p = urlsplit(url)
         host = p.hostname.encode('idna').decode('ascii') if p.hostname else ''
@@ -233,8 +240,84 @@ def _policy(host):
     return {}
 
 
-def _domain_ok(host, allowed):
-    return any(host == a or host.endswith('.' + a) for a in allowed)
+def norm_path(path):
+    """נתיב מנורמל להשוואה: פענוח אחוזים, לוכסן הפוך ללוכסן, "//" אחד, "." ו-".." מוסרים, אותיות קטנות."""
+    p = unquote(path or '/').replace(chr(92), '/')
+    p = posixpath.normpath('/' + p.lstrip('/'))
+    p = re.sub(r'/+', '/', p)
+    return ('/' if p in ('.', '') else p).lower()
+
+
+def _path_under(path, prefix, bounded=True):
+    prefix = norm_path(prefix).rstrip('/') or '/'
+    if prefix == '/':
+        return True
+    if not bounded:
+        return path.startswith(prefix)
+    return path == prefix or path.startswith(prefix + '/')
+
+
+def rule_matches(url, rule):
+    """True כשהכתובת מתאימה לכלל (התחביר בראש הקובץ). כלל "!" נבדק כאן כמו כלל רגיל, בלי ההיפוך; הנתיב שלו
+    נבדק כתחילית פשוטה, רחבה יותר, כי הוא כלל דחייה."""
+    rule = (rule or '').strip()
+    neg = rule.startswith('!')
+    if neg:
+        rule = rule[1:]
+    exact = rule.startswith('=')
+    if exact:
+        rule = rule[1:]
+    if rule.startswith('*.'):
+        rule = rule[2:]
+    rule, _, rq = rule.partition('?')
+    rh, _, rp = rule.partition('/')
+    rh = rh.lower().strip('.')
+    if rh.startswith('www.'):
+        rh = rh[4:]
+    try:
+        p = urlsplit(url or '')
+        host = (p.hostname or '').lower().rstrip('.')
+    except ValueError:
+        return False
+    if not host or not rh:
+        return False
+    if exact:
+        if host not in (rh, 'www.' + rh):
+            return False
+    elif not (host == rh or host.endswith('.' + rh)):
+        return False
+    if rp and not _path_under(norm_path(p.path), '/' + rp, bounded=not neg):
+        return False
+    if rq:
+        have = {(k.lower(), v.lower()) for k, v in parse_qsl(p.query, keep_blank_values=True)}
+        for k, v in parse_qsl(rq, keep_blank_values=True):
+            if (k.lower(), v.lower()) not in have:
+                return False
+    return True
+
+
+def url_allowed(url, rules):
+    """True כשהכתובת מותרת לפי הכללים: אף כלל "!" אינו מתאים לה, וכלל רגיל אחד לפחות מתאים. כתובת פסיקה
+    (case_law_url) אינה מותרת לעולם."""
+    if case_law_url(url):
+        return False
+    rules = [r for r in tuple(rules or ()) + tuple(getattr(rules, 'refuse', ())) if r]
+    if any(r.startswith('!') and rule_matches(url, r) for r in rules):
+        return False
+    return any(not r.startswith('!') and rule_matches(url, r) for r in rules)
+
+
+def _url_problem(url, allowed_domains, pol, dom, after_redirect=False):
+    """הסיבה לדחיית כתובת, לפני הבקשה או על הכתובת הסופית אחרי הפניה; '' כשהיא מותרת."""
+    where = 'אחרי הפניה: ' if after_redirect else ''
+    why = case_law_url(url)
+    if why:
+        return 'refused: %s%s' % (where, why)
+    if allowed_domains is not None and not url_allowed(url, allowed_domains):
+        return 'refused: %sכתובת שאינה ברשימה המורשית, בדומיין או בנתיב (%s)' % (where, _host(url))
+    if pol.get('paths') and not any(_path_under(norm_path(urlsplit(url).path), p) for p in pol['paths']):
+        return 'refused: %sב-%s רק הנתיבים %s' % (where, dom, ', '.join(pol['paths']))
+    return ''
 
 
 def _decode(b, ctype):
@@ -253,7 +336,7 @@ def _lawyer_task(host, purpose, why, url):
     return {'item': '%s: %s' % (host, purpose), 'why': why, 'task': 'עורך הדין', 'url': url}
 
 
-# ---- פרט של הלקוח בשאילתה (גרסה 1.2.0: מזהה רשמי של חוק או תקנה אינו פרט של הלקוח) ----
+# ---- פרט של הלקוח בשאילתה (מזהה רשמי של חוק או תקנה אינו פרט של הלקוח) ----
 OFFICIAL_ID = re.compile(
     r'\b[1-9CE]\d{4}[A-Z]{1,2}\d{3,4}\b|'                                  # CELEX
     r'(?:lawitemid|lawid|law_id|celex|docid|billid)\s*[=:]?\s*\d+|'         # מזהה חוק במאגר רשמי
@@ -278,11 +361,14 @@ def _id_check_digit(num):
 def client_detail_in_query(query, company_names=()):
     """מחזיר את הפרט שנמצא (מחרוזת), או ''. פרט = שם החברה, טלפון, מספר בן 9 ספרות עם ספרת ביקורת תקינה (מספר
     חברה או זהות), או מספר בן 5 ספרות ומעלה בלי הקשר רשמי. מזהה רשמי (CELEX, LawItemId, "ס"ח 2563",
-    "ק"ת 8543", "42 U.S.C. 1983", "17 CFR 240") אינו פרט של הלקוח."""
+    "ק"ת 8543", "42 U.S.C. 1983", "17 CFR 240") אינו פרט של הלקוח. שם החברה (כל שם שנמסר: organization_name,
+    organization_name_en ושמות הישויות) נמצא בלי תלות ברישיות וברווחים כפולים."""
     q = str(query or '')
+    q_norm = ' '.join(q.split()).casefold()
     for name in company_names or ():
-        if name and name in q:
-            return name
+        n = ' '.join(str(name or '').split())
+        if n and n.casefold() in q_norm:
+            return n
     m = PHONE.search(q)
     if m:
         return m.group(0)
@@ -342,14 +428,12 @@ def fetch(url, purpose, allowed_domains=None, store=None, source_id=None, excerp
     if urlsplit(url).scheme not in ('http', 'https') or not host:
         res['reason'] = 'refused: כתובת שאינה http או https'
         return done()
-    if allowed_domains is not None and not _domain_ok(host, allowed_domains):
-        res['reason'] = 'refused: דומיין שאינו ברשימה המורשית (%s)' % host
+    problem = _url_problem(url, allowed_domains, pol, dom)
+    if problem:
+        res['reason'] = problem
         return done()
-    path = urlsplit(url).path
-    if pol.get('paths') and not any(path.startswith(p) for p in pol['paths']):
-        res['reason'] = 'refused: ב-%s רק הנתיבים %s' % (dom, ', '.join(pol['paths']))
-        return done()
-    if form is not None and not any(path.startswith(p) for p in pol.get('post_paths', ())):
+    path = norm_path(urlsplit(url).path)
+    if form is not None and not any(_path_under(path, p) for p in pol.get('post_paths', ())):
         res['reason'] = 'refused: POST רק לטופס חיפוש רשמי שברשימה (HOST_POLICY post_paths)'
         return done()
     if dom in _blocked:
@@ -391,9 +475,7 @@ def fetch(url, purpose, allowed_domains=None, store=None, source_id=None, excerp
                 body = e.read(200000)
             except Exception:
                 body = b''
-            # geturl() נכשל ב-KeyError כש-HTTPError נבנה בלי גוף תשובה
-            # (fp=None), וזה בדיוק מצב החסימה שהפונקציה מטפלת בו.
-            # תיקון מקומי של ניל, דווח לענבל
+            # geturl() נכשל ב-KeyError כש-HTTPError נבנה בלי גוף תשובה (fp=None), וזה בדיוק מצב החסימה
             final = getattr(e, 'filename', None) or url
             retry_after = e.headers.get('Retry-After') if e.headers else None
             if status in BLOCK_CODES:
@@ -414,9 +496,11 @@ def fetch(url, purpose, allowed_domains=None, store=None, source_id=None, excerp
     res['status'] = status
     res['content_type'] = ctype
     res['final_url'] = strip_secrets(final)[0]
-    fhost = _host(final)
-    if allowed_domains is not None and not _domain_ok(fhost, allowed_domains):
-        res['reason'] = 'refused: הפניה לדומיין שאינו ברשימה (%s)' % fhost
+    # אחרי הפניה: אותם כללים על הכתובת הסופית, כולל הנתיב, מדיניות המארח שלה ובדיקת הפסיקה
+    problem = _url_problem(final, allowed_domains, _policy(_host(final)), registrable_domain(_host(final)),
+                           after_redirect=True)
+    if problem:
+        res['reason'] = problem
         return done()
     if body is not None and len(body) > max_bytes:
         res['reason'] = 'refused: מעל %d בתים' % max_bytes

@@ -46,11 +46,16 @@ def _codes(g):
 
 # --------------------------------------------------------------------------------- (1) תקין
 def test_round3_decisions_pass_work_and_send(tmp_path):
-    out, res = _apply(tmp_path, H.load_decisions('c1b_decisions_round3_clean.json'))
+    dec = H.load_decisions('c1b_decisions_round3_clean.json')
+    out, res = _apply(tmp_path, dec)
     g = qa_gate.run_gate(out, H.DRAFT, 'work', H.PROFILE, {}, res['expected_accept'])
     assert g['passed'], g['failures']
     send = str(tmp_path / 'send.docx')
-    s = qa_gate.build_send_copy(out, H.DRAFT, send, H.PROFILE, {}, res['expected_accept'])
+    # במצב משלוח בלי קובץ מצב ובלי קובץ ההכרעות: כשל (n6-gate-and-send.md:32, qa_gate DEC_FILE_MISSING), ואין עותק
+    bare = qa_gate.build_send_copy(out, H.DRAFT, send, H.PROFILE, {}, res['expected_accept'])
+    assert {'STATE_NO_CLAUSES', 'DEC_FILE_MISSING'} <= _codes(bare) and not os.path.exists(send)
+    s = qa_gate.build_send_copy(out, H.DRAFT, send, H.PROFILE, _send_state({}, dec), res['expected_accept'],
+                                decisions=dec)
     assert s['passed'], s['failures']
     assert s['send_copy'] == send and os.path.exists(send)
     assert not os.path.exists(send[:-5] + '.tmp.docx')
@@ -94,14 +99,25 @@ def test_round2_uncovered_change_names_the_missing_terms(round2):
 
 
 # --------------------------------------------------------------------------------- (3) ממוקד
+def _send_state(state, decisions):
+    """במצב משלוח השער צריך קובץ מצב עם סעיפים (STATE_NO_CLAUSES) ואת קובץ ההכרעות (DEC_FILE_MISSING):
+    n6-gate-and-send.md, שורה 32; orchestrator/qa_gate.py, DEC_*. קובץ מצב של בדיקה מקבל סעיף לכל הכרעה."""
+    st = dict(state or {})
+    if not st.get('clauses'):
+        st['clauses'] = [{'clause_id': d['id']} for d in decisions.get('decisions', [])]
+    return st
+
+
 def _small(tmp_path, paragraphs, *decisions, state=None, mode='work', name='s.docx'):
     src = H.small_draft(str(tmp_path / ('src_' + name)), paragraphs)
     out = str(tmp_path / name)
-    res = dt.apply_decisions(src, H.decisions(*decisions), out_path=out)
+    dec = H.decisions(*decisions)
+    res = dt.apply_decisions(src, dec, out_path=out)
     assert not res['errors'] and not res['not_marked'], (res['errors'], res['not_marked'])
     if mode == 'send':
         send = str(tmp_path / ('send_' + name))
-        return qa_gate.build_send_copy(out, src, send, H.PROFILE, state or {}, res['expected_accept'])
+        return qa_gate.build_send_copy(out, src, send, H.PROFILE, _send_state(state, dec), res['expected_accept'],
+                                       decisions=dec)
     return qa_gate.run_gate(out, src, mode, H.PROFILE, state or {}, res['expected_accept'])
 
 
@@ -232,14 +248,17 @@ def test_their_placeholders_reported_not_blocking(tmp_path):
 
 
 # --------------------------------------------------------------------------------- מצב וחבילה
-def test_legal_review_open_blocks_send_only(tmp_path):
+def test_legal_review_flag_is_a_visible_item_and_never_blocks(tmp_path):
+    """LEGAL_REVIEW_OPEN הוסר (n6-gate-and-send.md:40, כלל יסוד 6): סעיף "טעון בדיקה משפטית" הוא NO_APPROVED_SOURCE,
+    אזהרה גלויה ללקוח בשני המצבים, ואינו חוסם את העותק למשלוח."""
     state = {'clauses': [{'clause_id': 'R-22', 'legal_review_required': True, 'legal_review': {}}]}
     d = {'id': 'A', 'op': 'replace_span', 'para': 1, 'old': 'יספק', 'new': 'יעניק', 'decision_code': 'R1',
          'external_comment': 'תיקון מינוח.'}
     w = _small(tmp_path, BASE, d, state=state, mode='work', name='lr.docx')
-    assert 'LEGAL_REVIEW_OPEN' not in _codes(w) and any(x['code'] == 'LEGAL_REVIEW_OPEN' for x in w['warnings'])
+    assert 'LEGAL_REVIEW_OPEN' not in _codes(w) and any(x['code'] == 'NO_APPROVED_SOURCE' for x in w['warnings'])
     s = _small(tmp_path, BASE, d, state=state, mode='send', name='lr2.docx')
-    assert 'LEGAL_REVIEW_OPEN' in _codes(s)
+    assert s['passed'], s['failures']
+    assert any(x['code'] == 'NO_APPROVED_SOURCE' for x in s['warnings']) and s['send_copy']
 
 
 def test_old_fixed_date_is_caught(tmp_path):
@@ -289,3 +308,26 @@ def test_internal_layer_in_send_copy_is_caught(tmp_path):
     out, res = _apply(tmp_path, H.load_decisions('c1b_decisions_round3_clean.json'))
     g = qa_gate.run_gate(out, H.DRAFT, 'send', H.PROFILE, {}, res['expected_accept'])  # קובץ העבודה, בלי strip
     assert 'INT_IN_SEND' in _codes(g)
+
+
+# --------------------------------------------------------------------------------- שכבה פנימית ודליפה (החלטת מוצר 02.11)
+def test_work_file_carries_the_internal_layer_and_the_send_copy_is_clean(tmp_path):
+    """קובץ העבודה נושא תמיד בועות פנימיות; העותק למשלוח נגזר בלעדיהן ועובר את השער."""
+    d = {'id': 'A', 'op': 'replace_span', 'para': 1, 'old': 'יספק', 'new': 'יעניק', 'decision_code': 'R1',
+         'external_comment': 'תיקנו את המינוח.', 'internal_comment': 'מינוח בלבד.'}
+    s = _small(tmp_path, BASE, d, mode='send', name='layer.docx')
+    assert s['passed'], s['failures']
+    work = dt.read_comments(dt.read_package(str(tmp_path / 'layer.docx')))
+    assert [c for c in work if c['author'] in dt.INTERNAL_AUTHORS]
+    assert not [c for c in dt.read_comments(dt.read_package(s['send_copy'])) if c['author'] in dt.INTERNAL_AUTHORS]
+
+
+def test_internal_content_in_what_the_other_side_sees_blocks_send(tmp_path):
+    """INTERNAL_LEAK (n6-gate-and-send.md:34): "למחיקה לפני המשלוח" בנוסח שהצד השני רואה. אזהרה בעבודה, כשל במשלוח,
+    ואין עותק למשלוח."""
+    d = {'id': 'A', 'op': 'replace_span', 'para': 1, 'old': 'יספק', 'new': 'יספק (למחיקה לפני המשלוח: לבדוק)',
+         'decision_code': 'R1', 'external_comment': 'הוספנו הבהרה.'}
+    w = _small(tmp_path, BASE, d, mode='work', name='leak.docx')
+    assert 'INTERNAL_LEAK' not in _codes(w) and any(x['code'] == 'INTERNAL_LEAK' for x in w['warnings'])
+    s = _small(tmp_path, BASE, d, mode='send', name='leak2.docx')
+    assert 'INTERNAL_LEAK' in _codes(s) and s['send_copy'] is None

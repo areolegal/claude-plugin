@@ -7,8 +7,8 @@
 PATH_LIMIT הוא הקבוע היחיד: check_write_path, שער האיכות (PKG_PATH_LENGTH) ושאר הרכיבים מייבאים אותו, ואין
 גבול אחר (לא 235 ולא 240).
 
-    from common.paths import safe_out_paths, long_path
-    names = safe_out_paths(folder, 'הסכם ייעוץ', 'EXAMPLECO', 1, '14.10.2026')
+    from common.paths import safe_out_paths, long_path, plain_path
+    names = safe_out_paths(folder, '<סוג ההסכם>', '<חברה>', 1, '3.4.2027')
     names.work, names.send, names.as_produced
 
 Python 3, ספרייה סטנדרטית בלבד.
@@ -79,6 +79,80 @@ def safe_out_paths(folder, agreement_type, company, round_no, date, lang='he', e
     raise PathTooLong(longest, limit)
 
 
+# התחילית של שם הקובץ (סוג ההסכם ושם החברה) נקבעת בסבב הראשון ונשמרת בקובץ המצב (meta.file_prefix). סבב המשך
+# משתמש בה, גם כששם החברה נמסר אחר כך בשפה אחרת (למשל בסבב 1 "<סוג> - <שם בעברית>", ובסבב 2
+# "<סוג> - <השם באנגלית>"). החלפה רק אחרי שאלה אחת, כשהתחילית בשפה שאינה שפת ההסכם (prefix_switch_item)
+_ROUND_PART = re.compile(r'^(?:%s) \d+$' % '|'.join(ROUND_WORD.values()))
+_HEB = re.compile('[א-ת]')
+_LAT = re.compile('[A-Za-z]')
+
+
+def prefix_from_name(name):
+    """(סוג ההסכם, שם החברה) מתוך שם קובץ לפי הכלל ("<סוג> - <חברה> - Round 2 - <תאריך>..."), או None."""
+    parts = os.path.basename(str(name or '')).split(' - ')
+    k = next((i for i, x in enumerate(parts) if _ROUND_PART.match(x.strip())), None)
+    if not k:
+        return None
+    return parts[0], ' - '.join(parts[1:k])
+
+
+def stored_prefix(state):
+    """התחילית שנקבעה בסבב הראשון: meta.file_prefix, ובקובץ מצב ישן לפי שם הקובץ הראשון שהופק או נשלח. או None."""
+    meta = (state or {}).get('meta') or {}
+    fp = meta.get('file_prefix')
+    if isinstance(fp, dict) and fp.get('agreement_type'):
+        return fp['agreement_type'], fp.get('company') or ''
+    docs = [d for d in (state or {}).get('produced_documents') or () if isinstance(d, dict)
+            and d.get('kind') in ('work', 'send', 'as_produced')] + \
+           [d for d in meta.get('sent_documents') or () if isinstance(d, dict)]
+    for d in docs:
+        pr = prefix_from_name(d.get('path') or d.get('file_name'))
+        if pr:
+            return pr
+    return None
+
+
+def name_lang(s):
+    """שפת הכתב של שם: he, en, או None כשאין אותיות."""
+    if _HEB.search(s or ''):
+        return 'he'
+    return 'en' if _LAT.search(s or '') else None
+
+
+def prefix_switch_item(prefix, lang, alt_company, ui_lang='he'):
+    """שאלת ההחלפה, פעם אחת (key: file_prefix): התחילית השמורה בשפה שאינה שפת ההסכם (lang), ונמסר שם בשפת ההסכם
+    (alt_company). פריט למנת השאלות, או None כשאין מה לשאול."""
+    # שם החברה בשם הקובץ הוא השם המקוצר, בלי סיומת התאגדות
+    alt_company = re.sub(r'[,\s]+(Ltd|Limited|Inc|LLC|Corp|Corporation|GmbH|PLC|AG|בע"מ)\.?$', '',
+                         str(alt_company or '').strip(), flags=re.I)
+    if not prefix or not alt_company or name_lang(prefix[1]) in (None, lang) or name_lang(alt_company) != lang \
+            or clean_name(alt_company) == clean_name(prefix[1]):
+        return None
+    old = ' - '.join(x for x in prefix if x)
+    new = ' - '.join(x for x in (prefix[0], clean_name(alt_company)) if x)
+    if str(ui_lang or '').lower()[:2] == 'en':
+        return {'key': 'file_prefix', 'kind': 'file_prefix', 'situation': None, 'blocks_sending': False,
+                'text': 'The file names of this deal start with "%s" (set in the first round). The agreement is in '
+                        'English, and an English company name is now known. Switch the file names to "%s"?' % (old, new),
+                'recommendation': 'Keep "%s", so that all rounds stay together' % old,
+                'options': ['Keep (recommended)', 'Switch to "%s"' % new]}
+    return {'key': 'file_prefix', 'kind': 'file_prefix', 'situation': None, 'blocks_sending': False,
+            'text': 'שמות הקבצים בעסקה הזו נפתחים ב-"%s" (נקבע בסבב הראשון). ההסכם באנגלית, ועכשיו ידוע שם החברה '
+                    'באנגלית. להחליף את תחילת שמות הקבצים ל-"%s"?' % (old, new),
+            'recommendation': 'להשאיר את "%s", כדי שכל הסבבים יישארו יחד' % old,
+            'options': ['להשאיר (ההמלצה)', 'להחליף ל-"%s"' % new]}
+
+
+def prefix_switch_answer(state):
+    """התשובה לשאלת ההחלפה (user_decisions, id file_prefix): 'switch', 'keep', או None כשלא נענתה."""
+    rec = next((q for q in reversed((state or {}).get('user_decisions') or ()) if isinstance(q, dict)
+                and q.get('id') == 'file_prefix'), None)
+    if not rec:
+        return None
+    return 'switch' if re.match(r'\s*(להחליף|החלף|switch|replace|yes|כן)', str(rec.get('answer') or ''), re.I) \
+        else 'keep'
+
+
 def unique_path(path):
     """כשהשם תפוס: " (2)", " (3)" וכו', בתוך הרזרבה שנשמרה. לעולם אינו דורס קובץ קיים."""
     if not os.path.exists(path):
@@ -101,7 +175,7 @@ def check_write_path(path, limit=PATH_LIMIT):
 
 
 def stale_path(path, lang='he'):
-    """השם שאליו מועבר עותק "למשלוח" שכבר הופק, כשנפתח אחריו תיקון לפני המשלוח (שינוי 80). הקובץ אינו נמחק:
+    """השם שאליו מועבר עותק "למשלוח" שכבר הופק, כשהשער במצב משלוח נכשל אחריו. הקובץ אינו נמחק:
     הוא מקבל סיומת " - לא למשלוח" (או " - not for sending"), כך שבתיקייה אין קובץ בשם הסופי."""
     stem, ext = os.path.splitext(path)
     return unique_path(stem + (' - לא למשלוח' if lang == 'he' else ' - not for sending') + ext)
@@ -116,3 +190,14 @@ def long_path(path):
     if p.startswith('\\\\'):
         return '\\\\?\\UNC\\' + p[2:]
     return '\\\\?\\' + p
+
+
+def plain_path(path):
+    """ההפך של long_path: הנתיב בלי הקידומת \\\\?\\, להצגה ולשמירה בקובץ פלט. מי שקורא את הנתיב השמור
+    פותח אותו שוב דרך long_path."""
+    p = str(path)
+    if p.startswith('\\\\?\\UNC\\'):
+        return '\\\\' + p[8:]
+    if p.startswith('\\\\?\\'):
+        return p[4:]
+    return p

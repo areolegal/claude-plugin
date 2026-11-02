@@ -2,24 +2,26 @@
 # -*- coding: utf-8 -*-
 """קורא פלייבוק של הלקוח ממסמך Word, PDF או Excel, בלי לכתוב דבר לתיקיית הלקוח.
 
-מסמך של הלקוח משמש כמו שהוא (`overview.md`, "מקור העמדות", "יש פלייבוק:
+מסמך של הלקוח משמש כמו שהוא (`n3-decisions.md`, "מקור העמדות", "יש פלייבוק:
 שימוש"; הערות הנושא ונותן, שינוי 45). הקורא מחזיר את מה שבמסמך, בלי להשלים
 ובלי לפרש: הנושאים, המסלולים ותנאיהם, סימני האדום, הנוסחים החלופיים, הסגמנטים,
 וכללי ההפעלה שהמסמך קובע לעצמו (פרק "הוראות הפעלה"). שדה שאין לו מקור במסמך
-נשאר ריק, וההחלה ממלאת אותו לפי `decision_matrix.md`, ולא הקורא.
+נשאר ריק, וההחלה ממלאת אותו לפי `n3b-matrix.md`, ולא הקורא.
 
 איך הוא קורא:
 * **טבלה** שבשורת הכותרת שלה עמודות של מסלולים (ירוק, צהוב, אדום; Green,
-  Yellow, Red; מועדף, נסיגה, קו אדום): כל שורה היא נושא.
+  Yellow, Red; מועדף, נסיגה, קו אדום; Preferred, Fallback, Walk-away; Standard,
+  Acceptable, Unacceptable), לפי מילה שלמה: כל שורה היא נושא.
 * **כותרות**: כל כותרת (סגנון כותרת, שורה ממוספרת קצרה, או שורה מודגשת קצרה)
   פותחת נושא, והשורות שאחריה משויכות למסלול לפי התווית שבתחילתן.
 * **Excel**: כל גיליון עם שורת כותרת כזו; נדרש openpyxl.
 * **PDF**: שכבת הטקסט, שורה אחר שורה; PDF סרוק אינו נקרא, ונאמר.
 
-    python3 scripts/read_playbook_doc.py "<המסמך>" [--out <תיקייה זמנית>/playbook-read.json]
+    python "AREO_RT/skills/contract-negotiation-orchestrator/scripts/read_playbook_doc.py" "<המסמך>" [--out <תיקייה זמנית>/playbook-read.json]
 
 קוד יציאה: **0** נקרא, **3** לא נמצא בו אף נושא (המסמך אינו פלייבוק, או שאינו
-קריא), **2** קלט חסר, **1** `--out` בתיקיית הלקוח.
+קריא), **2** קלט חסר, או Word פגום, DOC, מוצפן או Strict (הודעה דו-לשונית), **1** `--out` בתיקיית הלקוח, על
+המסמך עצמו או על מסמך קיים.
 """
 import argparse
 import io
@@ -28,13 +30,25 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # גם ב-python -I, שאינו מוסיף את תיקיית הסקריפט
 import areo_lib  # noqa: F401  מוסיף את areolegal/lib לנתיב הייבוא
 
-TRACK_LABELS = {
-    "green": r"^(?:ירוק|מסלול ירוק|עמדה מועדפת|ברירת מחדל|העמדה שלנו|green|preferred|standard position)\b",
-    "yellow": r"^(?:צהוב|מסלול צהוב|נסיגה|עמדת נסיגה|ויתור מותר|פשרה|yellow|fallback|acceptable)\b",
-    "red": r"^(?:אדום|מסלול אדום|קו אדום|לא מקובל|red|red line|unacceptable|walk.?away)\b",
+from common.cli import OutputRefused, guard_out, load_docx_or_explain  # noqa: E402
+
+# ביקורת כלליות, ממצא 5: אותן תוויות לכותרת של עמודה ולתווית בתחילת שורה, ותמיד כמילה שלמה ("red" אינו
+# נמצא בתוך "Preferred", "acceptable" אינו נמצא בתוך "Unacceptable"). אדום נבדק ראשון, כי "לא מקובל" ו-"Not
+# acceptable" מכילים מילה של צהוב.
+TRACK_WORDS = {
+    "red": r"מסלול אדום|קו(?:ים)? אדום|קווים אדומים|אדום|לא מקובל(?:ת)?|לא מתקבל|"
+           r"red[\s\-]lines?|red|unacceptable|not acceptable|walk[\s\-]?away|deal[\s\-]?breakers?|no[\s\-]?go",
+    "yellow": r"מסלול צהוב|צהוב|עמדת נסיגה|נסיגה|ויתור מותר|פשרה|"
+              r"yellow|fall[\s\-]?back|acceptable|compromise",
+    "green": r"מסלול ירוק|ירוק|עמדה מועדפת|מועדפ(?:ת|ים|ות)|מועדף|רגיל(?:ה)?|ברירת מחדל|העמדה שלנו|"
+             r"green|preferred(?: position)?|standard(?: position)?|ideal",
 }
+_LB, _LA = r"(?<![^\W\d_])", r"(?![^\W\d_])"   # לא אות לפני המונח ולא אות אחריו
+# "Red flags:" היא תווית של סימני אדום (FIELD_LABELS), ולא של המסלול האדום
+TRACK_LABELS = {k: r"^(?:ה)?(?:%s)%s(?!\s+flags)" % (rx, _LA) for k, rx in TRACK_WORDS.items()}
 FIELD_LABELS = {
     "red_flags": r"^(?:סימני אדום|סימני זיהוי|סימנים|red flags|flags|watch for)\b",
     "alternatives": r"^(?:נוסח חלופי|נוסח מוצע|נוסח|alternative wording|proposed wording|wording|clause)\b",
@@ -42,10 +56,8 @@ FIELD_LABELS = {
     "notes": r"^(?:הערה|הערות|הסבר|נימוק|note|notes|rationale)\b",
 }
 OPERATING = re.compile(r"הוראות הפעלה|כללי הפעלה|אופן השימוש|operating (?:rules|instructions)|how to use", re.I)
-HEADER_TRACKS = {"green": re.compile(r"ירוק|green|מועדפ|preferred", re.I),
-                 "yellow": re.compile(r"צהוב|yellow|נסיגה|fallback", re.I),
-                 "red": re.compile(r"אדום|red|קו אדום", re.I)}
-HEADER_TOPIC = re.compile(r"נושא|סעיף|topic|clause|issue", re.I)
+HEADER_TRACKS = {k: re.compile(_LB + r"(?:[וה])?(?:%s)" % rx + _LA, re.I) for k, rx in TRACK_WORDS.items()}
+HEADER_TOPIC = re.compile(_LB + r"(?:ה)?(?:נושא|סעיף|topic|clause|issue|term|provision)s?" + _LA, re.I)
 HEADER_FLAGS = re.compile(r"סימני|flags", re.I)
 
 
@@ -53,16 +65,27 @@ def strip_label(text, rx):
     return re.sub(rx + r"\s*[:\-.]?\s*", "", text, count=1, flags=re.I).strip()
 
 
+def header_track(h):
+    """המסלול של כותרת עמודה, או None. אדום קודם, ואחריו צהוב וירוק (HEADER_TRACKS לפי הסדר)."""
+    if HEADER_FLAGS.search(h):
+        return None
+    return next((k for k, rx in HEADER_TRACKS.items() if rx.search(h)), None)
+
+
 def topic_from_table(rows):
     """rows: רשימת רשימות. מחזיר נושאים כשבשורת הכותרת יש עמודות של מסלולים."""
-    if not rows:
+    # שורת הכותרת היא הראשונה, מבין עשר השורות הראשונות, שיש בה שתי עמודות של מסלולים לפחות: בגיליון Excel
+    # יש לעיתים שורת כותרת של המסמך מעל הטבלה
+    for n, row in enumerate((rows or [])[:10]):
+        head = [str(c or "") for c in row]
+        tracks = [header_track(h) for h in head]
+        cols = {k: next((i for i, t in enumerate(tracks) if t == k), None) for k in ("green", "yellow", "red")}
+        if sum(v is not None for v in cols.values()) >= 2:
+            rows = rows[n:]
+            break
+    else:
         return []
-    head = [str(c or "") for c in rows[0]]
-    cols = {k: next((i for i, h in enumerate(head) if rx.search(h) and not HEADER_FLAGS.search(h)), None)
-            for k, rx in HEADER_TRACKS.items()}
-    if sum(v is not None for v in cols.values()) < 2:
-        return []
-    tcol = next((i for i, h in enumerate(head) if HEADER_TOPIC.search(h)), 0)
+    tcol = next((i for i, h in enumerate(head) if HEADER_TOPIC.search(h) and tracks[i] is None), 0)
     fcol = next((i for i, h in enumerate(head) if HEADER_FLAGS.search(h)), None)
     out = []
     for r in rows[1:]:
@@ -118,9 +141,10 @@ def topics_from_lines(lines):
     return topics, segments, operating
 
 
-def read_docx(path):
-    import docx
-    d = docx.Document(path)
+def read_docx(path, d=None):
+    if d is None:
+        import docx
+        d = docx.Document(path)
     topics = []
     for tb in d.tables:
         topics += topic_from_table([[c.text for c in row.cells] for row in tb.rows])
@@ -172,7 +196,7 @@ def read_xlsx(path):
 
 def main(argv=None):
     sys.dont_write_bytecode = True
-    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("file")
     ap.add_argument("--out", help="קובץ JSON בתיקייה זמנית; לעולם לא בתיקיית הלקוח")
@@ -184,10 +208,24 @@ def main(argv=None):
             os.path.realpath(os.path.dirname(a.file)):
         print("--out בתיקיית הלקוח (%s). הקורא אינו כותב לשם; בחרו תיקייה זמנית." % os.path.dirname(a.file))
         return 1
+    if a.out:
+        # גם מחוץ לתיקייה של המסמך: לא על המסמך עצמו, לא על מסמך קיים ולא בתיקיית מקור של הלקוח
+        try:
+            guard_out(a.out, inputs=[a.file])
+        except OutputRefused as exc:
+            print("סירוב: %s" % exc)
+            return 1
     ext = os.path.splitext(a.file)[1].lower()
+    doc = None
+    if ext in (".docx", ".doc", ".docm"):
+        # Word פגום, DOC, מוצפן או Strict: הודעה דו-לשונית וקוד 2, ולא traceback של python-docx
+        doc, msg, code = load_docx_or_explain(a.file)
+        if doc is None:
+            print(msg)
+            return code
     try:
-        if ext == ".docx":
-            topics, segments, operating = read_docx(a.file)
+        if ext in (".docx", ".doc", ".docm"):
+            topics, segments, operating = read_docx(a.file, doc)
         elif ext == ".pdf":
             topics, segments, operating = read_pdf(a.file)
         elif ext in (".xlsx", ".xlsm"):
@@ -205,7 +243,7 @@ def main(argv=None):
             json.dump(out, fh, ensure_ascii=False, indent=1)
     print(json.dumps(out, ensure_ascii=False, indent=1))
     if not topics:
-        print("לא נמצא במסמך אף נושא עם מסלולים. ייתכן שאינו פלייבוק, או שהוא מסמך רקע (overview.md, \"מסמך רקע אינו מועמד\").")
+        print("לא נמצא במסמך אף נושא עם מסלולים. ייתכן שאינו פלייבוק, או שהוא מסמך רקע (n1b-learning.md, \"מסמך רקע אינו מועמד\").")
         return 3
     return 0
 

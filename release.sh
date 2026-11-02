@@ -94,18 +94,32 @@ GATED = {"contract-drafter", "contract-negotiation-orchestrator",
          "legal-contract-translator", "negotiation-strategist"}
 bad = []
 
+# Since 1.23 the SKILL.md is a thin loader and the rules live in the instruction files the
+# service serves (server/content/<skill>/*.md). A rule counts when it is in either place.
+CONTENT = pathlib.Path("../server/content")
+if not CONTENT.is_dir():
+    print("   REFUSING TO RELEASE: server/content must sit beside the plugin to check the rules")
+    sys.exit(1)
+
+
+def skill_text(skill):
+    t = pathlib.Path("areolegal/skills/%s/SKILL.md" % skill).read_text(encoding="utf-8")
+    return t + "\n" + "\n".join(p.read_text(encoding="utf-8")
+                                for p in sorted((CONTENT / skill).glob("*.md")))
+
+
 mcp = pathlib.Path("areolegal/mcp/areolegal_mcp.py").read_text(encoding="utf-8")
 if '"name": "mark_setup"' not in mcp:
     bad.append("mcp: mark_setup tool is gone")
 if 'body["local_setup"] = local_setup()' not in mcp:
     bad.append("mcp: license_status no longer carries local_setup")
 
-setup_md = pathlib.Path("areolegal/skills/contract-setup-diagnostician/SKILL.md").read_text(encoding="utf-8")
+setup_md = skill_text("contract-setup-diagnostician")
 if "mark_setup" not in setup_md:
     bad.append("contract-setup-diagnostician: never records the marker (mark_setup missing)")
 
 for skill in sorted(GATED):
-    text = pathlib.Path("areolegal/skills/%s/SKILL.md" % skill).read_text(encoding="utf-8")
+    text = skill_text(skill)
     if "local_setup" not in text:
         bad.append("%s: profile gate does not consult local_setup" % skill)
     if "אם אין פרופיל, עצור והפעל את ההקמה" in text:
@@ -119,13 +133,13 @@ if '"shared_output_folder"' not in writer:
     bad.append("build_profile.py: connections.shared_output_folder is not written")
 
 for skill in sorted(GATED | {"contract-setup-diagnostician"}):
-    text = pathlib.Path("areolegal/skills/%s/SKILL.md" % skill).read_text(encoding="utf-8")
+    text = skill_text(skill)
     if "shared_output_folder" not in text:
         bad.append("%s: lost the shared-folder rule" % skill)
 
 # The drafter must never hand-build a Word document again: that is what made the
 # production step take tens of minutes and ship Word-default output.
-drafter = pathlib.Path("areolegal/skills/contract-drafter/SKILL.md").read_text(encoding="utf-8")
+drafter = skill_text("contract-drafter")
 if not pathlib.Path("areolegal/skills/contract-drafter/scripts/build_draft_docx.py").is_file():
     bad.append("contract-drafter: build_draft_docx.py is missing")
 if "build_draft_docx.py" not in drafter:
@@ -145,19 +159,12 @@ for script in ("build_regulatory_matrix.py",):
 # its scripts may be named nowhere else, and inside the drafter only in the state-4 section.
 STATE4 = ("research-flow.md", "build_research_brief.py", "build_regulatory_matrix.py")
 for md in sorted(pathlib.Path("areolegal/skills").glob("*/SKILL.md")):
-    text = md.read_text(encoding="utf-8")
-    if md.parent.name != "contract-drafter":
-        for name in STATE4:
-            if name in text:
-                bad.append("%s: refers to %s, which belongs to the drafter's state 4 only" % (md.parent.name, name))
-if "\n**מצב 4:**" in drafter and "\n## תשאול" in drafter:
-    head, rest = drafter.split("\n**מצב 4:**", 1)
-    section, tail = rest.split("\n## תשאול", 1)
+    if md.parent.name == "contract-drafter":
+        continue
+    text = skill_text(md.parent.name) if (CONTENT / md.parent.name).is_dir() else md.read_text(encoding="utf-8")
     for name in STATE4:
-        if name in head or name in tail:
-            bad.append("contract-drafter: %s is referenced outside the state-4 section" % name)
-else:
-    bad.append("contract-drafter: the state-4 section is missing")
+        if name in text:
+            bad.append("%s: refers to %s, which belongs to the drafter's research mode only" % (md.parent.name, name))
 if "rtl-docx-enforcer" in drafter and "\u05d0\u05d9\u05df \u05dc\u05d4\u05e2\u05d1\u05d9\u05e8" not in drafter:
     bad.append("contract-drafter: the extra rtl-docx-enforcer pass is back")
 
@@ -303,7 +310,7 @@ def researchf(**over):
             "mandatory": True, "jurisdiction": "IL"},
            {"row": 2, "rank": 2, "instrument": "תקנות לדוגמה", "url": "https://www.nevo.co.il/law_html/law00/1.htm",
             "verified": True, "mandatory": False, "jurisdiction": "IL"}]
-    ags = [{"no": k + 1, "title": "הסכם %d" % (k + 1), "source_type": "אתר משפטי", "url": "https://agreements.example/%d" % (k + 1),
+    ags = [{"no": k + 1, "title": "הסכם %d" % (k + 1), "source_type": "דיווח פומבי", "url": "https://agreements.example/%d" % (k + 1),
             "orientation": "מאוזן", "orientation_reason": "נימוק", "topics": ["נושא"]} for k in range(10)]
     base = {"agreement_type": "הסכם לדוגמה", "company_role": "לקוח", "scope": "both", "consent_at": "2026-09-16",
             "jurisdiction": ["IL"], "law": law, "agreements": ags,
@@ -331,8 +338,12 @@ ck("position missing: refused", refused(researchf(company_role=""), "s_norole"))
 ck("law from a law-firm site: refused", refused(law_with("https://www.lawfirm.co.il/x"), "s_firm"))
 ck("Nevo outside legislation (articles, case law): refused",
    refused(law_with("https://www.nevo.co.il/articles/x"), "s_nart") and refused(law_with("https://www.nevo.co.il/psika_html/x"), "s_npsk"))
-ck("court sites under gov.il and Bank of Israel: refused",
-   refused(law_with("https://supreme.court.gov.il/x"), "s_court") and refused(law_with("https://www.boi.org.il/x"), "s_boi"))
+# בנק ישראל הוא רגולטור ברשימה הסגורה המשותפת (מקורות-מאושרים.json, החלטה 30.10.2026), ולכן עובר. אתר בית
+# משפט נחסם גם תחת gov.il, ודף gov.il שאינו בנתיבים המאושרים נחסם
+ck("court sites under gov.il, and gov.il outside its listed pages: refused; Bank of Israel (listed regulator): passes",
+   refused(law_with("https://supreme.court.gov.il/x"), "s_court") and refused(law_with("https://elyon1.court.gov.il/x"), "s_court2")
+   and refused(law_with("https://www.gov.il/he/departments/courts/x"), "s_govcourt")
+   and not refused(law_with("https://www.boi.org.il/roles/supervisionregulation/nbt"), "s_boi"))
 ck("foreign law: official .gov passes, .com refused",
    not refused(law_with("https://www.sec.gov/x", jurisdiction="US"), "s_us") and refused(law_with("https://x.com/y", jurisdiction="US"), "s_uscom"))
 unsorted = researchf(); unsorted["law"].reverse()
@@ -347,14 +358,17 @@ ck("an agreement against the position: refused", refused(against, "s_against"))
 nourl = researchf(); nourl["agreements"][1]["url"] = ""
 ck("an agreement without a link: refused", refused(nourl, "s_nourl"))
 
-dr = {"meta": {"title": "הסכם", "language": "he", "notice": "טיוטה זו נבנתה ללא נייר של החברה."},
+# ניסוח מבחוץ רק כשללקוח אין פלייבוק ואין הסכמי טיוטה והוא ביקש זאת במפורש: meta.outside_basis עם שלושת
+# התנאים (core-contract.md פרק 10, research-flow.md). אין שער אישור על המחקר (research-flow.md: approvals אינם נבדקים)
+BASIS = {"no_playbook": True, "no_client_agreements": True, "client_asked": True}
+dr = {"meta": {"title": "הסכם", "language": "he", "notice": "טיוטה זו נבנתה ללא נייר של החברה.", "outside_basis": BASIS},
       "clauses": [{"number": "1", "heading": "חובה", "text": "חובה לפי דין.", "source": "MAND-M1"}]}
 io.open(os.path.join(out, "dr.json"), "w", encoding="utf-8").write(json.dumps(dr, ensure_ascii=False))
-def draft(research, name, cover=False):
+def draft(research, name, cover=False, draft_json="dr.json"):
     extra = ["--cover", os.path.join(out, name + "_cover.docx")] if cover else []
     rpath = os.path.join(out, name + ".json")
     io.open(rpath, "w", encoding="utf-8").write(json.dumps(research, ensure_ascii=False))
-    return subprocess.run([sys.executable, S + "/build_draft_docx.py", "--draft", os.path.join(out, "dr.json"),
+    return subprocess.run([sys.executable, S + "/build_draft_docx.py", "--draft", os.path.join(out, draft_json),
                            "--research", rpath, "--out", os.path.join(out, name + ".docx")] + extra,
                           capture_output=True, text=True)
 ck("state-4 draft without --research: refused",
@@ -362,16 +376,26 @@ ck("state-4 draft without --research: refused",
                    "--out", os.path.join(out, "x.docx")], capture_output=True).returncode == 1)
 approved = researchf(approvals={"research_at": "2026-09-16", "agreements_at": "2026-09-16"})
 approved["mandatory_clauses"][0]["status"] = "מאושר"
-ck("drafting with one approval missing: refused",
-   draft(dict(approved, approvals={"research_at": "2026-09-16"}), "d_oneapp").returncode == 1)
+for k in BASIS:
+    nb = json.loads(json.dumps(dr)); del nb["meta"]["outside_basis"][k]
+    io.open(os.path.join(out, "dr_no_%s.json" % k), "w", encoding="utf-8").write(json.dumps(nb, ensure_ascii=False))
+ck("outside draft without the client's explicit request and both absences (meta.outside_basis): refused",
+   all(draft(approved, "d_nb_" + k, draft_json="dr_no_%s.json" % k).returncode == 1 for k in BASIS))
+ck("no approval gate on the research: drafting is not held for approvals",
+   draft(dict(approved, approvals={}), "d_noapp").returncode == 0)
 unplaced = json.loads(json.dumps(approved))
 unplaced["mandatory_clauses"].append({"clause_id": "M2", "title": "לא שובץ", "source_row": 1, "status": "מאושר"})
 ck("an approved mandatory clause not placed: refused", draft(unplaced, "d_unplaced").returncode == 1)
 ok = draft(approved, "d_ok", cover=True)
 import zipfile
-ck("approved and placed: draft builds with real hyperlinks and a traceability cover",
-   ok.returncode == 0 and b"w:hyperlink" in zipfile.ZipFile(os.path.join(out, "d_ok.docx")).read("word/document.xml")
-   and "מטריצת עקיבות".encode("utf-8") in zipfile.ZipFile(os.path.join(out, "d_ok_cover.docx")).read("word/document.xml"))
+# המקורות בדף הליווי בלבד, עם קישורים לחיצים, והטיוטה נקייה מהם (research-flow.md, draft-json-schema.md)
+ok_cover = zipfile.ZipFile(os.path.join(out, "d_ok_cover.docx")).read("word/document.xml") if ok.returncode == 0 else b""
+ok_draft = zipfile.ZipFile(os.path.join(out, "d_ok.docx")).read("word/document.xml") if ok.returncode == 0 else b""
+ok_rels = zipfile.ZipFile(os.path.join(out, "d_ok_cover.docx")).read("word/_rels/document.xml.rels") if ok.returncode == 0 else b""
+ck("approved and placed: cover carries real hyperlinks and a traceability matrix, the draft stays clean of sources",
+   ok.returncode == 0 and b"w:hyperlink" in ok_cover and b"main.knesset.gov.il" in ok_rels
+   and "מטריצת עקיבות".encode("utf-8") in ok_cover
+   and b"w:hyperlink" not in ok_draft and b"knesset.gov.il" not in ok_draft)
 from openpyxl import load_workbook
 wb = load_workbook(os.path.join(out, "s_ok.xlsx"))
 ck("Excel: three right-to-left sheets, clickable, in rank order",
@@ -398,9 +422,12 @@ io.open(os.path.join(out, "v4.json"), "w", encoding="utf-8").write(json.dumps(
 subprocess.run([sys.executable, S + "/fill_template.py", "--template", os.path.join(t4dir, "master.docx"),
                 "--values", os.path.join(out, "v4.json"), "--out", os.path.join(out, "f4.docx")], capture_output=True)
 f4 = "\n".join(x["text"] for x in labelled_paragraphs(Document(os.path.join(out, "f4.docx"))))
+# בונה הטיוטה כותב נקודה אחת בכל רמה, "9." וגם "9.1." (draft-json-schema.md), והסעיף שנוסף ממשיך באותו סגנון
+f4lines = f4.split("\n")
 ck("typed numbers rewritten after removal and addition",
-   "רמת שירות" not in f4 and "2. תמורה" in f4 and "3. אחריות" in f4 and "1.2 אין הנדסה לאחור." in f4)
-ck("references follow the typed renumbering", "כפוף לסעיף 2 להלן." in f4 and "בהתאם לסעיף 2 זה ולסעיף 1.1 לעיל." in f4)
+   "רמת שירות" not in f4 and "2. תמורה" in f4lines and "3. אחריות" in f4lines and "1.2. אין הנדסה לאחור." in f4lines
+   and "2.1. בהתאם לסעיף 2 זה ולסעיף 1.1 לעיל." in f4lines and "4. אחריות" not in f4 and "3. תמורה" not in f4)
+ck("references follow the typed renumbering", "1.1. כפוף לסעיף 2 להלן." in f4lines and "בהתאם לסעיף 2 זה ולסעיף 1.1 לעיל." in f4)
 
 if bad:
     print("   REFUSING TO RELEASE: the drafter template pipeline is broken")

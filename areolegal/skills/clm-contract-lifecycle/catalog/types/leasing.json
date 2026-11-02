@@ -1,0 +1,3 @@
+{"type_code": "leasing", "label": "ליסינג וחכירת ציוד", "aliases": ["ליסינג", "חכירת ציוד", "צי רכב", "leasing"],
+ "type_fields": [{"key": "asset", "label": "הנכס", "kind": "text"}, {"key": "residual", "label": "ערך שייר", "kind": "money"},
+  {"key": "usage_cap", "label": "מגבלת שימוש", "kind": "text"}, {"key": "return_terms", "label": "תנאי השבה", "kind": "text"}]}

@@ -81,7 +81,10 @@ def test_a_consistent_core_produces_no_drift_finding(model_on_disk, tmp_path):
     """הבדיקה אינה מרעישה: גרעין שאומר את המחושב אינו ממצא."""
     m, path = model_on_disk
     core = tmp_path / "playbook-core.json"
-    core.write_text(json.dumps({"clauses": [], "status_label": m["status_label"],
+    # "המחושב" הוא התווית שנגזרת בקוד (playbook/status.py, b6-approval.md:38), ולא השדה שב-fixture, שנושא את הניסוח
+    # הקודם ("פלייבוק מוצע, ..."). גרעין שאומר את הנגזר אינו ממצא
+    from playbook import status as S
+    core.write_text(json.dumps({"clauses": [], "status_label": S.base_label(m),
                                 "playbook_status": m["playbook_status"]},
                                ensure_ascii=False), encoding="utf-8")
     r = _run([path, "--core", core])

@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """risk/logo.py: הלוגו מהפרופיל כתמונה מוטמעת של עד 150 קילובייט, לשדה meta.branding.logo.
 
-הבעיה (סבב 3): בפרופיל branding.logo_path מפנה ל-PNG של 4.9 מגה-בייט, והסכמה והוולידטור מחייבים תמונה מוטמעת
-של עד 150 קילובייט. שני הרצים הקטינו בעזר משלהם (C1: JPEG של 17.8 קילובייט; C2: 120 על 120, 27 קילובייט),
-ו-PIL אינה בתלויות המוצהרות. סיכום C1 פער 4; סיכום C2 פער 1.
+הסכמה והוולידטור מחייבים תמונה מוטמעת של עד 150 קילובייט, גם כש-branding.logo_path מפנה לקובץ גדול.
 
-הכלל (הערות 3.6): logo_data_uri(path) מחזיר data URI של עד MAX_BYTES:
+הכלל: logo_data_uri(path) מחזיר data URI של עד MAX_BYTES:
 1. קובץ PNG, JPEG, GIF או WebP שכבר קטן מהתקרה ורוחבו וגובהו עד MAX_PX: מוטמע כמו שהוא (ספרייה סטנדרטית).
 2. אחרת: הקטנה ב-Pillow (תלות רשות, רק לכאן): הצלע הארוכה עד MAX_PX, PNG שומר שקיפות; אם עדיין גדול,
    JPEG על רקע לבן, באיכות יורדת, ואז צלע קטנה יותר. התוצאה תמיד עד התקרה, או LogoError.
@@ -23,10 +21,12 @@ if __name__ == '__main__':
 
 try:
     from common.cli import guard_out, parser, run, write_json
+    from common.paths import long_path
 except ImportError:  # pragma: no cover
     import sys as _sys
     _sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from common.cli import guard_out, parser, run, write_json
+    from common.paths import long_path
 
 MAX_BYTES = 150 * 1024
 MAX_PX = 240
@@ -62,7 +62,7 @@ def uri_bytes(uri):
 
 
 def logo_data_uri(path, max_bytes=MAX_BYTES, max_px=MAX_PX):
-    with open(path, 'rb') as fh:
+    with open(long_path(path), 'rb') as fh:
         raw = fh.read()
     mime = _mime(raw)
     if not mime:
@@ -98,7 +98,7 @@ def logo_data_uri(path, max_bytes=MAX_BYTES, max_px=MAX_PX):
 
 
 def main(argv=None):
-    """python -I logo.py --logo <path> [--out uri.txt]. הלוגו נקרא בלבד; --out רק לקובץ ה-data URI."""
+    """python3 -B logo.py --logo <path> [--out uri.txt]. הלוגו נקרא בלבד; --out רק לקובץ ה-data URI."""
     ap = parser('הלוגו כ-data URI של עד 150 קילובייט', out_required=False)
     ap.add_argument('--logo', required=True, help='קובץ הלוגו מהפרופיל (קריאה בלבד)')
     a = ap.parse_args(argv)

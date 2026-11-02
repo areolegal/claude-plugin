@@ -83,7 +83,8 @@ def _iso(value):
     if not value or ISO.match(str(value)):
         return value
     s = str(value)
-    for fmt in ('%d.%m.%Y', '%Y-%m-%d', '%Y-%m-%dT%H:%M:%S', '%d.%m.%Y %H:%M'):
+    # כלל 3.6: D.M.YYYY (גם בלי אפס מוביל) בעברית, "3 April 2027" באנגלית; ב-JSON נכתב ISO
+    for fmt in ('%d.%m.%Y', '%Y-%m-%d', '%Y-%m-%dT%H:%M:%S', '%d.%m.%Y %H:%M', '%d %B %Y', '%B %d, %Y'):
         try:
             d = _dt.datetime.strptime(s, fmt)
             return d.astimezone().isoformat(timespec='seconds')
@@ -113,6 +114,13 @@ def migrate_state(old):
         meta['round_stage'] = _stage_for_round(meta.get('round_number', 1))
         log.append('round_stage "%s" -> %s (לפי מספר הסבב)' % (stage, meta['round_stage']))
     _strip_approval_chain(st, log)
+    # באג 4 (הרצה S1b): עוגני זמן ובדיקות שנרשמו ב-meta עוברים לשורש, המקום היחיד שנקרא
+    for k in ('time_anchors', 'post_checks_done', 'checks_reviewed'):
+        if k in meta:
+            moved = meta.pop(k) or []
+            have = st.setdefault(k, [])
+            have += [x for x in moved if x not in have]
+            log.append('%s: מ-meta לשורש' % k)
     for doc in st.get('meta', {}).get('received_documents', []) + st.get('meta', {}).get('sent_documents', []):
         if 'file' in doc and 'file_name' in doc:
             if doc['file'] == doc['file_name'] or not doc['file_name']:
@@ -139,6 +147,23 @@ def migrate_state(old):
             for x in o:
                 walk(x)
     walk(st)
+    # שדות meta שנכתבו בשורש (updated_by, last_updated): עוברים ל-meta, המקום שבו הסכמה מגדירה אותם
+    for k in ('last_updated', 'updated_by', 'date'):
+        if k in st:
+            v = st.pop(k)
+            if not meta.get(k) or (k == 'last_updated' and str(v) > str(meta.get(k))):
+                meta[k] = v
+            log.append('%s: מהשורש ל-meta' % k)
+    # בדיקה עצמאית S1c, H2: CLOSED בלי הסכמה של שני הצדדים (הצד השני עוד לא הגיב, או נקודה פתוחה לשיחה) הוא
+    # ACCEPTED_PENDING. decided_in_round נדרש להצמדה לפי clause_map בהשוואת הסבב הבא
+    from orchestrator import state_builder as _sb
+    for c in st.get('clauses', []):
+        c.setdefault('decided_in_round', int(meta.get('round_number') or 1))
+        # הכרעת דחייה שלנו (R1 עד R3) את הנוסח שלהם נרשמת בהיסטוריה (by: us). היא אינה דחייה של הצעה שלנו, ואינה
+        # נספרת ל-STUCK (state_builder.stuck_reason, S1d)
+        if str(c.get('decision_code') or '').startswith('R') and 'rejections' not in c:
+            c['rejections'] = [{'round': c['decided_in_round'], 'by': 'us'}]
+    _sb.normalize_statuses(st, log)
     meta['schema_version'] = SCHEMA_VERSION
     meta['refs_version'] = REFS_VERSION
     meta['migrated_from'] = ver

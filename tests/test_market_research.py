@@ -21,6 +21,18 @@ import market_research as MR  # noqa: E402
 TOPIC = "הגבלת אחריות"
 
 
+@pytest.fixture(autouse=True)
+def approved_list(tmp_path, monkeypatch):
+    """רשימת מקורות מאושרים לבדיקה, שמאשרת את example.gov של המקורות כאן. מאז 1.23 גם הסכם מודל (W6, מודל
+    מאוזן) נספר רק מאתר שברשימה (mr1-question-sources-coding.md, "ארבעה סוגי מקורות בלבד, וכולם רק מרשימת
+    המקורות המאושרים"; market_research.model_body_unlisted). משתנה הסביבה גובר על העותק שבתוסף."""
+    p = tmp_path / "approved.json"
+    p.write_text(json.dumps({"jurisdictions": [{"sources": [
+        {"domain": "example.gov", "status": "approved", "include_subdomains": True}]}]}), encoding="utf-8")
+    monkeypatch.setenv("AREO_APPROVED_SOURCES", str(p))
+    return p
+
+
 def ref(sid, drafted, body, family, stype=1, date="2024-03-01"):
     return {"source_id": sid, "drafted_by": drafted, "issuing_body": body, "template_family": family,
             "source_type": stype, "doc_date": date, "read_status": "read", "url": "https://example.gov/%s" % sid,
@@ -58,6 +70,15 @@ def test_three_points_each_from_three_independent_sources():
     assert r["ours"]["level"] == 2 and r["middle"]["level"] == 0 and r["theirs"]["level"] == -2
     assert r["yellow_from"] == "middle"
     assert m["market_research"]["counts"]["counted"] == 9
+
+
+def test_a_model_agreement_from_a_site_off_the_approved_list_is_not_counted(monkeypatch):
+    """בלי משתנה הסביבה נקרא העותק שבתוסף, ו-example.gov אינו בו: המודל המאוזן (W6) אינו נספר, ובאמצע נשארים
+    שני מקורות בלבד."""
+    monkeypatch.delenv("AREO_APPROVED_SOURCES")
+    m = full()
+    r = MR.compute_ranges(m)[0]
+    assert r["middle"] is None and m["market_research"]["counts"]["counted"] == 8
 
 
 def test_two_sources_from_the_same_body_count_once():
@@ -118,7 +139,10 @@ def test_market_playbook_without_a_disclosure_fails_and_the_message_fixes_it(tmp
     assert r.returncode == 0, r.stdout + r.stderr
     saved = json.loads(p.read_text(encoding="utf-8"))
     disc = saved["market_research"]["disclosure"]
-    assert disc["chat_message"].startswith(m["status_label"])
+    # התווית נגזרת בקוד (playbook/status.py, derive_status), ולא מה שנשמר במודל: פלייבוק שנבנה ממחקר שוק בלבד
+    # הוא "טיוטת מדיניות ממחקר שוק, מחכה לאישור שלכם" (ps1-playbook-identity-scope.md; mr2-ranges-disclosure-routes.md)
+    from playbook import status as PS
+    assert disc["chat_message"].startswith(PS.LABEL_MARKET)
     assert "[פתיחה](https://example.gov/W1)" in disc["chat_message"]
     assert "9 משפחות תבנית" in disc["fixed_sentence"]
     assert not MR.check_model(saved)
@@ -169,7 +193,7 @@ def test_a_failed_link_takes_the_source_out_and_the_range_is_recomputed(tmp_path
         return {"status": 404 if bad else 200, "blocked": False, "reason": "http_error: 404" if bad else "ok",
                 "text": None, "sha256": None}
     monkeypatch.setattr(net, "fetch", fake)
-    args = type("A", (), {"model": str(p), "family_dir": str(tmp_path / "fam")})
+    args = type("A", (), {"model": str(p), "family_dir": str(tmp_path / "fam"), "approved_sources": None})
     assert MR.cmd_links(args) == 3
     saved = json.loads(p.read_text(encoding="utf-8"))
     w4 = [r for r in saved["market_research"]["source_refs"] if r["source_id"] == "W4"][0]

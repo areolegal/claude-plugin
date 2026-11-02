@@ -52,12 +52,20 @@ def deal(tmp_path):
     return d
 
 
-def _round1(deal):
-    return _run("write", "--deal", deal, "--decisions", deal / "decisions_round_1.json",
-                "--counterparty", "הצד השני בע\"מ", "--contract-type", "הסכם סודיות",
-                "--concessions", deal / "ויתורים.json",
-                "--produced", "send=תגובת החברה - סבב 1 - למשלוח.docx",
-                "--sent", "תגובת החברה - סבב 1 - למשלוח.docx")
+SEND = "תגובת החברה - סבב 1 - למשלוח.docx"
+
+
+def _round1(deal, sent=True):
+    """סוף סבב 1: write עם העותק שהופק, ואחריו sent באישור המשתמש. העותק למשלוח אינו "נשלח" בסוף הסבב, גם עם
+    --sent באותו write: הוא "הופק, ממתין לשליחה" עד negotiation_state.py sent (n4c-produce.md:48, S1d-R2)."""
+    r = _run("write", "--deal", deal, "--decisions", deal / "decisions_round_1.json",
+             "--counterparty", "הצד השני בע\"מ", "--contract-type", "הסכם סודיות",
+             "--concessions", deal / "ויתורים.json",
+             "--produced", "send=" + SEND, "--sent", SEND)
+    if r.returncode or not sent:
+        return r
+    assert not _state(deal)["meta"]["sent_documents"], "העותק נרשם כנשלח בסוף הסבב, לפני אישור המשתמש"
+    return _run("sent", "--deal", deal, "--file", deal / SEND)
 
 
 def test_round_one_is_written_and_valid(deal):
@@ -102,8 +110,10 @@ def test_running_the_same_round_again_does_not_overwrite_the_history(deal):
 
 def test_a_sent_document_is_recorded_once(deal):
     assert _round1(deal).returncode == 0
-    r = _run("write", "--deal", deal, "--round", "1",
-             "--sent", "תגובת החברה - סבב 1 - למשלוח.docx")
+    r = _run("write", "--deal", deal, "--round", "1", "--sent", SEND)
+    assert r.returncode == 0, r.stdout
+    assert len(_state(deal)["meta"]["sent_documents"]) == 1
+    r = _run("sent", "--deal", deal, "--file", deal / SEND)
     assert r.returncode == 0, r.stdout
     assert len(_state(deal)["meta"]["sent_documents"]) == 1
 

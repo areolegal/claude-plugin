@@ -1,0 +1,3 @@
+{"type_code": "services", "label": "שירותים ומיקור חוץ", "aliases": ["שירותים", "מיקור חוץ", "פרילאנס", "ייעוץ", "services", "outsourcing"],
+ "type_fields": [{"key": "sla", "label": "רמות שירות", "kind": "text"}, {"key": "key_personnel", "label": "אנשי מפתח", "kind": "text"},
+  {"key": "transition", "label": "סיוע במעבר", "kind": "text"}, {"key": "non_solicit", "label": "איסור העסקה עוקפת", "kind": "text"}]}

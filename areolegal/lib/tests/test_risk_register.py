@@ -58,10 +58,20 @@ def test_cell_limit_fails_long_risk_name():
     assert any('ארוך מ-70' in e for e in errs(reg))
 
 
-def test_cell_limit_fails_long_pre_send_gap():
+def test_legacy_pre_send_fixes_are_read_and_ignored():
+    """pre_send_fixes יצא (risk-register-schema.md, "נוסח שהוא התגובה שלנו": "במרשם ישן השדה נקרא ומתעלמים
+    ממנו"): גם שורה ארוכה, הפניה שלא בתבנית, מזהה כלל או שורה בלי clause_ref אינם שגיאה, והתוצאה זהה למרשם בלי
+    השדה."""
     reg = load('c1b_register.json')
     reg['pre_send_fixes'][0]['gap'] = 'א' * 81
-    assert any('pre_send 0.gap' in e for e in errs(reg))
+    reg['pre_send_fixes'][0]['where'] = 'בסעיף שעוסק בסודיות המגעים ובתנאים'
+    reg['pre_send_fixes'][0]['clause_ref'] = 'R-04'
+    reg['pre_send_fixes'][1].pop('clause_ref', None)
+    E, W = validate(reg)
+    assert not any('pre_send' in x for x in E + W)
+    bare = copy.deepcopy(reg)
+    bare.pop('pre_send_fixes')
+    assert validate(bare) == (E, W)
 
 
 def test_clause_ref_format():
@@ -77,8 +87,8 @@ def test_clause_ref_format():
 
 def test_bad_clause_ref_in_register_fails():
     reg = load('c2_register.json')
-    reg['pre_send_fixes'][0]['where'] = 'בסעיף שעוסק בסודיות המגעים ובתנאים'
-    assert any('where שלא בתבנית' in e for e in errs(reg))
+    reg['risks'][0]['anchors'][0]['clause'] = 'בסעיף שעוסק בסודיות המגעים ובתנאים'
+    assert any('anchor 0' in e and 'שלא בתבנית' in e for e in errs(reg))
 
 
 # ---------- deliberate waivers and numbering from the negotiation state ----------
@@ -94,12 +104,13 @@ def test_waivers_read_from_state():
     assert 'E-028' in w and 'E-004' in w
 
 
-def test_pre_send_row_from_deliberate_waiver_fails():
+def test_an_accepted_waiver_must_point_at_a_waiver_in_the_state():
+    """הרשימה "לתיקון" יצאה (risk-register-schema.md:251); מה שנשאר מהחוזה: סיכון שהתקבל בוויתור מכוון מצביע על
+    ויתור שבקובץ המצב (r3-scoring.md, ויתורים מכוונים)."""
     reg = _c2_with_state_ids(load('c2_register.json'))
-    E = errs(reg, state=load('c2_state_min.json'))
-    assert any('pre_send 0' in e and 'ויתור מכוון' in e for e in E)
-    assert any('pre_send 1' in e and 'ויתור מכוון' in e for e in E)
-    assert not any('pre_send 2' in e for e in E)
+    reg['risks'][4]['decision'] = {'status': 'accepted', 'basis': 'deliberate_waiver', 'state_clause_id': 'D07'}
+    E = errs(reg, state=_state48())
+    assert any('RSK-005' in e and 'D07' in e and 'אינו ויתור מכוון בקובץ המצב' in e for e in E)
 
 
 def test_waiver_as_accepted_risk_passes():
@@ -112,17 +123,16 @@ def test_waiver_as_accepted_risk_passes():
     assert errs(reg, corpus=load('c2_corpus.json'), state=load('c2_state_min.json')) == []
 
 
-def test_accepted_risk_cannot_stay_in_pre_send():
+def test_deliberate_waiver_must_be_accepted():
     reg = load('c2_register.json')
-    reg['risks'][0]['decision'] = {'status': 'accepted', 'basis': 'deliberate_waiver'}
-    assert any('סיכון שהתקבל בוויתור מכוון' in e for e in errs(reg))
+    reg['risks'][0]['decision'] = {'status': 'open', 'basis': 'deliberate_waiver'}
+    assert any('ויתור מכוון חייב decision.status' in e for e in errs(reg))
 
 
-def test_clause_ref_required_in_pre_send():
-    reg = load('c2_register.json')
-    del reg['pre_send_fixes'][2]['clause_ref']
-    assert any('pre_send 2' in e and 'חסר clause_ref' in e for e in errs(reg, state=load('c2_state_min.json')))
-    assert any('pre_send 2' in e and 'חסר clause_ref' in e for e in errs(reg))
+def test_clause_ref_required_in_a_state_concession():
+    st = _state48()
+    st['deliberate_concessions'][0]['clause_ref'] = ''
+    assert any('ויתור בלי clause_ref' in e for e in errs(load('c2_register.json'), state=st))
 
 
 # ---------- mutual agreement ----------
@@ -254,10 +264,9 @@ def test_state48_deliberate_concessions_are_read():
 
 
 def test_state48_waiver_rows_fail_and_accepted_risk_passes():
-    reg = _c2_with_state_ids(load('c2_register.json'))
+    reg = load('c2_register.json')
     E = errs(reg, state=_state48())
-    assert sum('ויתור מכוון' in e for e in E) == 2
-    reg['pre_send_fixes'] = reg['pre_send_fixes'][2:]
+    assert sum('אינו מופיע כסיכון שהתקבל' in e for e in E) == 2
     for rid, sc in (('RSK-001', 'E-028'), ('RSK-002', 'E-004')):
         r = next(x for x in reg['risks'] if x['id'] == rid)
         r['decision'] = {'status': 'accepted', 'basis': 'deliberate_waiver', 'state_clause_id': sc}
@@ -265,14 +274,20 @@ def test_state48_waiver_rows_fail_and_accepted_risk_passes():
 
 
 def test_state48_numbering_map_mismatch_fails():
-    reg = _c2_with_state_ids(load('c2_register.json'))
-    reg['pre_send_fixes'] = reg['pre_send_fixes'][2:]
-    reg['pre_send_fixes'][0]['where'] = 'סעיף 7'   # במספור התגובה שלנו זה סעיף 6
-    assert any('numbering_map' in e for e in errs(reg, state=_state48()))
+    reg = load('c2_register.json')
+    reg['risks'][2]['anchors'][0]['state_clause_id'] = 'D07'
+    assert not any('numbering_map' in e for e in errs(reg, state=_state48()))
+    reg['risks'][2]['anchors'][0]['clause'] = 'סעיף 7'   # במספור התגובה שלנו זה סעיף 6
+    assert any('RSK-003' in e and 'numbering_map' in e for e in errs(reg, state=_state48()))
 
 
 def test_state48_text_status_must_match():
     reg = load('c2_register.json')
     st = _state48()
     st['text_status'] = 'counterparty_draft'
+    # r1-intake.md שלב 1: text_status הוא של המסמך שנסרק; כשהמסמך נקוב (file או title), אי-התאמה היא אזהרה
+    E, W = validate(reg, state=st)
+    assert not any('text_status' in e for e in E) and any('text_status' in w for w in W)
+    for k in ('file', 'title'):
+        reg['meta']['source_version'].pop(k)
     assert any('text_status' in e for e in errs(reg, state=st))

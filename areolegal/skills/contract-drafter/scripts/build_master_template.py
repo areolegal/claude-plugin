@@ -3,8 +3,8 @@
 """בונה תבנית אב ושלד הסכם מקובץ Word אחד. רץ פעם אחת למשפחת הסכמים.
 
     python3 build_master_template.py --source "<תבנית או הסכם>.docx" \\
-        --family "הסכם שירותים" --kind template|agreement \\
-        --out-dir "Areo-נתונים/תבניות/הסכם שירותים" [--company "<שם החברה>"]
+        --family "<משפחה>" --kind template|agreement \\
+        --out-dir "Areo-נתונים/תבניות/<משפחה>" [--company "<שם החברה>"]
 
 --kind template: קובץ שנועד להימלא. המשתנים הם השדות הריקים: קווים תחתונים,
   סוגריים מרובעים ותגיות {{...}} שכבר קיימות.
@@ -35,12 +35,20 @@ from docx.oxml.ns import qn
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from docx_numbering import (assign_segments, body_segment, labelled_paragraphs,  # noqa: E402
                             replace_spans, segment_summary)
+from build_template_registry import guard_out  # noqa: E402
+
+try:                                   # פלט עברי במסוף של Windows
+    sys.stdout.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError):   # pragma: no cover
+    pass
 
 TAG_RX = re.compile(r"\{\{\s*([^{}]{1,60}?)\s*\}\}")
 BLANK_RX = re.compile(r"_{2,}|\.{6,}|…{2,}")
 BRACKET_RX = re.compile(r"\[(?:[^\[\]\n]{0,40})\]")
 # review markers, not fields: filling one would erase the flag the lawyer must clear
-MARKERS = re.compile(r"\[\s*(?:טעון בדיקת פסיקה|טעון אימות|נוסח חדש[^\]]*)\s*\]")
+# "טעון בדיקת פסיקה" נשאר לטיוטות שנבנו לפני שהתווית הוחלפה ב"טעון בדיקה משפטית" (areo-hard-rules 3.5)
+MARKERS = re.compile(r"\[\s*(?:טעון בדיקה משפטית|טעון בדיקת פסיקה|needs legal review|טעון אימות|"
+                     r"נוסח חדש[^\]]*)\s*\]", re.I)
 
 VALUE_PATTERNS = [
     ("מספר_זיהוי", re.compile(
@@ -124,7 +132,12 @@ def main():
     ap.add_argument("--kind", choices=["template", "agreement"], required=True)
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--company", default="")
+    ap.add_argument("--force", action="store_true",
+                    help="לדרוס master.docx קיים. בלעדיו, תבנית אב שכבר נבנתה אינה נבנית מחדש")
     a = ap.parse_args()
+    # הפלט לעולם אינו קובץ המקור, ותבנית אב קיימת אינה נדרסת בלי --force
+    guard_out(os.path.join(a.out_dir, "master.docx"), [a.source], a.force)
+    guard_out(os.path.join(a.out_dir, "skeleton.json"), [a.source])
 
     ext = os.path.splitext(a.source)[1].lower()
     if ext != ".docx":

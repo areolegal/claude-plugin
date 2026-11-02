@@ -141,7 +141,36 @@ TOOLS = [
                     "description": "Optional. Organisation name, for a recognisable prompt later.",
                 },
             },
-            "required": ["profile_folder"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "save_profile",
+        "description": (
+            "Save the public copy of the organisation profile at Areo, once, right after setup saved "
+            "the profile file (and after a profile update or an added entity). Pass the JSON object "
+            "that build_profile.py --areo-copy produced, unchanged. Only public organisation fields "
+            "are kept; nothing else is stored."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {"profile": {"type": "object"}},
+            "required": ["profile"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "record_action",
+        "description": (
+            "Count one completed output (the only usage information Areo receives). Pass exactly the "
+            "four fields that record_action.py printed: skill, action, count, date. When the script "
+            "printed nothing, do not call this."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {"skill": {"type": "string"}, "action": {"type": "string"},
+                           "count": {"type": "integer"}, "date": {"type": "string"}},
+            "required": ["skill", "action"],
             "additionalProperties": False,
         },
     },
@@ -268,6 +297,31 @@ def http_get(path: str, key: str) -> tuple[int, dict]:
         return 0, {"error": str(e)}
 
 
+def http_post(path: str, key: str, payload: dict) -> tuple[int, dict]:
+    req = urllib.request.Request(
+        api_url() + path,
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        method="POST",
+        headers={
+            "Authorization": "Bearer " + key,
+            "Content-Type": "application/json",
+            "User-Agent": f"areolegal-mcp/{PLUGIN_VERSION}",
+            "X-Areo-Device": device_id(),
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            return resp.status, json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        try:
+            body = json.loads(e.read().decode("utf-8"))
+        except ValueError:
+            body = {}
+        return e.code, body
+    except (urllib.error.URLError, OSError) as e:
+        return 0, {"error": str(e)}
+
+
 NO_KEY_MSG = (
     "לא נמצא רישיון AreoLegal במחשב הזה. "
     "אם יש למשתמש מפתח רישיון, הפעל את הכלי activate עם המפתח. "
@@ -328,15 +382,20 @@ def call_tool(name: str, args: dict) -> str:
         )
 
     if name == "mark_setup":
+        # The folder is optional: setup may pass only the organisation name. Either way it
+        # stays in this machine's config file and is never sent anywhere.
         folder = (args.get("profile_folder") or "").strip()
-        if not folder:
-            return "Error: profile_folder is required."
         cfg = read_config()
         setup = cfg.get("setup") or {}
         # completed_at is stamped once and never overwritten: it answers "was this
         # machine ever set up", and a later profile update must not reset that.
         setup.setdefault("completed_at", now_iso())
-        setup["profile_folder"] = folder[:500]
+        if folder:
+            setup["profile_folder"] = folder[:500]
+        else:
+            # A folder recorded by an earlier setup no longer describes this one: drop it rather
+            # than point every later skill at the wrong place.
+            setup.pop("profile_folder", None)
         if (args.get("entity") or "").strip():
             setup["entity"] = args["entity"].strip()[:200]
         cfg["setup"] = setup
@@ -349,6 +408,18 @@ def call_tool(name: str, args: dict) -> str:
     key = license_key()
     if not key:
         return NO_KEY_MSG
+
+    if name in ("save_profile", "record_action"):
+        if name == "save_profile":
+            status, body = http_post("/v1/profile", key, {"profile": args.get("profile")})
+        else:
+            payload = {k: args[k] for k in ("skill", "action", "count", "date") if k in args}
+            status, body = http_post("/v1/actions", key, payload)
+        if status == 0:
+            return CONN_ERR_MSG.format(err=body.get("error", "unknown"))
+        if status != 200:
+            return denial_text(status, body)
+        return json.dumps(body, ensure_ascii=False)
 
     if name == "license_status":
         path = "/v1/license/status"

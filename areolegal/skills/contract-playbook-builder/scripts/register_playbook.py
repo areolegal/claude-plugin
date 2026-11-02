@@ -36,6 +36,7 @@ import os
 import shutil
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # גם ב-python -I, שאינו מוסיף את תיקיית הסקריפט
 import areo_lib  # noqa: F401  מוסיף את areolegal/lib לנתיב הייבוא
 
 from common.cli import OutputRefused, guard_out, no_bytecode, parser  # noqa: E402
@@ -60,8 +61,9 @@ def entry_identity(e):
             e.get("company_role_code"), bool(e.get("legacy")))
 
 
-def model_entry(model, core, core_rel, legacy=False):
-    st = S.derive_status(model)
+def model_entry(model, core, core_rel, legacy=False, model_path=None):
+    # התווית של שער המדיניות (status.gate_status), ולא גזירה נפרדת: האינדקס, הגרעין ו-policy_gate אומרים אותו דבר
+    st = S.gate_status(model, model_path)
     e = {"core_path": core_rel,
          "family_id": model.get("family_id"),
          "family_code": (model.get("family_code") or (core or {}).get("family_code")),
@@ -77,10 +79,41 @@ def model_entry(model, core, core_rel, legacy=False):
          "playbook_status": st["playbook_status"],
          "status_label": st["label"],
          "corpus_origin": (model.get("scope_summary") or {}).get("corpus_origin"),
-         "produced_with": model.get("produced_with")}
+         "produced_with": model.get("produced_with"),
+         # תוצאת הבדיקות הזולות (playbook/validity): רכיב שמחפש פלייבוק רואה שהוא אינו עובר את הבדיקות שלו
+         "validity": validity_of(model, core)}
     if legacy:
         e["legacy"] = True
     return {k: v for k, v in e.items() if v not in (None, "")}
+
+
+def validity_of(model, core):
+    """playbook/validity.validity_summary, או None כשהספרייה אינה זמינה (אז השדה אינו נכתב)."""
+    try:
+        from playbook import validity as VY
+    except ImportError:
+        return None
+    return VY.validity_summary(model, core)
+
+
+def build_identity(model):
+    """מה מזהה בנייה: build_id כשנכתב, ואחרת הגרסה ותאריך הבנייה. ריצת עדכון מעלה את הגרסה, ובנייה מחדש
+    מאפס מעלה את הראשי (playbook-schema.md, version), ולכן שתי בניות שונות אינן חולקות זהות."""
+    return (model.get("build_id") or "", str(model.get("version") or ""), str(model.get("generated_at") or ""))
+
+
+def previous_build(folder, model, src_model):
+    """True רק כשבתיקייה יושב פלייבוק שנבנה בהרצה קודמת. לא בכל קריאה: בבנייה אחת הבונה מריץ את הרישום
+    כמה פעמים, אחרי כל תיקון במודל, ובהרצה חיה נוצרו כך שישה קבצים ב-versions/ בבנייה אחת."""
+    dst = os.path.join(folder, "playbook-model.json")
+    if not os.path.exists(dst) or os.path.abspath(dst) == os.path.abspath(src_model):
+        return False        # אין פלייבוק קודם, או שהמודל נכתב כבר במקומו: זו אותה בנייה
+    try:
+        with open(dst, encoding="utf-8") as fh:
+            old = json.load(fh)
+    except ValueError:
+        return True         # קובץ פגום נשמר, כדי שלא יאבד
+    return build_identity(old) != build_identity(model)
 
 
 def keep_previous(folder):
@@ -125,7 +158,7 @@ def main(argv=None):
     folder = os.path.join(a.data, "playbooks", family_id)
     index_path = os.path.join(a.data, "playbooks", "index.json")
     core_rel = os.path.join("playbooks", family_id, "playbook-core.json").replace("\\", "/")
-    entry = model_entry(model, core, core_rel)
+    entry = model_entry(model, core, core_rel, model_path=a.model)
     missing = [f for f in KEY_FIELDS if not entry.get(f)]
     if missing:
         print("הרשומה לא תימצא באיתור בלי %s. השדות נגזרים מהמודל ומהגרעין."
@@ -191,10 +224,12 @@ def main(argv=None):
         print("  רשומה  : %s" % json.dumps(entry, ensure_ascii=False, indent=1))
         if legacy_entry:
             print("  ועוד רשומה לפלייבוק במבנה הישן, בלי להזיז אותו")
+        print("  גרסה קודמת ב-versions/: %s" % ("תישמר (בתיקייה פלייבוק מבנייה קודמת)"
+                                              if previous_build(folder, model, a.model) else "אין מה לשמור"))
         return 0
 
     os.makedirs(folder, exist_ok=True)
-    kept_versions = keep_previous(folder)
+    kept_versions = keep_previous(folder) if previous_build(folder, model, a.model) else []
     for src, name in ((a.model, "playbook-model.json"), (a.core, "playbook-core.json")):
         dst = os.path.join(folder, name)
         if os.path.abspath(src) != os.path.abspath(dst):
@@ -215,6 +250,13 @@ def main(argv=None):
     if legacy_entry:
         print("נרשם גם פלייבוק במבנה הישן שבשורש, בלי להזיז אותו.")
     print("רשומות שלא נגעתי בהן: %d" % len(others_before))
+    if (entry.get("validity") or {}).get("status") == "invalid":
+        # נרשם, ואינו נמסר בשקט: השורות ללקוח נכנסות להודעה המסכמת (wf2-opinion-research-finalize.md, שלב 12)
+        from playbook import validity as VY
+        print("הפלייבוק אינו עובר את הבדיקות של עצמו: %s" % ", ".join(
+            "%s x%d" % (k, v) for k, v in entry["validity"]["codes"].items()))
+        for line in VY.playbook_warnings(model, core, lang=model.get("output_language") or "he"):
+            print("ללקוח: %s" % line)
 
     if a.out:
         try:

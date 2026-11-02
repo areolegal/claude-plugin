@@ -1,0 +1,3 @@
+{"type_code": "distribution", "label": "הפצה וזכיינות", "aliases": ["הפצה", "זכיינות", "מפיץ", "reseller", "distribution", "franchise"],
+ "type_fields": [{"key": "territory", "label": "טריטוריה", "kind": "text"}, {"key": "exclusive", "label": "בלעדיות", "kind": "text"},
+  {"key": "targets", "label": "יעדי מכירה", "kind": "text"}, {"key": "sell_off", "label": "תקופת מכירת מלאי אחרי סיום", "kind": "text"}]}

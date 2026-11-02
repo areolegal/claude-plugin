@@ -65,28 +65,75 @@ def _apply(d, *extra):
                 *(extra or ("--internal-layer",)))
 
 
-def test_the_whole_chain_ends_in_a_send_copy_and_a_valid_ledger(deal):
-    r = _apply(deal)
+SMALL = ["הסכם שירותים", "1. הספק יספק את השירותים בהתאם לנספח.", "2. כל צד רשאי לסיים בהתראה של 30 יום."]
+
+
+@pytest.fixture
+def small(tmp_path):
+    """עסקה קטנה שהתגובה בה עוברת גם את בדיקות התוכן במצב משלוח. מאז 1.23 השער במצב משלוח דורש את קובץ ההכרעות
+    (ואיתו רצות בדיקות התוכן), קובץ מצב עם סעיפים ואת קובץ הממצאים של המאמת העצמאי (n6-gate-and-send.md:32,48;
+    n9-verify.md:23). ההכרעות של C1ב אינן עוברות את בדיקות התוכן החדשות במשלוח (תלויות, צירופים), ולכן השרשרת
+    המלאה נבדקת כאן על טיוטה קטנה."""
+    d = tmp_path / "Areo-נתונים" / "transactions" / "deal_small_2026-10-15"
+    d.mkdir(parents=True)
+    H.small_draft(str(d / "טיוטה שהתקבלה.docx"), SMALL)
+    dec = H.decisions({"id": "D1", "op": "replace_span", "para": 1, "old": "יספק", "new": "יעניק",
+                       "decision_code": "R1", "external_comment": "תיקנו את המינוח, כדי שיתאים להגדרות בהסכם.",
+                       "internal_comment": "מינוח בלבד; אין שינוי בהיקף השירותים.",
+                       "plain_effect": "מינוח", "position_effect": "ללא שינוי"}, tid="deal_small_2026-10-15")
+    dec.pop("author", None)   # החותם מהפרופיל
+    (d / "decisions_round_1.json").write_text(json.dumps(dec, ensure_ascii=False), encoding="utf-8")
+    prof = {k: v for k, v in H.PROFILE.items() if not k.startswith("lawyer_")}
+    prof["branding"] = {"lawyer_name": H.PROFILE["lawyer_name"], "lawyer_initials": H.PROFILE.get("lawyer_initials")}
+    (d / "profile.json").write_text(json.dumps(prof, ensure_ascii=False), encoding="utf-8")
+    return d
+
+
+def _produce_and_verify(d, default_flags=False):
+    """הסדר של n4c-produce.md:48 ו-n6-gate-and-send.md: הפקה, write, השער במצב עבודה עם קבצי הקלט של המאמת,
+    וקובץ הממצאים של המאמת (בלי ממצא פתוח) קשור לטביעת האצבע של הנוסח. default_flags: הפקה בלי שום דגל."""
+    r = _run("apply_redlines.py", "--draft", d / "טיוטה שהתקבלה.docx", "--decisions", d / "decisions_round_1.json",
+             "--out", d / "תגובת החברה - סבב 1.docx", "--profile", d / "profile.json") if default_flags else _apply(d)
     assert r.returncode == 0, r.stdout + r.stderr
-    work, exp = deal / "תגובת החברה - סבב 1.docx", deal / "תגובת החברה - סבב 1.expected.json"
-    assert work.exists() and exp.exists()
-    assert (deal / "תגובת החברה - סבב 1.as_produced.docx").exists()
-
-    common = ["--work", work, "--received", deal / "טיוטה שהתקבלה.docx",
-              "--profile", deal / "profile.json", "--expected-accept", exp]
-    g = _run("qa_gate.py", "--mode", "work", *common, "--out", deal / "gate-work.json")
-    assert g.returncode == 0, g.stdout + g.stderr
-    send = deal / "תגובת החברה - סבב 1 - למשלוח.docx"
-    g = _run("qa_gate.py", "--mode", "send", *common, "--send", send, "--deal", deal,
-             "--out", deal / "gate-send.json")
-    assert g.returncode == 0, g.stdout + g.stderr
-    assert send.exists()
-
-    w = _run("negotiation_state.py", "write", "--deal", deal,
-             "--decisions", deal / "decisions_round_1.json", "--gate", deal / "gate-send.json",
-             "--produced", "send=" + send.name, "--sent", send.name,
+    work, exp = d / "תגובת החברה - סבב 1.docx", d / "תגובת החברה - סבב 1.expected.json"
+    w = _run("negotiation_state.py", "write", "--deal", d, "--decisions", d / "decisions_round_1.json",
              "--received", "טיוטה שהתקבלה.docx")
     assert w.returncode == 0, w.stdout + w.stderr
+    common = ["--work", work, "--received", d / "טיוטה שהתקבלה.docx", "--profile", d / "profile.json",
+              "--expected-accept", exp, "--decisions", d / "decisions_round_1.json", "--deal", d]
+    runs = d / "runs" / "round-1"
+    runs.mkdir(parents=True, exist_ok=True)
+    g = _run("qa_gate.py", "--mode", "work", *common, "--out", d / "gate-work.json",
+             "--dump-accepted-text", runs / "accepted.json", "--dump-external-bubbles", runs / "bubbles.json")
+    assert g.returncode == 0, g.stdout + g.stderr
+    sha = json.loads((runs / "accepted.json.sha256").read_text(encoding="utf-8"))["work_sha256"]
+    (runs / "verify.json").write_text(json.dumps({"verifier": "n9", "round": 1, "work_sha256": sha,
+                                                  "read": [str(runs / "accepted.json")], "findings": []}),
+                                      encoding="utf-8")
+    return work, common + ["--verify-findings", runs / "verify.json"]
+
+
+def test_the_whole_chain_ends_in_a_send_copy_and_a_valid_ledger(small):
+    deal = small
+    work, common = _produce_and_verify(deal)
+    assert (deal / "תגובת החברה - סבב 1.as_produced.docx").exists()
+    send = deal / "תגובת החברה - סבב 1 - למשלוח.docx"
+    g = _run("qa_gate.py", "--mode", "send", *common, "--send", send, "--out", deal / "gate-send.json")
+    assert g.returncode == 0, g.stdout + g.stderr
+    assert send.exists()
+    # קובץ העבודה נושא את השכבה הפנימית, והעותק למשלוח נקי ממנה (החלטת מוצר 02.11.2026)
+    assert [c for c in dt.read_comments(str(work)) if c["author"] in dt.INTERNAL_AUTHORS]
+    assert not [c for c in dt.read_comments(str(send)) if c["author"] in dt.INTERNAL_AUTHORS]
+
+    # write השני, אחרי שהשער עבר: העותק "הופק, ממתין לשליחה", ו"נשלח" רק באישור המשתמש (n4c-produce.md:48)
+    w = _run("negotiation_state.py", "write", "--deal", deal,
+             "--decisions", deal / "decisions_round_1.json", "--gate", deal / "gate-send.json",
+             "--produced", "send=" + send.name)
+    assert w.returncode == 0, w.stdout + w.stderr
+    st = json.loads((deal / "negotiation_state.json").read_text(encoding="utf-8"))
+    assert st["quality_gate"]["send_copy"]["status"] == "produced_pending_send"
+    assert not st["meta"]["sent_documents"]
+    assert _run("negotiation_state.py", "sent", "--deal", deal, "--file", send).returncode == 0
     assert _run("negotiation_state.py", "check", "--deal", deal).returncode == 0
 
 
@@ -163,7 +210,8 @@ def test_a_question_asked_in_an_earlier_batch_is_not_asked_again(deal, tmp_path)
          "options": ["כן", "לא"]}], ensure_ascii=False), encoding="utf-8")
     r = _run("round_tools.py", "questions", "--items", items, "--deal", deal)
     assert r.returncode == 0, r.stdout + r.stderr
-    assert "נדרשת הכרעתך (מצב 2, חוסם משלוח" in r.stdout
+    # מספר המצב הוא קוד פנימי ואינו מוצג (question_batch.label_for); השאלה החוסמת ראשונה במנה
+    assert "1. **נדרשת הכרעתך (צריך לפני שליחה" in r.stdout and "מצב 2" not in r.stdout
     again = _run("round_tools.py", "questions", "--items", items, "--deal", deal)
     assert "כבר נשאלה" in again.stdout
 
@@ -198,9 +246,16 @@ def test_signing_is_blocked_while_anything_is_open(deal):
     assert g.returncode == 0
     r = _run("round_tools.py", "signing", "--gate", deal / "gate.json",
              "--profile", deal / "profile.json")
-    # בפרופיל של הבדיקה אין שם רשום של החברה, ולכן הרשימה אינה עוברת
+    # מצייני המקום של הצד שכנגד פתוחים, ולכן הרשימה אינה עוברת. השם הרשום נלקח מ-organization_name שבפרופיל
+    # (signing_checklist.py), ולכן אינו פריט פתוח כאן
     assert r.returncode == 3, r.stdout
-    assert "registered_legal_name" in r.stdout and "אינו מופק" in r.stdout
+    assert "מציין מקום של הצד שכנגד" in r.stdout and "אינו מופק" in r.stdout
+    assert "השם הרשום של הלקוחה" not in r.stdout
+    prof = json.loads((deal / "profile.json").read_text(encoding="utf-8"))
+    prof.pop("organization_name", None)
+    (deal / "profile-no-name.json").write_text(json.dumps(prof, ensure_ascii=False), encoding="utf-8")
+    r = _run("round_tools.py", "signing", "--gate", deal / "gate.json", "--profile", deal / "profile-no-name.json")
+    assert r.returncode == 3 and "השם הרשום של הלקוחה" in r.stdout, r.stdout   # התווית בעברית, לא הקוד
 
 
 def test_proportionality_asks_when_there_are_more_asks_than_the_fight_list(tmp_path):
@@ -212,7 +267,7 @@ def test_proportionality_asks_when_there_are_more_asks_than_the_fight_list(tmp_p
              "--value-text", "50,000 ש\"ח")
     assert r.returncode == 3, r.stdout
     assert "6 דרישות" in r.stdout, "כותרת אינה נספרת"
-    assert "נדרשת הכרעתך (מצב 4)" in r.stdout
+    assert "נדרשת הכרעתך" in r.stdout and "מצב 4" not in r.stdout   # מספר המצב הוא קוד פנימי
     assert len(re.findall(r"D\d", r.stdout.split("ויתורים מוצעים:")[1].split("\n")[0])) == 3
 
 
@@ -249,14 +304,12 @@ def test_file_names_follow_the_rule_and_never_overwrite(deal):
     assert Path(str(work).replace(".docx", " (2).docx")).exists(), "קובץ קיים אינו נדרס"
 
 
-def test_an_existing_send_copy_is_never_overwritten(deal):
-    assert _apply(deal).returncode == 0
+def test_an_existing_send_copy_is_never_overwritten(small):
+    deal = small
+    _, common = _produce_and_verify(deal)
     send = deal / "למשלוח.docx"
     send.write_bytes(b"PK an earlier send copy")
-    exp = deal / "תגובת החברה - סבב 1.expected.json"
-    g = _run("qa_gate.py", "--mode", "send", "--work", deal / "תגובת החברה - סבב 1.docx",
-             "--received", deal / "טיוטה שהתקבלה.docx", "--profile", deal / "profile.json",
-             "--expected-accept", exp, "--send", send)
+    g = _run("qa_gate.py", "--mode", "send", *common, "--send", send)
     assert g.returncode == 0, g.stdout + g.stderr
     assert send.read_bytes() == b"PK an earlier send copy"
     assert (deal / "למשלוח (2).docx").exists()
@@ -302,23 +355,21 @@ def test_the_clean_copy_is_the_agreed_text_with_no_marks_and_no_comments(deal):
 
 
 
-def test_by_default_the_file_carries_only_the_bubbles_to_the_other_side(deal):
-    """הכרעת ניל, 18.10.2026: בלי --internal-layer אין בקובץ בועות פנימיות ואין כותרת פנימית,
-    והשער רץ ישירות במצב משלוח."""
-    r = _apply(deal, "--no-such-flag") if False else _run(
-        "apply_redlines.py", "--draft", deal / "טיוטה שהתקבלה.docx", "--decisions", deal / "decisions_round_1.json",
-        "--out", deal / "תגובת החברה - סבב 1.docx", "--profile", deal / "profile.json")
-    assert r.returncode == 0, r.stdout + r.stderr
-    work = deal / "תגובת החברה - סבב 1.docx"
+def test_by_default_the_work_file_carries_the_internal_layer_and_the_send_copy_is_clean(small):
+    """החלטת מוצר 02.11.2026 (מחליפה את 18.10): קובץ העבודה נושא תמיד את השכבה הפנימית (בועות פנימיות וכותרת
+    פנימית), גם בלי --internal-layer. העותק למשלוח נגזר בשער, בלעדיה."""
+    deal = small
+    work, common = _produce_and_verify(deal, default_flags=True)
     parts = dt.read_package(str(work))
-    assert not [c for c in dt.read_comments(parts) if c["author"] == dt.INTERNAL_AUTHOR]
+    assert [c for c in dt.read_comments(parts) if c["author"] in dt.INTERNAL_AUTHORS]
     headers = "".join(parts[n].decode("utf-8", "ignore") for n in parts if n.startswith("word/header"))
-    assert dt.INTERNAL_HEADER_TEXT not in headers
-    assert [c for c in dt.read_comments(parts) if c["author"] != dt.INTERNAL_AUTHOR]   # הבועות לצד שכנגד נשארו
-    assert "סומנו" in r.stdout   # איזה חלק מכל פסקה סומן
+    assert dt.INTERNAL_HEADER_TEXT in headers
+    assert [c for c in dt.read_comments(parts) if c["author"] not in dt.INTERNAL_AUTHORS]   # הבועות לצד שכנגד
     send = deal / "למשלוח.docx"
-    g = _run("qa_gate.py", "--mode", "send", "--work", work, "--received", deal / "טיוטה שהתקבלה.docx",
-             "--profile", deal / "profile.json", "--expected-accept", deal / "תגובת החברה - סבב 1.expected.json",
-             "--decisions", deal / "decisions_round_1.json", "--send", send)
+    g = _run("qa_gate.py", "--mode", "send", *common, "--send", send)
     assert g.returncode == 0, g.stdout + g.stderr
-    assert send.exists()
+    sparts = dt.read_package(str(send))
+    assert not [c for c in dt.read_comments(sparts) if c["author"] in dt.INTERNAL_AUTHORS]
+    sheaders = "".join(sparts[n].decode("utf-8", "ignore") for n in sparts if n.startswith("word/header"))
+    assert dt.INTERNAL_HEADER_TEXT not in sheaders
+    assert [c for c in dt.read_comments(sparts)]   # הבועות לצד שכנגד נשארו בעותק למשלוח

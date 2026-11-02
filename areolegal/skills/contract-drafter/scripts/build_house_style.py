@@ -20,7 +20,12 @@ from collections import Counter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_template_registry import (docx_text, docx_paragraphs,  # noqa: E402
-                                     docx_num_formats)
+                                     docx_num_formats, guard_out)
+
+try:                                   # פלט עברי במסוף של Windows
+    sys.stdout.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError):   # pragma: no cover
+    pass
 
 
 # ------------------------------------------------------------------ גלאים
@@ -96,23 +101,103 @@ ANNEX_PATTERNS = [
     ("Exhibit A / Schedule 1", r"(?:Exhibit\s+[A-D]|Schedule\s+\d)"),
 ]
 
-LAW_PATTERNS = [
-    ("הדין הישראלי", r"דיני\s+מדינת\s+ישראל|הדין\s+הישראלי|חוקי\s+מדינת\s+ישראל"),
-    ("Laws of the State of Israel", r"laws\s+of\s+the\s+State\s+of\s+Israel"),
-    ("דין זר", r"laws\s+of\s+the\s+State\s+of\s+(?:New\s+York|Delaware|California)|"
-              r"laws\s+of\s+England"),
+# הדין החל: זיהוי כללי של "governed by (and construed in accordance with) the laws of X" ושל "דיני X" או
+# "דיני מדינת X" בהקשר של סעיף דין, לכל מדינה. התווית היא "דיני X", בשם כפי שהוא בנייר; השמות שבטבלה
+# מאוחדים לשם עברי אחד, כדי שתבנית עברית ותבנית אנגלית של אותו דין ייספרו יחד. אין דין ברירת מחדל.
+EN_NAME = r"([A-Z](?:[\w'\-]|\.(?=\w))*(?:\s+(?:[A-Z](?:[\w'\-]|\.(?=\w))*|of|and|the))*)"
+EN_STATE_PREFIX = r"(?:the\s+)?(?:(?i:State|Commonwealth|Province|Republic|Federal\s+Republic|Kingdom|" \
+                  r"Grand\s+Duchy|Emirate|Canton)\s+of\s+(?:the\s+)?)?"
+LAW_EN = [
+    re.compile(r"(?i:governed\s+by|construed|interpreted|enforced|governing\s+law)[^.;]{0,90}?"
+               r"(?i:laws?)\s+(?i:of)\s+" + EN_STATE_PREFIX + EN_NAME),
+    re.compile(r"(?i:laws?)\s+(?i:of)\s+" + EN_STATE_PREFIX + EN_NAME +
+               r"(?=[^.;]{0,60}(?i:shall|will)\s+govern)"),
 ]
+# צורת התואר: "governed by English law", "subject to German law", "New York law shall govern"
+EN_ADJ = {"English and Welsh": "אנגליה ווילס", "English": "אנגליה", "Welsh": "אנגליה ווילס", "Scottish": "סקוטלנד",
+          "Scots": "סקוטלנד", "Northern Irish": "צפון אירלנד", "British": "הממלכה המאוחדת", "German": "גרמניה",
+          "French": "צרפת", "Swiss": "שווייץ", "Dutch": "הולנד", "Irish": "אירלנד", "Cypriot": "קפריסין",
+          "Israeli": "ישראל", "New York": "ניו יורק", "Delaware": "דלאוור", "Californian": "קליפורניה",
+          "California": "קליפורניה", "Texan": "טקסס", "Texas": "טקסס", "New Jersey": "ניו ג'רזי",
+          "Massachusetts": "מסצ'וסטס", "Florida": "פלורידה", "Illinois": "אילינוי", "Singaporean": "סינגפור",
+          "Singapore": "סינגפור", "Hong Kong": "הונג קונג", "Italian": "איטליה", "Spanish": "ספרד",
+          "Portuguese": "פורטוגל", "Belgian": "בלגיה", "Luxembourg": "לוקסמבורג", "Austrian": "אוסטריה",
+          "Swedish": "שוודיה", "Danish": "דנמרק", "Norwegian": "נורווגיה", "Finnish": "פינלנד", "Polish": "פולין",
+          "Czech": "צ'כיה", "Greek": "יוון", "Maltese": "מלטה", "Japanese": "יפן", "Chinese": "סין", "Indian": "הודו",
+          "Canadian": "קנדה", "Ontario": "אונטריו", "Australian": "אוסטרליה", "New Zealand": "ניו זילנד",
+          "Brazilian": "ברזיל", "South African": "דרום אפריקה", "Korean": "דרום קוריאה"}
+_EN_ADJ_ALT = "|".join(re.escape(k) for k in sorted(EN_ADJ, key=len, reverse=True))
+LAW_EN_ADJ = [
+    re.compile(r"(?i:governed\s+by|construed|interpreted|enforced|governing\s+law|subject\s+to)[^.;]{0,60}?"
+               r"\b(" + _EN_ADJ_ALT + r")\s+(?i:laws?)\b"),
+    re.compile(r"\b(" + _EN_ADJ_ALT + r")\s+(?i:laws?)(?=[^.;]{0,40}(?i:shall|will)\s+(?i:govern|apply))"),
+]
+LAW_HE_CONTEXT = r"הדין\s+החל|יחולו|יחול\s|יפורש|יפורשו|כפוף\s+ל|בכפוף\s+ל|ייקבע\s+על\s+פי|יוכרע\s+לפי|" \
+                 r"דין\s+חל|הדין\s+השולט"
+LAW_HE = re.compile(r"(?:^|[\s(])[ול]?(?:דיני|חוקי)\s+(מדינת\s+)?([א-ת][א-ת'׳\"״\-]+)(?:\s+([א-ת][א-ת'׳\-]+))?")
+LAW_HE_ADJ = re.compile(r"(?:^|[\s(])[ולב]?ה?(?:דין|חוק|משפט)\s+ה([א-ת]{3,}י)(?![א-ת])")
+HE_MULTI = {"ניו": ("יורק", "ג'רזי", "ג׳רזי", "זילנד"), "הונג": ("קונג",), "הממלכה": ("המאוחדת",),
+            "ארצות": ("הברית",), "דרום": ("אפריקה", "קוריאה"), "איחוד": ("האמירויות",)}
+# מילה שבאה אחרי "דיני" ואינה שם של מקום: תחום משפט, לא דין של מדינה
+HE_NOT_PLACE = ("הגנת", "מס", "מיסים", "עבודה", "חוזים", "נזיקין", "קניין", "ביטוח", "תחרות", "חברות",
+                "ניירות", "פרטיות", "צרכנות", "בוררות", "ראיות", "הסכם", "ההסכם", "הצדדים", "אחרים", "כלשהם")
+HE_ADJ = {"ישראלי": "ישראל", "אנגלי": "אנגליה", "סקוטי": "סקוטלנד", "בריטי": "הממלכה המאוחדת",
+          "גרמני": "גרמניה", "צרפתי": "צרפת", "הולנדי": "הולנד", "קנדי": "קנדה", "אוסטרלי": "אוסטרליה",
+          "בלגי": "בלגיה", "אוסטרי": "אוסטריה", "פולני": "פולין", "פורטוגלי": "פורטוגל", "הודי": "הודו",
+          "שווייצרי": "שווייץ", "אירי": "אירלנד", "קפריסאי": "קפריסין", "אמריקאי": "ארצות הברית",
+          "אמריקני": "ארצות הברית", "סינגפורי": "סינגפור", "יפני": "יפן", "איטלקי": "איטליה", "ספרדי": "ספרד"}
+NAME_HE = {"israel": "ישראל", "england": "אנגליה", "england and wales": "אנגליה ווילס",
+           "the united kingdom": "הממלכה המאוחדת", "united kingdom": "הממלכה המאוחדת", "new york": "ניו יורק",
+           "delaware": "דלאוור", "california": "קליפורניה", "germany": "גרמניה", "france": "צרפת",
+           "the netherlands": "הולנד", "netherlands": "הולנד", "switzerland": "שווייץ", "singapore": "סינגפור",
+           "ireland": "אירלנד", "cyprus": "קפריסין", "japan": "יפן", "italy": "איטליה", "spain": "ספרד",
+           "luxembourg": "לוקסמבורג", "the united states": "ארצות הברית", "united states": "ארצות הברית"}
 
-FORUM_CITIES = [
-    ("בתי המשפט במחוז מרכז", r"מחוז\s+ה?מרכז|\bלוד\b"),
-    ("בתי המשפט במחוז תל אביב", r"מחוז\s+תל\s*אביב|בתי\s+המשפט[^.]{0,40}תל\s*אביב"),
-    ("בתי המשפט במחוז ירושלים", r"מחוז\s+ירושלים|בתי\s+המשפט[^.]{0,40}ירושלים"),
-    ("בתי המשפט במחוז חיפה", r"מחוז\s+חיפה|בתי\s+המשפט[^.]{0,40}חיפה"),
-    ("בתי המשפט במחוז דרום", r"מחוז\s+ה?דרום|באר\s*שבע"),
-    ("בתי המשפט במחוז צפון", r"מחוז\s+ה?צפון|\bנצרת\b"),
-]
+
+def _en_name(raw):
+    """שם התחום כפי שנתפס בביטוי האנגלי, בלי מילות קישור בסופו."""
+    name = re.sub(r"(?:[\s,]+(?:and|of|the))+$", "", raw.strip(" ,.")).strip(" ,.")
+    return NAME_HE.get(name.lower(), name)
+
+
+def detect_law(t):
+    """(תווית, ציטוט) של הדין החל, או (None, None). אנגלית: governed by / construed ... the laws of X;
+       עברית: "דיני X" או "דיני מדינת X" או "הדין ה-X-י" בחלון של סעיף דין."""
+    for rx in LAW_EN:
+        for m in rx.finditer(t):
+            name = _en_name(m.group(1))
+            if name:
+                return "דיני %s" % name, re.sub(r"\s+", " ", t[max(0, m.start() - 30):m.end() + 60]).strip()
+    for rx in LAW_EN_ADJ:
+        for m in rx.finditer(t):
+            key = next((k for k in EN_ADJ if k.lower() == m.group(1).lower()), None)
+            if key:
+                return "דיני %s" % EN_ADJ[key], re.sub(r"\s+", " ", t[max(0, m.start() - 30):m.end() + 60]).strip()
+    for c in re.finditer(LAW_HE_CONTEXT, t):
+        a, b = max(0, c.start() - 90), c.start() + 220
+        window = t[a:b]
+        for m in LAW_HE.finditer(window):
+            state, w1, w2 = m.group(1), m.group(2), m.group(3)
+            if not state and (w1 in HE_NOT_PLACE or w1.startswith("ה") and w1 not in ("הולנד", "הודו", "הונג")):
+                continue
+            name = w1 + (" " + w2 if w2 and w2 in HE_MULTI.get(w1, ()) else "")
+            return "דיני %s" % name, re.sub(r"\s+", " ", window).strip()
+        # רק תואר של מקום מהטבלה: "הדין הכללי" או "המשפט המסחרי" אינם דין של מדינה
+        for m in LAW_HE_ADJ.finditer(window):
+            if m.group(1) in HE_ADJ:
+                return "דיני %s" % HE_ADJ[m.group(1)], re.sub(r"\s+", " ", window).strip()
+    return None, None
+
+# אין רשימת בתי משפט או מחוזות בקוד: הפורום נקרא מסעיף הסמכות עצמו (FORUM_EN, FORUM_HE)
+FORUM_CITIES = []
 FORUM_CONTEXT = r"סמכות\s+(?:שיפוט|השיפוט|מקומית|ייחודית)|סמכות\s+בלעדית|" \
-                r"exclusive\s+jurisdiction|venue\b"
+                r"exclusive\s+jurisdiction|venue\b|jurisdiction\s+of\s+the\s+courts|submit\s+to\s+the|courts\s+of\b"
+# פורום בכל מקום, בעברית ובאנגלית: "courts of X", "exclusive jurisdiction of the courts of X", "בתי המשפט ב-X"
+FORUM_EN = re.compile(r"(?i:courts?)\s+(?i:of|in|located\s+in|sitting\s+in)\s+" + EN_STATE_PREFIX +
+                      r"(?:(?i:the\s+)?(?i:City|County|Borough)\s+of\s+)?" +
+                      r"([A-Z](?:[\w'\-]|\.(?=\w))*(?:(?:\s+|,\s*)(?:[A-Z](?:[\w'\-]|\.(?=\w))*|of|and|the))*)")
+FORUM_HE = re.compile(r"בתי\s+ה?משפט\s+(?:ה?מוסמכים\s+)?ב(?:מדינת\s+|עיר\s+)?([א-ת][א-ת'׳\"״\-]+)"
+                      r"(?:\s+([א-ת][א-ת'׳\-]+))?")
 ARBITRATION = r"יימסר\s+לבורר|יוכרע\s+בבוררות|הליך\s+בוררות|\barbitration\b"
 
 
@@ -123,11 +208,25 @@ def detect_forum(t):
     first = None
     for m in re.finditer(FORUM_CONTEXT, t, re.I):
         window = re.sub(r"\s+", " ", t[max(0, m.start() - 120):m.start() + 420]).strip()
-        for label, rx in FORUM_CITIES:
-            if re.search(rx, window):
-                if arb:
-                    return label + ", בכפוף לסעיף בוררות", window
-                return label, window
+        label = next((lb for lb, rx in FORUM_CITIES if re.search(rx, window)), None)
+        if not label:
+            mf = FORUM_EN.search(window)
+            if mf and _en_name(mf.group(1)):
+                nm = _en_name(mf.group(1))
+                label = ("בתי המשפט ב" if re.match(r"[א-ת]", nm) else "בתי המשפט ב-") + nm
+            else:
+                mh = FORUM_HE.search(window)
+                md = re.search(r"במחוז\s+([א-ת'׳\-]+)(?:\s+([א-ת'׳\-]+))?", window)
+                if mh and mh.group(1) == "מחוז" and md:
+                    w2 = md.group(2) if md.group(2) and md.group(2) not in ("בלבד", "או", "תהא", "הנתונה", "ושם")                         and not md.group(2).startswith("ו") else ""
+                    label = "בתי המשפט במחוז %s" % (md.group(1) + (" " + w2 if w2 else ""))
+                elif mh and not mh.group(1).startswith("מחוז"):
+                    w1, w2 = mh.group(1), mh.group(2)
+                    label = "בתי המשפט ב%s" % (w1 + (" " + w2 if w2 and w2 in HE_MULTI.get(w1, ()) else ""))
+        if label:
+            if arb:
+                return label + ", בכפוף לסעיף בוררות", window
+            return label, window
         if first is None:
             first = window
     if arb:
@@ -136,9 +235,26 @@ def detect_forum(t):
         return "נקבעה סמכות שיפוט בלי ציון מקום מזוהה", first
     return None, None
 
-PARTY_LABELS = ["החברה", "הספק", "הלקוח", "נותן השירותים", "מקבל השירותים",
-                "המזמין", "הקבלן", "המפיץ", "היצרן", "המשכיר", "השוכר",
-                "בעל הרישיון", "מעניק הרישיון", "הצד הראשון", "הצד השני"]
+# כינויי הצדדים: אין אוצר תפקידים. כינוי נספר כשהוא מוגדר במירכאות בפתיח ("<תפקיד>"), כלשון המסמך. כינויים
+# כלליים בלבד נספרים גם בלי מירכאות (PARTY_COUNTED), כי מילה רגילה בגוף ההסכם אינה כינוי
+_GENERIC_LABELS = ["החברה", "הצד הראשון", "הצד השני", "Company", "Party A", "Party B"]
+PARTY_COUNTED = {"החברה", "הצד הראשון", "הצד השני"}
+_EXTRA_LABELS = []
+
+
+def _label_form(w):
+    w = w.strip()
+    if re.match(r"[A-Za-z]", w):
+        w = re.sub(r"^the\s+", "", w, flags=re.I)
+        return " ".join(x[:1].upper() + x[1:] for x in w.split())
+    return w
+
+
+PARTY_LABELS = []
+for _w in _GENERIC_LABELS + _EXTRA_LABELS:
+    _w = _label_form(_w)
+    if _w and _w not in PARTY_LABELS:
+        PARTY_LABELS.append(_w)
 
 
 def find_first(t, patterns, window=140):
@@ -220,6 +336,7 @@ def main():
     ap.add_argument("--registry", required=True)
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
+    guard_out(args.out, [args.registry])
 
     reg = json.load(io.open(args.registry, encoding="utf-8"))
     docs = [d for d in reg.get("documents", []) if d.get("approved_current")]
@@ -260,23 +377,24 @@ def main():
         paras = docx_paragraphs(path) if path.lower().endswith(".docx") else t.split("\n")
         C["numbering"].add(detect_numbering(paras, path), src)
         for key, pats in (("defined", DEF_PATTERNS), ("preamble", PREAMBLE_PATTERNS),
-                          ("signature", SIGN_PATTERNS), ("annex", ANNEX_PATTERNS),
-                          ("law", LAW_PATTERNS)):
+                          ("signature", SIGN_PATTERNS), ("annex", ANNEX_PATTERNS)):
             label, quote = find_first(t, pats)
             C[key].add(label, src, quote)
+        llabel, lquote = detect_law(t)
+        C["law"].add(llabel, src, lquote)
         flabel, fquote = detect_forum(t)
         C["forum"].add(flabel, src, fquote)
         C["date"].add(detect_date_format(t), src)
         C["language"].add(detect_language(t), src)
 
         for lbl in PARTY_LABELS:
-            if re.search(r'[""״"]%s[""״"]' % re.escape(lbl), t) or \
-               len(re.findall(r"\b%s\b" % re.escape(lbl), t)) >= 5:
+            if re.search(r'["״“”]%s["״“”]' % re.escape(lbl), t) or \
+               (lbl in PARTY_COUNTED and len(re.findall(r"\b%s\b" % re.escape(lbl), t)) >= 5):
                 party_votes[lbl] += 1
 
     total = len(scanned)
     out = {
-        "generated_at": __import__("datetime").date.today().strftime("%d.%m.%Y"),
+        "generated_at": __import__("datetime").date.today().isoformat(),   # ISO ב-JSON (כלל 3.6)
         "source": "נלמד מתוך התבניות המאושרות של הלקוח בלבד",
         "templates_scanned": total,
         "template_files": scanned,
@@ -285,9 +403,15 @@ def main():
                          "signature", "law", "forum", "date"]],
         "party_labels": [{"label": l, "templates": n} for l, n in party_votes.most_common(8)],
         "confirmation_required": [],
-        "disclaimer": ("המוסכמות נלמדו בספירה אוטומטית ומחייבות אישור המשתמש לפני שהן משמשות "
-                       "לניסוח. מוסכמה שסטטוסה שנויה או טעונה אישור לא תיושם בלי אישור מפורש."),
+        "disclaimer": ("המוסכמות נלמדו בספירה אוטומטית מהתבניות של הלקוח, והדף הנלווה אומר על כמה מסמכים כל "
+                       "אחת נשענת. מוסכמה שנויה נשאלת בשאלה אחת בסבב השאלות, ואחרי התשובה הטיוטה נמסרת "
+                       "נקייה, בלי המתנה לאישור עורך דין."),
     }
+    # הדין שנלמד, בקוד האחיד (meta.governing_law בטיוטה). רק ממוסכמה מבוססת; אחרת None והדין נשאל
+    import governing_law as GL
+    law_c = next((c for c in out["conventions"] if c.get("value") and str(c["value"]).startswith("דיני ")
+                  and c.get("status") not in ("שנויה", "טעונה אישור", "לא נלמדה")), None)
+    out["governing_law"] = GL.code(law_c["value"]) if law_c else None
     out["confirmation_required"] = [c["name"] for c in out["conventions"]
                                     if c["status"] in ("שנויה", "טעונה אישור", "לא נלמדה")]
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """playbook/after_ingest.py: מה קורה מיד אחרי כל קליטה מוצלחת של גיליון העמדות, בפונקציה אחת.
 
-הבעיה (סבב 3): אחרי הקליטה המודל אמר "מדיניות מאושרת", ובאותו זמן: Q-01 ו-Q-02 נשארו פתוחות אף
+הבעיה: אחרי הקליטה המודל אמר "מדיניות מאושרת", ובאותו זמן: Q-01 ו-Q-02 נשארו פתוחות אף
 שהיועצת בחרה בגיליון; הבחירות וההנחה שאישרה לא נשמרו ברשומה; התאים במודל נשארו מהרשומה המדומה;
 ה-handoff נשאר Draft; וה-Word וה-Workspace לא הופקו מחדש. את הקליטה השנייה עשה רץ של רכיב אחר,
 בעזר שכתב בעצמו.
@@ -13,10 +13,15 @@ apply_ingest() הוא הצעד היחיד אחרי ingest_approval.ingest + save
 3. status.stamp: אותו מעמד ואותה תווית במודל, בגרעין, באינדקס, ב-handoff, בתאים וב-policy_status.
 4. surfaces_render: ה-Word וה-Workspace מקבלים את המעמד החדש, ושם ה-Word משתנה לפי המעמד.
 5. status.check_consistency על כל השכבות ועל שני הקבצים. רשימה לא ריקה = הקליטה לא הושלמה.
+
+save_local_copy() הוא הצעד שאחרי כתיבת הקבצים לתיקייה שהלקוח חיבר (כלל מייסד 6): עותק מקומי של הפלייבוק המאושר במחשב של
+הלקוח. שום דבר מהפלייבוק אינו נשלח לשרת של Areo: אין כאן כתובת רשת, והעותק נכתב רק לדיסק.
 """
 import io
 import json
 import os
+import re
+import shutil
 
 try:
     from playbook import status as S
@@ -26,6 +31,43 @@ except ImportError:  # pragma: no cover
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from playbook import status as S
     from playbook import surfaces_render as R
+
+
+LOCAL_COPY_DIRNAME = 'Areo-playbooks-local'
+
+
+def local_copy_dir(family_id, base=None):
+    """תיקיית העותק המקומי: base (אם נמסר), או <בית המשתמש>/Areo-playbooks-local, ובתוכה תיקייה למשפחה."""
+    fam = re.sub(r'[^\w.-]+', '_', str(family_id or 'playbook'), flags=re.U).strip('._') or 'playbook'
+    return os.path.join(base or os.path.join(os.path.expanduser('~'), LOCAL_COPY_DIRNAME), fam)
+
+
+def save_local_copy(paths, family_id, base=None):
+    """מעתיק את קובצי הפלייבוק (מודל, גרעין, Word, סביבת עבודה) לעותק המקומי. מחזיר {dir, copied[], errors[]}.
+    נתיב שהוא כתובת רשת, או קובץ שחסר, נרשם ב-errors ואינו נכתב. כשהתיקייה אינה ניתנת לכתיבה: errors, בלי חריגה,
+    כדי שהאישור שנכתב לתיקיית הלקוח לא ייפול, והקורא אומר שהעותק המקומי לא נשמר (ולא טוען לשמירה שלא התקיימה)."""
+    target = local_copy_dir(family_id, base)
+    out = {'dir': target, 'copied': [], 'errors': []}
+    if '://' in str(base or ''):
+        out['errors'].append('העותק המקומי נכתב לדיסק בלבד: %s' % base)
+        return out
+    try:
+        os.makedirs(target, exist_ok=True)
+    except OSError as exc:
+        out['errors'].append('%s: %s' % (target, exc))
+        return out
+    for p in paths:
+        if not p:
+            continue
+        if not os.path.isfile(p):
+            out['errors'].append('חסר: %s' % p)
+            continue
+        try:
+            shutil.copy2(p, os.path.join(target, os.path.basename(p)))
+            out['copied'].append(os.path.basename(p))
+        except OSError as exc:
+            out['errors'].append('%s: %s' % (p, exc))
+    return out
 
 
 def close_questions(model, record, record_id):
@@ -50,13 +92,21 @@ def record_entry(record, record_id, record_path, cells):
     for key, c in sorted(cells.items()):
         for a in c.get('assumptions_confirmed') or []:
             assumptions.append(dict(a, cell=key))
-    return {'record_id': record_id, 'record': record_path, 'token': record.get('token'),
-            'signed_sha256': record.get('signed_sha256'), 'evidence': record.get('evidence'),
-            'simulated': record.get('simulated'), 'counts': record.get('counts'),
-            'choices': record.get('choices') or {}, 'assumptions_confirmed': assumptions,
-            'signers': {t: {k: s.get(k) for k in ('name', 'role', 'date')} for t, s in
-                        (record.get('signers') or {}).items()},
-            'warnings': record.get('warnings') or [], 'supersedes': record.get('supersedes')}
+    out = {'record_id': record_id, 'record': record_path, 'token': record.get('token'),
+           'signed_sha256': record.get('signed_sha256'), 'evidence': record.get('evidence'),
+           'simulated': record.get('simulated'), 'counts': record.get('counts'),
+           'choices': record.get('choices') or {}, 'assumptions_confirmed': assumptions,
+           'signers': {t: {k: s.get(k) for k in ('name', 'role', 'date')} for t, s in
+                       (record.get('signers') or {}).items()},
+           'warnings': record.get('warnings') or [], 'supersedes': record.get('supersedes')}
+    # רשומה של תור האישור בצ'אט (ingest_approval.apply_answers): סוג, מנה, החלטות הנהלה ועדכונים מעסקה
+    if record.get('kind') == 'chat':
+        out.update({k: record.get(k) for k in ('kind', 'batch_id', 'stage', 'reply_sha256', 'decisions',
+                                                'updates', 'skipped')})
+    # רשומה של אישור מאשף ההערות (ingest_approval.wizard_approvals, דרך apply_decisions.py): הקובץ שממנו נקלטה
+    if record.get('kind') == 'wizard':
+        out.update({k: record.get(k) for k in ('kind', 'source_file', 'source_sha256')})
+    return out
 
 
 def apply_ingest(model, core, index_entry, result, record_path, word_path=None, workspace_path=None):

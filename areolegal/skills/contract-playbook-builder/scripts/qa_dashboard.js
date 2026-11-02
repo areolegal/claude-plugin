@@ -12,7 +12,27 @@
 
    הרצה:  JSDOM_PATH=<נתיב ל-jsdom> node qa_dashboard.js <dashboard.html>
 */
-const {JSDOM, VirtualConsole} = require(process.env.JSDOM_PATH);
+/* jsdom: JSDOM_PATH (תיקיית jsdom או הקובץ שלה), ואחריו החיפוש הרגיל של node (node_modules מקומי ו-NODE_PATH),
+   node_modules בתיקיית העבודה, ההתקנה הגלובלית של npm והתיקייה הזמנית של המחשב. בלי נתיב Unix קשיח, כדי שהבדיקה
+   תרוץ גם ב-Windows. כשלא נמצא: הודעה ברורה ויציאה 1, ולא TypeError */
+function loadJsdom(){
+  const path=require('path'), os=require('os'), tried=[];
+  const attempt=c=>{ if(!c) return null; tried.push(c);
+    try{ return require(c); }catch(e){}
+    try{ return require(require.resolve(c,{paths:[process.cwd()]})); }catch(e){}
+    return null; };
+  let m=attempt(process.env.JSDOM_PATH)||attempt('jsdom')
+    ||attempt(process.env.APPDATA&&path.join(process.env.APPDATA,'npm','node_modules','jsdom'))
+    ||attempt(path.join(os.tmpdir(),'node_modules','jsdom'))||attempt('/tmp/node_modules/jsdom');
+  if(!m){ try{ m=attempt(path.join(require('child_process').execSync('npm root -g',
+    {stdio:['ignore','pipe','ignore']}).toString().trim(),'jsdom')); }catch(e){} }
+  if(m) return m;
+  console.error('jsdom לא נמצא, ולכן הבדיקה לא רצה. התקינו אותו (npm install jsdom) או הגדירו JSDOM_PATH לתיקיית jsdom. '
+    +'נבדקו: '+tried.join(' | ')+'\njsdom was not found, so the check did not run. Install it (npm install jsdom) '
+    +'or set JSDOM_PATH to the jsdom folder.');
+  process.exit(1);
+}
+const {JSDOM, VirtualConsole} = loadJsdom();
 const fs = require('fs');
 
 const qa = {downloads: [], copied: [], charts: [], btnOK: 0, btnFail: [], results: []};
@@ -61,6 +81,9 @@ setTimeout(async () => {
   const topicWord = ((rules[0] || {}).topic || '').split(/\s+/)[0] || '';
   const srcName = (D.friendly || {})[firstCite.src] || firstCite.src || '';
   const srcWord = String(srcName).split(/\s+/)[0] || '';
+  /* דף באנגלית (meta.lang = en): אותן בדיקות, והטקסט הקבוע שמחפשים הוא המקביל האנגלי */
+  const EN = d.documentElement.getAttribute('lang') === 'en';
+  const L = (he, en) => EN ? en : he;
 
   R('יש בתוצר סעיפים', n > 0, n + ' סעיפים');
 
@@ -122,32 +145,25 @@ setTimeout(async () => {
     w.setPb(pb0);
   }
 
-  // 4. הערות והצעות: הזרימה שהחליפה את ההכרעות
+  // 4. הערות, אישורים והצעות נוסח: רק באשף. בדף אין תיבת הערה ואין מצב עריכה, ובכל סעיף יש קישור לאשף
+  // לחיצה על כל הכפתורים משאירה את העדפות הצופה (לוח/טבלה, מסנן, חיפוש) במצב שרירותי; הבדיקות שלמטה מניחות לוח, מסנן 'הכל' וחיפוש ריק
+  w.eval("if(typeof setRulesMode==='function'){S.rulesMode='board';} S.filter='all'; S.q='';");
   w.go('rules'); w.renderList(); await sleep(20);
   const before = d.getElementById('progChip').textContent;
   R('מונה נימוקים ולא מונה אישורים',
-    before.includes('נימוקים מלאים') && before.includes('מתוך ' + n), before);
-  w.setNote(rid(0), 'הערה לבדיקת QA'); w.renderList();
-  R('הערה נשמרת ומוצגת', wrap().includes('הערה לבדיקת QA') || cards() > 0);
-  w.toggleRuleEdit(rid(1)); await sleep(20);
-  R('תיבת ההצעה נפתחת בלחיצה',
-    d.getElementById('rlist').innerHTML.includes('הצעת נוסח חלופי'));
-  w.setProp(rid(1), 'green', 'נוסח שהוצע בבדיקת QA'); w.renderList();
+    before.includes(L('נימוקים מלאים', 'Full rationales')) && before.includes(L('מתוך ', 'of ') + n), before);
   const body = d.getElementById('rlist').innerHTML;
-  R('ההצעה מוצגת בתיבה נפרדת', body.includes('נוסח שהוצע בבדיקת QA')
-    && body.includes('הצעה, לא מדיניות'));
-  R('ההצעה אינה מחליפה את המדיניות',
-    w.effLight(rules[1], 'green').clause !== 'נוסח שהוצע בבדיקת QA');
-  w.dropProp(rid(1), 'green'); w.renderList();
-  R('מחיקת ההצעה', !d.getElementById('rlist').innerHTML.includes('נוסח שהוצע בבדיקת QA'));
+  R('אין בסעיף תיבת הערה או הצעת נוסח', !body.includes('class="noteta"') && !body.includes('toggleRuleEdit('));
+  R('אין בדף מצב עריכה', !d.getElementById('editChip') && !wrap().includes('toggleEdit()'));
+  const wiz = w.eval('D.meta.wizard_href||""');
+  R('בכל סעיף כפתור להכרעה ולאישור של הסעיף הזה, בלשונית שבסביבת העבודה (כשהאשף נבנה)', !wiz || (body.includes('goApprove(') && body.includes(rid(0))));
+  R('לשונית הכרעה ואישור קיימת כשהאשף נבנה', !wiz || !!d.querySelector('#nav [onclick*="approve"]'));
   R('אין בדף פעולת אישור',
     ['decide', 'approveAll', 'dl', 'agentPack', 'docExport'].every(x => typeof w[x] !== 'function'));
 
-  // 5. הורדת ההערות וההצעות: ההורדה היחידה שנשארה
-  qa.downloads = [];
+  // 5. אין בדף כפתור הורדת הערות: קובץ ההערות יוצא רק מהאשף
   w.go('decisions'); await sleep(20);
-  w.dlComments(); await sleep(20);
-  R('הורדת ההערות וההצעות', qa.downloads.length > 0, qa.downloads.join(', '));
+  R('אין כפתור הורדת הערות', !wrap().includes('dlComments()'));
 
   // 6. חיפוש בשלושה סקופים, במונחים מהנתונים
   const setScope = v => { const s = d.getElementById('gscope'); s.value = v; s.dispatchEvent(new w.Event('change')); };
@@ -164,9 +180,7 @@ setTimeout(async () => {
   const nAll = cards();
   w.eval("S.pf='Required';renderList()");
   R('מסנן כלל נוכחות', cards() <= nAll, nAll + ' -> ' + cards());
-  w.eval("S.pf='all';S.df='commented';renderList()");
-  R('מסנן סעיפים עם הערה', cards() >= 1 && cards() <= nAll, cards() + ' עם הערה');
-  w.eval("S.df='all';S.xf='weak';renderList()");
+  w.eval("S.pf='all';S.xf='weak';renderList()");
   R('מסנן עוצמת ראיות', cards() <= nAll, nAll + ' -> ' + cards());
   w.eval("S.xf='all';renderList()");
 
@@ -183,23 +197,9 @@ setTimeout(async () => {
 
   // 9. סגמנטים ותקדימים
   w.go('segpolicy'); await sleep(20);
-  if (!wrap().includes('סגמנט חדש')) { w.toggleEdit(); w.go('segpolicy'); await sleep(20); }
-  R('מצב עריכה מפעיל הוספת סגמנט', wrap().includes('סגמנט חדש'));
-  const segsBefore = w.effSegs().length;
-  w.segAdd(); await sleep(20);
-  R('הוספת סגמנט', w.effSegs().length === segsBefore + 1,
-    segsBefore + ' -> ' + w.effSegs().length);
-  const segId = (w.effSegs()[0] || {}).segment_id;
-  if (segId) {
-    w.addUserVariant(rid(0), segId); await sleep(20);
-    R('הצעת חריג נרשמת', !!w.eval("S.userVariants['" + rid(0) + "|" + segId + "']"));
-    /* הכרטיס עצמו מוצג במסך הסגמנט המלא, ושם גם התווית */
-    w.eval("S.segFull='" + segId + "'"); w.render(); await sleep(20);
-    R('הצעת חריג מסומנת "הצעה, לא מדיניות"', wrap().includes('הצעה, לא מדיניות'),
-      'בסגמנט ' + segId);
-    w.eval("S.segFull=null"); w.render();
-    w.delUserVariant(rid(0), segId);
-  }
+  R('מסך הסגמנטים נפתח בלי מצב עריכה', wrap().length > 120 && !wrap().includes('toggleEdit()'));
+  /* אין בדף הוספת סגמנט או הצעת חריג: סגמנט חדש מבקשים בצ'אט, והערה על חריג נכתבת באשף */
+  R('אין בדף הוספת סגמנט או הצעת חריג', !wrap().includes('segAdd()') && !wrap().includes('addUserVariant('));
   w.go('precedents'); await sleep(20);
   if (d.getElementById('pCp')) {
     d.getElementById('pCp').value = 'בדיקת QA בעמ';
@@ -210,7 +210,9 @@ setTimeout(async () => {
   }
 
   // 10. התמדה בדפדפן, לפי המפתח שבמטען
-  const key = (D.meta || {}).ls_key;
+  /* מוסכמת המפתחות: areo:<לקוח>:<פלייבוק>:<מה>; הדף חושף את מפתח המצב שלו ב-LS */
+  const key = (() => { try { return w.eval('LS'); } catch (e) { return (D.meta || {}).ls_key; } })();
+  R('מפתח אחסון לפי המוסכמה areo:לקוח:פלייבוק:מה', /^areo:[^:]+:[^:]+:state$/.test(String(key)), String(key).slice(0, 60));
   const saved = JSON.parse(w.localStorage.getItem(key) || w.localStorage.getItem(key + '_v1') || '{}');
   R('שמירה ב-localStorage', !!saved && typeof saved === 'object'
     && Object.keys(saved).length > 0, Object.keys(saved).join(', ').slice(0, 60));
@@ -218,7 +220,73 @@ setTimeout(async () => {
   // 11. העתקה, כיווניות, וטקסט גלוי נקי
   R('אין בדף תפריט הורדות של Office', typeof w.toggleDl !== 'function'
     && !d.getElementById('dlMenu'));
-  R('RTL מלא', d.documentElement.getAttribute('dir') === 'rtl');
+  if (EN) {
+    R('LTR מלא בדף באנגלית', d.documentElement.getAttribute('dir') === 'ltr');
+    /* בדף באנגלית אין עברית קבועה: כל רצף עברי גלוי הוא נתון (נושא, עמדה, נוסח מצוטט, שם) */
+    const blob = []; (function walk(v) { if (typeof v === 'string') blob.push(v);
+      else if (v && typeof v === 'object') Object.values(v).forEach(walk); })([D, w.eval('S')]);  /* נתונים, וגם מה שהבדיקה עצמה כתבה */
+    const data = blob.join('\n');
+    const leaks = new Set();
+    for (const v of views) {
+      w.go(v); if (v === 'rules') w.renderList();
+      const tw = d.createTreeWalker(d.body, 4);
+      for (let t = tw.nextNode(); t; t = tw.nextNode()) {
+        if (t.parentElement && t.parentElement.closest('script,style')) continue;
+        for (const m of t.nodeValue.matchAll(/[\u0590-\u05FF][\u0590-\u05FF "'.,:;()\-״׳0-9/]*/g)) {
+          const s2 = m[0].trim().replace(/[\s"'.,:;()\-]+$/, '');
+          if (s2.length < 2 || data.includes(s2)) continue;
+          /* רצף שהוא שני נתונים צמודים (שם הסכם ומספר סעיף) הוא עדיין נתון */
+          let rest = s2, ok = true;
+          while (rest.trim()) { rest = rest.replace(/^[\s,.:;()\-]+/, ''); let k = rest.length;
+            while (k > 1 && !data.includes(rest.slice(0, k))) k--;
+            if (k <= 1 && /[֐-׿]/.test(rest[0] || '')) { ok = false; break; }
+            rest = rest.slice(Math.max(k, 1)); }
+          if (!ok) leaks.add(s2);
+        }
+      }
+    }
+    R('אין עברית קבועה בדף באנגלית', leaks.size === 0, [...leaks].slice(0, 5).join(' | '));
+  } else {
+    R('RTL מלא', d.documentElement.getAttribute('dir') === 'rtl');
+  }
+  // 12. תיקוני הביקורת מ-31.10 (ממשק): מגירה כדיאלוג, פס עליון אטום, מסננים ומוני תוצאות, חיפוש, סימן מותג אחד
+  (() => {
+    const dr = d.getElementById('drawer');
+    R('המגירה היא דיאלוג מודאלי', dr.getAttribute('role') === 'dialog' && dr.getAttribute('aria-modal') === 'true');
+    const c0 = (D.cites || [])[0];
+    if (c0) {
+      w.openCite(c0.id);
+      const open1 = dr.classList.contains('on') && d.body.classList.contains('noscroll');
+      d.dispatchEvent(new w.KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+      R('Escape סוגר את המגירה ומשחרר את הגלילה', open1 && !dr.classList.contains('on') && !d.body.classList.contains('noscroll'));
+      w.openCite(c0.id); d.getElementById('scrim').click();
+      R('לחיצה על הרקע סוגרת את המגירה', !dr.classList.contains('on'));
+      R('אין במגירה מילה טכנית כמיקום', !/>\s*corpus\s*</.test(d.getElementById('drBody').innerHTML));
+    }
+    R('אין console.log שנשאר מהפיתוח', !/console\.log\(/.test(html));
+    R('הפס העליון אטום', /--topbg:var\(--page\)/.test(html));
+    w.go('rules'); w.renderList();
+    const n = w.rulesOf().length, attn = w.attnCount();
+    const fb = [...d.querySelectorAll('#wrap .fbtn')].map(b => b.textContent);
+    R('מסנן שמתאים לכל הרשומות מוסתר', (attn > 0 && attn < n) ? fb.some(t => /תשומת לב|attention/i.test(t)) : !fb.some(t => /תשומת לב|attention/i.test(t)));
+    R('לשדה החיפוש יש כפתור ניקוי', !!d.getElementById('gqx') && typeof w.clearQ === 'function');
+    const q = String((w.rulesOf()[0] || {}).topic || '').split(/\s+/)[0];
+    if (q && q.length > 1) { w.globalSearch(q);
+      R('מילת החיפוש מודגשת בתוצאות', d.querySelectorAll('#rlist mark.hl').length > 0, q);
+      R('מונה התוצאות הוא אזור חי', (d.getElementById('cnt') || {}).getAttribute && d.getElementById('cnt').getAttribute('aria-live') === 'polite');
+      w.clearQ(); }
+    w.setRulesMode('table'); w.renderList();
+    const ths = [...d.querySelectorAll('#rlist th')];
+    R('טבלה: תגיות עמודה וכיתוב מרחף', ths.length > 0 && ths.every(t => t.getAttribute('scope') === 'col')
+      && [...d.querySelectorAll('#rlist td.g,#rlist td.y,#rlist td.r')].every(t => t.hasAttribute('title')));
+    w.setRulesMode('board');
+    R('סימן המותג מופיע פעם אחת', /\.areo-brand\{display:none\}/.test(html));
+    const ask = w.updAsk();
+    R('בקשת העדכון שלמה ובלי סוגריים מקוננים', ask.length > 80 && !/\([^()]*\(/.test(ask));
+    w.go('ask');
+    R('תיבת השאלה בכיוון מפורש, לא auto', (d.getElementById('askq') || {}).getAttribute && d.getElementById('askq').getAttribute('dir') !== 'auto');
+    if (!(D.templateFindings || []).length) R('מסך ממצאים ריק מוסתר', !w.viewShown(w.eval('VIEWS').find(v => v.id === 'findings')));
+  })();
   R('אפס מקפים ארוכים', !html.includes('—') && !html.includes('–'));
   R('אפס קודים פנימיים בטקסט גלוי', (() => {
     w.go('rules'); w.renderList();

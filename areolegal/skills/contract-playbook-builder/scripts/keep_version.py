@@ -21,6 +21,12 @@ import shutil
 import sys
 from pathlib import Path
 
+for _s in (sys.stdout, sys.stderr):  # עברית בקונסולה שאינה UTF-8 (cp1252): בלי UnicodeEncodeError
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):   # לא TextIOWrapper (לכידה בבדיקות, pythonw)
+        pass
+
 # מה נשמר: המודל, הגרעין שהרכיבים קוראים, והתוצרים שהופקו מהם
 KEEP = ["playbook-model.json", "playbook-core.json", "decisions-applied.json",
         "corpus-manifest.json", "clause-inventory.json"]
@@ -52,6 +58,13 @@ def main():
     if ver is None:
         print("אין בתיקייה playbook-model.json: זו בנייה ראשונה, ואין גרסה לשמור.")
         return 0
+
+    # אותה גרסה בדיוק כבר נשמרה (הכלי הורץ פעמיים לפני אותה כתיבה): אין עותק נוסף ב-versions/
+    current = (folder / "playbook-model.json").read_bytes()
+    for prev in (folder / "versions").glob("**/*playbook-model.json") if (folder / "versions").is_dir() else ():
+        if prev.read_bytes() == current:
+            print("הגרסה הזו כבר שמורה ב-%s, ואין צורך לשמור אותה שוב." % prev.parent.relative_to(folder))
+            return 0
 
     dest = folder / "versions" / ver
     # שתי בניות באותו יום לאותה גרסה אינן דורסות זו את זו

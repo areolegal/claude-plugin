@@ -47,7 +47,9 @@ def _sign_everything(path, manifest, tmp_path, m):
 
 @pytest.mark.parametrize('name', FAMILIES)
 def test_clean_family_passes_every_check(name):
-    assert V.errors(V.validate(_m(name))) == []
+    # כללי היסוד (playbook-qa.md סעיף 16 b-c): מודל נקי נושא ספר כיסוי ו-sufficiency. בלעדיהם הוא אינו נקי
+    assert 'COVERAGE_MISSING' in {f['code'] for f in V.errors(V.validate(_m(name)))}
+    assert V.errors(V.validate(H.with_founding_blocks(_m(name)))) == []
 
 
 @pytest.mark.parametrize('name', FAMILIES)

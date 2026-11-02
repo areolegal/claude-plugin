@@ -15,24 +15,35 @@ import json
 import re
 import sys
 
+for _s in (sys.stdout, sys.stderr):  # עברית בקונסולה שאינה UTF-8 (cp1252): בלי UnicodeEncodeError
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):   # לא TextIOWrapper (לכידה בבדיקות, pythonw)
+        pass
+
 ISO = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 ENUMS = {
     "rule.conf": {"High", "Medium", "Low"},
     # הערכים שרכיב הפלייבוק כותב בפועל, ולא רק אלה שתוכננו מראש
     "rule.reg": {"Researched", "NotResearched", "NotApplicable",
-                 "ApplicableSourcesFound", "NoApplicableSources"},
-    "presence.requirement": {"Required", "Recommended", "Optional", "Prohibited"},
-    "presence.missing_clause_color": {"Green", "Yellow", "Red"},
+                 "ApplicableSourcesFound", "NoApplicableSources",
+                 # הערך של playbook-schema.md ושל validate_playbook_model.py, שלא היה כאן
+                 "NoSpecificSourceIdentified"},
+    # אותה רשימה כמו ב-playbook-schema.md וב-validate_playbook_model.py, והערכים שהתבנית מסננת לפיהם.
+    # Recommended הוא ערך ישן, שהתבנית אינה מסננת לפיו: מתקבל באזהרה
+    "presence.requirement": {"Required", "Optional", "Conditional", "Prohibited"},
+    "presence.missing_clause_color": {"Green", "Yellow", "Red", "NotApplicable"},
     "ev.weight": {"High", "Medium", "Low"},
     "cite.side": {"pro", "con", "neutral"},
-    "cite.track": {"green", "yellow", "red"},
+    # context: ראיה שאינה נספרת לאף עמדה (ממשפחה אחרת או מהפוזיציה ההפוכה), playbook-schema.md
+    "cite.track": {"green", "yellow", "red", "context"},
     "source.kind": {"internal", "external"},
     "source.paper": {"ours", "theirs"},
     "rule.kind": {"משפטי", "מסחרי"},
     "precedent.direction": {"stricter", "easier", "neutral"},
     "finding.severity": {"high", "medium", "low"},
-    "meta.status": {"Draft", "Approved", "Superseded"},
+    "meta.status": {"Draft", "PartiallyApproved", "Approved", "Superseded"},
     "rat.rationale_status": {"Draft", "Confirmed"},
     "reg.status": {"Performed", "Completed", "Partial", "NotPerformed", "Declined"},
     # המסלול שבו הפלייבוק נבנה, לפס הבסיס
@@ -118,8 +129,10 @@ def check_commercial(r, data, sources):
                 r.err(w, "חסר שדה %s" % k)
         if row.get("field") and row["field"] not in keys:
             r.err(w, "field=%s אינו מופיע ב-fields" % row["field"])
-        if row.get("src") and sources and row["src"] not in sources:
+        if row.get("src") and sources and str(row["src"]).split("#")[0] not in sources:
             r.err(w, "src=%s אינו מופיע ב-sources" % row["src"])
+        elif row.get("src") and "#" in str(row["src"]):
+            r.warn(w, "src=%s כולל עוגן פסקה. התבנית מחפשת את המקור לפי source_id בלבד" % row["src"])
         if row.get("found") and not str(row.get("quote") or "").strip():
             r.warn(w, "סומן found בלי ציטוט; המגירה תיפתח ריקה")
         if row.get("found") and not str(row.get("ref") or "").strip():
@@ -159,11 +172,6 @@ def validate(data):
             n, path = bp["n"], bp["path"]
             if n == 0 and path != "market_built":
                 r.err("meta.build_path", "אין הסכמים, ולכן המסלול חייב להיות market_built")
-            if n >= 7 and path != "own":
-                r.err("meta.build_path", "ב-%d הסכמים המסלול הוא own, "
-                                         "והבחירה בין שוק להסכמים אינה נשאלת" % n)
-            if n > 0 and path == "market_built":
-                r.err("meta.build_path", "יש %d הסכמים, ולכן המסלול אינו market_built" % n)
 
     # כיסוי הסעיפים: בלעדיו אין בדף תשובה לשאלה אם סעיף נשר
     cov = data.get("coverage")
@@ -215,7 +223,12 @@ def validate(data):
             # מלמד על המדיניות שלנו כמו נוסח שיצא מהנייר שלנו.
             check_enum(r, where, "paper", (s or {}).get("paper"), "source.paper",
                        required=False)
-            if not (s or {}).get("paper"):
+            # paper ריק הוא הרישום הנכון כשלא ידוע מי ניסח: במעמד unknown, ובנוסח או תבנית (workflow.md, שלב 2ח).
+            # לפני כן כל מקור כזה הוציא אזהרה, 40 בהרצה אחת
+            status = (data.get("meta") or {}).get("corpus_status") or (data.get("scope") or {}).get("corpus_status")
+            intended = (status == "unknown"
+                        or (s or {}).get("doc_role") in ("form", "template"))
+            if not (s or {}).get("paper") and not intended:
                 r.warn(where, "paper חסר. לא יוצג אם ההסכם על הנייר שלנו או של הצד שכנגד")
 
     cite_ids = set()
@@ -230,13 +243,19 @@ def validate(data):
         cite_ids.add(cid)
         if not c.get("text"):
             r.err(where, "text חסר. הערת השוליים תיפתח ריקה")
-        if c.get("src") and c["src"] not in sources:
+        # playbook-schema.md, "ראיה": source_ref הוא source_id, ולעיתים עם עוגן פסקה (S01#p19). המקור הוא מה
+        # שלפני "#". לפני כן עוגן כזה נפסל כאן, ובהרצה חיה הבונה פיצל את השדה כדי לעבור
+        src = str(c.get("src") or "").split("#")[0]
+        if src and src not in sources:
             r.err(where, "src %r אינו קיים ב-sources. הציטוט לא ישויך לאף מקור" % c["src"])
+        elif src and src != c["src"]:
+            r.warn(where, "src %r כולל עוגן פסקה. התבנית מחפשת את המקור לפי %r בלבד: העוגן נשמר ב-para "
+                          "(build_workspace_payload.py)" % (c["src"], src))
         check_enum(r, where, "side", c.get("side"), "cite.side", required=False)
         check_enum(r, where, "track", c.get("track"), "cite.track", required=False)
         if not c.get("track"):
             r.warn(where, "track חסר. הציטוט לא ישויך לעמדה, ולא ייכנס לספירת "
-                          "ההסכמים ולאחוז שמוצגים בה")
+                          "ההסכמים ולאחוז שמוצגים בה. ראיה הקשרית מסומנת context")
         for rid in c.get("rules") or []:
             if rid not in rule_ids:
                 r.err(where, "מפנה לכלל %r שאינו קיים" % rid)
@@ -317,8 +336,12 @@ def validate(data):
             if not rule.get(f):
                 r.err(where, "השדה %r חסר, והוא שדה חובה בכרטיס הכלל" % f)
         pres = rule.get("presence") or {}
-        check_enum(r, where + ".presence", "requirement", pres.get("requirement"),
-                   "presence.requirement")
+        if pres.get("requirement") == "Recommended":
+            r.warn(where + ".presence", "requirement Recommended הוא ערך ישן, והסינון לפי נחיצות הסעיף לא "
+                                        "יראה אותו. הערכים: Required, Optional, Conditional, Prohibited")
+        else:
+            check_enum(r, where + ".presence", "requirement", pres.get("requirement"),
+                       "presence.requirement")
         check_enum(r, where + ".presence", "missing_clause_color",
                    pres.get("missing_clause_color"), "presence.missing_clause_color")
         tl = rule.get("tl") or {}
@@ -335,7 +358,8 @@ def validate(data):
             elif not isinstance(crit, list):
                 r.err("%s.tl.%s" % (where, color), "crit חייב להיות מערך, ולא %s"
                       % type(crit).__name__)
-        check_enum(r, where, "conf", rule.get("conf"), "rule.conf")
+        # conf אינו חובה: שדה שערכו קבוע בכל הכללים אינו מחושב, והבונה משמיט אותו (ביקורת 31.10, כלל 6)
+        check_enum(r, where, "conf", rule.get("conf"), "rule.conf", required=False)
         rat = rule.get("rat") or {}
         rs = rat.get("rationale_status")
         if rs is None:
@@ -388,8 +412,12 @@ def validate(data):
         where = "queue[%d]" % i
         if not q.get("question"):
             r.err(where, "question חסר. פריט בלי שאלה אינו ניתן להכרעה")
-        if q.get("rule_id") and q["rule_id"] not in rule_ids:
+        # "GLOBAL" הוא ה-rule_id של הכרעה ברמת הפלייבוק (playbook-schema.md, validation_queue[])
+        if q.get("rule_id") and q["rule_id"] != "GLOBAL" and q["rule_id"] not in rule_ids:
             r.err(where, "rule_id %r אינו קיים" % q["rule_id"])
+        for rid in q.get("rule_ids") or []:
+            if rid not in rule_ids:
+                r.err(where, "rule_ids מפנה לכלל %r שאינו קיים" % rid)
 
     for i, c in enumerate(data.get("cross") or []):
         where = "cross[%d]" % i

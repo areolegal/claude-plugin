@@ -146,7 +146,10 @@ def test_red_column_is_cure_wording_and_walk_away_is_tagged(sheet):
     assert 'לא נחתום (קווים אדומים)' not in text and 'לא נחתום (אדום)' not in text
     assert A.HE['walk_away'] in text
     assert text.count(A.HE['walk_away']) == sum(1 for r in m['rules'] if r.get('walk_away'))
-    red = Document(path).tables[0].rows[1].cells[3].paragraphs[1].text
+    # מאז דף השער "החלטות הנהלה" (approval_sheet.py, docstring) טבלת העמדות אינה בהכרח הראשונה: מחפשים אותה
+    # לפי כותרת העמודה הראשונה
+    positions = next(t for t in Document(path).tables if t.rows[0].cells[0].text == A.HE['cols'][0])
+    red = positions.rows[1].cells[3].paragraphs[1].text
     assert red.startswith(A.HE['cure'].strip())
     assert 'שוברי עסקה: כלל אחד (R-22)' in text
     assert 'המלצת Areo: ' + m['validation_queue'][0]['recommendation'] in text   # ההמלצה ליד הבחירה
@@ -359,3 +362,26 @@ def test_signed_copy_from_word_keeps_rtl(sheet, tmp_path):
     _, path, _ = sheet
     signed = _sign(path, tmp_path)
     assert rtl.audit_docx(signed, run_date=dt.date.today()) == []
+
+
+# ---------------------------------------------------------------- אישור באשף הוא אישור מלא (הכרעת ניל, 02.11.2026)
+@pytest.mark.parametrize('name', ['saas_customer_excerpt.json', 'supply_buyer_seller_excerpt.json'])
+def test_wizard_approval_is_full_approval_without_a_signed_sheet(name):
+    """אישור בצ'אט או באשף נחשב אישור מלא, ולא רק הגיליון החתום (b6-approval.md, "אישור בצ'אט במנות";
+    ingest_approval.wizard_approvals). מודל בלי בדיקה משפטית פתוחה ובלי סוגריים: Approved, לא מדומה, בשם המאשר."""
+    from playbook import ingest_approval as IA, status as S
+    m = H.load(name)
+    for q in m.get('validation_queue') or []:
+        q.update(status='closed', answered=True)
+    assert not any(A.legal_review_tracks(r) for r in m['rules'])
+    res = IA.wizard_approvals(m, {r['rule_id']: list(A.TRACKS) for r in m['rules']},
+                              {r['rule_id']: 'דנה לוי' for r in m['rules']}, 'wizard-comments.json',
+                              today='2026-11-02')
+    assert res['record']['simulated'] is False and res['record']['kind'] == 'wizard'
+    st = S.derive_status(m, res['cells'])
+    assert st['playbook_status'] == 'Approved', st
+    assert st['label'] == 'מדיניות מאושרת, 2.11.2026, בידי דנה לוי'
+    # שם שאינו שם מלא של אדם אינו מאשר
+    res = IA.wizard_approvals(m, {r['rule_id']: list(A.TRACKS) for r in m['rules']},
+                              {r['rule_id']: 'הלקוח' for r in m['rules']}, 'wizard-comments.json')
+    assert S.derive_status(m, res['cells'])['playbook_status'] != 'Approved'

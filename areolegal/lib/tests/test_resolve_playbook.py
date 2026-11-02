@@ -73,7 +73,10 @@ def test_mixed_policy_with_case_law_never_beats_playbook(tmp_path):
     assert res['activation_question'] is True
     mixed = _cand(res, 'מדיניות חוזית - מקבל השירותים')
     assert 'mixed_family_background' in mixed['excluded_because'] and not mixed['chosen']
-    assert mixed['cites_case_law'] and set(mixed['derived_from']) >= {'outsourcing', 'freelance', 'employment'}
+    # 1.3.0 (resolve_playbook.py, ביקורת כלליות): בלי מילון משפחות, derived_from הוא שמות המסמכים כלשונם
+    assert mixed['cites_case_law'] and len(mixed['derived_from']) >= 3
+    joined = ' '.join(mixed['derived_from'])
+    assert 'קבלן עצמאי' in joined and 'הסכם עבודה' in joined and 'מיקור חוץ' in joined
     assert [b['path'] for b in res['background_documents']] == [mixed['path']]
     assert 'not_a_policy' in _cand(res, 'דוח סקירה')['excluded_because']
 
@@ -110,15 +113,20 @@ def test_activation_mismatch_label_needs_explicit_answer(tmp_path):
     data, folder = _folder(tmp_path)
     res = rp.resolve(data, folder, 'services', 'service_recipient', 'he', counterparty_kind='company')
     assert res['activation_question']
-    assert rp.source_label(res, 'delegated') == 'שיקול מקצועי, בהשראת פלייבוק של סוג אחר'
-    assert rp.source_label(res, 'explicit') == 'מהפלייבוק'
+    # S1d-R2 (28.10.2026, resolve_playbook.py שורות 14-18): הפלייבוק שנבחר הוא מאותה משפחה ומאותו צד, ולכן
+    # התווית אינה "בהשראת פלייבוק של סוג אחר" אלא תווית המעמד עם הסיומת של תנאי ההפעלה, עד תשובה מפורשת
+    base = rp.source_label(res, 'explicit')
+    assert base in (rp.LABELS['he']['pb'], rp.LABELS['he']['proposed'])
+    assert rp.source_label(res, 'delegated') == base + rp.LABELS['he']['activation']
+    assert 'בהשראת' not in rp.source_label(res, 'delegated')
 
 
 def test_law_item_of_rejected_playbook_is_carried(tmp_path):
     data, folder = _folder(tmp_path, indexed=True, supplier=True)
     res = rp.resolve(data, folder, 'services', 'service_recipient', 'he')
     sup = _cand(res, 'fam_supplier')
-    assert 'opposite_side' in sup['excluded_because']
+    # 1.3.0: אין קביעה אוטומטית ש"הצד הזה הוא הצד שכנגד" (side_status); צד שונה הוא "לבחירה", ואינו נבחר
+    assert 'side_unclear' in sup['excluded_because'] and not sup['chosen']
     carried = {(x['from'], x['id']) for x in res['law_items_carried']}
     assert (sup['path'], 'QS1') in carried
     assert any(x['id'] == 'Q1' for x in res['law_items_carried'])  # גם מהפלייבוק שבשורש, שלא נבחר

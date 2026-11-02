@@ -52,7 +52,10 @@ def built(tmp_path):
     paths["index"].write_text(json.dumps({"playbooks": [{
         "core_path": "playbook-core.json",
         "family_code": model.get("family_code") or model.get("family_id"),
-        "company_role_code": model.get("company_role_code") or model.get("company_role"),
+        # הצד נקרא כמו ב-register_playbook.py ו-ingest_approval.index_entry_of: גם מ-scope_summary.contract_families
+        "company_role_code": (model.get("company_role_code")
+                              or ((model.get("scope_summary") or {}).get("contract_families") or [{}])[0]
+                              .get("company_role_code") or model.get("company_role")),
         "language": "he"}]}, ensure_ascii=False), encoding="utf-8")
 
     out_dir = tmp_path / "גיליונות"

@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 """risk/render_check.py: בדיקת שחרור של דוח הסיכונים בדפדפן אמיתי (Chrome או Edge בלי ממשק).
 
-הבעיות שהבדיקה סוגרת (סבב 2 ו-3.4):
+הבעיות שהבדיקה סוגרת:
 - דוח שנפתח כעמוד ריק (הערה שלא נסגרה בראש התבנית) עבר את node --check ואת הסביבה המדומה.
-- פס החיסיון (position:fixed) הסתיר כותרות פרקים ושורות כותרת של טבלאות בכל עמוד מודפס (C1ב פרק 7, C2 פרק 3).
+- פס החיסיון (position:fixed) הסתיר כותרות פרקים ושורות כותרת של טבלאות בכל עמוד מודפס.
 - יעד 6 עד 8 העמודים הושג רק בקיצור ידני; אף בדיקה לא ספרה עמודים בהרצה.
 
 מה נבדק, בפרופיל דפדפן חדש בתיקייה זמנית, דרך פרוטוקול DevTools:
   non_blank        טקסט ה-DOM המלא של גוף הדוח (בלי script ו-style), ולא הטקסט הגלוי של הלשונית הפתוחה
   title            document.title מתחיל ב-"Areo Workspace"
-  markers          מחרוזות חובה (ברירת מחדל: "התמונה במבט אחד", "השורה התחתונה")
+  markers          מחרוזות חובה (ברירת מחדל: "התמונה במבט אחד", "השורה התחתונה"; בדוח באנגלית "At a glance",
+                   "Bottom line"). שפת הדוח ו-title נגזרים מהמרשם (lang_of), וכך גם טקסט הסימון
   js_exceptions    0
   external         0 בקשות של העמוד לכתובת שאינה file:, data:, blob: או about:
   pdf              הדפסה ל-PDF בגודל A4 (preferCSSPageSize), וקריאת מיקומי הטקסט מתוך ה-PDF:
@@ -21,8 +22,8 @@
   twice            (‎--twice) טעינה חוזרת באותו פרופיל והדפסה שנייה: אותו מספר עמודים, ועמוד ראשון לא ריק
 
 שימוש:
-  python -I render_check.py --template risk-report-template.html --register risk-register.json --out DIR [--twice]
-  python -I render_check.py --html "Areo Workspace - סיכונים.html" --out DIR
+  python3 -B render_check.py --template risk-report-template.html --register risk-register.json --out DIR [--twice]
+  python3 -B render_check.py --html "Areo Workspace - סיכונים.html" --out DIR
 קוד יציאה: 0 עבר; 1 נכשל; 2 גוף הדוח מעל 8 עמודים; 3 לא נמצא דפדפן.
 תלויות: ספרייה סטנדרטית בלבד (מנתח PDF ולקוח WebSocket מינימליים בתוך הקובץ).
 """
@@ -45,15 +46,17 @@ if __name__ == '__main__':
     sys.dont_write_bytecode = True   # הרצה משורת הפקודה אינה כותבת __pycache__ לתוך החבילה
 try:
     from common.cli import guard_out, parser, run, write_json
+    from common.paths import long_path
 except ImportError:  # pragma: no cover
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from common.cli import guard_out, parser, run, write_json
+    from common.paths import long_path
 
 BODY_PAGE_LIMIT = 8
 A4 = (595, 842)
 DEFAULT_MARKERS = ['Areo Workspace', 'התמונה במבט אחד', 'השורה התחתונה']
-# דוח חקר הישות (הערות 3.6; המהנדס 17, סיכום C2 פער 3): סמנים, מציין וגבול עמודים משלו, בלי --markers ידני
-ENTITY_MARKERS = ['Areo Workspace', 'חקר ישות', 'ממצאים חוסמים']
+# דוח חקר הישות: סמנים, מציין וגבול עמודים משלו, בלי --markers ידני
+ENTITY_MARKERS = ['Areo Workspace', 'חקר ישות', 'ממצאים שעוצרים את העסקה']
 ENTITY_PLACEHOLDER = '__ENTITY_DATA__'
 ENTITY_BODY_LIMIT = 2
 KINDS = {'risk': {'placeholder': '__RISK_DATA__', 'markers': None, 'body_limit': BODY_PAGE_LIMIT, 'name': 'סיכונים'},
@@ -61,7 +64,8 @@ KINDS = {'risk': {'placeholder': '__RISK_DATA__', 'markers': None, 'body_limit':
                     'name': 'חקר ישות'}}
 RESOURCES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources')
 APPENDIX_TITLES = ['נספח: ציטוטים מילוליים', 'Appendix: verbatim quotes']
-HEADINGS = ['התמונה במבט אחד', 'השורה התחתונה', 'לתיקון לפני שליחת התגובה', 'העדשות', 'מועדים קריטיים',
+HEADINGS = ['התמונה במבט אחד', 'השורה התחתונה', 'העדשות',
+            'מועדים קריטיים', 'התמונה הכספית',
             'הסיכונים', 'סתירות בין ההסכם לנספחים', 'צירופים ושרשראות', 'הסיכונים הקריטיים בפירוט',
             'מה לא נבדק ומה חסר', 'נספח: ציטוטים מילוליים', 'נספחים שלא נמסרו', 'הנחות שהלקוח צריך לאשר',
             'מספר', 'עדשה', 'הסיכון בשורה אחת', 'סעיף', 'חומרה', 'כיוון טיפול', 'נושא', 'מה גובר', 'התיקון',
@@ -69,6 +73,21 @@ HEADINGS = ['התמונה במבט אחד', 'השורה התחתונה', 'לתי
 HE_DRAFT = 'טיוטה, טעונה אישור'
 HE_PRIV = 'חסוי: מסמך עבודה של המחלקה המשפטית, הוכן לבקשת עו״ד {counsel} לצורך מתן ייעוץ משפטי ל{company}'
 HE_PRIV_NONE = 'לא צוין עורך דין שהדוח הוכן עבורו; קיים ספק אם יחול חיסיון'
+# דוח באנגלית (deliverable_language קובע את שפת התוצר): אותו נוסח כמו EN בתבנית
+EN_DRAFT = 'Draft, pending approval'
+EN_PRIV = ('Privileged: legal department working document, prepared at the request of {counsel} for the purpose '
+           'of legal advice to {company}')
+EN_PRIV_NONE = 'No counsel named for this report; privilege may not apply'
+EN_MARKERS = ['Areo Workspace', 'At a glance', 'Bottom line']
+EN_ENTITY_MARKERS = ['Areo Workspace', 'Entity check', 'Findings that stop the deal']
+EN_HEADINGS = ['At a glance', 'Bottom line',
+               'The lenses', 'Critical dates', 'The money picture',
+               '1. Risks', '2. Agreement vs annexes', '3. Combinations and chains', '4. Critical risks in detail',
+               'Not checked and missing', 'Appendix: verbatim quotes', 'Annexes not provided',
+               'Assumptions the client should confirm', 'Lens', 'The risk in one line', 'Clause', 'Severity',
+               'Treatment direction', 'Topic', 'What prevails', 'The fix', 'Document and clause', 'Verbatim text']
+TITLES = {('risk', 'he'): 'Areo Workspace | סיכונים', ('risk', 'en'): 'Areo Workspace | Risks',
+          ('entity', 'he'): 'Areo Workspace | חקר ישות', ('entity', 'en'): 'Areo Workspace | Entity check'}
 BAND_PAD = 3.0      # נקודות סביב שורות הסימון
 OVERLAP_MIN = 1.0   # חפיפה אנכית מינימלית שנחשבת הסתרה
 
@@ -83,7 +102,26 @@ def build_report(template_text, register, placeholder='__RISK_DATA__'):
     if n != 1:
         raise ValueError('מציין ההזרקה %s צריך להופיע פעם אחת בדיוק (נמצא %d)' % (placeholder, n))
     payload = json.dumps(register, ensure_ascii=False).replace('</', '<\\/')
-    return template_text.replace(placeholder, payload)
+    return localize_shell(template_text, lang_of(register)).replace(placeholder, payload)
+
+
+def lang_of(register):
+    """שפת הדוח: meta.deliverable_language, ואחריו meta.display_language (השדה שבסכמת המרשם). he כברירת מחדל."""
+    m = (register or {}).get('meta') or {}
+    v = str(m.get('deliverable_language') or m.get('display_language') or 'he').strip().lower()
+    return 'en' if v[:2] == 'en' or v in ('english', 'אנגלית') else 'he'
+
+
+def localize_shell(html_text, lang):
+    """בדוח באנגלית גם השלד הסטטי (lang, dir ו-title) באנגלית ו-LTR, עוד לפני שהסקריפט רץ: עמוד שנפתח בלי
+    JavaScript אינו מציג עברית קבועה בתוצר אנגלי."""
+    if lang != 'en':
+        return html_text
+    html_text = html_text.replace('<html lang="he" dir="rtl">', '<html lang="en" dir="ltr">', 1)
+    for kind in ('risk', 'entity'):
+        html_text = html_text.replace('<title>%s</title>' % TITLES[(kind, 'he')],
+                                      '<title>%s</title>' % TITLES[(kind, 'en')], 1)
+    return html_text
 
 
 def static_checks(html_text):
@@ -102,12 +140,39 @@ def static_checks(html_text):
     return problems
 
 
-def band_text_from_register(register):
-    """טקסט הסימון כפי שהתבנית בונה אותו (HE.draft + HE.priv), כדי לזהות את שורות הפס ב-PDF."""
+# תואר בתחילת שם עורך הדין. התבנית העברית מוסיפה "עו״ד" לפני השם, ולכן שם שכבר נפתח בו (פרופיל ישן, שבו
+# branding.lawyer_name הוא "עו"ד <שם>, <תפקיד>") יוצא "עו״ד עו"ד <שם>" . "עוד" בלי גרש אינו תואר
+COUNSEL_TITLE_RE = re.compile(r'^\s*(?:עו(?:"|״|\'\'|”)ד|עוה(?:"|״)ד|עורך הדין|עורכת הדין|Adv\.?|Advocate)\s+', re.I)
+
+
+def counsel_name(name, role=None):
+    """שם עורך הדין לסימון החיסיון: בלי תואר בתחילתו, ובלי התפקיד כשהוא כבר בסוף השם (role: branding.lawyer_role),
+    כדי שהתפקיד לא ייכפל. אותו כלל כמו בתבנית (PRIV_COUNSEL)."""
+    n = COUNSEL_TITLE_RE.sub('', str(name or '').strip()).strip()
+    r = str(role or '').strip()
+    if r and n.endswith(r) and n != r:
+        n = n[:-len(r)].rstrip(' ,;-').strip()
+    return n
+
+
+def band_text_from_register(register, lang=None):
+    """טקסט הסימון כפי שהתבנית בונה אותו (L.draft + L.priv), בשפת הדוח, כדי לזהות את שורות הפס ב-PDF."""
     m = register.get('meta') or {}
-    counsel = str(m.get('prepared_for_counsel') or '').strip()
-    priv = HE_PRIV.replace('{counsel}', counsel).replace('{company}', m.get('company') or '') if counsel else HE_PRIV_NONE
-    return HE_DRAFT + ' · ' + priv
+    en = (lang or lang_of(register)) == 'en'
+    draft, priv_t, priv_none = (EN_DRAFT, EN_PRIV, EN_PRIV_NONE) if en else (HE_DRAFT, HE_PRIV, HE_PRIV_NONE)
+    counsel = counsel_name(m.get('prepared_for_counsel'))
+    co = str(m.get('company') or '').strip()
+    if not en and co and not ('֐' <= co[0] <= '׿'):
+        co = '-' + co   # כמו בתבנית: "ל-<שם>", ולא "ל<שם>"
+    priv = priv_t.replace('{counsel}', counsel).replace('{company}', co) if counsel else priv_none
+    return draft + ' · ' + priv
+
+
+def markers_for(kind, lang):
+    """מחרוזות החובה בדוח, לפי סוגו ושפתו."""
+    if kind == 'entity':
+        return EN_ENTITY_MARKERS if lang == 'en' else ENTITY_MARKERS
+    return EN_MARKERS if lang == 'en' else DEFAULT_MARKERS
 
 
 # ======================================================================================
@@ -740,8 +805,14 @@ def lines_of(runs, tol=2.0):
     return lines
 
 
+_LTR_RUN = re.compile(r'[A-Za-z0-9]+')
+
+
 def is_band_line(ln, marker_ns):
-    for s in (ln['rtl'], ln['ltr']):
+    # כשה-PDF מחזיר אות לכל ריצה (תבנית עם ערכת הגופנים המוטמעת), שם לטיני בתוך שורה עברית (שם הלקוח) יוצא
+    # הפוך בסדר מימין לשמאל ("OCELPMAXE"). מהפכים בחזרה כל רצף לטיני, כדי שהפס יזוהה גם אז
+    logical = _LTR_RUN.sub(lambda m: m.group(0)[::-1], ln['rtl'])
+    for s in (ln['rtl'], ln['ltr'], logical):
         v = _ns(s)
         if len(v) >= 12 and v in marker_ns:
             return True
@@ -749,7 +820,7 @@ def is_band_line(ln, marker_ns):
     return bool(parts) and sum(map(len, parts)) >= 20 and all(p in marker_ns for p in parts)
 
 
-def analyse(layout, marker, headings=HEADINGS, appendix_titles=APPENDIX_TITLES):
+def analyse(layout, marker, headings=HEADINGS + EN_HEADINGS, appendix_titles=APPENDIX_TITLES):
     marker_ns = _ns(marker)
     heads_ns = {_ns(h): h for h in headings}
     app_ns = [_ns(a) for a in appendix_titles]
@@ -765,8 +836,10 @@ def analyse(layout, marker, headings=HEADINGS, appendix_titles=APPENDIX_TITLES):
         # חלק מטקסט הסימון נפרדות משאר הריצות בשורה.
         band = []
         for ln in lines:
-            cands = [r for r in ln['runs'] if len(_ns(r['text'])) >= 2 and _ns(r['text']) in marker_ns]
-            if not cands:
+            # ריצה של אות אחת נכנסת לחיבור השורה: שורת המשך קצרה של הסימון באנגלית ("Example Co Ltd.") מתפצלת
+            # ב-Skia ל-"Example Co L", "t", "d.", ובלי ה-"t" החיבור אינו חלק מטקסט הסימון והשורה נספרה כחפיפה
+            cands = [r for r in ln['runs'] if _ns(r['text']) and _ns(r['text']) in marker_ns]
+            if not any(len(_ns(r['text'])) >= 2 for r in cands):
                 continue
             rtl = sorted(cands, key=lambda r: -r['x1'])
             pseudo = {'runs': cands, 'rtl': ''.join(r['text'] for r in rtl),
@@ -776,6 +849,23 @@ def analyse(layout, marker, headings=HEADINGS, appendix_titles=APPENDIX_TITLES):
                 # ריצות של אות אחת (Skia מפצל לפעמים שם לטיני) שייכות לפס כשהן חלק מטקסט הסימון
                 pseudo['runs'] = [r for r in ln['runs'] if _ns(r['text']) in marker_ns]
                 band.append(pseudo)
+        # שורת המשך של הסימון בטקסט מעורב (שם עברי בתוך הסימון האנגלי, או שם לטיני בתוך העברי): סדר הריצות
+        # אחרי bidi אינו רצף אחד של טקסט הסימון. שורה שכל הריצות שלה הן קטעים מטקסט הסימון, וצמודה (עד 6 נקודות)
+        # לשורת סימון שזוהתה, היא חלק מהפס, ולא תוכן שחופף לו
+        grew = True
+        while grew and band:
+            grew = False
+            have = {id(r) for b in band for r in b['runs']}
+            for ln in lines:
+                runs = [r for r in ln['runs'] if _ns(r['text'])]
+                if not runs or any(id(r) in have for r in runs):
+                    continue
+                if not all(_ns(r['text']) in marker_ns for r in runs) or sum(len(_ns(r['text'])) for r in runs) < 4:
+                    continue
+                top, bot = min(r['top'] for r in runs), max(r['bottom'] for r in runs)
+                if any(top - b['bottom'] <= 6 and b['top'] - bot <= 6 for b in band):
+                    band.append({'runs': runs, 'rtl': ln['rtl'], 'ltr': ln['ltr'], 'top': top, 'bottom': bot})
+                    grew = True
         res['band_lines'] += len(band)
         if band:
             res['band_on_pages'] += 1
@@ -922,8 +1012,10 @@ def main(argv=None):
     inputs = [x for x in (a.template, a.register, a.html) if x]
     guard_out(a.out, inputs)
     if a.template and a.register:
-        tpl = open(a.template, encoding='utf-8').read()
-        reg = json.load(open(a.register, encoding='utf-8'))
+        with open(long_path(a.template), encoding='utf-8') as fh:
+            tpl = fh.read()
+        with open(long_path(a.register), encoding='utf-8') as fh:
+            reg = json.load(fh)
         st = static_checks(tpl)
         html = build_report(tpl, reg, a.placeholder)
         os.makedirs(a.out, exist_ok=True)
@@ -931,12 +1023,16 @@ def main(argv=None):
         with open(page, 'w', encoding='utf-8') as fh:
             fh.write(html)
         marker = a.marker or band_text_from_register(reg)
+        markers = markers if a.markers else markers_for(kind, lang_of(reg))
     elif a.html:
         page = a.html
-        html = open(page, encoding='utf-8').read()
+        with open(long_path(page), encoding='utf-8') as fh:
+            html = fh.read()
         st = static_checks(html)
         m = re.search(r'const DATA = (\{.*?\});\n', html, re.S)
-        marker = a.marker or (band_text_from_register(json.loads(m.group(1).replace('<\\/', '</'))) if m else HE_DRAFT)
+        reg = json.loads(m.group(1).replace('<\\/', '</')) if m else {}
+        marker = a.marker or (band_text_from_register(reg) if m else HE_DRAFT)
+        markers = markers if a.markers else markers_for(kind, lang_of(reg))
     else:
         ap.error('--template ו---register, או --html')
     res = run_check(page, a.out, marker, browser=a.browser, markers=markers, twice=a.twice, body_limit=a.body_limit)

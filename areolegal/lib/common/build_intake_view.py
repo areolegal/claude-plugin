@@ -1,0 +1,350 @@
+# -*- coding: utf-8 -*-
+"""common/build_intake_view.py: בונה את חצי המסך של שלב התשאול (עמוד HTML) לאחד מארבעת הסקילים של גרסה 1.
+
+כל סקיל מתחיל בתשאול: חצי מסך הוא השיחה (הצ'אט של Claude), והחצי השני הוא העמוד הזה, עם ההסבר, חלון העלאה אחד
+"קבצים / תיקיות", ותרשים של מה קורה עכשיו ומה מקבלים בסוף. רק אחרי שהמשימה הושלמה נפתח דף התוצאות המלא.
+
+שימוש (תמיד עם -B, בלי -I: -I מסתיר ספריות שהותקנו למשתמש):
+  python3 -B build_intake_view.py --skill setup|playbook|negotiator|drafter --lang he|en [--profile פרופיל-לקוח.json] --out intake.html
+
+הפלט: קובץ HTML אחד עצמאי (גופנים מוטמעים, בלי קישורים לרשת, חוץ מ-pdf.js שנטען רק כשמעלים PDF).
+בקונסולה (stdout) מודפסת הצהרת היכולות שהעמוד צריך כשמפרסמים אותו כ-Artifact: {"room": {}}.
+קוד יציאה 0 בהצלחה, 2 כשהפלט אסור (cli.guard_out), 1 על קלט שגוי.
+
+הטקסטים כתובים לפי areo-voice.md: בלי קודים, בלי מונחים פנימיים, בלי סוגי קבצים טכניים.
+Python 3, ספרייה סטנדרטית בלבד.
+"""
+import argparse
+import json
+import os
+import sys
+
+if __name__ == '__main__':
+    sys.dont_write_bytecode = True
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import cli  # noqa: E402
+from intake_shots import SHOTS  # noqa: E402
+
+# התבנית נארזה בתוסף, areolegal/ui/ (שני שלבים למעלה מ-lib/common), ואינה מורדת מהשרת; שלושה שלבים: עץ התוכן של המסירה.
+_TEMPLATE_CANDIDATES = [os.path.normpath(os.path.join(HERE, *up, 'ui', 'intake-view-template.html'))
+                        for up in (('..', '..'), ('..', '..', '..'))]
+TEMPLATE = next((c for c in _TEMPLATE_CANDIDATES if os.path.exists(c)), _TEMPLATE_CANDIDATES[0])
+CAPABILITIES = {'room': {}}
+SKILLS = ('setup', 'playbook', 'negotiator', 'drafter')
+
+# ── טקסטים משותפים לכל הסקילים ──
+COMMON = {
+    'he': {
+        'whatNow': 'מה יקרה עכשיו', 'whatEnd': 'מה תקבלו בסוף',
+        'dropLabel': 'אפשר גם לגרור לכאן קבצים או תיקיות', 'dropAria': 'העלאת קבצים או תיקיות',
+        'reading': 'קוראים...', 'words': 'מילים', 'remove': 'להסיר',
+        'empty': 'לא מצאנו טקסט. אם הקובץ סרוק, נקרא אותו בשיחה.',
+        'readInChat': 'נקרא בשיחה',
+        'saveBtn': 'לשמור בתיקייה שלכם', 'sendBtn': 'להעביר לשיחה',
+        'secHow': 'איך זה עובד', 'secAct': 'עכשיו תורכם: בחרו איך להמשיך', 'uploadedTextMsg': 'העליתי {n} קבצים. הטקסט של {nOk} מהם מצורף כאן, ואפשר להתחיל לעבוד איתו.', 'uploadedSkippedMsg': 'את הקבצים הבאים לא הצלחתי לצרף כטקסט: {names}. אם הם נחוצים, צרפו אותם ישירות לצ\'אט.', 'cutMark': ' (קוצר)', 'attachInChat': 'את הקבצים מעלים בצ\'אט עצמו, בכפתור הפלוס.', 'pickFiles': 'העלו קבצים', 'pickDir': 'העלו תיקייה', 'saveOptBtn': 'לשמור גם עותק בתיקייה', 'saveOptHint': 'לא חובה. אם הקבצים כבר שמורים בתיקייה שלכם, אין צורך לשמור שוב.', 'dirSkipped': 'דילגנו על קבצים שאינם מסמכים: ',
+        'saveHint': 'בפעם הראשונה תבחרו תיקייה. הקבצים המקוריים נשמרים שם.',
+        'noSaveHint': 'הדפדפן הזה לא שומר ישירות לתיקייה. אחרי ההעברה, גררו את הקבצים לשיחה.',
+        'savedAt': 'נשמרו ב-{path}', 'saveFailed': 'לא הצלחנו לשמור בתיקייה. בדקו שיש הרשאת כתיבה ונסו שוב.',
+        'andMore': ' ועוד {n}',
+        'uploadLabel': 'קבצים שהועלו', 'uploadedAssetsMsg': 'העליתי {n} קבצים לעמוד. כל קובץ ברשימה עם מזהה: קראו כל אחד עם Artifact read, path=המזהה (זה הטקסט שחולץ מהקובץ). ואז המשיכו בעבודה.', 'stagedFiles': 'הקבצים מוכנים בתיבת ההודעה בשיחה. לחצו שם על שליחה.',
+        'uploadedMsg': 'העליתי {n} קבצים ושמרתי אותם בתיקייה {path}: {names}. אפשר להמשיך.',
+        'uploadedNoSaveMsg': 'בחרתי {n} קבצים: {names}. הם לא נשמרו בתיקייה, ולכן אצרף אותם כאן בשיחה.',
+        'sent': 'ההודעה נשלחה לשיחה. המשיכו שם.', 'pasted': 'ההודעה הועתקה. הדביקו בשיחה.',
+        'copyByHand': 'לא הצלחנו להעתיק לבד. סמנו את ההודעה, העתיקו אותה והדביקו בשיחה.',
+        'themeLabel': 'מצב כהה או בהיר',
+        'disclaimer': 'אין לראות בתוצרי המערכת מסמכים משפטיים מחייבים או סופיים. מדובר בתוצרי AI אשר אינם מהווים ייעוץ משפטי, ויש לבדוק אותם בידי עורך דין לפני שמסתמכים עליהם.',
+    },
+    'en': {
+        'whatNow': 'What happens now', 'whatEnd': 'What you get at the end',
+        'dropLabel': 'Or drag files or folders here', 'dropAria': 'Upload files or folders',
+        'reading': 'Reading...', 'words': 'words', 'remove': 'Remove',
+        'empty': 'We found no text. If the file is a scan, we will read it in the conversation.',
+        'readInChat': 'will be read in the conversation',
+        'saveBtn': 'Save to your folder', 'sendBtn': 'Hand over to the conversation',
+        'secHow': 'How it works', 'secAct': 'Your turn: choose how to continue', 'uploadedTextMsg': 'I uploaded {n} files. The text of {nOk} of them is attached here, and you can start working with it.', 'uploadedSkippedMsg': 'I could not attach these files as text: {names}. If they are needed, attach them directly to the chat.', 'cutMark': ' (shortened)', 'attachInChat': 'Attach the files in the chat itself, with the plus button.', 'pickFiles': 'Upload files', 'pickDir': 'Upload a folder', 'saveOptBtn': 'Also save a copy to a folder', 'saveOptHint': 'Optional. If the files are already saved in your folder, there is no need to save again.', 'dirSkipped': 'Skipped files that are not documents: ',
+        'saveHint': 'The first time, you pick a folder. The original files are saved there.',
+        'noSaveHint': 'This browser cannot save straight to a folder. After handing over, drag the files into the conversation.',
+        'savedAt': 'Saved to {path}', 'saveFailed': 'We could not save to the folder. Check write access and try again.',
+        'andMore': ' and {n} more',
+        'uploadLabel': 'Uploaded files', 'uploadedAssetsMsg': 'I uploaded {n} files to the page. Each file is listed with an id: read each with Artifact read, path=the id (the text extracted from the file). Then continue the work.', 'stagedFiles': 'The files are ready in the message box in the conversation. Press send there.',
+        'uploadedMsg': 'I uploaded {n} files and saved them in {path}: {names}. You can go on.',
+        'uploadedNoSaveMsg': 'I chose {n} files: {names}. They were not saved to a folder, so I will attach them here in the conversation.',
+        'sent': 'Message sent to the conversation. Continue there.', 'pasted': 'Message copied. Paste it in the conversation.',
+        'copyByHand': 'We could not copy it for you. Select the message, copy it and paste it in the conversation.',
+        'themeLabel': 'Dark or light mode',
+        'disclaimer': 'The system\u2019s outputs are not binding or final legal documents. They are AI outputs that do not constitute legal advice, and a lawyer must review them before you rely on them.',
+    },
+}
+
+# ── טקסטים לכל סקיל. steps: [כותרת, תיאור]; outputs: [סמל, כותרת, תיאור]; buttons: label + message לצ'אט ──
+S = {}
+S['setup'] = {
+    'job': {'he': 'הקמה', 'en': 'setup'},
+    'he': {
+        'agentNameAlt': 'Setup',
+        'agentName': 'ההקמה',
+        'features': {'navTitle': 'למה Areo', 'items': [
+            {'kind': 'custom', 'ic': 'profile', 'pill': 'מותאם אישית', 'kicker': 'מותאם אישית', 'title': 'מותאמת *אישית*', 'text': 'Areo לא עובדת עם תבנית כללית. היא לומדת את מאפייני החברה ואת הרגולציה שחלה עליה, וכל סוכן עובד לפיהם.', 'points': ['פרופיל חברה אחד שכל הסוכנים מכירים', 'התאמה לתחום, לאזורי הפעילות ולצורת ההתאגדות', 'הרגולציה שחלה על החברה', 'עברית ואנגלית, ומיתוג בצבעים ובלוגו שלכם, אם תרצו'], 'core': 'הפרופיל שלכם', 'tags': ['תחום', 'אזורים', 'רגולטורים', 'שפה', 'חותם', 'מיתוג']},
+            {'kind': 'secure', 'ic': 'shield', 'color': 'var(--tr-call)', 'pill': 'אבטחת מידע מקסימלית', 'kicker': 'אבטחת מידע', 'title': 'המסמכים שלכם *נשארים אצלכם*', 'text': 'ההסכמים, הפלייבוקים, הטיוטות והתוצרים נשמרים רק בתיקייה שלכם ומעובדים בחשבון Claude שלכם. Areo לא רואה אותם ולא שומרת אותם.', 'points': ['Areo שומרת רק את פרופיל החברה, שהוא מידע ציבורי', 'שום מסמך, בקשה או שם קובץ לא נשלחים ל-Areo', 'עמודים מוצגים רק בחשבון שלכם, בלי קישור ציבורי'], 'inTitle': 'אצלכם', 'inside': ['הסכמים', 'פלייבוקים', 'טיוטות ותוצרים', 'השיחות'], 'outTitle': 'אצל Areo', 'outside': ['פרופיל החברה (מידע ציבורי)']},
+            {'kind': 'reg', 'ic': 'alert', 'color': 'var(--tr-yellow)', 'pill': 'מותאם לרגולציה שלכם', 'kicker': 'רגולציה', 'title': 'מכיר את *הרגולציה שחלה עליכם*', 'text': 'לפי התחום והאזורים שבהם החברה פועלת, Areo מזהה אילו רגולטורים מפקחים עליה, ולוקחת אותם בחשבון בכל הסכם.', 'points': ['רגולטורים לפי תחום, אזורים וציבוריות', 'טענת דין בפלייבוק מסומנת לאימות', 'מקורות רשמיים בלבד, מרשימה מאושרת'], 'blips': ['הגנת מידע', 'תחרות', 'צרכנות', 'רגולטור ענפי', 'ניירות ערך', 'עבודה'], 'cap': 'הרגולטורים נגזרים מהפרופיל שלכם'}]},
+        'aboutLabel': 'על המערכת', 'bigHero': True, 'actionLast': True, 'showcase': {'ms': 3500, 'demoLabel': 'הדגמה', 'demos': [{'kind': 'passport', 'ttl': 'פרופיל החברה', 'co': 'החברה שלכם', 'pct': '0%', 'pctLabel': 'הושלם', 'meter': 8, 'fields': ['חברה', 'מספר רישום', 'מדינה', 'תחומים', 'אזורים', 'חותם'], 'stamp': ['AREO', 'פרופיל', 'ממתין לכם']}, {'kind': 'ring', 'ttl': 'המדיניות החוזית', 'co': 'פלייבוק לדוגמה', 'center': 'רמזור', 'centerSub': 'לכל סעיף', 'legend': ['מקובל עלינו', 'אפשר להתגמש', 'לא מסכימים']}, {'kind': 'doc', 'ttl': 'טיוטה ב-Word', 'co': 'טיוטה לדוגמה', 'ph': '[להשלמה]'}, {'kind': 'redline', 'ttl': 'עקוב אחר שינויים', 'co': 'ההסכם מהצד השני', 'before': 'הספק יהיה אחראי', 'del': 'ללא הגבלה', 'ins': 'עד גובה התמורה', 'after': 'בגין כל נזק.', 'bubble': 'לפי המדיניות שלכם: האחריות מוגבלת.'}]},
+        'times': ['כדקה', 'כדקה', 'פחות מדקה', 'רגע'],
+        'where': 'התוצר יישמר בתיקייה המחוברת לצ\'אט ואצל Areo.', 'howText': 'אתם ממלאים את השאלון ויוצאים לדרך.',
+        'kicker': 'הקמה', 'title': 'צוות *הסוכנים החוזי* שלכם',
+        'lead': 'מערכת לעבודה החוזית של הארגון: מהמדיניות החוזית, דרך ניסוח הטיוטה וניהול המשא ומתן מול הצד שכנגד, ועד מסמך שאפשר לשלוח. מתחילים בהיכרות קצרה עם החברה, כ-3 דקות.',
+        'noAct': True, 'noAttach': True, 'noHow': True, 'claudeNote': ['כל העבודה במערכת מבוצעת על ידי Claude', 'הסוכנים של Areo פועלים בתוך Claude, בחשבון שלכם: קוראים, מנתחים, מנסחים ומפיקים את התוצרים. Areo מספקת את השיטה, ו-Claude עושה את העבודה.'],
+        'about': {
+            'welcome': 'מערכת ניהול החוזים של Areo',
+            'agentsTitle': 'ארבעה סוכנים, עבודה חוזית אחת',
+            'intro': 'כל סוכן עושה חלק אחד מהעבודה, וכולם עובדים לפי אותה מדיניות ואותו פרופיל חברה.',
+            'sayLabel': 'כתבו בשיחה',
+            'agents': [['profile', 'ההקמה', 'בונה פעם אחת את פרופיל החברה, וכל הסוכנים עובדים לפיו. זה מה שקורה עכשיו.', ''],
+                       ['book', 'בונה הפלייבוק', 'לומד מההסכמים שלכם מדיניות חוזית: מה מקובל עליכם, איפה אפשר להתגמש ומה לא, ומציג אותה בסביבת עבודה אינטראקטיבית.', 'פלייבוק'],
+                       ['pen', 'מנסח ההסכמים', 'טיוטות, תיקונים והודעות, מתבניות החברה ומהמדיניות שלה.', 'טיוטה ראשונה'],
+                       ['swap', 'הנושא ונותן', 'עונה על הסכם שחזר מהצד השני לפי המדיניות שלכם, ומחזיר Word עם עקוב אחר שינויים והערות.', 'הערות הצד השני']],
+            'notesTitle': 'כדאי לדעת',
+            'notes': [['alert', 'בדיקה אנושית', 'בינה מלאכותית אינה מחליפה שיקול דעת ובדיקה של אדם. היא עלולה לטעות, להמציא או להסיק מסקנות שגויות, ולכן כל תוצר משפטי צריך לעבור בדיקה אנושית.', 'warn'],
+                      ['shield', 'פרטיות', 'Areo אינה רואה את המסמכים ואת הבקשות שלכם ואינה שומרת דבר מהם. היא שומרת את פרופיל הארגון שבניתם בהקמה (גם בתיקייה שלכם), מאמתת את הרישיון וסופרת את מספר הפעולות שהושלמו. המסמכים מעובדים בחשבון Claude שלכם.'],
+                      ['folder', 'התיקייה שלכם', 'התיקייה המחוברת היא הבית של קובצי החברה: הפרופיל, המדיניות החוזית ותיקי המשא ומתן. כל מי שיש לו גישה אליה עובד על אותה מדיניות.'],
+                      ['chip', 'בחירת מודל', 'לתוצאות הטובות ביותר, בחרו במודל שמתאים למשימות מורכבות, ואל תחליפו מודל באמצע עבודה.']],
+        },
+        'steps': [['פרטי החברה', 'שם, מספר רישום, מדינה וצורת התאגדות'], ['תחום ואזורים', 'כך נדע אילו רגולטורים רלוונטיים'],
+                  ['חתימה, שפה ומיתוג', 'מי חותם, באיזו שפה עובדים, ולוגו'], ['אישור הפרופיל', 'אתם מאשרים, ואנחנו שומרים']],
+        'outputs': [['profile', 'פרופיל החברה', 'כל עבודה ב-Areo מתחילה ממנו']],
+        'dockText': ['מוכנים?', 'כ-3 דקות. השאלון ייפתח בשיחה.'],
+        'buttons': [{'label': 'להתחיל בשאלות', 'primary': True, 'message': 'אפשר להתחיל. נעבור על פרטי החברה.'}],
+    },
+    'en': {
+        'agentNameAlt': 'ההקמה',
+        'agentName': 'Setup',
+        'features': {'navTitle': 'Why Areo', 'items': [
+            {'kind': 'custom', 'ic': 'profile', 'pill': 'Tailored to you', 'kicker': 'Tailored', 'title': 'Tailored *to you*', 'text': 'Areo does not work from a generic template. It learns your company\u2019s characteristics and the regulation that applies to it, and every agent works by them.', 'points': ['One company profile that every agent knows', 'Fitted to your sector, regions and legal form', 'The regulation that applies to the company', 'Hebrew and English, and your colours and logo if you want them'], 'core': 'Your profile', 'tags': ['Sector', 'Regions', 'Regulators', 'Language', 'Signer', 'Brand']},
+            {'kind': 'secure', 'ic': 'shield', 'color': 'var(--tr-call)', 'pill': 'Maximum data security', 'kicker': 'Data security', 'title': 'Your documents *stay with you*', 'text': 'Agreements, playbooks, drafts and outputs are kept only in your folder and processed in your Claude account. Areo does not see them or store them.', 'points': ['Areo stores only the company profile, which is public information', 'No document, request or file name is sent to Areo', 'Pages are shown only in your account, never by public link'], 'inTitle': 'With you', 'inside': ['Agreements', 'Playbooks', 'Drafts and outputs', 'Conversations'], 'outTitle': 'With Areo', 'outside': ['Company profile (public information)']},
+            {'kind': 'reg', 'ic': 'alert', 'color': 'var(--tr-yellow)', 'pill': 'Fitted to your regulation', 'kicker': 'Regulation', 'title': 'Knows *the regulation that applies to you*', 'text': 'From your sector and the regions you operate in, Areo identifies which regulators oversee the company, and takes them into account in every agreement.', 'points': ['Regulators by sector, regions and listing', 'Legal claims in the playbook are flagged for verification', 'Official sources only, from an approved list'], 'blips': ['Data protection', 'Competition', 'Consumer', 'Sector regulator', 'Securities', 'Employment'], 'cap': 'The regulators come from your profile'}]},
+        'aboutLabel': 'About the system', 'bigHero': True, 'actionLast': True, 'showcase': {'ms': 3500, 'demoLabel': 'Demo', 'demos': [{'kind': 'passport', 'ttl': 'COMPANY PROFILE', 'co': 'Your company', 'pct': '0%', 'pctLabel': 'done', 'meter': 8, 'fields': ['Company', 'Registration', 'Country', 'Sectors', 'Regions', 'Signer'], 'stamp': ['AREO', 'PROFILE', 'awaiting you']}, {'kind': 'ring', 'ttl': 'CONTRACTING POLICY', 'co': 'Sample playbook', 'center': 'Traffic light', 'centerSub': 'for every clause', 'legend': ['We accept', 'We can flex', 'We refuse']}, {'kind': 'doc', 'ttl': 'WORD DRAFT', 'co': 'Sample draft', 'ph': '[to complete]'}, {'kind': 'redline', 'ttl': 'TRACKED CHANGES', 'co': 'From the other side', 'before': 'The supplier shall be liable', 'del': 'without limit', 'ins': 'up to the fees paid', 'after': 'for any loss.', 'bubble': 'Per your policy: liability is capped.'}]},
+        'times': ['About a minute', 'About a minute', 'Under a minute', 'A moment'],
+        'where': 'The output is saved in the folder connected to the chat, and with Areo.', 'howText': 'You fill in the questionnaire, and you are on your way.',
+        'kicker': 'Setup', 'title': 'Your *contract agent team*',
+        'lead': 'A system for your organization’s contract work: from the contracting policy, through drafting and managing the negotiation with the counterparty, to a document you can send. We start with a short introduction to the company, about 3 minutes.',
+        'noAct': True, 'noAttach': True, 'noHow': True, 'claudeNote': ['All the work in the system is done by Claude', 'Areo\u2019s agents run inside Claude, in your account: they read, analyse, draft and produce the outputs. Areo provides the method, and Claude does the work.'],
+        'about': {
+            'welcome': 'The Areo contract management system',
+            'agentsTitle': 'Four agents, one contract workflow',
+            'intro': 'Each agent does one part of the work, and all of them follow the same policy and the same company profile.',
+            'sayLabel': 'Type in the chat',
+            'agents': [['profile', 'Setup', 'Builds the company profile once, and every agent works by it. This is what happens now.', ''],
+                       ['book', 'Playbook builder', 'Learns a contracting policy from your agreements: what you accept, where you can flex, and what you refuse, and shows it in an interactive workspace.', 'playbook'],
+                       ['pen', 'Agreement drafter', 'Drafts, amendments and notices, from the company’s templates and its policy.', 'first draft'],
+                       ['swap', 'Negotiator', 'Answers an agreement returned by the counterparty according to your policy, and returns a Word file with tracked changes and comments.', 'counterparty comments']],
+            'notesTitle': 'Good to know',
+            'notes': [['alert', 'Human review', 'AI does not replace human judgment and review. It can make mistakes, invent things or reach wrong conclusions, so every legal output needs human review.', 'warn'],
+                      ['shield', 'Privacy', 'Areo does not see your documents and requests and does not store anything from them. It stores the organization profile you built in setup (also in your folder), verifies the license and counts completed actions. The documents are processed in your Claude account.'],
+                      ['folder', 'Your folder', 'The connected folder is the home of the company’s files: the profile, the contracting policy and the negotiation files. Everyone with access to it works on the same policy.'],
+                      ['chip', 'Choosing a model', 'For the best results, choose the model suited to complex tasks, and don’t switch models in the middle of a task.']],
+        },
+        'steps': [['Company details', 'Name, registration number, country and legal form'], ['Sector and regions', 'So we know which regulators apply'],
+                  ['Signing, language and brand', 'Who signs, which language, and a logo'], ['Approve the profile', 'You approve, we save it']],
+        'outputs': [['profile', 'Company profile', 'Every task in Areo starts from it']],
+        'dockText': ['Ready?', 'About 3 minutes. The questionnaire opens in the chat.'],
+        'buttons': [{'label': 'Start the questions', 'primary': True, 'message': 'We can start. Let’s go through the company details.'}],
+    },
+}
+
+S['playbook'] = {
+    'job': {'he': 'מדיניות', 'en': 'policy'},
+    'he': {
+        'agentNameAlt': 'Playbook Builder',
+        'agentName': 'בונה הפלייבוק',
+        'times': ['כ-2 דקות', 'תלוי במספר ההסכמים', 'חלק מהקריאה', 'בקצב שלכם'],
+        'where': 'מסמך ה-Word וסביבת העבודה נשמרים בתיקייה המחוברת, וסביבת העבודה נפתחת גם בעמוד שלצד השיחה. ההכרעה והאישור נעשים בלשונית בתוכה.',
+        'preview': {'kind': 'ring', 'ttl': 'המדיניות החוזית', 'co': 'הפלייבוק שלכם', 'center': 'רמזור', 'centerSub': 'לכל סעיף', 'legend': ['מקובל עלינו', 'אפשר להתגמש', 'לא מסכימים']},
+        'kicker': 'מדיניות חוזית', 'title': 'בונה *הפלייבוק*',
+        'lead': 'Areo קוראת את ההסכמים שלכם ולומדת מה החברה מסכימה לו בכל נושא. בסוף תדעו מה מקובל עלינו, איפה אפשר להתגמש ועל מה לא מסכימים.',
+        'dropHint': 'מדיניות קיימת, או תיקיית הסכמים לבניית מדיניות חדשה',
+        'extra': {
+            'cards': [
+                {'kicker': 'מדיניות חדשה', 'title': 'מההסכמים שלכם',
+                 'text': 'תיקייה עם 20 הסכמים לפחות. אין לכם הסכמים? נכין טיוטת מדיניות לפי הסכמים דומים ומה שמקובל בשוק.',
+                 'message': 'אני רוצה לבנות מדיניות חדשה מההסכמים שלנו.'},
+                {'kicker': 'מדיניות קיימת', 'title': 'להעלות את הקובץ',
+                 'text': 'Areo הופכת את המדיניות שלכם לפלייבוק עובד, בלי לשנות אף עמדה.',
+                 'message': 'יש לנו מדיניות קיימת. אעלה את הקובץ.'}],
+            'listTitle': 'אילו הסכמים עובדים הכי טוב',
+            'list': [['20 הסכמים לפחות מאותו סוג', 'בכל פעם סוג הסכם אחד, וצד אחד בהסכם', 'layers'],
+                     ['הסכמים חתומים וטיוטות משא ומתן עם הערות', 'החתומים מראים על מה החברה הסכימה בפועל, והטיוטות מראות מה ביקשתם ועל מה ויתרתם', 'pen'],
+                     ['צדדים שונים', 'חברות מסוג שונה', 'users'],
+                     ['מהשנים האחרונות', 'עדיף שלוש עד חמש השנים האחרונות', 'calendar'],
+                     ['התבנית שלכם', 'נקודת המוצא שלכם בכל הסכם', 'doc']],
+        },
+        'shot': {'src': 'workspace', 'title': 'כך ייראה הפלייבוק שלכם', 'sub': 'סביבת העבודה שתקבלו בסוף: כל סעיפי המדיניות במסך אחד, עם רמזור לכל עמדה. לחצו על המסך להגדלה.', 'bar': 'Areo Workspace · סעיפי מדיניות', 'alt': 'סביבת העבודה של הפלייבוק, מסך סעיפי המדיניות'},
+        'stepsShort': True,
+        'steps': [['שאלות קצרות', 'סוג ההסכם, הצד שלכם בהסכם והמחלקות'], ['קריאה', 'קוראים את ההסכמים ולומדים מהם את העמדות שלכם'],
+                  ['רמזור', 'מקובל עלינו, אפשר להתגמש או לא מסכימים, עם דוגמאות מההסכמים שלכם'], ['נימוקים ואישור', 'אתם מאשרים כל עמדה']],
+        'outputs': [['doc', 'הפלייבוק ב-Word', 'מסמך המדיניות'], ['screen', 'סביבת עבודה', 'כל המדיניות במסך אחד, עם הכרעה ואישור']],
+        'buttons': [],
+    },
+    'en': {
+        'agentNameAlt': 'בונה הפלייבוק',
+        'agentName': 'Playbook builder',
+        'times': ['About 2 minutes', 'Depends on the number of agreements', 'Part of the reading', 'At your pace'],
+        'where': 'The Word document and the workspace are saved in the connected folder, and the workspace also opens on the page beside the chat. You decide and approve in a tab inside it.',
+        'preview': {'kind': 'ring', 'ttl': 'CONTRACTING POLICY', 'co': 'Your playbook', 'center': 'Traffic light', 'centerSub': 'for every clause', 'legend': ['We accept', 'We can flex', 'We refuse']},
+        'kicker': 'Contracting policy', 'title': 'Playbook *builder*',
+        'lead': 'Areo reads your agreements and learns what the company accepts on each topic. You end up with what you accept, where you can flex and where you don\u2019t agree.',
+        'dropHint': 'An existing policy, or a folder of agreements to build a new one',
+        'extra': {
+            'cards': [
+                {'kicker': 'New policy', 'title': 'From your agreements',
+                 'text': 'A folder with at least 20 agreements. No agreements? We\u2019ll draft a policy from similar agreements and market practice.',
+                 'message': 'I want to build a new policy from our agreements.'},
+                {'kicker': 'Existing policy', 'title': 'Upload the file',
+                 'text': 'Areo turns your policy into a working playbook, without changing any position.',
+                 'message': 'We have an existing policy. I will upload the file.'}],
+            'listTitle': 'Which agreements work best',
+            'list': [['At least 20 agreements of the same type', 'One agreement type, and one side of it, at a time', 'layers'],
+                     ['Signed agreements and negotiation drafts with comments', 'Signed ones show what the company actually agreed to, and drafts show what you asked for and what you gave up', 'pen'],
+                     ['A range of counterparties', 'Companies of different kinds', 'users'],
+                     ['From recent years', 'Ideally the last three to five years', 'calendar'],
+                     ['Your template', 'Your starting point in every agreement', 'doc']],
+        },
+        'shot': {'src': 'workspace', 'title': 'This is how your playbook will look', 'sub': 'The workspace you get at the end: every policy clause on one screen, with a traffic light for each position. Click the screen to enlarge.', 'bar': 'Areo Workspace · Policy clauses', 'alt': 'The playbook workspace, policy clauses screen'},
+        'stepsShort': True,
+        'steps': [['Short questions', 'Agreement type, your side and departments'], ['Reading', 'We read the agreements and learn your positions'],
+                  ['Traffic light', 'We accept, we can flex or we don\u2019t agree, with examples from your agreements'], ['Reasons and approval', 'You approve every position']],
+        'outputs': [['doc', 'Playbook in Word', 'The policy document'], ['screen', 'Workspace', 'Your whole policy on one screen, with decide and approve']],
+        'buttons': [],
+    },
+}
+S['negotiator'] = {
+    'job': {'he': 'משא-ומתן', 'en': 'negotiation'},
+    'he': {
+        'agentNameAlt': 'Negotiator',
+        'agentName': 'הנושא ונותן',
+        'times': ['כמה דקות', 'רק מה שצריך אתכם', 'כמה דקות', 'בקצב שלכם'],
+        'where': 'התוצר יתקבל כאן בצ\'אט, ובמקביל יישמר בתיקייה שחיברתם.',
+        'graphic': {'kind': 'graph', 'h': 340, 'curve': True, 'title': 'סבב משא ומתן', 'sub': 'ההסכם או ההערות של הצד השני נכנסים, ויוצא קובץ בעקוב אחר שינויים שמציג את העמדה שלכם.', 'nodes': [{'x': 20, 'y': 14, 't': 'ההסכם או ההערות של הצד השני', 'ic': 'doc'}, {'x': 78, 'y': 38, 't': 'קריאה מול המדיניות', 'ic': 'book'}, {'x': 22, 'y': 64, 't': 'עקוב אחר שינויים והערות', 'ic': 'swap'}, {'x': 76, 'y': 88, 't': 'עותק למשלוח', 's': 'אחרי אישור', 'main': True, 'ic': 'spark'}], 'edges': [[0, 1], [1, 2], [2, 3]]},
+        'preview': {'kind': 'redline', 'ttl': 'עקוב אחר שינויים', 'co': 'ההסכם מהצד השני', 'before': 'הספק יהיה אחראי', 'del': 'ללא הגבלה', 'ins': 'עד גובה התמורה', 'after': 'בגין כל נזק.', 'bubble': 'לפי המדיניות שלכם: האחריות מוגבלת.'},
+        'kicker': 'משא ומתן', 'title': 'הנושא *ונותן*',
+        'lead': 'Areo מיישמת את המדיניות החוזית שלכם על הסכם שהתקבל מהצד השני, או על ההערות של הצד השני על ההסכם שלכם, בעקוב אחר שינויים ותוך הצגת העמדה שלכם לצד השני.', 'noHow': True, 'actTitle': 'מה לצרף',
+        'dropHint': 'ההסכם שהתקבל מהצד השני, או ההערות שלו על ההסכם שלכם.',
+        'steps': [['קריאה', 'ההסכם מתחילתו ועד סופו, מול המדיניות שלכם'], ['שאלות אליכם', 'רק מה שבאמת צריך אתכם'],
+                  ['תיקונים', 'תיקונים בתוך הנוסח שלהם, בלי לשנות את המבנה'], ['אישור לפני שליחה', 'עורך דין מאשר את הסעיפים הרגישים']],
+        'outputs': [['redline', 'קובץ העבודה, עם עקוב אחר שינויים', 'כולל ההערות הפנימיות שלכם'], ['send', 'העותק לשליחה', 'מוכן אחרי אישור עורך דין']],
+        'buttons': [],
+    },
+    'en': {
+        'agentNameAlt': 'הנושא ונותן',
+        'agentName': 'Negotiator',
+        'times': ['A few minutes', 'Only what needs you', 'A few minutes', 'At your pace'],
+        'where': 'You will get the output here in the chat, and it is also saved in the folder you connected.',
+        'graphic': {'kind': 'graph', 'h': 340, 'curve': True, 'title': 'A negotiation round', 'sub': 'The other side\u2019s agreement or comments come in, and out comes a tracked-changes file that presents your position.', 'nodes': [{'x': 20, 'y': 14, 't': 'The other side\u2019s agreement or comments', 'ic': 'doc'}, {'x': 78, 'y': 38, 't': 'Read against your policy', 'ic': 'book'}, {'x': 22, 'y': 64, 't': 'Tracked changes and comments', 'ic': 'swap'}, {'x': 76, 'y': 88, 't': 'Copy to send', 's': 'after approval', 'main': True, 'ic': 'spark'}], 'edges': [[0, 1], [1, 2], [2, 3]]},
+        'preview': {'kind': 'redline', 'ttl': 'TRACKED CHANGES', 'co': 'From the other side', 'before': 'The supplier shall be liable', 'del': 'without limit', 'ins': 'up to the fees paid', 'after': 'for any loss.', 'bubble': 'Per your policy: liability is capped.'},
+        'kicker': 'Negotiation', 'title': 'The *negotiator*',
+        'lead': 'Areo applies your contracting policy to an agreement received from the other side, or to the other side\u2019s comments on your agreement, in tracked changes and while presenting your position to the other side.', 'noHow': True, 'actTitle': 'What to attach',
+        'dropHint': 'The agreement received from the other side, or their comments on your agreement.',
+        'steps': [['Reading', 'The agreement end to end, against your policy'], ['Questions for you', 'Only what truly needs you'],
+                  ['Edits', 'Edits inside their wording, without changing the structure'], ['Approval before sending', 'A lawyer approves the sensitive clauses']],
+        'outputs': [['redline', 'Work file with tracked changes', 'Includes your internal notes'], ['send', 'Copy to send', 'Ready once a lawyer approves']],
+        'buttons': [],
+    },
+}
+S['drafter'] = {
+    'job': {'he': 'טיוטה', 'en': 'draft'},
+    'he': {
+        'decideTitle': 'מה המקור של הטיוטה שאצור?',
+        'shot': {'src': 'draft_he', 'device': True, 'bar': 'טיוטה.docx', 'alt': 'טיוטת הסכם שהמנסח הפיק'},
+        'agentNameAlt': 'Agreement Drafter',
+        'kinds': {'title': 'מה המנסח מנסח', 'items': ['הסכמים', 'תוספות להסכמים']},
+        'extra': {'cards': [
+            {'oi': 'stack', 'kicker': 'מההסכמים שלכם', 'title': 'הסכמים שאעלה', 'text': 'הסכם אחד או כמה מאותו סוג. מה שקבוע נשמר, ומה שמשתנה נשאל.', 'message': 'אני רוצה לנסח מסמך חדש מהסכם או הסכמים שאעלה.'},
+            {'oi': 'playbook', 'kicker': 'לפי הפלייבוק', 'title': 'הפלייבוק שלנו', 'text': 'סוג ההסכם והעמדות נלמדים מהפלייבוק, ואז נשאלים רק פרטי העסקה.', 'message': 'אני רוצה לנסח לפי הפלייבוק שלנו.'},
+            {'oi': 'doc', 'kicker': 'מהתבנית', 'title': 'התבנית שלנו', 'text': 'השלד והנוסח של החברה, ממולאים לפי העסקה.', 'message': 'אני רוצה לנסח מהתבנית שלנו.'},
+            {'oi': 'globe', 'web': True, 'tag': 'יוצא לרשת', 'kicker': 'מאפס', 'title': 'לפי מקובלות השוק', 'text': 'אין לכם הסכמים, תבנית או פלייבוק? נחפש ברשת הסכמים שפורסמו ומקורות מאושרים. המסמכים שלכם לא נשלחים לשום מקום.', 'message': 'אין לנו פלייבוק, תבנית או הסכמים. אני רוצה טיוטה חדשה מאפס, לפי מקובלות השוק.'}]},
+        'agentName': 'מנסח ההסכמים',
+        'times': ['רגע', 'כ-2 דקות', 'כמה דקות', 'רגע'],
+        'where': 'הטיוטה נשמרת כקובץ Word נקי בתיקייה המחוברת, עם דף ליווי שמסביר מה נלקח מאיפה ומה נשאר להשלים.',
+        'kicker': 'טיוטה חדשה', 'title': 'מנסח *ההסכמים*',
+        'lead': 'מנסח טיוטות, תיקונים והודעות על הנייר של החברה, מההסכמים, מהתבנית או לפי הפלייבוק, מותאם לעסקה.',
+        'dropHint': 'הסכמים, תבנית או פלייבוק, לפי הבחירה.',
+        'stepsShort': True,
+        'steps': [['סוג ההסכם', 'לפי ההסכמים או התבנית שהעליתם'], ['פרטי העסקה', 'צדדים, סכומים ותאריכים'],
+                  ['ניסוח', 'לפי ההסכמים שהעליתם, ולפי הפלייבוק אם יש'], ['בדיקה', 'רשימת בדיקה לפני שליחה']],
+        'outputs': [['draft', 'טיוטה ב-Word', 'נקייה ומוכנה לשליחה'], ['approve', 'דף ליווי', 'מה נלקח מאיפה, ומה נשאר להשלים']],
+        'buttons': [],
+    },
+    'en': {
+        'decideTitle': 'What should the draft I create be based on?',
+        'shot': {'src': 'draft_en', 'device': True, 'bar': 'draft.docx', 'alt': 'An agreement draft produced by the drafter'},
+        'agentNameAlt': 'מנסח ההסכמים',
+        'kinds': {'title': 'What the drafter drafts', 'items': ['Agreements', 'Amendments and addenda to agreements']},
+        'extra': {'cards': [
+            {'oi': 'stack', 'kicker': 'From your agreements', 'title': 'Agreements I upload', 'text': 'One or more agreements of the same type. What is constant is kept, what varies is asked.', 'message': 'I want to draft a new document from agreements I will upload.'},
+            {'oi': 'playbook', 'kicker': 'From the playbook', 'title': 'Our playbook', 'text': 'The agreement type and positions come from the playbook, then only the deal details are asked.', 'message': 'I want to draft from our playbook.'},
+            {'oi': 'doc', 'kicker': 'From the template', 'title': 'Our template', 'text': 'The company\u2019s skeleton and wording, filled in for the deal.', 'message': 'I want to draft from our template.'},
+            {'oi': 'globe', 'web': True, 'tag': 'Goes online', 'kicker': 'From scratch', 'title': 'On market practice', 'text': 'No agreements, template or playbook? We search the web for published agreements and approved sources. Your documents are not sent anywhere.', 'message': 'We have no playbook, template or agreements. I want a new draft from scratch, based on market practice.'}]},
+        'agentName': 'Agreement drafter',
+        'times': ['A moment', 'About 2 minutes', 'A few minutes', 'A moment'],
+        'where': 'The draft is saved as a clean Word file in the connected folder, with a cover note that explains where each part came from and what is left to complete.',
+        'kicker': 'New draft', 'title': 'The *agreement drafter*',
+        'lead': 'Drafts agreements, amendments and notices on the company\u2019s paper, from your agreements, your template or your playbook, fitted to the deal.',
+        'dropHint': 'Agreements, a template or a playbook, as you chose.',
+        'stepsShort': True,
+        'steps': [['Agreement type', 'From the agreements or template you upload'], ['Deal details', 'Parties, amounts and dates'],
+                  ['Drafting', 'From your agreements, and your playbook if you have one'], ['Check', 'A checklist before sending']],
+        'outputs': [['draft', 'Draft in Word', 'Clean and ready to send'], ['approve', 'Cover note', 'Where each part came from, and what is left to complete']],
+        'buttons': [],
+    },
+}
+
+
+def client_name(profile_path):
+    """שם הארגון מקובץ הפרופיל (אופציונלי). שגיאה בקריאה אינה עוצרת את הבנייה."""
+    if not profile_path:
+        return ''
+    try:
+        with open(profile_path, encoding='utf-8-sig') as fh:
+            d = json.load(fh)
+    except (OSError, ValueError):
+        return ''
+    return str(d.get('organization_name') or d.get('organization_name_en') or '')[:80]
+
+
+def build_data(skill, lang, profile=None):
+    s = S[skill][lang]
+    d = {'skill': skill, 'lang': lang, 'job': S[skill]['job'][lang], 'client': client_name(profile), 'texts': COMMON[lang]}
+    d.update(s)
+    want = [x for x in (d.get('shot') or {}, ) if x.get('src')]
+    d['shots'] = {w['src']: SHOTS[w['src']] for w in want if w['src'] in SHOTS}
+    return d
+
+
+def render(data):
+    with open(TEMPLATE, encoding='utf-8') as fh:
+        html = fh.read()
+    if html.count('__INTAKE__') != 1:
+        raise ValueError('התבנית חייבת להכיל את __INTAKE__ פעם אחת בדיוק')
+    js = json.dumps(data, ensure_ascii=False).replace('</', '<\\/').replace('\u2028', '\\u2028').replace('\u2029', '\\u2029')
+    return html.replace('__INTAKE__', js)
+
+
+def main(argv=None):
+    cli.utf8_stdio()
+    ap = cli.parser('בונה את חצי המסך של שלב התשאול לסקיל של Areo')
+    ap.add_argument('--skill', required=True, choices=SKILLS)
+    ap.add_argument('--lang', required=True, choices=('he', 'en'))
+    ap.add_argument('--profile', default=None, help='פרופיל-לקוח.json (אופציונלי, לשם הארגון בראש העמוד)')
+    a = ap.parse_args(argv)
+    out = cli.guard_out(a.out, inputs=[a.profile] if a.profile else [])
+    data = build_data(a.skill, a.lang, a.profile)
+    html = render(data)
+    os.makedirs(os.path.dirname(out) or '.', exist_ok=True)
+    with open(out, 'w', encoding='utf-8', newline='\n') as fh:
+        fh.write(html)
+    print(json.dumps({'out': out, 'skill': a.skill, 'lang': a.lang, 'capabilities': CAPABILITIES}, ensure_ascii=False))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(cli.run(main))

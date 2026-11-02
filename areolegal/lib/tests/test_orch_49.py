@@ -6,7 +6,7 @@
 (2) כלליות (החלטה 22): טיוטה שנייה בעברית (הסכם תחזוקה), הסכם סודיות באנגלית, הסכם אספקה, שכירות ו-SaaS. בכל
     משפחה הנוסח התקין עובר בשני המצבים, והפגום נכשל בבדיקות הכלליות (כיסוי, נימוק, טענה שקרית ומחלקות 2.22).
 (3) נייר באנגלית: ריצות LTR, בועות בלי bidi, ושדה ריק לחתימה באנגלית.
-(4) הלולאה שלפני המשלוח: שורות "לתיקון" ממעריך הסיכונים חוסמות את העותק למשלוח עד שנסגרו.
+(4) הלולאה שלפני המשלוח הוסרה: המרשם של מעריך הסיכונים אינו חוסם את העותק למשלוח (1.23).
 (5) החלטת מוצר 1 (אין שרשרת אישורים), קובץ המצב, מנת השאלות, "לאישורך", נקודות לשיחה ורשימת הבדיקה לפני חתימה.
 (6) גבול נתיב אחד (230) ו-audit_docx שמקבל ריצה לטינית בלי rtl.
 
@@ -43,8 +43,10 @@ def _msgs(g, code):
     return ' '.join('%s@%s' % (f['message'], f['where']) for f in g['failures'] if f['code'] == code)
 
 
-def _apply(tmp_path, draft, name, strict=True):
+def _apply(tmp_path, draft, name, strict=True, author=None):
     dec = H.load_decisions(name)
+    if author:   # הסכם באנגלית: הבועות נחתמות ב-lawyer_name_en (n0-core.md:83)
+        dec['author'] = author
     out = str(tmp_path / (name + '.docx'))
     if strict:
         res = dt.apply_decisions(draft, dec, out_path=out)
@@ -56,11 +58,24 @@ def _apply(tmp_path, draft, name, strict=True):
     return out, doc.expected_accept(), dec
 
 
-def _both(tmp_path, draft, name, state=None):
-    out, exp, dec = _apply(tmp_path, draft, name)
-    w = qa_gate.run_gate(out, draft, 'work', H.PROFILE, state or {}, exp)
+def _send_state(state, dec):
+    """במצב משלוח השער צריך קובץ מצב עם סעיפים (STATE_NO_CLAUSES) ואת קובץ ההכרעות (DEC_FILE_MISSING):
+    n6-gate-and-send.md:32, n4c-produce.md:48. קובץ מצב של בדיקה מקבל סעיף לכל הכרעה."""
+    st = copy.deepcopy(state or SIGNING)
+    if not st.get('clauses'):
+        st['clauses'] = [{'clause_id': d['id']} for d in dec.get('decisions', [])]
+    return st
+
+
+# הסכם באנגלית: בלי lawyer_name_en בפרופיל העותק למשלוח חסום (LAWYER_NAME_EN_MISSING, n2-questions.md:27)
+EN_PROFILE = dict(H.PROFILE, lawyer_name_en='Example Counsel')
+
+
+def _both(tmp_path, draft, name, state=None, profile=None):
+    out, exp, dec = _apply(tmp_path, draft, name, author=(profile or {}).get('lawyer_name_en'))
+    w = qa_gate.run_gate(out, draft, 'work', profile or H.PROFILE, state or {}, exp)
     send = str(tmp_path / ('send_' + name + '.docx'))
-    s = qa_gate.build_send_copy(out, draft, send, H.PROFILE, copy.deepcopy(state or SIGNING), exp)
+    s = qa_gate.build_send_copy(out, draft, send, profile or H.PROFILE, _send_state(state, dec), exp, decisions=dec)
     return w, s
 
 
@@ -130,8 +145,10 @@ FAMILIES = {
     'lease': ('lease_counterparty_draft.docx',
               {'COV_UNCOVERED_CHANGE', 'COV_CHANGE_WITHOUT_BUBBLE', 'BUB_WHY_MISSING', 'BUB_CLAIM_FALSE',
                'GAP_DISPUTE_CARVEOUT', 'GAP_TERMINATION_HANDOVER'}),
-    'saas': ('saas_counterparty_draft.docx',  # באנגלית
-             {'COV_CHANGE_WITHOUT_BUBBLE', 'BUB_WHY_MISSING', 'BUB_CLAIM_FALSE', 'GAP_CONFIDENTIALITY_EXCEPTIONS',
+    # באנגלית. BUB_WHY_MISSING יצא: הסימון כירורגי (docx_tracked), ובפסקת התקרה הוכנס "total" בלבד ולא "fees",
+    # כך שאין רכיב מחיר שמשתנה; הפגם של הבועה שם נתפס ב-BUB_CLAIM_FALSE ("known in advance")
+    'saas': ('saas_counterparty_draft.docx',
+             {'COV_CHANGE_WITHOUT_BUBBLE', 'BUB_CLAIM_FALSE', 'GAP_CONFIDENTIALITY_EXCEPTIONS',
               'GAP_DISPUTE_CARVEOUT', 'GAP_PAYMENT_WORDING', 'GAP_TERMINATION_HANDOVER'}),
 }
 
@@ -139,7 +156,8 @@ FAMILIES = {
 @pytest.mark.parametrize('family', sorted(FAMILIES))
 def test_family_clean_passes_both_modes(tmp_path, family):
     draft = os.path.join(FIX, FAMILIES[family][0])
-    w, s = _both(tmp_path, draft, '%s_decisions_clean.json' % family)
+    w, s = _both(tmp_path, draft, '%s_decisions_clean.json' % family,
+                 profile=EN_PROFILE if family == 'saas' else None)
     assert w['passed'], w['failures']
     assert s['passed'], s['failures']
     assert w['info']['lang'] == ('en' if family == 'saas' else 'he')  # SaaS נכתב באנגלית
@@ -167,9 +185,13 @@ EN_STATE = {'entity_details': {'company_number': {'status': 'signing_blank', 'an
 
 
 def test_english_nda_clean_passes_both_modes(tmp_path):
-    w, s = _both(tmp_path, EN, 'nda_en_decisions_clean.json', state=EN_STATE)
+    w, s = _both(tmp_path, EN, 'nda_en_decisions_clean.json', state=EN_STATE, profile=EN_PROFILE)
     assert w['passed'], w['failures']
     assert s['passed'], s['failures']
+    # בלי שם החותם באנגלית: קובץ העבודה עובר, והעותק למשלוח חסום
+    (tmp_path / 'no_en').mkdir()
+    w2, s2 = _both(tmp_path / 'no_en', EN, 'nda_en_decisions_clean.json', state=EN_STATE)
+    assert w2['passed'] and 'LAWYER_NAME_EN_MISSING' in _codes(s2) and s2['send_copy'] is None
     assert w['info']['lang'] == 'en'
     assert [x['text'] for x in s['info']['placeholders']['signing_blanks']] == [ids.signing_blank('en')] * 2
 
@@ -270,73 +292,44 @@ def test_clean_metadata_writes_real_utc(tmp_path):
 
 
 # --------------------------------------------------------------------------------- (4) לולאה לפני משלוח
+# הלולאה הוסרה (1.23): מעריך הסיכונים אינו חוסם את המשלוח. השער אינו קורא את risk-register.json, ושום ממצא שלו
+# אינו חוסם (n6-gate-and-send.md:40; orchestrator/pre_send.py, התיעוד; risk-register-schema.md:251: pre_send_fixes
+# יצא). עותק "למשלוח" ישן מקבל עדיין " - לא למשלוח" כשהשער נכשל.
 def _register(status='open', clause='S04', kind='created_by_response'):
     return {'pre_send_fixes': [{'id': 'PSF-1', 'kind': kind, 'gap': 'בסיס התקרה אינו מוגדר', 'where': 'אחריות',
                                 'risk_ids': ['RSK-001'], 'clause_ref': clause, 'status': status}]}
 
 
-def test_open_pre_send_fix_blocks_send_and_retracts_old_copy(tmp_path):
-    out, exp, _ = _apply(tmp_path, S2, 'services2_decisions_clean.json')
+def test_an_open_risk_register_row_never_blocks_the_send_copy(tmp_path):
+    out, exp, dec = _apply(tmp_path, S2, 'services2_decisions_clean.json')
+    deal = str(tmp_path / 'deal')
+    os.makedirs(deal)
+    with io.open(os.path.join(deal, 'risk-register.json'), 'w', encoding='utf-8') as fh:
+        json.dump(_register(), fh, ensure_ascii=False)
+    send = os.path.join(deal, 'הסכם תחזוקה - EXAMPLECO - סבב 1 - 14.10.2026.docx')
+    res = qa_gate.build_send_copy(out, S2, send, H.PROFILE, _send_state(None, dec), exp, deal_dir=deal,
+                                  register=_register(), decisions=dec)
+    assert res['passed'], res['failures']
+    assert os.path.exists(send) and not {c for c in _codes(res) if c.startswith('RISK_FIX')}
+    w = qa_gate.run_gate(out, S2, 'work', H.PROFILE, copy.deepcopy(SIGNING), exp, register=_register())
+    assert not any(x['code'].startswith('RISK_FIX') for x in w['warnings'] + w['failures'])
+    # pre_send אינו מנהל עוד שורות "לתיקון"
+    assert not any(hasattr(pre_send, f) for f in ('check', 'resolve_fix', 'concede_fix', 'save_register'))
+
+
+def test_a_failed_gate_retracts_the_old_send_copy(tmp_path):
+    out, exp, dec = _apply(tmp_path, S2, 'services2_decisions_clean.json')
     deal = str(tmp_path / 'deal')
     os.makedirs(deal)
     send = os.path.join(deal, 'הסכם תחזוקה - EXAMPLECO - סבב 1 - 14.10.2026.docx')
-    first = qa_gate.build_send_copy(out, S2, send, H.PROFILE, copy.deepcopy(SIGNING), exp, deal_dir=deal)
-    assert first['passed'] and os.path.exists(send)  # אין מרשם: העותק מופק
-    pre_send.save_register(deal, _register())         # מעריך הסיכונים רץ אחרי ההפקה
-    st = copy.deepcopy(SIGNING)
-    res = qa_gate.build_send_copy(out, S2, send, H.PROFILE, st, exp, deal_dir=deal)
-    assert 'RISK_FIX_OPEN' in _codes(res) and res['send_copy'] is None
+    first = qa_gate.build_send_copy(out, S2, send, H.PROFILE, _send_state(None, dec), exp, deal_dir=deal,
+                                    decisions=dec)
+    assert first['passed'] and os.path.exists(send)
+    # הרצה שנייה בלי קובץ מצב עם סעיפים: STATE_NO_CLAUSES, והעותק הקודם יוצא מהשם "למשלוח"
+    res = qa_gate.build_send_copy(out, S2, send, H.PROFILE, copy.deepcopy(SIGNING), exp, deal_dir=deal, decisions=dec)
+    assert 'STATE_NO_CLAUSES' in _codes(res) and res['send_copy'] is None
     assert not os.path.exists(send) and res['retracted'] and os.path.exists(res['retracted'])
     assert 'לא למשלוח' in os.path.basename(res['retracted'])
-    w = qa_gate.run_gate(out, S2, 'work', H.PROFILE, st, exp, register=pre_send.load_register(deal))
-    assert w['passed'] and any(x['code'] == 'RISK_FIX_OPEN' for x in w['warnings'])
-
-
-def test_pre_send_fix_closed_by_reopened_decision(tmp_path):
-    out, exp, dec = _apply(tmp_path, S2, 'services2_decisions_clean.json')
-    dec = copy.deepcopy(dec)
-    next(d for d in dec['decisions'] if d['id'] == 'S04')['reopened_from_fix'] = 'PSF-1'
-    reg = _register()
-    pre_send.resolve_fix(reg, 'PSF-1', 'S04')
-    st = copy.deepcopy(SIGNING)
-    g = qa_gate.run_gate(out, S2, 'send', H.PROFILE, st, exp, register=reg, decisions=dec)
-    assert 'RISK_FIX_RESOLUTION_UNVERIFIED' in _codes(g)  # סומן resolved בלי הכרעה בקובץ המצב
-    st['clauses'] = [{'clause_id': 'S04', 'reopened_from_fix': 'PSF-1'}]
-    assert not {'RISK_FIX_OPEN', 'RISK_FIX_RESOLUTION_UNVERIFIED'} & _codes(
-        qa_gate.run_gate(out, S2, 'send', H.PROFILE, st, exp, register=reg, decisions=dec))
-    # 1.2.0: הסימון לבדו אינו מספיק. בלי קובץ ההכרעות, או עם מזהה הכרעה שאינו בו, השורה אינה מאומתת
-    assert 'RISK_FIX_RESOLUTION_UNVERIFIED' in _codes(
-        qa_gate.run_gate(out, S2, 'send', H.PROFILE, st, exp, register=reg))
-    reg2 = _register()
-    pre_send.resolve_fix(reg2, 'PSF-1', 'S04b')
-    st['clauses'].append({'clause_id': 'S04b', 'reopened_from_fix': 'PSF-1'})
-    assert 'RISK_FIX_RESOLUTION_UNVERIFIED' in _codes(
-        qa_gate.run_gate(out, S2, 'send', H.PROFILE, st, exp, register=reg2, decisions=dec))
-    with pytest.raises(ValueError):
-        pre_send.resolve_fix(_register(), 'PSF-1', 'S04b', decisions=dec)
-
-
-def test_pre_send_fix_closed_by_deliberate_concession(tmp_path):
-    out, exp, _ = _apply(tmp_path, S2, 'services2_decisions_clean.json')
-    reg = _register()
-    st = copy.deepcopy(SIGNING)
-    with pytest.raises(ValueError):
-        pre_send.concede_fix(reg, st, 'PSF-1', 'הסיכון מקובל', {})
-    pre_send.concede_fix(reg, st, 'PSF-1', 'הסיכון מקובל', {'answer_kind': 'explicit', 'answer': 'מקבלים'})
-    assert reg['pre_send_fixes'][0]['status'] == 'conceded'
-    assert st['deliberate_concessions'][0]['clause_ref'] == 'S04' and \
-        st['deliberate_concessions'][0]['from_pre_send_fix'] == 'PSF-1'
-    g = qa_gate.run_gate(out, S2, 'send', H.PROFILE, st, exp, register=reg)
-    assert not {c for c in _codes(g) if c.startswith('RISK_FIX')}
-    handed = pr.waiver_handoff(st)
-    assert handed[0]['from_pre_send_fix'] == 'PSF-1' and handed[0]['report_as'] == 'accepted_risk'
-
-
-def test_polish_fix_warns_only_and_old_field_name_is_read(tmp_path):
-    reg = {'pre_send_fixes': [{'kind': 'polish', 'gap': 'ליטוש', 'state_clause_id': 'S03'}]}
-    assert pre_send.check(reg) == [] and pre_send.polish_warnings(reg)
-    reg2 = {'pre_send_fixes': [{'kind': 'incomplete', 'gap': 'x', 'state_clause_id': 'D22'}]}
-    assert pre_send.to_reopen(reg2) == [{'fix_id': 'PSF-01', 'clause_ref': 'D22', 'gap': 'x', 'risk_ids': []}]
 
 
 # --------------------------------------------------------------------------------- (5) מצב, אישורים ומודולים
@@ -397,8 +390,12 @@ def test_question_batch_rules():
         {'key': 'value', 'text': 'שווי ההתקשרות?', 'kind': 'deal_card_value'},
     ]
     b = qb.build_batch(items, no_consideration=True, asked_before={'components'})
-    assert b['text'].splitlines()[0].startswith('1. **נדרשת הכרעתך (מצב 3, חוסם משלוח, תשובה של מילה אחת):**')
-    assert 'נדרשת הכרעתך (מצב 2)' in b['text'] and 'מנכ' not in b['text'] and 'אישור' not in b['text']
+    # מספר המצב הוא קוד פנימי ואינו מוצג (question_batch.label_for); המנה נפתחת בשורת ספירה, והחוסם ראשון
+    lines = b['text'].splitlines()
+    assert lines[0].startswith('לפני שנכין את התגובה: 2 שאלות')
+    assert lines[1].startswith('1. **נדרשת הכרעתך (צריך לפני שליחה, תשובה של מילה אחת):**')
+    assert lines[2].startswith('2. **נדרשת הכרעתך:**') and 'מצב' not in b['text']
+    assert 'מנכ' not in b['text'] and 'אישור' not in b['text']
     assert {x['key'] for x in b['skipped']} == {'components', 'value'}
     with pytest.raises(ValueError):
         qb.build_batch([{'key': 'x', 'text': 'y', 'situation': 10}])
@@ -412,7 +409,8 @@ def test_review_table_has_no_approver_column():
                                                                                                   'answer': 'מקבלים'}},
             {'id': 'R-19', 'summary': 'בקרת יצוא', 'situation': 8}]
     rows = rt.build_review_table(decs, {'D22': 'אחריות, סעיף 1'})
-    assert [r['סעיף'] for r in rows] == ['אחריות, סעיף 1', 'E-013']
+    # מזהה פנימי (E-013) אינו מוצג בעמודת הסעיף (review_table.clause_ref)
+    assert [r['סעיף'] for r in rows] == ['אחריות, סעיף 1', '']
     assert rows[1]['תווית מקור'].startswith('חוצה קו אדום: הכרעתך')
     assert rt.check_review_table(rows, decs[:2]) == []
     assert 'מי מאשר' not in rt.render_markdown(rows)
@@ -431,8 +429,12 @@ def test_talking_points_and_signing_checklist(tmp_path):
     g = qa_gate.run_gate(out, S2, 'work', H.PROFILE, SIGNING, exp)
     chk = sc.build_signing_checklist(g['info'], SIGNING, H.PROFILE, register=_register())
     items = {c['item'] for c in chk['checks']}
-    assert {'signing_blank', 'their_placeholder', 'registered_legal_name', 'pre_send_fix'} <= items
+    # המרשם של מעריך הסיכונים אינו נקרא (signing_checklist, התיעוד); השם הרשום נלקח מ-organization_name
+    assert {'signing_blank', 'their_placeholder'} <= items and 'pre_send_fix' not in items
+    assert 'registered_legal_name' not in items
     assert chk['passed'] is False
+    no_name = {k: v for k, v in H.PROFILE.items() if k != 'organization_name'}
+    assert 'registered_legal_name' in {c['item'] for c in sc.build_signing_checklist(g['info'], SIGNING, no_name)['checks']}
 
 
 # --------------------------------------------------------------------------------- (6) נתיב

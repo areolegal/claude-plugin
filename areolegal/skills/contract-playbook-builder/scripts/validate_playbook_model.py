@@ -1,103 +1,151 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
+
+# areo_lib נטען בתוך הפונקציות; תיקיית הסקריפט בנתיב גם ב-python -I
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # גם ב-python -I, שאינו מוסיף את תיקיית הסקריפט
+
+for _s in (sys.stdout, sys.stderr):  # עברית בקונסולה שאינה UTF-8 (cp1252): בלי UnicodeEncodeError
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):   # לא TextIOWrapper (לכידה בבדיקות, pythonw)
+        pass
 
 VALID_STATUS = {"Confirmed", "Inferred", "Unclear"}
 VALID_CONF = {"High", "Medium", "Low"}
 VALID_PB_STATUS = {"Draft", "PartiallyApproved", "Approved", "Superseded", "Invalid"}
 # מאיפה בא round1_posture: מברירת המחדל לפי החשיבות, מהצהרת התמורה, או
-# מתשובת הלקוח (שינוי 69; קודם לכן הערך הראשון נקרא default)
+# מתשובת הלקוח
 VALID_POSTURE_SOURCE = {"importance", "tradeoff_statement", "client_answer"}
 VALID_POSTURE = {"hold_green", "offer_yellow", "not_applicable"}
 WALK_AWAY_MAX = 5
 VALID_REG_STATUS = {"NotResearched", "NoSpecificSourceIdentified", "ApplicableSourcesFound"}
-VALID_PRESENCE = {"Required", "Optional", "Prohibited", "Conditional"}
+# playbook-schema.md, presence_rule: אותה רשימה כאן, ב-validate_data.py ובתבנית סביבת העבודה. Recommended הוא ערך
+# ישן שרק validate_data קיבל, והתבנית אינה מסננת לפיו: מתקבל באזהרה
+VALID_PRESENCE = {"Required", "Optional", "Conditional", "Prohibited"}
+LEGACY_PRESENCE = {"Recommended"}
 VALID_MISSING_COLOR = {"Green", "Yellow", "Red", "NotApplicable"}
+# track של ראיה: לאיזו עמדה היא תומכת; context אינו נספר לאף עמדה (playbook-schema.md, "ראיה")
+VALID_EVIDENCE_TRACK = {"green", "yellow", "red", "context"}
+# validation_queue[].scope, ו-rule_id "GLOBAL" כש-scope הוא playbook
+VALID_QUEUE_SCOPE = {"rule", "segment", "rules", "playbook"}
+# מעמד המאגר ומקור הנושא (playbook-schema.md, scope_summary.corpus_status, rules[].topic_origin)
+VALID_CORPUS_STATUS = {"signed", "mostly_drafts", "company_forms", "third_party_forms", "unknown"}
+VALID_TEMPLATE_STATUS = {"found", "attached", "none", "unknown", "not_asked"}
+VALID_TOPIC_ORIGIN = {"catalog", "corpus_derived"}
 # playbook-schema.md: "סטטוס המחקר, בשוק ובדין, מאותו סט: Performed | Partial | NotPerformed". הערכים
 # הישנים נשארים מותרים, כדי שפלייבוק קיים לא ייפסל. לפני כן הסט של הסכמה נפסל כאן, ותבנית סביבת העבודה
-# קיבלה רק אותו, ולכן בהרצה חיה צריך היה למפות ביד (20.10.2026)
+# קיבלה רק אותו, ולכן בהרצה חיה צריך היה למפות ביד
 VALID_RESEARCH_STATUS = {"Performed", "Partial", "NotPerformed", "NotRequested", "Declined", "Completed"}
 RESEARCH_DONE = {"Performed", "Completed", "Partial"}
+# market_research.status: אותו סט. not_run ו-skipped הם שמות ישנים ל-NotPerformed, שמתקבלים באזהרה; בהרצה חיה
+# הבונה כתב not_run לצד schema_status, כי הסכמה והמאמתים לא הסכימו
+LEGACY_NOT_PERFORMED = {"not_run", "skipped", "NotRequested", "Declined"}
+VALID_NOT_PERFORMED_REASON = {"route", "no_web_access", "not_answered", "client_declined"}
 VALID_QA_STATUS = {"NotRun", "Partial", "Completed"}
 VALID_SEG_STATUS = {"NotDetected", "Candidate", "Confirmed"}
 VALID_RATIONALE_STATUS = {"Draft", "Confirmed"}
 VALID_OUTPUT_LANGUAGE = {"he", "en"}
 VALID_MARKET_BASIS = {"ExternalResearch", "ExpertAssessment", "InternalTrendOnly", "NotAssessed"}
-# מאיפה נבנה הפלייבוק: מההסכמים של החברה, מהם יחד עם השוק, או מהשוק בלבד (שינוי 3)
+# מאיפה נבנה הפלייבוק: מההסכמים של החברה, מהם יחד עם השוק, או מהשוק בלבד
 VALID_CORPUS_ORIGIN = {"own", "own_plus_market", "market_built"}
 # הרצועה נגזרת ממספר ההסכמים בסוג, אחרי ניקוי כפילויות, גרסאות, תיקונים
 # ותבניות. השמות הם אלה של `playbook-schema.md`, והספירה נעשית ב-
 # `build_corpus_manifest.py` ולא בהערכה של המודל
 CORPUS_BANDS = [(20, None, "full"), (7, 19, "below20"), (1, 6, "below7"), (0, 0, "none")]
-# ב-1 עד 6 הלקוח בוחר: לשלב מחקר שוק, או להישאר רק עם ההסכמים שלו
-BAND_CHOICES = {"full": {"own"}, "below20": {"own"},
-                "below7": {"own", "own_plus_market"}, "none": {"market_built"}}
-BAND_CHOICE_FIELD = {"full": {"not_asked"}, "below20": {"not_asked"},
-                     "below7": {"combine", "own_only"}, "none": {"market"}}
+# הרצועה מתארת את המדגם בלבד. היציאה לרשת אינה תלויה במספר ההסכמים: בכל רצועה שיש בה הסכמים
+# הלקוח בוחר במפורש לשלב מחקר שוק (combine), או נשאר רק עם ההסכמים שלו (own_only / not_asked)
+BAND_CHOICES = {"full": {"own", "own_plus_market", "market_built"}, "below20": {"own", "own_plus_market", "market_built"},
+                "below7": {"own", "own_plus_market", "market_built"}, "none": {"market_built"}}
+BAND_CHOICE_FIELD = {"full": {"not_asked", "combine", "own_only", "market"}, "below20": {"not_asked", "combine", "own_only", "market"},
+                     "below7": {"combine", "own_only", "not_asked", "market"}, "none": {"market"}}
 CHOICE_ORIGIN = {"own_only": "own", "combine": "own_plus_market", "market": "market_built"}
 # הבסיס של כל מסלול: ראיה מההסכמים, נוסח שוק, או הצעה של Areo כשאין פשרה בראיות
 # כל הערכים של playbook-schema.md ("basis: מקור המסלול"), ו-own_evidence מהגרסה הקודמת. לפני כן רק ארבעה
-# ערכים, ומודל שנכתב לפי הסכמה ("template", "established", "single") נפסל (הרצה חיה, 20.10.2026)
-VALID_TRACK_BASIS = {"own_evidence", "own_paper_repeated", "template", "company_request", "client_answer",
-                     "established", "single", "offered_unexecuted", "company_source", "struck",
+# ערכים, ומודל שנכתב לפי הסכמה ("template", "established", "single") נפסל
+# documents_majority: ירוק במעמד unknown, כשלא ידוע מי ניסח (workflow.md, שלב 2ח). לפני כן לא היה לו ערך, ונרשם
+# own_paper_repeated עם paper ריק
+VALID_TRACK_BASIS = {"own_evidence", "own_paper_repeated", "documents_majority", "template", "company_request",
+                     "client_answer", "established", "single", "offered_unexecuted", "company_source", "struck",
                      "rejected_comment", "never_accepted", "bid_condition", "market_standard", "areo_proposal"}
-VALID_FALLBACK_SOURCE = {"signed_compromise", "single_compromise", "offered_not_signed",
-                         "client_answer", "areo_proposal"}
+# playbook-schema.md, yellow.fallback_wording.source: מזהה ציטוט, answer:<מזהה>, market_standard או areo_proposal.
+# הערכים שלמטה הם השמות הקודמים, ומתקבלים לתאימות. לפני כן רק הם התקבלו, ומודל שנכתב לפי הסכמה נפסל
+FALLBACK_SOURCE_WORDS = {"market_standard", "areo_proposal"}
+LEGACY_FALLBACK_SOURCE = {"signed_compromise", "single_compromise", "offered_not_signed", "client_answer"}
 VALID_ACCEPTANCE_MODE = {"negotiated", "imposed", "unnegotiated", "unknown"}
-VALID_PAPER = {"ours", "theirs", "unknown"}
-# קודים לסעיף שאין לו מדיניות, רשימה סגורה (שינוי 5)
-# הרשימה הסגורה של הקודים הטכניים, מילה במילה מ-`clause-catalog.md`,
-# "Technical clauses: closed list". אין קוד "אחר": סעיף שאינו אחד מאלה
-# הוא נושא מדיניות
-TECHNICAL_CODES = {"signature_block", "party_identification", "notice_addresses",
-                   "counterparts_esignature", "headings", "interpretation_grammar",
-                   "recitals_descriptive", "neutral_definition", "bank_details",
-                   "delivery_points_list", "admin_form_fields",
-                   "statutory_admin_restatement"}
-# נימוקי השמטה שאינם מתקבלים (`playbook-schema.md`, `coverage`): נוסח שחוזר
-# בכל ההסכמים הוא הראיה החזקה ביותר לירוק, ולא סיבה לדלג עליו
-FORBIDDEN_OMISSION = ("לא רלוונטי", "נוסח אחיד", "נוסח עקבי", "אין מחלוקת", "תפעולי",
-                      "הסכם יחיד", "תנאי מסחרי", "אין ראיה לעמדת החברה", "סטנדרטי",
-                      "טכני בלבד", "אין צורך", "ברור מאליו",
-                      "not relevant", "standard", "boilerplate")
+# playbook-schema.md, "ראיה": ours או theirs, ו"כשלא ניתן לקבוע: השאר ריק". unknown נשאר מותר כשם ישן, באזהרה.
+# לפני כן המאמת חייב ערך, validate_data קיבל רק ours או theirs, והסכמה אמרה להשאיר ריק
+VALID_PAPER = {"ours", "theirs"}
+LEGACY_PAPER = {"unknown"}
+# source_log[].doc_role (playbook-schema.md). form: נוסח שאינו חתום ואינו טיוטה של משא ומתן: נוסח שהחברה מציגה,
+# טופס הליך תחרותי או נוסח שפורסם (workflow.md, שלב 2ח). agreement הוא מה שהמניפסט כותב להסכם
+# correspondence: התכתבות עם הצד שכנגד שהלקוח צירף כדי לחדד את קווי הנסיגה (playbook/sufficiency.py); אינה הסכם ואינה משא ומתן
+# guidance / policy / table: מסמך הנחיה או מדיניות של החברה. אינו הסכם ואינו נספר כהסכם (ביקורת 31.10, כלל 3)
+VALID_DOC_ROLE = {"signed", "agreement", "draft", "amendment", "template", "form", "correspondence",
+                  "guidance", "policy", "table"}
+# מקורות שאינם משא ומתן, ולכן אינם נספרים ב-evidence_count.independent_negotiations (evidence-policy.md, "Confidence")
+NOT_NEGOTIATION_ROLES = {"form", "template", "correspondence", "guidance", "policy", "table"}
+# fallback_origin.baseline (playbook-schema.md); documents_majority: הנוסח שחוזר ברוב המסמכים כשהם אינם הסכמים
+# חתומים (company_forms, unknown). לפני כן לא היה ערך למעמד unknown
+VALID_BASELINE = {"template", "own_paper_majority", "documents_majority", "none", "market"}
+# מאגר שאינו הסכמים חתומים של החברה: נוסח אינו משא ומתן, ורמת הביטחון מוגבלת לפי ההסכמים החתומים שבו בלבד
+NON_SIGNED_STATUSES = {"company_forms", "third_party_forms", "unknown"}
+CONF_CAP_ORDER = {"Low": 0, "Medium": 1, "High": 2}
+# הקודים הטכניים ונימוקי ההשמטה האסורים עברו ל-playbook/validate_model.py (coverage_findings), שהוא המימוש
+# היחיד של בדיקת הכיסוי
 # ביטויים שאסורים בנוסח צהוב: הם ויתור בלי תנאי
 FORBIDDEN_YELLOW = ("לפי שיקול דעת הצד", "ללא הגבלה", "כפי שיידרש", "unlimited", "sole discretion")
 LEGACY_RULE_KEYS = {"fallbacks", "fallback_1", "fallback_2", "red_line", "escalation"}
 COLOR_SPEC = {"green": "Approved", "yellow": "AgreeWithComments", "red": "NotApproved"}
 
+# רצפה לכל שדה במעבר ב, בתווים, כדי לתפוס שדה ריק מתוכן, ולא יעד אורך. policy-rationale.md הוא מקור התקרות
+# (500 מילים לנושא שאינו נושא ליבה, 200 לווריאנט), והרצפות כאן מסתכמות מתחתיהן: כ-780 תווים (כ-135 מילים)
+# בנושא, וכ-440 (כ-75 מילים) בווריאנט. לפני כן הן הסתכמו בכ-1,600 תווים, כ-330 מילים, מעל התקרה
 RATIONALE_MIN = {
-    "executive_policy_rationale": 240,
-    "protected_interest_and_clause_purpose": 140,
-    "legal_risk_and_legal_framework": 180,
-    "contractual_risk_allocation_mechanism": 140,
-    "company_role_and_policy_fit": 120,
-    "business_operational_impact": 160,
-    "internal_evidence_rationale": 100,
-    "market_practice_assessment": 80,
-    "green_boundary_rationale": 90,
-    "yellow_boundary_rationale": 90,
-    "red_boundary_rationale": 90,
-    "tradeoff_statement": 80,
-    "related_clause_rationale": 60,
-    "uncertainties_and_limitations": 40,
+    "executive_policy_rationale": 120,
+    "protected_interest_and_clause_purpose": 60,
+    "legal_risk_and_legal_framework": 80,
+    "contractual_risk_allocation_mechanism": 60,
+    "company_role_and_policy_fit": 60,
+    "business_operational_impact": 60,
+    "internal_evidence_rationale": 60,
+    "market_practice_assessment": 40,
+    "green_boundary_rationale": 50,
+    "yellow_boundary_rationale": 50,
+    "red_boundary_rationale": 50,
+    "tradeoff_statement": 40,
+    "related_clause_rationale": 30,
+    "uncertainties_and_limitations": 20,
 }
 SEG_RATIONALE_MIN = {
-    "executive_segment_rationale": 140,
-    "segment_characteristic_and_risk_change": 100,
-    "legal_basis": 90,
-    "business_basis": 90,
-    "internal_evidence_basis": 70,
-    "market_practice_assessment": 50,
-    "green_boundary_rationale": 70,
-    "yellow_boundary_rationale": 70,
-    "red_boundary_rationale": 70,
-    "tradeoff": 60,
-    "related_clause_effect": 40,
-    "uncertainties_and_limitations": 30,
+    "executive_segment_rationale": 70,
+    "segment_characteristic_and_risk_change": 50,
+    "legal_basis": 40,
+    "business_basis": 40,
+    "internal_evidence_basis": 40,
+    "market_practice_assessment": 25,
+    "green_boundary_rationale": 35,
+    "yellow_boundary_rationale": 35,
+    "red_boundary_rationale": 35,
+    "tradeoff": 30,
+    "related_clause_effect": 20,
+    "uncertainties_and_limitations": 15,
 }
+
+
+def corpus_status_of(data):
+    """מעמד המאגר מהגזירה האחת (playbook/status.py). כשהספרייה אינה זמינה, הערך שבמודל; בדיקות התוכן מדווחות
+    על הספרייה החסרה בנפרד."""
+    try:
+        import areo_lib  # noqa: F401
+        from playbook import status as S
+        return S.corpus_status(data)
+    except ImportError:
+        return (data.get("scope_summary") or {}).get("corpus_status") or "signed"
 
 
 def nonempty(value):
@@ -143,7 +191,17 @@ def validate_previous(errors, items, prefix, segment_ids):
             add(errors, f"{pp} references unknown segment_id {sid}")
 
 
-def validate_traffic_light(errors, light, prefix, segment_ids):
+def fallback_source_ok(src, citation_ids=None):
+    """playbook-schema.md: מזהה ציטוט, answer:<מזהה>, market_standard או areo_proposal; והשמות הקודמים."""
+    if not isinstance(src, str) or not src.strip():
+        return False
+    if src in FALLBACK_SOURCE_WORDS or src in LEGACY_FALLBACK_SOURCE or src.startswith("answer:"):
+        return True
+    # מזהה ציטוט: נבדק מול citations[] כשיש כאלה; בלעדיהם, כל מזהה שאינו ריק
+    return src in citation_ids if citation_ids else True
+
+
+def validate_traffic_light(errors, light, prefix, segment_ids, citation_ids=None):
     if not isinstance(light, dict) or not light:
         add(errors, f"{prefix} missing/non-object traffic_light")
         return
@@ -164,7 +222,7 @@ def validate_traffic_light(errors, light, prefix, segment_ids):
             add(errors, f"{cp} requires comments")
 
         # מאיפה המסלול הגיע. בלי זה אי אפשר לדעת אם העמדה נגזרה מההסכמים
-        # או שהיא הצעה שלנו, וזו ההבחנה שהלקוח חייב לראות (שינויים 6, 7).
+        # או שהיא הצעה שלנו, וזו ההבחנה שהלקוח חייב לראות.
         basis = block.get("basis")
         if basis not in VALID_TRACK_BASIS:
             add(errors, f"{cp} missing/invalid basis")
@@ -181,11 +239,13 @@ def validate_traffic_light(errors, light, prefix, segment_ids):
             fb = block.get("fallback_wording")
             if not isinstance(fb, dict) or not nonempty(fb.get("text")):
                 add(errors, f"{cp} requires fallback_wording.text")
-            elif fb.get("source") not in VALID_FALLBACK_SOURCE:
-                add(errors, f"{cp}.fallback_wording invalid source")
+            elif not fallback_source_ok(fb.get("source"), citation_ids):
+                add(errors, f"{cp}.fallback_wording invalid source {fb.get('source')!r}: a citation id, "
+                            f"answer:<id>, market_standard or areo_proposal")
             elif fb.get("source") == "signed_compromise" and len(fb.get("negotiation_refs") or []) < 2:
                 add(errors, f"{cp} established yellow requires two different negotiations")
-            if block.get("offer_yellow") and (fb or {}).get("source") != "signed_compromise":
+            if block.get("offer_yellow") and (fb or {}).get("source") != "signed_compromise" \
+                    and basis != "established":
                 add(errors, f"{cp} offer_yellow is allowed only when the yellow is established")
             text = " ".join(str(x) for x in [block.get("proposed_clause"), (fb or {}).get("text")] if x)
             for bad in FORBIDDEN_YELLOW:
@@ -196,23 +256,89 @@ def validate_traffic_light(errors, light, prefix, segment_ids):
 
 # policy-rationale.md, "שני מעברים": במעבר א (rationale_status: Draft) נכתבים רק השדות הקצרים האלה, ויתר
 # השדות ריקים ורשומים ב-pass_b_pending. האורכים במפרט הם תקרות, "ולעולם לא יעד". לפני כן המאמת דרש אורך
-# מינימלי גם בטיוטה, ובהרצה חיה הבונה מתח את הנימוקים כדי לעבור אותו (20.10.2026)
+# מינימלי גם בטיוטה, ובהרצה חיה הבונה מתח את הנימוקים כדי לעבור אותו
 PASS_A_FIELDS = ("executive_policy_rationale", "green_boundary_rationale", "yellow_boundary_rationale",
                  "red_boundary_rationale", "internal_evidence_rationale")
 
 
-# הערות ענבל לנושא ונותן, 22.10.2026: כלל 12 (תנאי הפעלה לפי סוג הצד שכנגד) וכלל 3 (בדיקת תוצאה לכל כלל)
-VALID_COUNTERPARTY_KIND = {"local", "foreign", "large", "small", "any"}
+# כלל 12 (תנאי הפעלה לפי סוג הצד שכנגד) וכלל 3 (בדיקת תוצאה לכל כלל)
+# סוג הצד שכנגד: אוצר המילים האחד של playbook-schema.md (applicability), כלומר המפתחות של
+# orchestrator/resolve_playbook.ENTITY_KINDS, כולל הכינויים שהנושא ונותן ממפה (municipality ו-government לגוף ציבורי,
+# charity ו-npo לעמותה, חל"צ ומלכ"ר). local, large, small ו-any הם הערכים הקודמים של תנאי ההפעלה, ומתקבלים לתאימות.
+# לפני כן רק הם התקבלו, וסוג ישות כמו university נפסל
+ENTITY_KIND_CODES = {"company", "corporate", "individual", "person", "public_body", "public", "government",
+                     "municipality", "university", "academic", "non_profit", "npo", "nonprofit", "non-profit",
+                     "charity", "government_company", "foreign", "large_enterprise", "large", "enterprise", "sme",
+                     "small", "consumer", "group", "partnership"}
+LEGACY_COUNTERPARTY_KIND = {"local", "foreign", "large", "small", "any"}
+VALID_COUNTERPARTY_KIND = ENTITY_KIND_CODES | LEGACY_COUNTERPARTY_KIND
+# applicability.not_observed[].label: סוג שלא נצפה אינו מוחרג (segmentation.md, §16)
+NOT_OBSERVED_LABELS = {"לא נצפה בקורפוס", "not observed in the corpus"}
+EXCLUSION_WORDS = re.compile(r"מוחרג|לא חל|לא מכוסה|מחוץ לתחולה|exclud|not applicable|not covered|out of scope", re.I)
 VALID_POST_SCOPE = {"whole_agreement", "definitions", "annexes"}
 VALID_POST_ON_FAIL = {"block", "warn"}
 
 
+def bad_kinds(value):
+    """הערכים שאינם באוצר המילים. resolve_playbook מקבל רשימה או כמה ערכים בפסיק ("university,foreign")."""
+    parts = value if isinstance(value, (list, tuple)) else str(value).split(",")
+    return [p for p in parts if str(p).strip().lower() not in VALID_COUNTERPARTY_KIND]
+
+
+def validate_applicability(errors, warnings, app):
+    """applicability (playbook-schema.md): counterparty_kinds[] מאוצר המילים, ו-not_observed[] לסוג שלא נצפה בקורפוס,
+    בתווית "לא נצפה בקורפוס" ולעולם לא "מוחרג". חסר אינו נפסל כאן, כדי שפלייבוק קיים לא ייפסל."""
+    if app is None:
+        return
+    if not isinstance(app, dict):
+        add(errors, "applicability must be an object {counterparty_kinds[], deal_kinds[], value_range, "
+                    "not_observed[], not_covered[]}")
+        return
+    kinds = app.get("counterparty_kinds")
+    if kinds is not None and not isinstance(kinds, list):
+        add(errors, "applicability.counterparty_kinds must be a list")
+    elif kinds:
+        bad = bad_kinds(kinds)
+        if bad:
+            warnings.append(f"applicability.counterparty_kinds has values outside the vocabulary {bad}: "
+                            f"{', '.join(sorted(ENTITY_KIND_CODES))}")
+    no = app.get("not_observed")
+    if no is None:
+        return
+    if not isinstance(no, list):
+        add(errors, "applicability.not_observed must be a list of {kind, label, recommendation}")
+        return
+    for j, x in enumerate(no):
+        pp = f"applicability.not_observed[{j}]"
+        kind = x.get("kind") if isinstance(x, dict) else x
+        if not isinstance(x, (dict, str)) or not nonempty(kind):
+            add(errors, f"{pp} needs kind (a counterparty type)")
+            continue
+        if bad_kinds(kind):
+            add(errors, f"{pp}.kind {kind!r} is not a counterparty type ({', '.join(sorted(ENTITY_KIND_CODES))}); "
+                        f"a deal type goes in not_covered[]")
+        if not isinstance(x, dict):
+            continue
+        label = x.get("label")
+        if nonempty(label) and EXCLUSION_WORDS.search(str(label)):
+            add(errors, f"{pp}.label {label!r}: a type not observed is never excluded; the label is "
+                        f"\"לא נצפה בקורפוס\" (EN: \"not observed in the corpus\")")
+        elif nonempty(label) and str(label).strip() not in NOT_OBSERVED_LABELS:
+            add(errors, f"{pp}.label {label!r} must be \"לא נצפה בקורפוס\" (EN: \"not observed in the corpus\")")
+        if not nonempty(x.get("recommendation")):
+            warnings.append(f"{pp} has no recommendation: what to check when the playbook is applied to this "
+                            f"type (clause-catalog.md, \"Considerations by counterparty type\")")
+
+
 def validate_activation_and_post_checks(errors, rule, prefix):
     for j, c in enumerate(rule.get("activation_conditions") or []):
-        if isinstance(c, dict) and c.get("counterparty_kind") not in (None, "") and \
-                c["counterparty_kind"] not in VALID_COUNTERPARTY_KIND:
-            add(errors, f"{prefix}.activation_conditions[{j}].counterparty_kind invalid "
-                        f"({', '.join(sorted(VALID_COUNTERPARTY_KIND))})")
+        if not isinstance(c, dict):
+            continue
+        # counterparty_entity: סוג הישות בתנאי ההפעלה (playbook-schema.md, applicability), מאותו אוצר מילים
+        for key in ("counterparty_kind", "counterparty_entity"):
+            if c.get(key) not in (None, "", []) and bad_kinds(c[key]):
+                add(errors, f"{prefix}.activation_conditions[{j}].{key} invalid "
+                            f"({', '.join(sorted(VALID_COUNTERPARTY_KIND))})")
     pcs = rule.get("post_checks")
     if pcs is None:
         return
@@ -244,6 +370,29 @@ def validate_activation_and_post_checks(errors, rule, prefix):
             add(errors, f"{pp}.on_fail invalid (block, warn)")
 
 
+PERSPECTIVE_FIELDS = ("legal_analysis", "business_analysis", "internal_corpus_findings",
+                      "internal_contracting_trend", "external_market_trend")
+
+
+def validate_perspective(errors, rule, prefix):
+    """company_perspective: במעבר א מותר שדה ריק כשהוא רשום ב-pass_b_pending בשם company_perspective.<שדה>
+    (playbook-schema.md, pass_b_pending). לפני כן המאמת חייב את חמשת השדות כבר במעבר א, וההוראות לא."""
+    rat = rule.get("policy_rationale") if isinstance(rule.get("policy_rationale"), dict) else {}
+    draft = rat.get("rationale_status") == "Draft"
+    pending = set(rat.get("pass_b_pending") or ())
+    persp = rule.get("company_perspective")
+    if not isinstance(persp, dict):
+        if draft and all("company_perspective.%s" % k in pending for k in PERSPECTIVE_FIELDS):
+            return
+        add(errors, f"{prefix} missing/non-object company_perspective")
+        return
+    for key in PERSPECTIVE_FIELDS:
+        if not nonempty(persp.get(key)) and not (draft and "company_perspective.%s" % key in pending):
+            add(errors, f"{prefix}.company_perspective missing {key}"
+                        + (" (in pass A, list it in pass_b_pending as company_perspective.%s)" % key
+                           if draft else ""))
+
+
 def validate_rationale(errors, rationale, prefix, min_spec, applicability_min=2):
     if not isinstance(rationale, dict) or not rationale:
         add(errors, f"{prefix} missing/non-object rationale")
@@ -263,7 +412,10 @@ def validate_rationale(errors, rationale, prefix, min_spec, applicability_min=2)
         if not nonempty(rationale.get(key)):
             add(errors, f"{prefix} missing {key}")
         elif text_len(rationale.get(key)) < minimum:
-            add(errors, f"{prefix}.{key} too thin ({text_len(rationale.get(key))} chars; minimum {minimum})")
+            # שדות מעבר א נכתבים במעבר ב במלואם (policy-rationale.md, "שני מעברים"), ולכן הרצפה חלה גם עליהם
+            add(errors, f"{prefix}.{key} too thin ({text_len(rationale.get(key))} chars; minimum {minimum})"
+                        + (": pass B writes this pass A field in full (policy-rationale.md, sections 1, 8 and 10)"
+                           if min_spec is RATIONALE_MIN and key in PASS_A_FIELDS else ""))
     scenarios = rationale.get("applicability_scenarios")
     if not isinstance(scenarios, list) or len([x for x in scenarios if nonempty(x)]) < applicability_min:
         add(errors, f"{prefix}.applicability_scenarios requires at least {applicability_min} substantive scenarios")
@@ -273,24 +425,87 @@ def validate_rationale(errors, rationale, prefix, min_spec, applicability_min=2)
         add(errors, f"{prefix} invalid market_practice_basis")
 
 
-def main(path, core=None, index_entry=None, word=None, workspace=None):
+def _guard(out, inputs):
+    """הפלט (--coverage-out, --inventory-skeleton) לעולם אינו נכתב על קובץ קלט או על מסמך קיים. None: סירוב."""
+    from common.cli import OutputRefused, guard_out
     try:
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
-    except Exception as exc:
-        print("INVALID")
-        print("- cannot parse JSON:", exc)
-        return 1
+        return guard_out(out, inputs=inputs)
+    except OutputRefused as exc:
+        print("refused: %s" % exc)
+        return None
+
+
+def main(path, core=None, index_entry=None, word=None, workspace=None, inventory=None, extract=None,
+         coverage_out=None, skeleton_out=None, inputs=()):
+    if skeleton_out and not Path(path).exists():
+        # שלד המלאי נבנה לפני המודל (wf1-scope-corpus-extraction.md, שלב 4א): בלי מודל, מכל מסמכי החילוץ
+        data = {}
+    else:
+        try:
+            data = json.loads(Path(path).read_text(encoding="utf-8"))
+        except Exception as exc:
+            print("INVALID")
+            print("- cannot parse JSON:", exc)
+            return 1
+    # מלאי הסעיפים וקובץ החילוץ: כשלא נמסרו, נטענים מהמקום הקבוע שלהם, כדי שבדיקת הכיסוי תרוץ בכל הרצה
+    if inventory is None:
+        inventory = _find_beside(path, ((data.get("coverage") or {}).get("inventory_ref"),
+                                        "clause-inventory.json"))
+    if extract is None:
+        extract = _find_beside(path, ((data.get("coverage") or {}).get("extract_ref"),
+                                      "../../corpus-extract.json"))
+    if skeleton_out:
+        try:
+            import areo_lib  # noqa: F401
+            from playbook.validate_model import inventory_skeleton
+        except ImportError as exc:
+            print("the shared library is not importable: %s" % exc)
+            return 1
+        if not extract:
+            print("no corpus extract: pass --extract")
+            return 2
+        target = _guard(skeleton_out, [path] + list(inputs))
+        if not target:
+            return 2
+        sk = inventory_skeleton(data, extract)
+        Path(target).write_text(json.dumps(sk, ensure_ascii=False, indent=1), encoding="utf-8")
+        print("inventory skeleton written to %s: %d units to map (rule_id, technical, unique or "
+              "unmapped_reason in each)" % (skeleton_out, len(sk["units"])))
+        return 0
+    if coverage_out:
+        try:
+            import areo_lib  # noqa: F401
+            from playbook.validate_model import coverage_from_inventory
+        except ImportError as exc:
+            print("the shared library is not importable: %s" % exc)
+            return 1
+        if not inventory:
+            print("no clause inventory: pass --inventory")
+            return 2
+        target = _guard(coverage_out, [path] + list(inputs))
+        if not target:
+            return 2
+        block = coverage_from_inventory(data, inventory, extract)
+        block["inventory_ref"] = inventory.get("ref") or (data.get("coverage") or {}).get("inventory_ref") or ""
+        Path(target).write_text(json.dumps(
+            {k: v for k, v in block.items() if not k.startswith("_")}, ensure_ascii=False, indent=1),
+            encoding="utf-8")
+        print("coverage block written to %s (units %d: mapped %d, technical %d, unique %d, unmapped %d, "
+              "unassigned %d)" % (coverage_out, block["units"], block["topic_units"],
+                                  block["technical_units"], block["unique_units"], block["unmapped_units"],
+                                  block["unassigned_units"]))
 
     errors = []
+    warnings = []
     required_top = ["schema_version", "core_version", "playbook_id", "profile_id", "version", "playbook_status", "output_language", "scope_summary", "segmentation_model", "rules", "regulatory_research", "qa_summary"]
     for key in required_top:
         if not nonempty(data.get(key)):
             add(errors, f"missing {key}")
 
-    # הבונה כותב תמיד Draft (שינוי 27). אישור מדיניות אינו מתואר, אינו
+    # הבונה כותב תמיד Draft. אישור מדיניות אינו מתואר, אינו
     # מתועד ואינו נכתב כאן, ולכן מודל שיוצא מהבונה בכל ערך אחר נפסל
     # בבנייה הערך תמיד Draft. PartiallyApproved ו-Approved נגזרים בקוד אחרי
-    # קליטה של גיליון העמדות, ולכן מותרים רק כשיש רשומת קליטה (שינוי 68)
+    # קליטה של גיליון העמדות, ולכן מותרים רק כשיש רשומת קליטה
     status = data.get("playbook_status")
     records = data.get("approval_records")
     ingested = isinstance(records, list) and bool(records)
@@ -302,7 +517,7 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
                     f"sheet is ingested")
     elif status not in ("Draft", "PartiallyApproved", "Approved"):
         add(errors, f"playbook_status must be Draft on build, got {status}")
-    # התווית היא שדה אחד, ושתי תוויות באותה רשומה הן תקלה (שינוי 79)
+    # התווית היא שדה אחד, ושתי תוויות באותה רשומה הן תקלה
     if not nonempty(data.get("status_label")):
         add(errors, "missing status_label: it is the only field that states the "
                     "playbook's status, and every component prints it as it is")
@@ -339,10 +554,13 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
             add(errors, "scope_summary missing total_document_count")
 
         # מאיפה נבנה הפלייבוק, וכמה הסכמים באמת עמדו מאחוריו. הספירה נעשית
-        # בקוד מתוך המניפסט, ולא בהערכה של המודל (שינויים 2 ו-3).
+        # בקוד מתוך המניפסט, ולא בהערכה של המודל.
         origin = scope.get("corpus_origin")
         if origin not in VALID_CORPUS_ORIGIN:
             add(errors, "scope_summary missing/invalid corpus_origin")
+        elif data.get("corpus_origin") not in (None, origin):
+            add(errors, f"corpus_origin at the root ({data.get('corpus_origin')}) differs from "
+                        f"scope_summary.corpus_origin ({origin})")
         basis = scope.get("corpus_basis")
         if not isinstance(basis, dict):
             add(errors, "scope_summary requires corpus_basis{}")
@@ -380,9 +598,21 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
             elif choice in CHOICE_ORIGIN and origin and origin != CHOICE_ORIGIN[choice]:
                 add(errors, f"corpus_origin {origin} does not match choice {choice}")
 
+        cs = scope.get("corpus_status")
+        if cs is None:
+            warnings.append("scope_summary.corpus_status is missing (signed, mostly_drafts, company_forms, "
+                            "third_party_forms, unknown): the basis line falls back to source_log")
+        elif cs not in VALID_CORPUS_STATUS:
+            add(errors, f"scope_summary.corpus_status invalid {cs!r} ({', '.join(sorted(VALID_CORPUS_STATUS))})")
+        ts = scope.get("template_status")
+        if ts is not None and ts not in VALID_TEMPLATE_STATUS:
+            add(errors, f"scope_summary.template_status invalid {ts!r} ({', '.join(sorted(VALID_TEMPLATE_STATUS))})")
+
         # מי חתום על ההסכמים. כשזו אינה החברה שבפרופיל, חייבים לומר מי כן.
         if scope.get("contracting_entity_differs") and not nonempty(scope.get("contracting_entity")):
             add(errors, "scope_summary requires contracting_entity when the signer is not the profile company")
+
+    validate_applicability(errors, warnings, data.get("applicability"))
 
     segmentation = data.get("segmentation_model")
     segment_ids = set()
@@ -427,10 +657,34 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
         if status in RESEARCH_DONE:
             # playbook-schema.md: המחקר הרגולטורי רץ לפי מספר ההסכמים ואינו נשאל, ו-requested_by_user יוצא.
             # הדרישה הישנה פסלה כל מחקר רגולטורי שהמפרט עצמו מחייב (1 עד 6 הסכמים, או אין)
-            if rr.get("trigger") not in ("band_below7", "band_none") and rr.get("requested_by_user") is not True:
-                add(errors, "regulatory research Performed/Partial requires trigger band_below7 or band_none")
+            # כלל מייסד 3: מחקר רשת רק כשהלקוח בחר בו. band_below7 ו-band_none הם הערכים הישנים (נקראים, לא נכתבים)
+            if rr.get("trigger") not in ("client_chose", "band_below7", "band_none")                     and rr.get("requested_by_user") is not True:
+                add(errors, "regulatory research Performed/Partial requires trigger client_chose (the client chose "
+                            "deep research: corpus_basis.choice combine or market)")
+            _choice = (((data.get("scope_summary") or {}).get("corpus_basis")) or {}).get("choice")
+            if _choice in ("own_only", "not_asked"):
+                add(errors, "regulatory research was recorded Performed/Partial, but corpus_basis.choice is %s: "
+                            "outside research only when the client chose it (rr1-gate-sources-verification.md)" % _choice)
             if not nonempty(rr.get("checked_at")):
                 add(errors, "completed/partial regulatory research requires checked_at")
+
+    # סטטוס המחקר, בשוק ובדין, מאותו סט, ו-not_performed_reason חובה כשהמחקר לא בוצע (playbook-schema.md)
+    if isinstance(rr, dict) and rr.get("status") == "NotPerformed" and \
+            rr.get("not_performed_reason") not in VALID_NOT_PERFORMED_REASON:
+        add(errors, "regulatory_research NotPerformed requires not_performed_reason "
+                    "(%s)" % ", ".join(sorted(VALID_NOT_PERFORMED_REASON)))
+    mr = data.get("market_research")
+    if not isinstance(mr, dict):
+        add(errors, "missing market_research{} (status Performed, Partial or NotPerformed)")
+    else:
+        ms = mr.get("status")
+        if ms in LEGACY_NOT_PERFORMED:
+            warnings.append(f"market_research.status {ms} is a legacy name for NotPerformed")
+        elif ms not in ("Performed", "Partial", "NotPerformed", "Completed"):
+            add(errors, f"market_research invalid status {ms!r} (Performed, Partial, NotPerformed)")
+        elif ms == "NotPerformed" and mr.get("not_performed_reason") not in VALID_NOT_PERFORMED_REASON:
+            add(errors, "market_research NotPerformed requires not_performed_reason "
+                        "(%s)" % ", ".join(sorted(VALID_NOT_PERFORMED_REASON)))
 
     qa = data.get("qa_summary")
     if not isinstance(qa, dict):
@@ -445,59 +699,8 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
                 if not nonempty(qa.get(key)):
                     add(errors, f"Approved playbook requires qa_summary.{key}")
 
-    # מלאי הסעיפים: כל סעיף בהסכם קיבל מדיניות, או קוד טכני מרשימה סגורה.
-    # בלי זה סעיף נשמט בשקט ואיש אינו יודע (שינוי 5).
-    # מלאי הסעיפים: ההוכחה שאף סעיף לא נשר בשקט. המבנה הוא זה של
-    # `playbook-schema.md`, `coverage`: מספרים, ורשימה לסעיפים הטכניים
-    coverage = data.get("coverage")
-    if not isinstance(coverage, dict):
-        add(errors, "missing coverage{} (clause inventory written by the extractor)")
-    else:
-        nums = ["units", "topic_units", "technical_units", "unmapped_units",
-                "topics", "topics_with_rule"]
-        for key in nums:
-            if not isinstance(coverage.get(key), int):
-                add(errors, f"coverage.{key} must be a number counted in code")
-        if not nonempty(coverage.get("inventory_ref")):
-            add(errors, "coverage missing inventory_ref (where the clause inventory is kept)")
-        if all(isinstance(coverage.get(k), int) for k in nums):
-            if coverage["unmapped_units"] != 0:
-                add(errors, f"coverage.unmapped_units must be 0, got {coverage['unmapped_units']}")
-            total = coverage["topic_units"] + coverage["technical_units"] + coverage["unmapped_units"]
-            if total != coverage["units"]:
-                add(errors, f"coverage does not add up: {coverage['units']} units "
-                            f"but {total} mapped")
-            # לכל נושא יש כלל: נושא בלי כלל הוא סעיף שנמצא ולא קיבל מדיניות
-            if coverage["topics_with_rule"] != coverage["topics"]:
-                add(errors, f"coverage: {coverage['topics'] - coverage['topics_with_rule']} "
-                            f"topics have no rule in rules[]")
-        items = coverage.get("technical_items")
-        if not isinstance(items, list):
-            add(errors, "coverage.technical_items[] missing (the source of the Word chapter "
-                        "and of the coverage panel)")
-        else:
-            refs_total = 0
-            for k, item in enumerate(items):
-                ip = f"coverage.technical_items[{k}]"
-                if not isinstance(item, dict):
-                    add(errors, f"{ip} must be object")
-                    continue
-                if item.get("code") not in TECHNICAL_CODES:
-                    add(errors, f"{ip} code {item.get('code')} is not in the closed list")
-                reason = str(item.get("reason") or "")
-                if not reason:
-                    add(errors, f"{ip} missing reason")
-                elif any(bad in reason for bad in FORBIDDEN_OMISSION):
-                    add(errors, f"{ip} reason is not a reason: {reason[:40]}")
-                refs = item.get("refs")
-                if not isinstance(refs, list) or not refs:
-                    add(errors, f"{ip} missing refs[] (which clause this is)")
-                else:
-                    refs_total += len(refs)
-            if isinstance(coverage.get("technical_units"), int) and items \
-                    and refs_total != coverage["technical_units"]:
-                add(errors, f"coverage.technical_items cover {refs_total} clauses "
-                            f"but technical_units is {coverage['technical_units']}")
+    # מלאי הסעיפים: ההוכחה שאף סעיף לא נשר בשקט. הבדיקה כולה ב-playbook/validate_model.py (coverage_findings),
+    # שרצה מתוך content_findings, גם מול clause-inventory.json וקובץ החילוץ כשהם נמצאים
 
     rules = data.get("rules")
     if not isinstance(rules, list) or not rules:
@@ -505,7 +708,7 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
         rules = []
 
     # רישום המקורות: על נייר של מי כל הסכם, ואיך התקבל. בלי זה ראיה
-    # ממסמך שהצד שכנגד ניסח נראית כמו ראיה למדיניות שלנו (שינוי 6).
+    # ממסמך שהצד שכנגד ניסח נראית כמו ראיה למדיניות שלנו.
     source_ids = set()
     for i, src in enumerate(data.get("source_log") or []):
         sp = f"source_log[{i}]"
@@ -519,14 +722,31 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
             add(errors, f"duplicate source_id {sid}")
         else:
             source_ids.add(sid)
-        if src.get("doc_role") == "template":
-            continue          # תבנית אינה הסכם, ואינה נספרת ככזה
-        if src.get("paper") not in VALID_PAPER:
-            add(errors, f"{sp} missing/invalid paper (ours, theirs, unknown)")
+        if src.get("doc_role") not in (None, "") and src["doc_role"] not in VALID_DOC_ROLE:
+            add(errors, f"{sp} invalid doc_role {src['doc_role']!r} ({', '.join(sorted(VALID_DOC_ROLE))})")
+        if src.get("doc_role") in ("template", "correspondence"):
+            continue          # תבנית והתכתבות אינן הסכם, ואינן נספרות ככזה
+        if src.get("paper") in LEGACY_PAPER:
+            warnings.append(f"{sp} paper {src['paper']!r} is a legacy value: leave it empty when it cannot be "
+                            f"determined (playbook-schema.md)")
+        elif src.get("paper") not in VALID_PAPER and src.get("paper") not in (None, ""):
+            add(errors, f"{sp} invalid paper {src.get('paper')!r} (ours, theirs, or empty when it cannot be determined)")
         if not nonempty(src.get("channel")):
             add(errors, f"{sp} missing channel")
         if src.get("acceptance_mode") not in VALID_ACCEPTANCE_MODE:
             add(errors, f"{sp} missing/invalid acceptance_mode")
+
+    # מעמד המאגר, וכמה משאים ומתנים יש בו בכלל (workflow.md, שלב 2ח; evidence-policy.md, "Confidence")
+    corpus_status = corpus_status_of(data)
+    included_src = [x for x in (data.get("source_log") or []) if isinstance(x, dict) and x.get("included") is not False]
+    if corpus_status == "unknown":
+        max_negotiations = 0
+    else:
+        max_negotiations = len({x.get("negotiation_id") or x.get("source_id") for x in included_src
+                                if x.get("doc_role") not in NOT_NEGOTIATION_ROLES and x.get("status") != "company_form"})
+    if corpus_status == "company_forms" and included_src and             not any(x.get("doc_role") == "form" or x.get("status") == "company_form" for x in included_src):
+        warnings.append("scope_summary.corpus_status is company_forms, and no source_log row is doc_role form: "
+                        "record each form as doc_role form (workflow.md, step 2ח)")
 
     citation_ids = {c.get("citation_id") for c in (data.get("citations") or [])
                     if isinstance(c, dict)}
@@ -534,6 +754,7 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
     rule_ids = set()
     confirmed_segment_variants = 0
     walk_away_rules = []
+    legacy_ec_seen = set()
     for i, rule in enumerate(rules):
         prefix = f"rules[{i}]"
         if not isinstance(rule, dict):
@@ -543,7 +764,15 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
         for legacy in sorted(LEGACY_RULE_KEYS):
             if legacy in rule:
                 add(errors, f"{prefix} contains prohibited legacy field {legacy}")
+        # נושא שאין לו ראיה בקורפוס (נושא מהפרופיל או מתשובת הלקוח) נרשם עם evidence: [], כשכל המסלולים שלו
+        # client_answer, areo_proposal או market_standard (ps3-rule-and-evidence.md, evidence[]); לא "ראיה" שהיא הסבר
+        no_ev_ok = isinstance(rule.get("evidence"), list) and all(
+            ((rule.get("traffic_light") or {}).get(t) or {}).get("basis") in ("client_answer", "areo_proposal",
+                                                                                "market_standard")
+            for t in ("green", "yellow", "red"))
         for key in ["rule_id", "topic_name", "clause_issue", "why_address_topic", "policy_status", "confidence", "evidence", "presence_rule", "policy_rationale", "traffic_light"]:
+            if key == "evidence" and no_ev_ok:
+                continue
             if not nonempty(rule.get(key)):
                 add(errors, f"{prefix} missing {key}")
         rid = rule.get("rule_id")
@@ -556,15 +785,13 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
         if rule.get("confidence") not in VALID_CONF:
             add(errors, f"{prefix} invalid confidence")
 
-        perspective = require_obj(errors, rule, "company_perspective", prefix)
-        if perspective:
-            for key in ["legal_analysis", "business_analysis", "internal_corpus_findings", "internal_contracting_trend", "external_market_trend"]:
-                if not nonempty(perspective.get(key)):
-                    add(errors, f"{prefix}.company_perspective missing {key}")
+        validate_perspective(errors, rule, prefix)
+        if rule.get("topic_origin") not in (None, "") and rule["topic_origin"] not in VALID_TOPIC_ORIGIN:
+            add(errors, f"{prefix} invalid topic_origin {rule['topic_origin']!r} (catalog, corpus_derived)")
 
         validate_rationale(errors, rule.get("policy_rationale"), f"{prefix}.policy_rationale", RATIONALE_MIN, 2)
 
-        # מה מציעים בסבב הראשון, ומאיפה הערך בא (שינוי 69). ברירת המחדל
+        # מה מציעים בסבב הראשון, ומאיפה הערך בא. ברירת המחדל
         # נקבעת לפי החשיבות, ולכן המקור נקרא importance ולא default
         posture = rule.get("round1_posture")
         if posture is None:
@@ -580,7 +807,7 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
         elif src not in VALID_POSTURE_SOURCE:
             add(errors, f"{prefix} invalid round1_posture_source: {src}")
 
-        # שובר עסקה: חובה בכל כלל, ומקור רשום כשהערך true (שינוי 84)
+        # שובר עסקה: חובה בכל כלל, ומקור רשום כשהערך true
         wa = rule.get("walk_away")
         if not isinstance(wa, bool):
             add(errors, f"{prefix} walk_away must be true or false on every rule")
@@ -598,8 +825,16 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
         if not isinstance(presence, dict):
             add(errors, f"{prefix}.presence_rule must be object")
         else:
-            if presence.get("requirement") not in VALID_PRESENCE:
-                add(errors, f"{prefix}.presence_rule invalid requirement")
+            req = presence.get("requirement")
+            if req in LEGACY_PRESENCE:
+                warnings.append(f"{prefix}.presence_rule.requirement {req} is a legacy value; use one of "
+                                f"{', '.join(sorted(VALID_PRESENCE))}")
+            elif req not in VALID_PRESENCE:
+                add(errors, f"{prefix}.presence_rule invalid requirement {req!r} "
+                            f"({', '.join(sorted(VALID_PRESENCE))})")
+            elif req == "Conditional" and not nonempty(presence.get("condition")) \
+                    and not nonempty(rule.get("activation_conditions")):
+                add(errors, f"{prefix}.presence_rule Conditional requires condition (or activation_conditions[])")
             if presence.get("missing_clause_color") not in VALID_MISSING_COLOR:
                 add(errors, f"{prefix}.presence_rule invalid missing_clause_color")
 
@@ -610,7 +845,7 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
             add(errors, f"{prefix} ApplicableSourcesFound requires regulatory_sources")
 
         # הראיות של הכלל: לאיזה מסלול הן שייכות, מאיזה הסכם, ובאיזו פוזיציה.
-        # ראיה ממשפחת הסכמים אחרת אינה בסיס למסלול, רק הקשר (שינוי 6).
+        # ראיה ממשפחת הסכמים אחרת אינה בסיס למסלול, רק הקשר.
         excluded = set()
         for key in ("agreement_exceptions", "observed_alternatives", "statutory_override"):
             for item in (rule.get(key) or []):
@@ -629,6 +864,8 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
             if not nonempty(ev.get("company_role_in_source")):
                 add(errors, f"{ep} missing company_role_in_source")
             track = ev.get("track")
+            if track not in (None, "") and track not in VALID_EVIDENCE_TRACK:
+                add(errors, f"{ep} invalid track {track!r} (green, yellow, red, context)")
             if ev.get("same_family") is False and track != "context":
                 add(errors, f"{ep} evidence from another contract family may only be context")
             ref = ev.get("source_ref")
@@ -650,8 +887,31 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
             ind, own = ec.get("independent_negotiations"), ec.get("on_company_paper")
             if not isinstance(ind, int) or not isinstance(own, int) or own > ind:
                 add(errors, f"{prefix}.evidence_count needs integers independent_negotiations >= on_company_paper")
+            docs = ec.get("documents_addressing")
+            if docs is not None and (isinstance(docs, bool) or not isinstance(docs, int) or docs < 0):
+                add(errors, f"{prefix}.evidence_count.documents_addressing must be a count of documents")
+            for old in ("forms_addressing_topic", "forms_addressing", "documents_addressing_topic"):
+                if old in ec and old not in legacy_ec_seen:
+                    legacy_ec_seen.add(old)
+                    warnings.append(f"{prefix}.evidence_count.{old} (and in other rules) is a legacy name: "
+                                    f"documents_addressing")
+            # נוסח שאינו חתום אינו משא ומתן (workflow.md, שלב 2ח): במאגר שאינו הסכמים חתומים הספירה היא רק של
+            # ההסכמים החתומים שבו, ובמעמד unknown כל המסמכים מטופלים כלא חתומים
+            if isinstance(ind, int) and corpus_status in NON_SIGNED_STATUSES and ind > max_negotiations:
+                add(errors, f"{prefix}.evidence_count.independent_negotiations is {ind}, but the corpus "
+                            f"({corpus_status}) has {max_negotiations} negotiations: a form is not a negotiation. "
+                            f"Count the documents in documents_addressing")
+            if isinstance(ind, int) and rule.get("confidence") in CONF_CAP_ORDER:
+                cap = "Low" if ind <= 1 else "Medium" if ind == 2 else "High"
+                if corpus_status in NON_SIGNED_STATUSES and                         CONF_CAP_ORDER[rule["confidence"]] > CONF_CAP_ORDER[cap]:
+                    add(errors, f"{prefix}.confidence {rule['confidence']} is above the cap for {ind} "
+                                f"negotiations ({cap})")
+        fo = rule.get("fallback_origin")
+        if isinstance(fo, dict) and fo.get("baseline") not in (None, "") and fo["baseline"] not in VALID_BASELINE:
+            warnings.append(f"{prefix}.fallback_origin.baseline {fo['baseline']!r} is not in the schema "
+                            f"({', '.join(sorted(VALID_BASELINE))})")
 
-        validate_traffic_light(errors, rule.get("traffic_light"), prefix, segment_ids)
+        validate_traffic_light(errors, rule.get("traffic_light"), prefix, segment_ids, citation_ids)
 
         variants = rule.get("segment_variants", [])
         if not isinstance(variants, list):
@@ -677,7 +937,7 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
             if variant.get("confidence") not in VALID_CONF:
                 add(errors, f"{vp} invalid confidence")
             validate_rationale(errors, variant.get("segmentation_rationale"), f"{vp}.segmentation_rationale", SEG_RATIONALE_MIN, 1)
-            validate_traffic_light(errors, variant.get("traffic_light"), vp, segment_ids)
+            validate_traffic_light(errors, variant.get("traffic_light"), vp, segment_ids, citation_ids)
             if variant.get("policy_status") == "Confirmed":
                 confirmed_segment_variants += 1
                 if segment_status.get(sid) != "Confirmed":
@@ -706,23 +966,57 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
     if not isinstance(queue, list):
         add(errors, "validation_queue must be list")
         queue = []
+    # כלל Unclear מכוסה גם בפריט אחד ברמת הכללים (scope: rules, עם rule_ids[]), כשכמה כללים לא ברורים מאותה
+    # סיבה (למשל אין ראיה מאוכלוסיית הבסיס, segmentation.md §9): לא פריט נפרד לכל כלל
     queue_rule_ids = {q.get("rule_id") for q in queue if isinstance(q, dict)}
+    queue_rule_ids |= {x for q in queue if isinstance(q, dict) and q.get("scope") == "rules"
+                       for x in q.get("rule_ids") or []}
+    # playbook-schema.md, validation_queue[]: rule_id חובה ב-rule וב-segment וקיים ב-rules[]; "GLOBAL" ב-playbook;
+    # rule_ids[] (שניים לפחות) ב-rules. לפני כן GLOBAL נדחה ב-validate_data, והבונה כתב rule_id ריק כדי לעבור
+    for i, q in enumerate(queue):
+        if not isinstance(q, dict):
+            add(errors, f"validation_queue[{i}] must be object")
+            continue
+        qp = "validation_queue[%d] (%s)" % (i, q.get("id"))
+        scope_q, rid_q = q.get("scope"), q.get("rule_id")
+        for key in ("id", "topic", "question", "why", "severity", "recommendation"):
+            if not nonempty(q.get(key)):
+                add(errors, f"{qp} missing {key}")
+        if scope_q is None:
+            warnings.append(f"{qp} has no scope (rule, segment, rules, playbook)")
+        elif scope_q not in VALID_QUEUE_SCOPE:
+            add(errors, f"{qp} invalid scope {scope_q!r}")
+        if scope_q in ("rule", "segment") and rid_q not in rule_ids:
+            add(errors, f"{qp} scope {scope_q} requires a rule_id that exists in rules[] (got {rid_q!r})")
+        if scope_q == "playbook" and rid_q != "GLOBAL":
+            if rid_q in (None, ""):
+                warnings.append(f"{qp} scope playbook: rule_id should be GLOBAL")
+            else:
+                add(errors, f"{qp} scope playbook takes rule_id GLOBAL (got {rid_q!r})")
+        if scope_q == "segment" and q.get("segment_id") not in segment_ids:
+            add(errors, f"{qp} scope segment requires a known segment_id")
+        if scope_q == "rules":
+            ids = q.get("rule_ids") or []
+            if len(ids) < 2 or any(x not in rule_ids for x in ids):
+                add(errors, f"{qp} scope rules requires rule_ids[] of two or more existing rules")
+        if scope_q is None and rid_q not in (None, "", "GLOBAL") and rid_q not in rule_ids:
+            add(errors, f"{qp} rule_id {rid_q} does not exist")
     for i, rule in enumerate(rules):
         if isinstance(rule, dict) and rule.get("policy_status") == "Unclear":
             if rule.get("rule_id") not in queue_rule_ids and not nonempty(rule.get("validation_question")):
                 add(errors, f"rules[{i}] Unclear rule lacks validation queue item/question")
 
-    # לכל היותר חמישה שוברי עסקה בפלייבוק (שינוי 84). פלייבוק שבו כל כלל
+    # לכל היותר חמישה שוברי עסקה בפלייבוק. פלייבוק שבו כל כלל
     # שובר עסקה אינו מדיניות, אלא רשימת תנאים שאין איתה משא ומתן
     if len(walk_away_rules) > WALK_AWAY_MAX:
         add(errors, "%d rules have walk_away: true, the limit is %d (%s)"
                     % (len(walk_away_rules), WALK_AWAY_MAX,
                        ", ".join(str(r) for r in walk_away_rules[:8])))
 
-    warnings = []
-    content = content_findings(data, errors, warnings, core=core,
-                              index_entry=index_entry, word=word, workspace=workspace)
+    content = content_findings(data, errors, warnings, core=core, index_entry=index_entry, word=word,
+                              workspace=workspace, inventory=inventory, extract=extract, model_path=path)
     handoff_findings(data, errors)
+    enforce_findings(data, errors, warnings, extract, path)
 
     if errors:
         print("INVALID")
@@ -730,6 +1024,7 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
             print("-", error)
         for w in warnings:
             print("! warning:", w)
+        client_lines(data, core)
         return 1
     print("VALID")
     for w in warnings:
@@ -740,16 +1035,39 @@ def main(path, core=None, index_entry=None, word=None, workspace=None):
     return 0
 
 
+def enforce_findings(data, errors, warnings, extract=None, model_path=None):
+    """שכבת האכיפה (enforce_playbook_checks.run_checks) רצה גם כאן, כך שכלל שנאכף שם חוסם גם בקריאה לאימות:
+    שתיקה אינה ירוק, אדום בלי נוסח הוא פער, נימוק שחוזר על העמדה ריק, שמות צדדים, סף הקורפוס."""
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import enforce_playbook_checks as EN
+        import evidence_kind as E
+    except ImportError as exc:
+        add(errors, "enforce_playbook_checks is not importable, so the enforcement checks did not run: %s" % exc)
+        return
+    try:
+        ex = extract if extract is not None else E.find_extract(data, model_path)
+        errs, warns = EN.run_checks(data, ex)
+    except Exception as exc:
+        add(errors, "enforcement checks raised %s: %s" % (type(exc).__name__, exc))
+        return
+    for e in errs:
+        add(errors, "enforce: " + e)
+    for w in warns:
+        warnings.append("enforce: " + w)
+
+
 def handoff_findings(data, errors):
-    """בנייה לבקשת הנושא ונותן (הערות הפלייבוק 5.5, שינוי 73): התשובה לשאלת המסלול
+    """בנייה לבקשת הנושא ונותן: התשובה לשאלת המסלול
     חוזרת ב-handoff.route_answer כשנשאלה בבונה, ועד שלוש החלטות ב-decisions_now[],
     כל אחת עם המלצה. ואין בתור השאלות פריט שמבקש לאשר בחירה שנעשתה באותה הפעלה."""
     req = (data.get("meta") or {}).get("build_request") or {}
-    if req.get("requested_by") != "negotiation_orchestrator":
+    # כל רכיב שהפלייבוק חובה בו (הנושא ונותן, מעריך הסיכונים, האסטרטג, המנסח) מקבל handoff
+    if req.get("requested_by") in (None, "", "user"):
         return
     h = data.get("handoff")
     if not isinstance(h, dict):
-        add(errors, "handoff: a build for the negotiator returns a handoff record")
+        add(errors, "handoff: a build for another component returns a handoff record")
         return
     asked = req.get("route_answer")
     if asked and h.get("route_answer") != asked:
@@ -775,8 +1093,82 @@ def handoff_findings(data, errors):
                             "session (route_answer)" % q.get("id"))
 
 
+def client_lines(data, core=None):
+    """אחרי INVALID: השורות ללקוח, בשפת הפלייבוק (playbook/validity.playbook_warnings). קוד 1 אינו סוף הדרך
+    בשקט: הבונה מתקן ומריץ שוב, וכשהפלייבוק נמסר בכל זאת, השורות האלה נכנסות להודעה המסכמת כלשונן
+    (wf2-opinion-research-finalize.md, שלב 12). סוכן אחר שמחיל את הפלייבוק קורא לאותה פונקציה."""
+    try:
+        import areo_lib  # noqa: F401
+        from playbook import validity as VY
+    except ImportError:
+        return
+    lang = "en" if str(data.get("output_language") or "").startswith("en") else "he"
+    lines = VY.playbook_warnings(data, core, lang=lang)
+    if VY.validity_summary(data, core)["status"] == "valid":
+        # הבדיקות הזולות עברו, והמאמת המלא לא: השורה הכללית, לפני שאר השורות
+        lines.insert(0, VY.TEXT[lang]["other"]["some"])
+    print("client (%s): %s" % (lang, VY.TEXT[lang]["head"]))
+    for line in lines:
+        print("client (%s): %s" % (lang, line))
+
+
+def _find_beside(model_path, candidates):
+    """קובץ JSON לצד המודל: נתיב מוחלט, נתיב יחסי למודל, או שם הקובץ בתיקיית המודל. None כשלא נמצא."""
+    base = Path(model_path).resolve().parent
+    for c in candidates:
+        if not c:
+            continue
+        for q in (Path(c), base / c, base / Path(str(c).replace("\\", "/")).name):
+            try:
+                if q.is_file():
+                    return json.loads(q.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+    return None
+
+
+def workspace_file_problems(workspace):
+    """הקובץ של סביבת העבודה קיים, שלם ופתיח: מסמך HTML מלא, בלי נקודת הזרקה שנשארה ריקה."""
+    import os
+    if not os.path.isfile(workspace):
+        return ["Workspace: הקובץ %s לא קיים" % workspace]
+    s = open(workspace, encoding="utf-8", errors="replace").read()
+    out = []
+    if not s.lstrip().lower().startswith("<!doctype html"):
+        out.append("Workspace: הקובץ אינו מסמך HTML שלם (חסר doctype)")
+    if "</html>" not in s or s.count("<script") != s.count("</script>"):
+        out.append("Workspace: הקובץ נחתך או לא נסגר (חסר </html> או תג script לא סגור)")
+    if "/*__DATA__*/null" in s:
+        out.append("Workspace: הנתונים לא הוזרקו לדף (נקודת ההזרקה נשארה ריקה)")
+    return out
+
+
+def workspace_findings(st, workspace, model, S, MC):
+    """סטיות בין המעמד המחושב לבין סביבת העבודה. כמו surfaces_render.check_surfaces, אבל label_now ו-approved_count
+    שחסרים נגזרים כאן ממה שכן נכתב: status_label במקום label_now, ו-0 במקום approved_count כשהמחושב 0. בבנייה
+    ראשונה אף סקריפט אינו כותב אותם (build_workspace_payload לוקח אותם רק מ-policy_gate במודל), ולכן הבדיקה
+    הקודמת נכשלה בכל בנייה ראשונה. ערך שנכתב ושונה מהמחושב נשאר שגיאה."""
+    from playbook.surfaces_render import read_workspace_status
+    out = []
+    meta = (read_workspace_status(workspace) or {}).get("meta") or {}
+    st = S.in_lang(st, meta.get("lang"))
+    for f in S.DUAL_FIELDS:
+        if f in meta:
+            out.append("Workspace: meta.%s: שדה תווית כפול" % f)
+    label = meta.get("label_now") if meta.get("label_now") is not None else meta.get("status_label")
+    if label != st["label"]:
+        out.append('Workspace: label_now="%s", המחושב: "%s"' % (label, st["label"]))
+    count = meta.get("approved_count")
+    if count is None and st["approved_count"] == 0:
+        count = 0
+    if count != st["approved_count"]:
+        out.append("Workspace: approved_count=%s, המחושב: %d" % (count, st["approved_count"]))
+    out += ["Workspace: " + p for p in MC.count_claims(meta.get("evidence_disclaimer") or "", model)]
+    return out
+
+
 def content_findings(data, errors, warnings, core=None, index_entry=None,
-                     word=None, workspace=None):
+                     word=None, workspace=None, inventory=None, extract=None, model_path=None):
     """בדיקות התוכן של ספריית הייחוס, לצד בדיקות הסכמה שלמעלה.
 
     חוסר של הספרייה אינו עובר בשקט: מודל שלא נבדקו בו המנגנונים אינו
@@ -791,7 +1183,7 @@ def content_findings(data, errors, warnings, core=None, index_entry=None,
                     "content checks did not run: %s" % exc)
         return False
     try:
-        findings = validate(data, core=core, index_entry=index_entry)
+        findings = validate(data, core=core, index_entry=index_entry, inventory=inventory, extract=extract)
     except Exception as exc:                      # מודל פגום מכדי להיבדק
         add(errors, "content checks raised %s: %s" % (type(exc).__name__, exc))
         return False
@@ -807,10 +1199,20 @@ def content_findings(data, errors, warnings, core=None, index_entry=None,
     # המעמד והתווית חייבים להיות אותו דבר בכל שכבה, ו-check_consistency הוא
     # מה שמודד את זה: המודל, הגרעין, הרשומה באינדקס, ה-handoff, התאים, וגם
     # ה-Word וסביבת העבודה כשנתיביהם נמסרו. מודל שאומר "מדיניות מאושרת"
-    # בעוד הגרעין אומר "טעון אישור" אינו מודל תקף, ולכן אלה שגיאות
+    # בעוד הגרעין אומר "מחכה לאישור שלכם" אינו מודל תקף, ולכן אלה שגיאות
+    # המעמד נגזר מהתאים של רשומת האישור האחרונה (approval_records), כמו בשער המדיניות. בלעדיהם כל פלייבוק
+    # שעמדה אחת בו אושרה, בגיליון או בצ'אט, נמדד כ-Draft, והמאמת דיווח סתירה על מודל עקבי
     try:
+        from playbook import status as S
+        cells = S.record_cells_for(data, model_path) if data.get("approval_records") else None
         drift = check_consistency(data, core, index_entry,
-                                  cells=None, word_path=word, workspace_path=workspace)
+                                  cells=cells, word_path=word, workspace_path=None)
+        if word and not workspace:
+            drift.append("Workspace: לא נמסרה סביבת עבודה לצד ה-Word. פלייבוק נמסר תמיד בשני התוצרים, יחד")
+        if workspace:
+            drift += workspace_file_problems(workspace)
+            from playbook import market_counts as MC
+            drift += workspace_findings(S.derive_status(data, cells), workspace, data, S, MC)
     except Exception as exc:
         add(errors, "the cross-layer status check raised %s: %s" % (type(exc).__name__, exc))
         return True
@@ -837,8 +1239,43 @@ if __name__ == "__main__":
     ap.add_argument("--index", help="the playbook's entry in playbooks/index.json")
     ap.add_argument("--word", help="the playbook .docx, checked for a stale status")
     ap.add_argument("--workspace", help="the workspace file, checked for a stale status")
+    ap.add_argument("--inventory", help="clause-inventory.json; default: coverage.inventory_ref, or the file "
+                                        "beside the model")
+    ap.add_argument("--extract", help="corpus-extract.json; default: coverage.extract_ref, or "
+                                      "Areo-נתונים/corpus-extract.json")
+    ap.add_argument("--coverage-out", help="writes the coverage block computed from the inventory (and the "
+                                           "extract) to this path, for the builder to copy into the model")
+    ap.add_argument("--inventory-skeleton", help="writes the clause-unit skeleton built from the extract (one "
+                                                 "unit per clause, no mapping) to this path, and exits")
+    ap.add_argument("--approved-sources", help="מקורות-מאושרים.json saved to disk: legal and regulatory source URLs "
+                                               "are checked against it (default: AREO_APPROVED_SOURCES, else the "
+                                               "copy bundled in the plugin, lib/מקורות-מאושרים.json)")
     a = ap.parse_args()
+    if a.approved_sources:
+        if not os.path.isfile(a.approved_sources):
+            print("INVALID")
+            print("- the approved-sources file does not exist: %s" % a.approved_sources)
+            raise SystemExit(2)
+        # risk.validate_register.approved_domains קורא את משתנה הסביבה (playbook/validate_model.source_findings)
+        os.environ["AREO_APPROVED_SOURCES"] = a.approved_sources
+    if a.word:
+        # Word פגום, DOC או Strict: הודעה דו-לשונית וקוד 2, ולא "the cross-layer status check raised BadZipFile"
+        try:
+            import areo_lib  # noqa: F401
+            from common.cli import load_docx_or_explain
+        except ImportError:
+            load_docx_or_explain = None
+        if load_docx_or_explain:
+            ok, msg, code = load_docx_or_explain(a.word, loader=False)
+            if ok is None:
+                print("INVALID")
+                print(msg)
+                raise SystemExit(code)
     raise SystemExit(main(a.model,
                           core=_load(a.core, "the core") if a.core else None,
                           index_entry=_load(a.index, "the index entry") if a.index else None,
-                          word=a.word, workspace=a.workspace))
+                          word=a.word, workspace=a.workspace,
+                          inventory=_load(a.inventory, "the clause inventory") if a.inventory else None,
+                          extract=_load(a.extract, "the corpus extract") if a.extract else None,
+                          coverage_out=a.coverage_out, skeleton_out=a.inventory_skeleton,
+                          inputs=[a.core, a.index, a.word, a.workspace, a.inventory, a.extract]))

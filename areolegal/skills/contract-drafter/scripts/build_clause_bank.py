@@ -23,7 +23,12 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_template_registry import docx_text, docx_paragraphs  # noqa: E402
+from build_template_registry import docx_text, docx_paragraphs, guard_out  # noqa: E402
+
+try:                                   # פלט עברי במסוף של Windows
+    sys.stdout.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError):   # pragma: no cover
+    pass
 
 
 # כותרת סעיף. הזיהוי נעשה על פסקאות ולא על טקסט משוטח: בטקסט משוטח אי אפשר
@@ -33,20 +38,18 @@ HEADING_INLINE = re.compile(
 HEADING_SPLIT = re.compile(
     r"^(?:סעיף\s+)?(\d+(?:\.\d+)*)\s*[:\.\)]\s+(.{2,70}?)[\.:]\s+(.{40,})$", re.S)
 
-# רשימת הנושאים מכסה גם משפחות שאינן הסכם שירותים: הפצה, זכיינות, חכירה,
-# ליסינג, שכירות מסחרית ורישוי. כותרת אמיתית בנייר ישראלי כמעט תמיד תיפול לאחד מאלה.
+# רשימת נושאי סעיף כלליים בלבד, בלי נושאים או מילים של סוג הסכם מסוים. כותרת שאינה מזוהה נשארת "אחר", ונושא
+# מיוחד לסוג מסוים נלמד מהנייר של הלקוח עצמו.
 TOPICS = [
     ("הגדרות ופרשנות", ["הגדרות", "פרשנות", "definitions", "interpretation"]),
     ("מהות ההתקשרות והיקפה", ["מהות ההתקשרות", "היקף ההתקשרות", "היקף השירותים", "מתן השירותים",
-                              "מתן הרישיון", "היקף הרישיון", "מהות ההסכם", "המושכר",
-                              "מסירת הציוד", "מסירת המושכר", "scope of", "the services", "appointment", "grant of rights", "engagement", "scope", "the services"]),
+                              "מהות ההסכם", "scope of", "the services", "appointment", "grant of rights", "engagement", "scope", "the services"]),
     ("תקופה, חידוש וסיום", ["תקופת", "סיום", "פקיעה", "השבה", "ביטול ההסכם", "חידוש",
                             "הודעה מוקדמת", "השעיה", "term and termination", "termination",
                             "renewal", "expiration", "term", "effect of termination", "suspension"]),
     ("אופציות והארכה", ["אופציה", "אופציית", "מימוש האופציה", "הארכת ההתקשרות", "זכות סירוב",
                         "option to", "right of first refusal"]),
-    ("תמורה ותנאי תשלום", ["תמורה", "תשלום", "תמלוגים", "דמי שכירות", "דמי חכירה", "דמי ליסינג",
-                           "דמי מנוי", "דמי ניהול", "פרמיה", "מחירון", "הצמדה", "ריבית פיגורים",
+    ("תמורה ותנאי תשלום", ["תמורה", "תשלום", "תמלוגים", "דמי שימוש", "מחירון", "הצמדה", "ריבית פיגורים",
                            "התחשבנות", "payment", "fees", "consideration", "royalt", "price", "pricing", "invoic", "discount", "taxes"]),
     ("סודיות", ["סודיות", "מידע סודי", "אי גילוי", "היקף החשיפה", "השבת המידע", "השמדת",
                 "גילוי הנדרש", "גילוי על פי דין", "confidential"]),
@@ -54,31 +57,23 @@ TOPICS = [
                            "שימוש מותר", "בעלות בנתונים", "intellectual property", "trademark", "proprietary rights", "ownership", "branding", "marks"]),
     ("אחריות והגבלתה", ["הגבלת אחריות", "גבולות אחריות", "אחריות והגבלתה", "אחריות הצדדים",
                         "תקרת אחריות", "נזק תוצאתי", "limitation of liability", "disclaimer", "limited liability", "limitation on liability", "no consequential", "disclaimer of warranties"]),
-    ("אחריות למוצר וריקול", ["חבות מוצר", "אחריות למוצר", "ריקול", "recall", "product liability"]),
     ("שיפוי", ["שיפוי", "לשפות", "indemnif"]),
     ("ביטוח", ["ביטוח", "פוליסה", "אישור קיום ביטוחים", "חובת גילוי", "מקרה ביטוח", "insurance"]),
     ("הגנת הפרטיות ואבטחת מידע", ["הגנת הפרטיות", "מידע אישי", "אבטחת מידע", "עיבוד מידע",
-                                  "gdpr", "data protection", "personal data", "privacy", "security", "dpa"]),
+                                  "data protection", "personal data", "privacy", "security"]),
     ("ציות, אנטי שוחד וסנקציות", ["ציות", "אנטי שוחד", "שחיתות", "סנקציות", "אמברגו",
                                   "anti-bribery", "compliance", "sanctions", "anti-corruption", "export law", "export control", "trade compliance"]),
     ("רמת שירות, תמיכה ותחזוקה", ["רמת שירות", "sla", "זמני תגובה", "תמיכה", "זמינות",
                                   "תחזוקה", "תקלות", "תיקונים", "service level", "maintenance", "support", "maintenance and support", "availability"]),
     ("אי תחרות ואי שידול", ["אי תחרות", "אי-תחרות", "אי שידול", "אי-שידול", "הגבלת עיסוק",
                             "non-compete", "non-solicit", "no solicitation"]),
-    ("בלעדיות וטריטוריה", ["בלעדיות", "הטריטוריה", "טריטוריאלית", "אזור", "exclusivity",
-                           "territory", "exclusive", "non-exclusive", "territory"]),
-    ("יעדים, הזמנות, אספקה ומלאי", ["יעדי רכש", "יעדי מכירה", "הזמנות", "אספקה", "מלאי",
-                                    "סחורה פגומה", "סיכון ובעלות", "המוצרים", "ספקים מאושרים",
-                                    "purchase order", "supply", "inventory", "order process", "orders", "delivery", "forecast", "quota"]),
-    ("שיווק, קידום וסטנדרטים", ["שיווק", "קידום מכירות", "פרסום", "קרן שיווק", "ספר התפעול",
-                                "סטנדרטים", "בקרת איכות", "הדרכה", "marketing", "standards", "promotion", "training", "demand generation"]),
     ("דיווח, ספרים וביקורת", ["דיווח", "ספרים", "ביקורת", "audit", "reporting", "books and records", "reports", "records", "audit rights"]),
     ("התחייבויות הצדדים", ["התחייבויות", "מצגים", "מצג", "יחסי הצדדים", "היעדר מצג",
-                           "representations", "warranties", "undertakings", "obligations", "covenants", "reseller obligations"]),
+                           "representations", "warranties", "undertakings", "obligations", "covenants"]),
     ("ערבויות וביטחונות", ["ערבות", "ביטחונות", "פיקדון", "שטר חוב", "guarantee", "security deposit"]),
     ("קיזוז ועיכבון", ["קיזוז", "עיכבון", "set-off", "lien"]),
-    ("המחאה, הסבה ושכירות משנה", ["המחאת", "הסבת", "העברת זכויות", "איסור העברה", "שכירות משנה",
-                                  "העברת הזכויות", "assignment", "sublease"]),
+    ("המחאה והסבה", ["המחאת", "הסבת", "העברת זכויות", "איסור העברה",
+                     "העברת הזכויות", "assignment"]),
     ("שינויים והתאמות", ["שינויים", "התאמות", "שינוי ההסכם", "amendment", "change order"]),
     ("כוח עליון", ["כוח עליון", "force majeure"]),
     ("הפרה, סעדים ותרופות", ["הפרה", "סעדים", "תרופות", "פיצוי מוסכם", "breach", "remedies"]),
@@ -89,6 +84,13 @@ TOPICS = [
     ("שונות", ["שונות", "שלמות ההסכם", "ויתור", "נפרדות", "כותרות", "miscellaneous",
                "entire agreement", "severability", "waiver"]),
 ]
+
+
+# נושאים שיש בכל הסכם, מכל סוג ומכל צד. רק בהם נושא בלי נוסח בית הוא "חסר" (topics_missing). שאר הנושאים
+# (למשל רמת שירות) שייכים לסוגים מסוימים, ולכן נושא כזה שלא נמצא נרשם
+# ב-topics_not_found: הוא רלוונטי רק כשהפלייבוק או ההסכם עצמו מעלים אותו
+CORE_TOPICS = ("הגדרות ופרשנות", "תקופה, חידוש וסיום", "הפרה, סעדים ותרופות", "המחאה והסבה",
+               "הודעות", "דין, סמכות שיפוט ויישוב מחלוקות", "שונות")
 
 
 def norm(s):
@@ -184,6 +186,7 @@ def main():
     ap.add_argument("--max-chars", type=int, default=2500,
                     help="אורך מרבי לנוסח שנשמר, כדי שהבנק לא יתנפח")
     args = ap.parse_args()
+    guard_out(args.out, [args.registry])
 
     reg = json.load(io.open(args.registry, encoding="utf-8"))
     docs = [d for d in reg.get("documents", []) if d.get("approved_current")]
@@ -214,8 +217,8 @@ def main():
                 "source_folder": d.get("folder"),
                 "family": d.get("family"),
                 "company_role_candidates": d.get("company_role_candidates", []),
-                # מאיזה צד נכתב הנוסח. סעיף שנכתב מצד הספק אינו לשון הבית של
-                # מפיץ, ושימוש בו כברירת מחדל מנסח את ההסכם נגד האינטרס שלנו.
+                # מאיזה צד נכתב הנוסח. סעיף שנכתב מצד אחר אינו לשון הבית של
+                # הצד שלנו, ושימוש בו כברירת מחדל מנסח את ההסכם נגד האינטרס שלנו.
                 "side": ("טעון בירור: המסמך הוא redline ולא נקבע מי סימן את השינויים"
                          if d.get("approved_current_basis") == "redline_base"
                          else "נייר הלקוח"),
@@ -234,21 +237,26 @@ def main():
         by_topic[k].sort(key=lambda x: -len(x["text"]))
 
     out = {
-        "generated_at": date.today().strftime("%d.%m.%Y"),
+        "generated_at": date.today().isoformat(),   # ISO ב-JSON (כלל 3.6)
         "source": "נוסחים שנלקחו כלשונם מהתבניות המאושרות של הלקוח",
         "templates_used": [d["file"] for d in docs],
         "topics_found": sorted(by_topic.keys()),
-        "topics_missing": [t for t, _ in TOPICS if t not in by_topic],
+        "topics_missing": [t for t in CORE_TOPICS if t not in by_topic],
+        "topics_missing_by_family": {
+            fam: [t for t in CORE_TOPICS if t not in {e["topic"] for e in entries if e["family"] == fam}]
+            for fam in sorted({d.get("family") or "" for d in docs})},
+        "topics_not_found": [t for t, _ in TOPICS if t not in by_topic and t not in CORE_TOPICS],
+        "topics_not_found_note": ("נושאים שאינם בכל סוג הסכם ולא נמצא להם נוסח בית. אינם חסר: רלוונטיים רק "
+                                  "כשהפלייבוק או ההסכם עצמו מעלים אותם."),
         "clauses": entries,
         "unmatched_clauses": [{"heading": u["heading"], "clause_number": u["clause_number"],
                                "source_file": u["source_file"]} for u in unmatched],
         "precedence": ("הפלייבוק גובר על בנק הסעיפים. הבנק גובר על ניסוח חדש. "
-                       "נוסח שנושאו נקבע לפי גוף הסעיף בלבד טעון אישור לפני שימוש."),
+                       "נוסח שנושאו נקבע לפי גוף הסעיף בלבד מסומן כך בדף הליווי, עם שם ההסכם והסעיף שממנו נלקח."),
         "side_warning": ("סעיף שסומן usable_as_house_wording=false נלקח ממסמך שלא נקבע "
                          "מאיזה צד הוא מנוסח. אין להשתמש בו כלשון בית ואין להכניסו "
                          "לטיוטה לפני שהמשתמש קבע מי סימן את השינויים במסמך המקור. "
-                         "הכנסת נוסח שנכתב מצד הספק להסכם שבו הלקוח הוא המפיץ מנסחת "
-                         "את ההסכם נגד האינטרס של הלקוח."),
+                         "הכנסת נוסח שנכתב מהצד האחר מנסחת את ההסכם נגד האינטרס של הלקוח."),
         "unresolved_side": sorted({e["source_file"] for e in entries
                                    if not e["usable_as_house_wording"]}),
     }
@@ -263,7 +271,7 @@ def main():
     for k in sorted(by_topic, key=lambda x: -len(by_topic[x])):
         print("  %-30s %d נוסחים" % (k, len(by_topic[k])))
     if out["topics_missing"]:
-        print("נושאים שאין להם נוסח בית: " + ", ".join(out["topics_missing"]))
+        print("נושאים כלליים שאין להם נוסח בית: " + ", ".join(out["topics_missing"]))
     if unmatched:
         print("%d סעיפים לא שויכו לנושא ונשמרו לעיון" % len(unmatched))
 

@@ -2,7 +2,27 @@
    הצגת כל המסכים, הטמעת ספריית הגרפים, גישה למסמכי המקור, וניטרול ההורדות בעמוד משותף.
    הרצה: JSDOM_PATH=<path> node scripts/qa_artifact.js <local.html> <artifact.html> */
 const fs=require('fs');
-const {JSDOM,VirtualConsole}=require(process.env.JSDOM_PATH||'/tmp/node_modules/jsdom');
+/* jsdom: JSDOM_PATH (תיקיית jsdom או הקובץ שלה), ואחריו החיפוש הרגיל של node (node_modules מקומי ו-NODE_PATH),
+   node_modules בתיקיית העבודה, ההתקנה הגלובלית של npm והתיקייה הזמנית של המחשב. בלי נתיב Unix קשיח, כדי שהבדיקה
+   תרוץ גם ב-Windows. כשלא נמצא: הודעה ברורה ויציאה 1, ולא TypeError */
+function loadJsdom(){
+  const path=require('path'), os=require('os'), tried=[];
+  const attempt=c=>{ if(!c) return null; tried.push(c);
+    try{ return require(c); }catch(e){}
+    try{ return require(require.resolve(c,{paths:[process.cwd()]})); }catch(e){}
+    return null; };
+  let m=attempt(process.env.JSDOM_PATH)||attempt('jsdom')
+    ||attempt(process.env.APPDATA&&path.join(process.env.APPDATA,'npm','node_modules','jsdom'))
+    ||attempt(path.join(os.tmpdir(),'node_modules','jsdom'))||attempt('/tmp/node_modules/jsdom');
+  if(!m){ try{ m=attempt(path.join(require('child_process').execSync('npm root -g',
+    {stdio:['ignore','pipe','ignore']}).toString().trim(),'jsdom')); }catch(e){} }
+  if(m) return m;
+  console.error('jsdom לא נמצא, ולכן הבדיקה לא רצה. התקינו אותו (npm install jsdom) או הגדירו JSDOM_PATH לתיקיית jsdom. '
+    +'נבדקו: '+tried.join(' | ')+'\njsdom was not found, so the check did not run. Install it (npm install jsdom) '
+    +'or set JSDOM_PATH to the jsdom folder.');
+  process.exit(1);
+}
+const {JSDOM,VirtualConsole}=loadJsdom();
 const VIEWS=['overview','rules','compare','findings','additions','segpolicy','precedents','sources','decisions','export'];
 let fails=0;
 const ok=(c,m)=>{ console.log(c?'PASS':'FAIL',m); if(!c) fails++; };
@@ -57,14 +77,11 @@ function run(file, label, published){
   const gone=['dl','agentPack','showOut','officeBlob','decide','approveAll']
     .filter(n=>typeof w[n]==='function');
   ok(gone.length===0,'  אין בדף פעולות אישור וייצוא'+(gone.length?': '+gone.join(', '):''));
+  /* הערות נכתבות רק באשף: בדף אין תיבת הערה, אין מצב עריכה ואין כפתור הורדת הערות */
   w.go('decisions');
-  const rid=(w.rulesOf()[0]||{}).id;
-  w.setNote(rid,'הערה לבדיקה');
-  w.render();
-  const before=downloads.length;
-  try{ w.dlComments(); }catch(e){}
-  if(published){ ok(downloads.length===before,'  בעמוד משותף לא נפתחה הורדה'); }
-  else { ok(downloads.length>before,'  בקובץ המקומי הורדת ההערות פעלה'); }
+  const html=w.document.documentElement.outerHTML;
+  ok(!html.includes('class="noteta"') && !w.document.getElementById('editChip') && !html.includes('onclick="dlComments()"'),
+     '  אין בדף תיבת הערה, מצב עריכה או הורדת הערות');
   return fails;
 }
 

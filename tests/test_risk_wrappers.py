@@ -6,7 +6,7 @@
 * **הבונה** (`build_risk_report.py`): כותב רק לתיקיית העסקה, בשם הקבוע; אינו
   דורס דוח של עסקה אחרת; מסרב לעותק תבנית בתוך תיקיית הלקוח; ודוח חקר הישות
   נבנה מהתבנית שלו.
-* **התבנית שהשירות מגיש** עוברת את הבדיקה הסטטית (אין טעינה מהרשת), ובדפדפן
+* **התבנית שנארזת בתוסף** (`skills/contract-risk-assessor/assets`, ברירת המחדל של `--template`) עוברת את הבדיקה הסטטית (אין טעינה מהרשת), ובדפדפן
   אמיתי, כשיש Chrome או Edge: גוף לא ריק, בלי שגיאות JavaScript, בלי בקשות
   חיצוניות, ועד שמונה עמודים.
 """
@@ -24,9 +24,10 @@ ROOT = PLUGIN.parent
 LIB = PLUGIN / "areolegal" / "lib"
 S = PLUGIN / "areolegal" / "skills" / "contract-risk-assessor" / "scripts"
 FX = LIB / "tests" / "fixtures" / "risk"
-CONTENT = ROOT / "server" / "content" / "contract-risk-assessor"
-RISK_TPL = CONTENT / "risk-report-template.html"
-ENTITY_TPL = CONTENT / "entity-report-template.html"
+# התבניות נארזות בתוסף ואינן נשלפות מהשרת בזמן ריצה
+ASSETS = PLUGIN / "areolegal" / "skills" / "contract-risk-assessor" / "assets"
+RISK_TPL = ASSETS / "risk-report-template.html"
+ENTITY_TPL = ASSETS / "entity-report-template.html"
 
 sys.path.insert(0, str(LIB))
 
@@ -115,6 +116,36 @@ def test_the_entity_report_builds_from_its_own_template(tmp_path):
     assert (d / "Areo Workspace - חקר ישות.html").exists()
 
 
+def test_without_template_the_bundled_copy_is_used_by_kind(tmp_path):
+    """בלי --template הבונה קורא את העותק שבתוסף לפי --kind (אין הורדה מהשרת בזמן ריצה)."""
+    assert RISK_TPL.is_file() and ENTITY_TPL.is_file()
+    d, tpl = _deal(tmp_path)
+    r = _run("build_risk_report.py", "--data", d / "risk-register.json", "--no-page-check")
+    assert r.returncode == 0, r.stdout + r.stderr
+    html = (d / "Areo Workspace - סיכונים.html").read_text(encoding="utf-8")
+    assert "<title>Areo Workspace | סיכונים</title>" in html and "__RISK_DATA__" not in html
+    # זהה לבנייה מהעותק שבתוסף כשהוא מועבר במפורש
+    other = tmp_path / "explicit" / d.name
+    other.mkdir(parents=True)
+    (other / "risk-register.json").write_bytes((d / "risk-register.json").read_bytes())
+    r = _run("build_risk_report.py", "--data", other / "risk-register.json", "--template", RISK_TPL,
+             "--no-page-check")
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert (other / "Areo Workspace - סיכונים.html").read_text(encoding="utf-8") == html
+    (d / "entity-report.json").write_bytes((FX / "c2_entity_report.json").read_bytes())
+    r = _run("build_risk_report.py", "--kind", "entity", "--data", d / "entity-report.json", "--no-page-check")
+    assert r.returncode == 0, r.stdout + r.stderr
+    html = (d / "Areo Workspace - חקר ישות.html").read_text(encoding="utf-8")
+    assert "חקר ישות" in html and "__ENTITY_DATA__" not in html
+
+
+def test_no_script_tells_the_model_to_download_a_template():
+    for f in (S / "build_risk_report.py", PLUGIN / "areolegal" / "skills" / "negotiation-strategist" / "scripts"
+              / "build_prep_center.py"):
+        t = f.read_text(encoding="utf-8")
+        assert "save_resource" not in t and "resource_link" not in t, f.name
+
+
 @pytest.mark.parametrize("tpl", [RISK_TPL, ENTITY_TPL], ids=["risk", "entity"])
 def test_the_served_templates_load_nothing_from_the_network(tpl):
     from risk.render_check import static_checks
@@ -141,29 +172,45 @@ def _fetch(tmp_path, *args):
     return d, _run("fetch_source.py", "--deal", d, "--source-id", "SRC-01", *args)
 
 
+# המעריך יוצא לרשת רק לבדיקת רקע על הצד שכנגד, לבקשת הלקוח (r6-entity-research.md, ו-research.mode
+# "not_permitted" בהרצה רגילה: risk-register-schema.md). כל הבדיקות כאן נעצרות לפני בקשה כלשהי.
+OFFICIAL = "https://www.gov.il/he/departments/israeli_corporations_authority"
+
+
+def test_a_regulatory_lookup_never_goes_to_the_network(tmp_path):
+    for purpose in ("חוק", "רישוי"):
+        d, r = _fetch(tmp_path, "--url", OFFICIAL, "--purpose", purpose, "--question", "Q1")
+        assert r.returncode == 3
+        assert "רק לבדיקת רקע על הצד שכנגד" in json.loads(r.stdout)["reason"]
+        assert not (d / "sources").exists()
+
+
 def test_a_domain_outside_the_approved_list_is_refused_before_any_request(tmp_path):
-    d, r = _fetch(tmp_path, "--url", "https://www.calcalist.co.il/x", "--purpose", "חוק", "--question", "Q1")
+    d, r = _fetch(tmp_path, "--url", "https://www.linkedin.com/company/acme", "--purpose", "entity",
+                  "--question", "Q1", "--counterparty", "Acme")
     assert r.returncode == 3
-    assert "אינו ברשימה המורשית" in json.loads(r.stdout)["reason"]
+    assert "לא מקור רשמי ברשימה" in json.loads(r.stdout)["reason"]
     assert not (d / "sources").exists()
 
 
 def test_a_client_detail_in_the_query_stops_the_request(tmp_path):
     prof = tmp_path / "p.json"
     prof.write_text(json.dumps({"organization_name": "חברת בדיקה"}, ensure_ascii=False), encoding="utf-8")
-    d, r = _fetch(tmp_path, "--url", "https://www.gov.il/he/search?q=חברת בדיקה", "--purpose", "רישוי",
-                  "--question", "Q1", "--profile", prof)
+    d, r = _fetch(tmp_path, "--url", OFFICIAL + "?q=חברת בדיקה", "--purpose", "entity",
+                  "--question", "Q1", "--profile", prof, "--counterparty", "Acme")
     assert r.returncode == 3 and "פרט של הלקוח" in json.loads(r.stdout)["reason"]
+    assert not (d / "sources").exists()
 
 
-def test_the_counterparty_name_is_refused_in_a_regulatory_query_but_not_in_entity_research(tmp_path):
-    d, r = _fetch(tmp_path, "--url", "https://www.gov.il/he/search?q=Acme", "--purpose", "רישוי",
-                  "--question", "Q1", "--counterparty", "Acme")
-    assert r.returncode == 3 and "פרט של הלקוח" in json.loads(r.stdout)["reason"]
-    d, r = _fetch(tmp_path, "--url", "https://www.calcalist.co.il/?q=Acme", "--purpose", "רישום",
-                  "--question", "Q2", "--counterparty", "Acme", "--kind", "entity")
-    # בחקר ישות השם אינו עוצר; הדומיין עדיין כן
-    assert "אינו ברשימה המורשית" in json.loads(r.stdout)["reason"]
+def test_the_counterparty_name_is_not_a_client_detail_in_entity_research(tmp_path):
+    """בבדיקת רקע השאילתה בנויה משם הצד שכנגד: השם שלו אינו עוצר, ושם הלקוח באותה שאילתה כן."""
+    prof = tmp_path / "p.json"
+    prof.write_text(json.dumps({"organization_name": "חברת בדיקה"}, ensure_ascii=False), encoding="utf-8")
+    d, r = _fetch(tmp_path, "--url", OFFICIAL + "?q=Acme+חברת+בדיקה", "--purpose", "entity",
+                  "--question", "Q2", "--counterparty", "Acme", "--profile", prof)
+    reason = json.loads(r.stdout)["reason"]
+    assert r.returncode == 3 and "פרט של הלקוח" in reason and "חברת בדיקה" in reason and "Acme" not in reason
+    assert not (d / "sources").exists()
 
 
 def test_a_single_document_is_extracted_and_its_quotes_are_checked_against_it(tmp_path):

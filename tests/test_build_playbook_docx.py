@@ -105,8 +105,10 @@ def test_brief_chapter_has_a_row_and_a_link_for_every_rule(tmp_path, profile):
     docx = _build(tmp_path, profile, model)
     text = _text(docx)
     after = text.split("העמדות בקצרה", 1)[1]
-    for r in rules:
-        assert r["rule_id"] in after
+    # שורה לכל כלל: מספר הנושא ושמו (word-export-spec.md:107). קוד הכלל אינו מוצג ללקוח (areo-voice.md:16,43)
+    for n, r in enumerate(rules, 1):
+        assert "%d. %s" % (n, r["topic_name"]) in after
+        assert r["rule_id"] not in after.split("העמדות בקצרה")[0][:2000]
     with zipfile.ZipFile(docx) as z:
         xml = z.read("word/document.xml").decode("utf-8")
     anchors = set(re.findall(r'w:anchor="([^"]+)"', xml))
@@ -117,7 +119,12 @@ def test_brief_chapter_has_a_row_and_a_link_for_every_rule(tmp_path, profile):
 
 def test_label_is_on_the_cover_and_in_the_header_in_a_status_control(tmp_path, profile):
     model = FIXTURES / "mutual_nda_model_good.json"
-    label = json.loads(model.read_text(encoding="utf-8"))["status_label"]
+    # התווית נגזרת בקוד ואינה נלקחת מהשדה שבמודל (b6-approval.md:38, playbook/status.py base_label): ה-fixture
+    # נושא את הניסוח הקודם, והמסמך את הניסוח בקול של Areo (localization-he.md:79)
+    from playbook import status as S
+    data = json.loads(model.read_text(encoding="utf-8"))
+    label = S.base_label(data)
+    assert label != data["status_label"] and label.startswith("טיוטת מדיניות")
     docx = _build(tmp_path, profile, model)
     with zipfile.ZipFile(docx) as z:
         doc = z.read("word/document.xml").decode("utf-8")
@@ -125,6 +132,7 @@ def test_label_is_on_the_cover_and_in_the_header_in_a_status_control(tmp_path, p
                          if re.match(r"word/header\d*\.xml$", n))
     for xml in (doc, header):
         assert 'w:val="areo:status_label"' in xml and label in xml
+        assert data["status_label"] not in xml
     assert "Draft" not in _text(docx)
 
 

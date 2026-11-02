@@ -14,7 +14,11 @@
     python3 scripts/approval_sheet.py --model playbook-model.json \\
         --out-dir "Areo-נתונים/גיליונות" --company "<שם החברה>"
 
-המימוש ב-`areolegal/lib/playbook/approval_sheet.py` (קוד הייחוס של ענבל),
+שפת הגיליון היא שפת התוצר: `--lang he|en`, ובלעדיו `deliverable_language` מ-`--profile`, ואז
+`scope_summary.deliverable_language` מהמודל, וברירת המחדל עברית. גיליון באנגלית הוא LTR מלא, עם אותן
+עמודות, אותן תגיות ואותה קליטה; הנוסח המצוטט נשאר בשפת המקור.
+
+המימוש ב-`areolegal/lib/playbook/approval_sheet.py`,
 וכך גם שער הנוסח שעוצר הפקה שבה נוסח תא חסר או אינו עברית. הסקריפט הזה
 אינו מנסח, אינו מסדר ואינו מחליט דבר על הגיליון.
 """
@@ -22,10 +26,12 @@ import json
 import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # גם ב-python -I, שאינו מוסיף את תיקיית הסקריפט
 import areo_lib  # noqa: F401  מוסיף את areolegal/lib לנתיב הייבוא
 
 from common.cli import OutputRefused, guard_out, no_bytecode, parser  # noqa: E402
 from playbook.approval_sheet import build_sheet  # noqa: E402
+from playbook.status import deliverable_lang  # noqa: E402
 
 MANIFEST = "approval-sheet-manifest.json"
 
@@ -37,8 +43,9 @@ def main(argv=None):
     ap.add_argument("--model", required=True, help="playbook-model.json")
     ap.add_argument("--out-dir", required=True, help="התיקייה שבה ייכתבו הגיליון והמניפסט")
     ap.add_argument("--company", default="", help="שם החברה, לשער הגיליון")
-    ap.add_argument("--lang", default="he", choices=("he",),
-                    help="שפת הגיליון. הוא נחתם בישראל, ולכן עברית בלבד")
+    ap.add_argument("--lang", default=None, choices=("he", "en"),
+                    help="שפת הגיליון. בלעדיו: deliverable_language מהפרופיל או מהמודל, וברירת המחדל עברית")
+    ap.add_argument("--profile", help="פרופיל-לקוח.json: deliverable_language, לשפת הגיליון")
     ap.add_argument("--token-uid", help="מזהה ההפקה. לבדיקות בלבד; בלעדיו הוא מוגרל")
     ap.add_argument("--no-wording-gate", action="store_true",
                     help="מדלג על שער הנוסח. לאבחון בלבד, ולא להפקה שנשלחת לחתימה")
@@ -49,6 +56,11 @@ def main(argv=None):
         return 2
     with open(a.model, encoding="utf-8") as fh:
         model = json.load(fh)
+    profile = None
+    if a.profile and os.path.exists(a.profile):
+        with open(a.profile, encoding="utf-8") as fh:
+            profile = json.load(fh)
+    lang = deliverable_lang(model, profile, a.lang)
 
     os.makedirs(a.out_dir, exist_ok=True)
     manifest_path = a.out or os.path.join(a.out_dir, MANIFEST)
@@ -59,7 +71,7 @@ def main(argv=None):
         return 1
 
     try:
-        path, manifest = build_sheet(model, a.out_dir, company=a.company, lang=a.lang,
+        path, manifest = build_sheet(model, a.out_dir, company=a.company, lang=lang,
                                      token_uid=a.token_uid,
                                      check_wording=not a.no_wording_gate)
     except Exception as exc:
@@ -74,6 +86,7 @@ def main(argv=None):
     print("הגיליון : %s" % path)
     print("המניפסט : %s" % manifest_path)
     print("ההפקה   : %s" % manifest["token"])
+    print("השפה    : %s" % lang)
     print("שורות   : %d   תאים: %d   שאלות מכריעות: %d"
           % (len(manifest.get("rows") or {}), len(manifest.get("cells") or {}),
              len(manifest.get("questions") or {})))

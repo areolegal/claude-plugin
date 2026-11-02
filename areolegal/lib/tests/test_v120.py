@@ -26,7 +26,7 @@ ROOT = H.ROOT
 S2 = os.path.join(H.FIX, 'services2_counterparty_draft.docx')
 SIGNING = {'entity_details': {'company_number': {'status': 'signing_blank', 'answer': 'נשלים לפני החתימה'}}}
 ENTRY_POINTS = ('risk/extract_corpus.py', 'risk/validate_register.py', 'risk/render_check.py', 'risk/entity_store.py',
-                'risk/logo.py', 'risk/pre_send.py')
+                'risk/logo.py')   # risk/pre_send.py נמחק עם הלולאה שלפני המשלוח (1.23)
 
 
 # ------------------------------------------------------------------------- 1. נקודות כניסה
@@ -80,6 +80,7 @@ def test_resolve_accepts_path_or_core_path_and_role_synonyms(tmp_path):
     fam = data / 'playbooks' / 'fam_services'
     fam.mkdir(parents=True)
     core = dict(fx['indexed_valid_core'], company_role_code='customer')
+    # 1.3.0: התפקיד הוא טקסט חופשי, בלי מילון תפקידים (resolve_playbook.py, התיעוד): הבקשה בשם התפקיד שבגרעין
     (fam / 'playbook-core.json').write_text(json.dumps(core, ensure_ascii=False), encoding='utf-8')
     (fam / 'playbook-model.json').write_text(json.dumps(fx['indexed_valid_model'], ensure_ascii=False),
                                              encoding='utf-8')
@@ -87,9 +88,12 @@ def test_resolve_accepts_path_or_core_path_and_role_synonyms(tmp_path):
                   {'core_path': 'playbooks/fam_services/playbook-core.json'}):
         entry.update(family_code='services', company_role_code='customer', language='he', last_updated='2026-10-01')
         (data / 'playbooks' / 'index.json').write_text(json.dumps({'playbooks': [entry]}), encoding='utf-8')
-        res = rp.resolve(str(data), str(folder), 'services', 'service_recipient', 'he')
+        res = rp.resolve(str(data), str(folder), 'services', 'Customer', 'he')
         assert res['result'] == 'match' and 'fam_services' in res['chosen'], (entry, res['candidates'])
-    assert rp.same_role('buyer', 'licensee') and rp.same_role('Service Recipient', 'customer')
+    # כינוי של תפקיד אינו מתורגם: הוא חוזר "לבחירה" עם שאלה, ולא התאמה אוטומטית
+    res = rp.resolve(str(data), str(folder), 'services', 'service_recipient', 'he')
+    assert res['result'] == 'choose' and not res['chosen']
+    assert rp.same_role('Customer', 'customer') and not rp.same_role('buyer', 'licensee')
     assert not rp.same_role('customer', 'supplier') and rp.role_side('mutual') == 'mutual'
 
 
@@ -214,106 +218,15 @@ def test_strip_secrets_keeps_benign_st_and_uses_a_token_list():
 
 
 # ------------------------------------------------------------------------- הלולאה שלפני המשלוח (C1, C3)
-def _register(*ids, clause='S04'):
-    return {'pre_send_fixes': [{'id': i, 'kind': 'created_by_response', 'gap': 'פער %s' % i, 'where': 'סעיף 4',
-                                'risk_ids': ['RSK-001'], 'clause_ref': clause, 'status': 'open'} for i in ids]}
-
-
-def _deal(tmp_path, reg, state):
-    deal = tmp_path / 'deal'
-    deal.mkdir(exist_ok=True)
-    pre_send.save_register(str(deal), reg)
-    sp = deal / 'negotiation_state.json'
-    sp.write_text(json.dumps(state, ensure_ascii=False), encoding='utf-8')
-    return str(deal), str(sp)
-
-
-def _dec_with(fix_ids):
-    dec = copy.deepcopy(H.load_decisions('services2_decisions_clean.json'))
-    next(d for d in dec['decisions'] if d['id'] == 'S04')['reopened_from_fix'] = fix_ids
-    return dec
-
-
-def test_reopened_from_fix_accepts_a_list_for_two_fixes_on_one_clause():
-    dec = _dec_with(['PSF-1', 'PSF-2'])
-    assert dt.validate_decisions(dec) == []
-    reg = _register('PSF-1', 'PSF-2')
-    st = {'clauses': [{'clause_id': 'S04', 'reopened_from_fix': ['PSF-1', 'PSF-2']}]}
-    pre_send.resolve_fix(reg, 'PSF-1', 'S04', decisions=dec)
-    pre_send.resolve_fix(reg, 'PSF-2', 'S04', decisions=dec)
-    assert pre_send.check(reg, st, dec) == []
-    bad = _dec_with(['PSF-1', 7])
-    assert dt.validate_decisions(bad)
-
-
-def test_resolved_requires_an_actual_changed_decision():
-    dec = _dec_with('PSF-1')
-    reg = _register('PSF-1')
-    reg['pre_send_fixes'][0].update(status='resolved', resolution={'how': 'reopened', 'decision_id': 'S04'})
-    st = {'clauses': [{'clause_id': 'S04', 'reopened_from_fix': 'PSF-1'}]}
-    assert pre_send.check(reg, st, dec) == []
-    assert [f['code'] for f in pre_send.check(reg, st)] == ['RISK_FIX_RESOLUTION_UNVERIFIED']   # בלי קובץ ההכרעות
-    reg['pre_send_fixes'][0]['resolution']['decision_id'] = 'S99'
-    assert [f['code'] for f in pre_send.check(reg, st, dec)] == ['RISK_FIX_RESOLUTION_UNVERIFIED']
-    comment = copy.deepcopy(dec)
-    for d in comment['decisions']:
-        if d['id'] == 'S04':
-            d['op'] = 'comment_only'
-    reg['pre_send_fixes'][0]['resolution']['decision_id'] = 'S04'
-    assert [f['code'] for f in pre_send.check(reg, st, comment)] == ['RISK_FIX_RESOLUTION_UNVERIFIED']
-
-
-def test_concession_from_a_general_answer_is_rejected():
-    reg = _register('PSF-1')
-    st = {}
-    with pytest.raises(ValueError):
-        pre_send.concede_fix(reg, st, 'PSF-1', 'תשובה כללית', {'answer_kind': 'delegated'})
-    reg['pre_send_fixes'][0]['status'] = 'conceded'
-    st = {'deliberate_concessions': [{'clause_ref': 'S04', 'from_pre_send_fix': 'PSF-1',
-                                      'user_decision': {'answer_kind': 'delegated'}}]}
-    assert [f['code'] for f in pre_send.check(reg, st)] == ['RISK_FIX_CONCESSION_MISSING']
-
-
-def test_close_fixes_writes_register_and_state_atomically(tmp_path):
-    dec = _dec_with(['PSF-1'])
-    state = {'clauses': [{'clause_id': 'S04', 'reopened_from_fix': ['PSF-1']}], 'pre_send_fixes': []}
-    deal, sp = _deal(tmp_path, _register('PSF-1', 'PSF-2'), state)
-    reg, st = pre_send.close_fixes(deal, sp, [
-        {'fix_id': 'PSF-1', 'how': 'resolved', 'decision_id': 'S04'},
-        {'fix_id': 'PSF-2', 'how': 'conceded', 'reason': 'הסיכון מקובל',
-         'user_decision': {'answer_kind': 'explicit', 'answer': 'מקבלים'}}], decisions=dec)
-    on_disk = json.loads(open(sp, encoding='utf-8').read())
-    assert [r['status'] for r in on_disk['pre_send_fixes']] == ['resolved', 'conceded']
-    assert [f['status'] for f in pre_send.load_register(deal)['pre_send_fixes']] == ['resolved', 'conceded']
-    assert on_disk['deliberate_concessions'][0]['from_pre_send_fix'] == 'PSF-2'
-    assert pre_send.check(pre_send.load_register(deal), on_disk, dec) == []
-
-
-def test_close_fixes_rolls_back_on_invalid_closure_and_on_write_failure(tmp_path, monkeypatch):
-    dec = _dec_with(['PSF-1'])
-    state = {'clauses': [{'clause_id': 'S04', 'reopened_from_fix': ['PSF-1']}]}
-    deal, sp = _deal(tmp_path, _register('PSF-1', 'PSF-2'), state)
-    reg_path = pre_send.register_path(deal)
-    before = (open(reg_path, 'rb').read(), open(sp, 'rb').read())
-    with pytest.raises(ValueError):    # השורה השנייה: ויתור בתשובה כללית. גם הראשונה אינה נכתבת
-        pre_send.close_fixes(deal, sp, [{'fix_id': 'PSF-1', 'how': 'resolved', 'decision_id': 'S04'},
-                                        {'fix_id': 'PSF-2', 'how': 'conceded', 'reason': 'x',
-                                         'user_decision': {'answer_kind': 'delegated'}}], decisions=dec)
-    assert (open(reg_path, 'rb').read(), open(sp, 'rb').read()) == before
-    real = os.replace
-    calls = []
-
-    def flaky(a, b):
-        calls.append(b)
-        if len(calls) == 2:
-            raise OSError('disk full')
-        return real(a, b)
-    monkeypatch.setattr(os, 'replace', flaky)
-    with pytest.raises(OSError):
-        pre_send.close_fixes(deal, sp, [{'fix_id': 'PSF-1', 'how': 'resolved', 'decision_id': 'S04'}], decisions=dec)
-    monkeypatch.setattr(os, 'replace', real)
-    assert (open(reg_path, 'rb').read(), open(sp, 'rb').read()) == before
-    assert not [f for f in os.listdir(deal) if f.endswith('.tmp')]
+# הלולאה הוסרה (1.23): risk/pre_send.py נמחק, ו-orchestrator/pre_send.py אינו קורא את risk-register.json
+# (n6-gate-and-send.md:40; risk-register-schema.md:251). שדה pre_send_fixes בקובץ מצב ישן מתקבל ואינו נכתב.
+def test_the_pre_send_loop_is_gone_and_an_old_state_with_the_field_is_accepted():
+    assert not os.path.exists(os.path.join(ROOT, 'risk', 'pre_send.py'))
+    assert not any(hasattr(pre_send, f) for f in ('check', 'resolve_fix', 'concede_fix', 'close_fixes',
+                                                   'save_register', 'load_register'))
+    assert 'pre_send_fixes' in sb.TOP_KEYS
+    old = {'pre_send_fixes': [{'id': 'PSF-1', 'status': 'open', 'clause_ref': 'S04'}]}
+    assert not [e for e in sb.validate_state(old) if 'pre_send_fixes' in (e.get('message') or '')]
 
 
 def test_mark_superseded_renames_and_records_in_state(tmp_path):
@@ -338,7 +251,8 @@ def test_build_send_copy_records_path_and_sha256_in_state(tmp_path):
     deal.mkdir()
     send = str(deal / 'הסכם תחזוקה - סבב 1 - 14.10.2026.docx')
     st = copy.deepcopy(SIGNING)
-    g = qa_gate.build_send_copy(out, S2, send, H.PROFILE, st, res['expected_accept'], deal_dir=str(deal))
+    st['clauses'] = [{'clause_id': d['id']} for d in dec['decisions']]   # STATE_NO_CLAUSES (n6-gate-and-send.md:32)
+    g = qa_gate.build_send_copy(out, S2, send, H.PROFILE, st, res['expected_accept'], deal_dir=str(deal), decisions=dec)
     assert g['passed'] and os.path.exists(send)
     sc = st['quality_gate']['send_copy']
     assert sc['path'] == os.path.basename(send) and sc['sha256'] == pre_send._sha256(send)
