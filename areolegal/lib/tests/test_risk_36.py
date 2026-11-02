@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """בדיקות לכללים החדשים של הערות מעריך הסיכונים 3.6 (ממצאי סבב 3):
 PDF וגרשיים בקטעים מילוליים; ויתור מכוון לפי מזהה סעיף, וכיסוי של כל ויתור; החלטה 1 (אין שרשרת אישורים);
-חוזה הלולאה לפני משלוח (id, clause_ref, status); סיכון שהתגובה יצרה; חותמות זמן; user_agent ביומן; playbook_resolution; עזר הלוגו; תבנית חקר הישות כקובץ מוגש; בנייה
+הלולאה לפני משלוח שיצאה (מרשם ישן נקרא בלי שגיאה); סיכון שהתגובה יצרה; חותמות זמן; user_agent ביומן; playbook_resolution; עזר הלוגו; תבנית חקר הישות כקובץ מוגש; בנייה
 לתיקיית העסקה; חילוץ PDF ומפענחי הרשימות הרשמיות."""
 import copy
 import hashlib
@@ -23,7 +23,6 @@ from risk.entity_store import (OFAC_SDN_FIELDS, EntityStore, rows_from_csv_bytes
                                scan_rows)
 from risk.extract_corpus import extract  # noqa: E402
 from risk.logo import LogoError, logo_data_uri, uri_bytes  # noqa: E402
-from risk.pre_send import contract_errors, fixes_for_negotiation, open_fixes  # noqa: E402
 from risk.validate_register import validate, validate_entity_report  # noqa: E402
 
 FX = ROOT / 'tests' / 'fixtures' / 'risk'
@@ -204,59 +203,66 @@ def test_accepted_risk_without_approval_passes():
 
 
 # ---------------------------------------------------------------- pre-send loop contract
-def test_pre_send_contract_fields():
+# הלולאה לפני משלוח יצאה (risk-register-schema.md:251: "pre_send_fixes יצא, ובמרשם ישן השדה נקרא ומתעלמים ממנו";
+# orchestrator/pre_send.py: "מעריך הסיכונים אינו חוסם את המשלוח"). מה שנשאר: מרשם ישן נקרא בלי שגיאה, קובץ מצב ישן
+# עם השדה עובר, ושער המשלוח של הנושא ונותן אינו קורא את המרשם.
+def test_legacy_pre_send_rows_are_ignored_by_the_validator():
     reg = load('c2_register.json')
+    st = _state([{'topic': 'סודיות קיום המגעים', 'clause_ref': 'E-028', 'report_as': 'accepted_risk'}])
     reg['pre_send_fixes'][0].pop('id')
     reg['pre_send_fixes'][1]['status'] = 'pending'
     reg['pre_send_fixes'][2]['clause_ref'] = 'R-04'
-    E = errs(reg)
-    assert any('pre_send 0' in e and 'id חובה' in e for e in E)
-    assert any('pre_send 1' in e and 'status' in e for e in E)
-    assert any('pre_send 2' in e and 'מזהה כלל' in e for e in E)
+    reg['pre_send_fixes'][3]['clause_ref'] = 'NOT-IN-STATE'
+    E, W = validate(reg, state=st)
+    assert not any('pre_send' in x for x in E + W), E + W
+    bare = copy.deepcopy(reg)
+    bare.pop('pre_send_fixes')
+    assert validate(bare, state=st) == (E, W)
 
 
-def test_pre_send_clause_ref_must_be_in_state():
-    reg = load('c2_register.json')
-    st = _state([], clause_ids=('E-028', 'E-004', 'D07'))
-    E = errs(reg, state=st)
-    assert any('pre_send 3' in e and 'D12' in e and 'אינו בקובץ המצב' in e for e in E)
+def test_legacy_pre_send_fixes_in_the_state_file_is_accepted():
+    from orchestrator import state_builder as SB
+    st = SB.skeleton()
+    base = SB.validate_state(copy.deepcopy(st))
+    st['pre_send_fixes'] = [{'id': 'PSF-01', 'clause_ref': 'D07', 'status': 'open'}]
+    assert SB.validate_state(st) == base
 
 
-def test_fix_conceded_may_point_to_waived_clause():
-    reg = load('c2_register.json')
-    st = _state([{'topic': 'סודיות קיום המגעים', 'clause_ref': 'E-028', 'report_as': 'accepted_risk'}])
-    E = errs(reg, state=st)
-    assert any('pre_send 0' in e and 'ויתור מכוון' in e for e in E)
-    reg['pre_send_fixes'][0]['status'] = 'conceded'
-    assert not any('pre_send 0' in e and 'ויתור מכוון של הנושא ונותן' in e for e in errs(reg, state=st))
+def test_the_negotiation_send_gate_does_not_read_the_risk_register():
+    from orchestrator import pre_send as ops
+    src = Path(ops.__file__).read_text(encoding='utf-8')
+    assert 'risk-register' not in src.replace('אין כאן קריאה של risk-register.json', '')
+    assert not hasattr(ops, 'check') and not hasattr(ops, 'concede_fix')
 
 
-def test_fix_on_clause_with_concession_on_another_topic_is_allowed():
-    """רגרסיה (סבב 4): תיקון לפני משלוח בסעיף שיש בו ויתור מכוון על נושא אחר נדחה. עכשיו מותר כשהנושא שונה
-    (topic, או קוד הפער), ונדחה כשהנושא זהה."""
-    reg = load('c2_register.json')
-    st = _state([{'topic': 'תקופת ההודעה המוקדמת', 'clause_ref': 'E-028', 'report_as': 'accepted_risk',
-                  'gap_codes': ['GAP_TERMINATION_HANDOVER']}])
-    assert not any('pre_send 0' in e and 'ויתור מכוון של הנושא ונותן' in e for e in errs(reg, state=st))
-    reg['pre_send_fixes'][0]['topic'] = 'תקופת ההודעה המוקדמת'
-    assert any('pre_send 0' in e and 'ויתור מכוון של הנושא ונותן' in e for e in errs(reg, state=st))
-    reg['pre_send_fixes'][0].pop('topic')
-    reg['pre_send_fixes'][0]['gap_code'] = 'GAP_TERMINATION_HANDOVER'
-    assert any('pre_send 0' in e and 'ויתור מכוון של הנושא ונותן' in e for e in errs(reg, state=st))
-    reg['pre_send_fixes'][0]['gap_code'] = 'GAP_CONFIDENTIALITY_EXCEPTIONS'
-    assert not any('pre_send 0' in e and 'ויתור מכוון של הנושא ונותן' in e for e in errs(reg, state=st))
-
-
-def test_fix_clause_ref_may_be_a_new_clause_from_numbering_map():
-    """רגרסיה (סבב 4): clause_ref של סעיף חדש (מזהה N מ-numbering_map, שאינו בטיוטה שהתקבלה) תקין."""
+def test_anchor_on_a_new_clause_from_numbering_map_is_known():
+    """סעיף חדש בתגובה שלנו (מזהה N מ-numbering_map, שאינו בטיוטה שהתקבלה) הוא מזהה סעיף תקין לעוגן."""
     reg = load('c2_register.json')
     st = _state([])
-    st['numbering_map']['N01'] = 'סעיף 2 (חדש)'
-    reg['pre_send_fixes'][0]['clause_ref'] = 'N01'
-    E = errs(reg, state=st)
-    assert not any('pre_send 0' in e and ('אינו בקובץ המצב' in e or 'מזהה כלל' in e) for e in E), E
-    assert not [e for e in contract_errors(reg, st) if 'pre_send 0' in e]
+    st['numbering_map']['N01'] = 'סעיף 6'
+    reg['risks'][2]['anchors'][0]['state_clause_id'] = 'N01'
+    assert not any('N01' in e for e in errs(reg, state=st))
+    reg['risks'][2]['anchors'][0]['state_clause_id'] = 'N02'
+    assert any('N02' in e and 'אינו בקובץ המצב' in e for e in errs(reg, state=st))
 
+
+def test_created_by_response_only_in_text_we_propose():
+    """created_by_response: רק בנוסח שאנחנו מציעים (risk-register-schema.md, בלוק הסיכון)."""
+    reg = load('c2_register.json')
+    reg['risks'][3]['created_by_response'] = True
+    assert not any('created_by_response' in e for e in errs(reg))
+    reg['meta']['source_version']['text_status'] = 'counterparty_draft'
+    assert any('created_by_response' in e for e in errs(reg))
+
+
+def test_bottom_line_does_not_repeat_the_sign_label():
+    """השורה התחתונה אינה חוזרת על התווית שהתבנית בוחרת מ-sign_as_is (risk-register-schema.md, summary):
+    אזהרה, לא שגיאה. "לשלוח רק אחרי התיקונים" יצא עם הלולאה לפני משלוח."""
+    reg = load('c2_register.json')
+    reg['summary']['bottom_line'][0] = 'אפשר לחתום רק אחרי התיקונים שברשימה.'
+    E, W = validate(reg)
+    assert not any('bottom_line' in e for e in E)
+    assert any('bottom_line' in w and 'חוזר על התווית' in w for w in W)
 
 def test_playbook_resolution_read_from_root_and_from_playbook_status():
     """רגרסיה (סבב 4): state_builder כותב playbook_resolution בשורש קובץ המצב (קנוני); קובץ מצב ישן מחזיק אותו
@@ -267,36 +273,6 @@ def test_playbook_resolution_read_from_root_and_from_playbook_status():
                {'playbook_status': {'playbook_resolution': {'activation_ok': False}}}):
         st.update(numbering_map={}, clauses=[])
         assert any('activation_ok' in e for e in errs(reg, state=st)), st
-
-
-def test_risk_created_by_response_must_be_listed_regardless_of_severity():
-    reg = load('c1b_register.json')
-    low = next(r for r in reg['risks'] if r['severity_level'] in ('low', 'medium') and not r.get('created_by_response')
-               and not any(r['id'] in p['risk_ids'] for p in reg['pre_send_fixes']))
-    low['created_by_response'] = True
-    assert any(low['id'] in e and 'נוצר בתגובה שלנו' in e for e in errs(reg))
-
-
-def test_unsent_response_bottom_line_says_send_not_sign():
-    reg = load('c2_register.json')
-    reg['summary']['bottom_line'][0] = 'אפשר לחתום רק אחרי התיקונים שברשימה.'
-    assert any('אפשר לשלוח את התגובה' in e for e in errs(reg))
-
-
-def test_pre_send_module_for_negotiation(tmp_path):
-    reg = load('c2_register.json')
-    p = tmp_path / 'risk-register.json'
-    p.write_text(json.dumps(reg, ensure_ascii=False), encoding='utf-8')
-    out = fixes_for_negotiation(reg, str(p))
-    assert out['transaction_id'] == reg['meta']['transaction_id'] and len(out['fixes']) == 6
-    assert set(out['fixes'][0]) == {'id', 'clause_ref', 'status', 'kind', 'gap', 'where', 'risk_ids'}
-    assert len(out['register_sha256']) == 64
-    assert len(open_fixes(reg)) == 6
-    reg['pre_send_fixes'][0]['status'] = 'resolved'
-    reg['pre_send_fixes'][1]['status'] = 'conceded'
-    assert [p['id'] for p in open_fixes(reg)] == ['PSF-03', 'PSF-04', 'PSF-05', 'PSF-06']
-    assert contract_errors(reg) == []
-    assert contract_errors(reg, {'meta': {'transaction_id': 'deal_other_2026-10-14'}, 'numbering_map': {}})
 
 
 # ---------------------------------------------------------------- timestamps, user agent, playbook resolution
@@ -403,6 +379,14 @@ def test_entity_template_is_a_served_resource():
     assert '<title>Areo Workspace | חקר ישות</title>' in t
 
 
+def test_entity_template_in_lib_is_a_byte_identical_copy_of_the_skill_asset():
+    """lib/README.md: risk/resources/entity-report-template.html הוא עותק זהה של התבנית שהמעריך בונה ממנה
+    (skills/contract-risk-assessor/assets). עותק שנשאר מאחור הוא תבנית ישנה בלי ערכת הגופנים המוטמעת."""
+    asset = ROOT.parent / 'skills' / 'contract-risk-assessor' / 'assets' / 'entity-report-template.html'
+    res = ROOT / 'risk' / 'resources' / 'entity-report-template.html'
+    assert asset.read_bytes() == res.read_bytes()
+
+
 def test_render_check_entity_defaults():
     from risk import render_check as rc
     assert rc.KINDS['entity']['placeholder'] == '__ENTITY_DATA__'
@@ -455,28 +439,3 @@ def test_store_page_decodes_windows_1255(tmp_path):
     assert entry['stored'] == 'excerpt_window'
     assert 'מוסר תשלומים' in Path(path).read_text(encoding='utf-8')
     assert entry['saved_at'][-6] in '+-' and entry['saved_at'].count(':') == 3
-
-
-# ---------------------------------------------------------------- contract with the negotiation side (notes 4.9)
-def test_register_rows_are_read_by_the_negotiation_gate():
-    """המרשם של מעריך הסיכונים נקרא בשער של הנושא ונותן בלי המרה: כל שורה open חוסמת, ושורה שנסגרה בוויתור
-    מכוון מופיעה בהרצה הבאה כסיכון שהתקבל, לפי אותו clause_ref."""
-    ops = pytest.importorskip('orchestrator.pre_send')
-    reg = load('c2_register.json')
-    st = _state([])
-    codes = [f['code'] for f in ops.check(copy.deepcopy(reg), st)]
-    assert codes.count('RISK_FIX_OPEN') == 6 and 'RISK_FIX_NO_CLAUSE_REF' not in codes
-    # הנושא ונותן סוגר שורה אחת בוויתור מכוון (הכרעת המשתמש), ומעריך הסיכונים מציג אותה כסיכון שהתקבל
-    if hasattr(ops, 'concede_fix'):
-        ops.concede_fix(reg, st, 'PSF-03', 'הכרעת המשתמש', {'answer_kind': 'explicit'})
-        assert reg['pre_send_fixes'][2]['status'] in ('conceded', 'conceded')
-        risk = reg['pre_send_fixes'][2]['risk_ids'][0]
-        reg2 = load('c2_register.json')
-        reg2['pre_send_fixes'] = [p for p in reg2['pre_send_fixes'] if p['id'] != 'PSF-03']
-        r = next(x for x in reg2['risks'] if x['id'] == risk)
-        r.pop('created_by_response', None)
-        r['decision'] = {'status': 'accepted', 'basis': 'deliberate_waiver', 'state_clause_id': 'D07'}
-        E = errs(reg2, state=st)
-        assert not any('D07' in e for e in E), E
-
-

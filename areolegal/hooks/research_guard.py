@@ -54,9 +54,10 @@ def main():
     try:
         corpus = MR.load(session["corpus"], "החילוץ") if session.get("corpus") else None
         profile = MR.load(session["profile"], "הפרופיל") if session.get("profile") else None
-        # ה-hook אינו יודע אם החיפוש לשוק או לדין. שם חוק (מהרשימה של המושב, או בצורה של שם חוק) אינו
-        # פרט של הלקוח, ולכן בשאילתה כזו הבדיקה היא של שאילתה רגולטורית; fetch בודק שוב לפי המטרה
-        purpose = "legal" if session.get("statutes") or MR.STATUTE_RX.search(query) else "market"
+        # ה-hook אינו יודע אם החיפוש לשוק או לדין. המטרה legal נקבעת רק מרשימת --statute של המושב (שמות
+        # מהרשימה הסגורה של ההרצה), כמו ב-market_research.py; אין זיהוי של "חוק ..." בשאילתה, כי ביטוי כזה בלע
+        # בעבר את שם הלקוח שאחריו. שאר השאילתות נבדקות כשאילתת שוק, הבדיקה המחמירה יותר; fetch בודק שוב לפי המטרה
+        purpose = "legal" if session.get("statutes") else "market"
         problem = MR.check_query(query, purpose, session["family_dir"], corpus, profile,
                                  session.get("statutes") or (), via="hook")
     except BaseException as exc:  # noqa: BLE001  SystemExit מ-load כשקובץ חסר

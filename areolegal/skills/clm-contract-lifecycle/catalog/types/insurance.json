@@ -1,0 +1,3 @@
+{"type_code": "insurance", "label": "ביטוח", "aliases": ["פוליסה", "ביטוח", "המבטח", "policy"],
+ "type_fields": [{"key": "limit", "label": "גבול אחריות", "kind": "money"}, {"key": "deductible", "label": "השתתפות עצמית", "kind": "money"},
+  {"key": "extended_reporting", "label": "תקופת גילוי מאורכת", "kind": "text"}]}

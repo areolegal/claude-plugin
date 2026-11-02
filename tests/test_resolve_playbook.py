@@ -1,19 +1,14 @@
 # -*- coding: utf-8 -*-
 """בדיקות ל-`resolve_playbook.py`: מה שהעטיפה מוסיפה מעל הספרייה.
 
-הספרייה נבדקת אצל ענבל (`lib/tests/test_resolve_playbook.py`), ואין
-טעם לשכפל את זה. מה שנבדק כאן הוא שלושת הדברים שהעטיפה אחראית להם,
-ושני הראשונים נשברו בכתיבה:
+הספרייה נבדקת אצל ענבל (`lib/tests/test_resolve_playbook.py`). כאן:
 
-1. **תרגום השם לקוד.** `resolve()` משווה קודים (`services`,
-   `service_recipient`), והסקיל מקבל מהמשתמש שם בעברית ("הסכם
-   שירותים", "מקבל השירותים"). בלי התרגום כל הרצה חוזרת `no_match`,
-   וזו תשובה שקטה ושגויה: היא נראית כמו "אין פלייבוק".
-2. **משפחה שלא זוהתה היא שגיאה, לא `no_match`.** אם השם אינו ניתן
-   לתרגום, התשובה הנכונה היא לעצור ולהגיד זאת, ולא להמשיך עם קוד שאינו
-   קיים ולדווח שאין פלייבוק.
-3. **`source_label`** - המשפט שמוצג למשתמש - נכתב לקובץ, כי הרכיב
-   מצטט אותו ואינו מנסח אותו מחדש.
+1. **אין מילון.** מגרסה 1.3.0 (`lib/orchestrator/resolve_playbook.py`, התיעוד; `n1b-learning.md`:56) המשפחה
+   והתפקיד הם טקסט חופשי, ומושווים לשמות, לקודים ולכינויים של הפלייבוקים הקיימים בלבד. שם בעברית מוצא פלייבוק
+   שנרשם בשם הזה; הוא אינו מתורגם לקוד.
+2. **משפחה שאינה מוכרת אינה עצירה:** התוצאה `no_match` והמסלול "אין פלייבוק", עם קובץ תוצאה. תפקיד שאינו
+   מזוהה, או כינוי של תפקיד, חוזר "לבחירה" עם שאלה, ולעולם אינו התאמה אוטומטית.
+3. **`source_label`** - המשפט שמוצג למשתמש - נכתב לקובץ, כי הרכיב מצטט אותו ואינו מנסח אותו מחדש.
 """
 import json
 import subprocess
@@ -68,13 +63,28 @@ def _run(client, family, role, out=None, language="he"):
 
 
 def test_the_hebrew_family_and_role_names_find_the_playbook(client, tmp_path):
-    """השם שהמשתמש אומר, ולא הקוד שבמפתח."""
+    """השם שהמשתמש אומר מוצא פלייבוק שנרשם באותו שם (כך רכיב הפלייבוק כותב אותו), בלי מילון."""
+    data, _ = client
+    entry = {"core_path": "playbooks/fam_services/playbook-core.json", "family_code": "services",
+             "family_name": "הסכם שירותים", "company_role_code": "מקבל השירותים", "language": "he",
+             "last_updated": "2026-10-01"}
+    _json(data / "playbooks" / "index.json", {"playbooks": [entry]})
+    _json(data / "playbooks" / "fam_services" / "playbook-core.json",
+          dict(FX["indexed_valid_core"], family_name="הסכם שירותים", company_role_code="מקבל השירותים"))
     out = tmp_path / "res.json"
     r = _run(client, "הסכם שירותים", "מקבל השירותים", out=out)
     assert r.returncode == 0, r.stdout + r.stderr
     res = json.loads(out.read_text(encoding="utf-8"))
-    assert res["result"] != "no_match", r.stdout
+    assert res["result"] == "match", r.stdout
     assert res["chosen"].endswith("fam_services/playbook-core.json")
+
+
+def test_a_hebrew_name_is_not_translated_to_a_code(client, tmp_path):
+    """פלייבוק שנרשם רק בקודים אינו נמצא בשם עברי: אין מילון שמתרגם (1.3.0)."""
+    out = tmp_path / "res.json"
+    r = _run(client, "הסכם שירותים", "מקבל השירותים", out=out)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert json.loads(out.read_text(encoding="utf-8"))["result"] == "no_match"
 
 
 def test_the_codes_themselves_still_work(client, tmp_path):
@@ -86,31 +96,31 @@ def test_the_codes_themselves_still_work(client, tmp_path):
     assert res["chosen"].endswith("fam_services/playbook-core.json")
 
 
-def test_a_family_name_that_cannot_be_translated_stops_with_an_error(client, tmp_path):
-    """לא `no_match` בשקט: עצירה, והקודים הקיימים נאמרים למשתמש."""
+def test_an_unknown_family_is_no_match_and_not_a_stop(client, tmp_path):
+    """n1b-learning.md:56: "משפחה שאינה מוכרת אינה עצירה": אין התאמה, המסלול "אין פלייבוק", וקובץ תוצאה נכתב."""
     out = tmp_path / "res.json"
-    r = _run(client, "הסכם שאינו קיים בשום רשימה", "מקבל השירותים", out=out)
-    assert r.returncode == 2, r.stdout + r.stderr
-    assert "לא זוהתה משפחה" in r.stdout
-    assert not out.exists(), "לא נכתב קובץ תוצאה כשהקלט לא זוהה"
+    r = _run(client, "הסכם שאינו קיים בשום רשימה", "service_recipient", out=out)
+    assert r.returncode == 0, r.stdout + r.stderr
+    res = json.loads(out.read_text(encoding="utf-8"))
+    assert res["result"] == "no_match" and not res["chosen"]
 
 
-def test_a_role_name_that_cannot_be_translated_stops_with_an_error(client, tmp_path):
-    """`side_of` מחזיר None ו-`family_of` מחזיר 'unknown': שתי בדיקות שונות."""
+def test_an_unknown_role_returns_for_choice_and_never_matches(client, tmp_path):
+    """תפקיד שאינו מזוהה: "לבחירה" עם שאלה, ולא התאמה אוטומטית (n1b-learning.md:56)."""
     out = tmp_path / "res.json"
-    r = _run(client, "הסכם שירותים", "צד שאינו קיים בשום רשימה", out=out)
-    assert r.returncode == 2, r.stdout + r.stderr
-    assert "לא זוהתה פוזיציה" in r.stdout
-    assert not out.exists()
+    r = _run(client, "services", "צד שאינו קיים בשום רשימה", out=out)
+    assert r.returncode == 0, r.stdout + r.stderr
+    res = json.loads(out.read_text(encoding="utf-8"))
+    assert res["result"] == "choose" and not res["chosen"]
 
 
-def test_a_synonym_role_code_from_the_index_passes_through(client, tmp_path):
-    """`customer` אינו במילון העברי אבל הוא קוד מוכר, והמפתח מחזיק קודים כאלה."""
+def test_a_synonym_role_code_is_for_choice_not_a_silent_match(client, tmp_path):
+    """`customer` מול `service_recipient` שבמפתח: אין מילון תפקידים, ולכן "לבחירה" עם שאלה."""
     out = tmp_path / "res.json"
     r = _run(client, "services", "customer", out=out)
     assert r.returncode == 0, r.stdout + r.stderr
     res = json.loads(out.read_text(encoding="utf-8"))
-    assert res["chosen"].endswith("fam_services/playbook-core.json"), res
+    assert res["result"] == "choose" and not res["chosen"], res
 
 
 def test_the_wrong_side_is_not_matched(client, tmp_path):

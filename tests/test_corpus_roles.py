@@ -41,5 +41,11 @@ def test_roles_come_from_two_agreements_of_the_family(tmp_path):
     m = json.loads(out.read_text(encoding="utf-8"))
     f = m["by_family"][0]
     assert f["roles_hint"][:2] == ["המשכיר", "השוכר"]
-    assert len(f["roles_read_from"]) == 2
+    # הצדדים נלמדים מההסכמים עצמם לפני הטופס (הכרעת ניל 18.10, סעיף 2). מאז 01.11 הקוד סופר את כינויי הפתיח בכל
+    # מסמכי הסוג, לפי מספר המסמכים שבהם הופיעו (b1-intake.md:191, build_corpus_manifest.family_roles), ולכן
+    # roles_read_from כולל לפחות את שני ההסכמים, ובפועל את כל ההסכמים של הסוג
+    assert len(f["roles_read_from"]) >= 2
+    assert sorted(Path(p).name for p in f["roles_read_from"]) == ["lease0.docx", "lease1.docx", "lease2.docx"]
+    # רק כינויי תפקיד, לא שם של צד
+    assert not any("בע\"מ" in g for g in f["roles_hint"])
     assert all(x["parties_hint"][:2] == ["המשכיר", "השוכר"] for x in m["files"])

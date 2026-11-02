@@ -3,8 +3,7 @@
 """שער המדיניות: האם מותר לומר על עמדה בפלייבוק שהיא מדיניות החברה.
 
 הנושא ונותן קורא לשער **לכל הכרעה שנשענת על כלל בפלייבוק**, ורושם את התשובה
-ב-`policy_gate` של ההכרעה (הערות הפלייבוק 5.5, שינויים 48 ו-65.15; הערות הנושא
-ונותן 4.9, "שער המדיניות לכל הכרעה"). השער הוא קוד הייחוס של ענבל
+ב-`policy_gate` של ההכרעה. השער הוא קוד הייחוס
 (`areolegal/lib/playbook/status.py`, `policy_claim`), ולא שיקול דעת:
 
 * **`claim: true` רק כשהתא נספר כמאושר** באותה גזירה של מעמד הפלייבוק,
@@ -34,6 +33,7 @@ import json
 import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # גם ב-python -I, שאינו מוסיף את תיקיית הסקריפט
 import areo_lib  # noqa: F401  מוסיף את areolegal/lib לנתיב הייבוא
 
 from playbook import ingest_approval as IA  # noqa: E402

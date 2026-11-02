@@ -145,8 +145,11 @@ def test_a_pdf_is_read_when_pymupdf_is_installed(corpus, tmp_path):
     data, _ = _run(corpus, tmp_path)
     d = _doc(data, "חוק.pdf")
     assert d["format"] == "pdf" and d["pdf_engine"] == "pymupdf"
-    # סדר לוגי: המילה הראשונה של השורה היא הראשונה במחרוזת
-    assert any(b["text"].startswith("מזמין שהוא עסק") for b in d["paragraphs"])
+    # סדר לוגי: המילים בסדר הקריאה, ולא הפוך. מאז 1.23 שורות ה-PDF מורכבות לפסקאות (risk/extract_corpus.py,
+    # _pdf_paragraphs), ולכן המשפט הוא חלק מפסקה ולא בהכרח תחילתה
+    texts = [b["text"] for b in d["paragraphs"]]
+    assert any("מזמין שהוא עסק ישלם לספק" in t for t in texts), texts
+    assert not any("עסק שהוא מזמין" in t for t in texts)
     assert data["pdf_count"] == 1 and not data["unreadable"]
 
 

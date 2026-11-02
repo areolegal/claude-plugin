@@ -95,13 +95,17 @@ def test_the_corpus_scan_skips_areo_own_folder(tmp_path):
 
 
 def test_a_statute_name_from_the_agreements_is_allowed_in_a_legal_query():
-    """ה-hook עצר את החיפוש של תקנות אבטחת המידע, כי השם מופיע בהסכמים."""
+    """ה-hook עצר את החיפוש של תקנות אבטחת המידע, כי השם מופיע בהסכמים. מאז 1.23 שם חוק מותר רק כשהוא אחד
+    משמות --statute (הרשימה הסגורה של ההרצה, rr2-checklist-report-boundary.md; market_research.py, query_problem):
+    הזיהוי האוטומטי של "חוק ..." בלע את שם הלקוח שאחריו."""
     corpus = {"documents": [{"paragraphs": [{"text": "ויקיים אמצעי אבטחה סבירים בהתאם לתקנות הגנת הפרטיות "
                                                     "(אבטחת מידע), התשע\"ז-2017."}]}]}
     q = "תקנות הגנת הפרטיות (אבטחת מידע) נוסח עדכני"
-    assert MR.query_problem(q, "legal", corpus, None)[0] is None
-    assert MR.query_problem(q, "market", corpus, None)[0]          # בשוק אין חריג
-    assert MR.query_problem("ויקיים אמצעי אבטחה סבירים", "legal", corpus, None)[0]
+    statutes = ("תקנות הגנת הפרטיות (אבטחת מידע)",)
+    assert MR.query_problem(q, "legal", corpus, None, statutes) == (None, statutes[0])
+    assert MR.query_problem(q, "legal", corpus, None)[0]           # בלי --statute אין זיהוי אוטומטי
+    assert MR.query_problem(q, "market", corpus, None, statutes)[0]          # בשוק אין חריג
+    assert MR.query_problem("ויקיים אמצעי אבטחה סבירים", "legal", corpus, None, statutes)[0]
 
 
 # ---------------------------------------------------------------- ה-Word
@@ -179,7 +183,9 @@ def test_the_negotiator_finds_a_playbook_of_any_family_the_builder_made(tmp_path
 
 
 def test_the_risk_assessor_reads_a_nevo_law_address(tmp_path, monkeypatch):
-    """כל כתובת חוק בנבו (/law_html/law00/144811.htm) נחסמה כ"פרט של הלקוח" בגלל מספר המסמך."""
+    """כל כתובת חוק בנבו (/law_html/law00/144811.htm) נחסמה כ"פרט של הלקוח" בגלל מספר המסמך. מאז 1.23 המעריך
+    יוצא לרשת רק לבדיקת רקע על הצד שכנגד (fetch_source.py, מטרה D; r6-entity-research.md): בקשה רגולטורית
+    מסורבת לפני כל בקשה, ובבדיקת רקע כתובת חוק עם מספר מסמך עוברת, ושם הלקוח בכתובת עדיין נחסם."""
     RISK = PLUGIN / "areolegal" / "skills" / "contract-risk-assessor" / "scripts"
     sys.path.insert(0, str(RISK))
     import fetch_source as F
@@ -191,10 +197,15 @@ def test_the_risk_assessor_reads_a_nevo_law_address(tmp_path, monkeypatch):
     deal.mkdir()
     prof = tmp_path / "p.json"
     prof.write_text(json.dumps({"organization_name": "נבו-טק תוכנה"}, ensure_ascii=False), encoding="utf-8")
-    base = ["--deal", str(deal), "--profile", str(prof), "--kind", "regulatory", "--question", "Q1",
-            "--source-id", "L1", "--purpose", "תקנות אבטחת מידע, נוסח בתוקף"]
+    law = "https://www.nevo.co.il/law_html/law00/144811.htm"
+    regulatory = ["--deal", str(deal), "--profile", str(prof), "--kind", "regulatory", "--question", "Q1",
+                  "--source-id", "L1", "--purpose", "תקנות אבטחת מידע, נוסח בתוקף"]
+    assert F.main(regulatory + ["--url", law]) == 3
+    assert not seen, "בקשה רגולטורית יצאה לרשת"
+    base = ["--deal", str(deal), "--profile", str(prof), "--kind", "entity", "--purpose", "entity",
+            "--question", "E1", "--source-id", "ENT-SRC-01", "--counterparty", "Globex Ltd"]
     try:
-        F.main(base + ["--url", "https://www.nevo.co.il/law_html/law00/144811.htm"])
+        F.main(base + ["--url", law])
     except SystemExit:
         pass
     assert seen, "כתובת החוק נחסמה"

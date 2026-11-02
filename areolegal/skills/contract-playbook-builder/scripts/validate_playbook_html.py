@@ -20,8 +20,15 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 import re
 import sys
+
+for _s in (sys.stdout, sys.stderr):  # עברית בקונסולה שאינה UTF-8 (cp1252): בלי UnicodeEncodeError
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):   # לא TextIOWrapper (לכידה בבדיקות, pythonw)
+        pass
 
 # סמני הזרקה שחייבים להיעלם בבנייה. אם נשארו, הסקריפט לא רץ או רץ חלקית.
 MUST_BE_REPLACED = ["/*__DATA__*/null", "/*__CHARTJS__*/", "__ENTITY__", "__FAMILIES__"]
@@ -31,9 +38,9 @@ VIEWS = ["vOverview", "vRules", "vSegPolicy", "vCompare", "vCommercial", "vFindi
          "vAdditions", "vPrecedents", "vDecisions", "vSources", "vExport"]
 
 # האינטראקציות שבלעדיהן זו תצוגה ולא סביבת עבודה.
-INTERACTIONS = ["save", "tune", "globalSearch", "openRule", "toggleEdit",
-                "localStorage", "setNote", "setProp", "dlComments", "basisText",
-                "covPanel", "imposedLayers"]
+# הערות, אישורים והצעות נוסח נכתבים רק באשף, והקישור אליו מכל סעיף הוא wizLink
+INTERACTIONS = ["save", "tune", "globalSearch", "openRule", "wizLink",
+                "localStorage", "basisText", "covPanel", "imposedLayers"]
 
 # שלד העמוד.
 STRUCTURE = ['id="nav"', 'id="wrap"', 'id="rlist"', 'id="drawer"', 'id="pbbar"',
@@ -51,6 +58,10 @@ FORBIDDEN = [
     ("ההחלטה שלך", "פס הכרעה בסעיף"),
     ("טרם הוכרע", "תווית מצב הכרעה"),
     ("נערך ידנית", "תווית עריכה של מדיניות"),
+    ('id="editChip"', "מצב עריכה בדף: הערות והצעות נכתבות באשף"),
+    ('class="noteta"', "תיבת הערה בסעיף: הערות נכתבות באשף"),
+    ("onclick=\"dlComments()\"", "כפתור הורדת ההערות: קובץ שאף רכיב אינו קולט"),
+    ("confirm(", "חלון confirm של הדפדפן: אינו מוצג בעמוד משותף"),
 ]
 # המפרט אוסר במפורש כפתור או טקסט "מאשר", "אושר" או "נכנס למדיניות".
 # הבדיקה היא על המילה עצמה בתוך טקסט שהמשתמש רואה, ולא על כל הופעה של
@@ -67,6 +78,32 @@ REQUIRED_HE = [
 ]
 
 MIN_BYTES = 150_000          # פחות מזה: הגרפים או הנתונים לא נכנסו
+
+# בלוק הנתונים שהוזרק לדף: `const D = {...}` בדף, ו-`id="wzData"` באשף.
+DATA_START = re.compile(r'const D\s*=\s*(?=[{\[])|<script[^>]*id="wzData"[^>]*>\s*(?=[{\[])')
+
+
+def page_chrome(html):
+    """הדף בלי בלוק הנתונים שהוזרק, לבדיקות האיסור.
+
+    האיסור הוא על פעולה או טקסט של הדף עצמו (כפתור, תווית, הודעה), ולא על
+    מה שהלקוח כתב בהסכמים שלו. ציטוט ממסמך כמו "כל שינוי נכנס
+    למדיניות אבטחת המידע" הוא ראיה, ובדיקה על הקובץ כולו הכשילה בגללו סביבת
+    עבודה תקינה. בלוק שלא ניתן לפענח נשאר בבדיקה, כדי שלא יוסתר דבר בטעות."""
+    out, pos = [], 0
+    dec = json.JSONDecoder()
+    for m in DATA_START.finditer(html):
+        if m.start() < pos:
+            continue
+        try:
+            _, end = dec.raw_decode(html, m.end())
+        except ValueError:
+            continue
+        out.append(html[pos:m.end()])
+        out.append("null")
+        pos = end
+    out.append(html[pos:])
+    return "".join(out)
 
 
 def main() -> int:
@@ -96,10 +133,12 @@ def main() -> int:
     for m in STRUCTURE:
         if m not in html:
             bad.append("רכיב מבנה חסר: %s" % m)
+    # האיסורים נבדקים על הדף עצמו, בלי נתוני ההסכמים שהוזרקו (page_chrome)
+    chrome = page_chrome(html)
     for m, why in FORBIDDEN:
-        if m in html:
+        if m in chrome:
             bad.append("אסור בדף, %s (%s)" % (why, m))
-    for m in APPROVAL_WORDS.findall(html)[:4]:
+    for m in APPROVAL_WORDS.findall(chrome)[:4]:
         bad.append("אסור בדף, שפת אישור בטקסט שהמשתמש רואה: %s" % str(m)[:60])
     if a.lang == "he":
         for m, why in REQUIRED_HE:

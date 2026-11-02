@@ -27,19 +27,25 @@ def test_zero_agreements_label_is_market_only():
     m = H.load('mutual_nda_round2_excerpt.json')
     assert m['corpus_basis']['agreement_units'] == 0
     st = S.derive_status(m)
-    assert st['label'] == 'פלייבוק מוצע, מבוסס מחקר שוק, טעון אישור'
+    # התווית בקול של Areo (localization-he.md:79, playbook/status.py LABEL_MARKET)
+    assert st['label'] == 'טיוטת מדיניות ממחקר שוק, מחכה לאישור שלכם' == S.LABEL_MARKET
     assert st['playbook_status'] == 'Draft'
-    assert 'מבוסס הסכמים' not in st['label']
+    assert 'מההסכמים שלכם' not in st['label']
 
 
 def test_agreements_label_only_when_agreements_counted():
+    # התווית נגזרת מעובדות המאגר בלבד (status.corpus_read): הסכמים של החברה שנספרו -> "מההסכמים שלכם", בלי קשר
+    # ל-basis של המסלולים, שמשתנה באישור. כך התווית אינה מתהפכת לפני ואחרי אישור (status.py, base_code)
     m = H.good_model()
     m['corpus_origin'] = 'own_plus_market'
     m['corpus_basis']['agreement_units'] = 3
-    assert S.base_label(m) == S.LABEL_MARKET
+    assert S.base_label(m) == 'טיוטת מדיניות מההסכמים שלכם וממחקר שוק, מחכה לאישור שלכם' == S.LABEL_MIXED
     m['rules'][0]['traffic_light']['green']['basis'] = 'company_agreement'
-    assert S.base_label(m) == 'פלייבוק מוצע, מבוסס הסכמים ומחקר שוק, טעון אישור'
+    assert S.base_label(m) == S.LABEL_MIXED
     m['corpus_basis']['agreement_units'] = 0
+    assert S.base_label(m) == S.LABEL_MARKET
+    m['corpus_basis']['agreement_units'] = 3
+    m['corpus_origin'] = 'market_built'
     assert S.base_label(m) == S.LABEL_MARKET
 
 

@@ -3,10 +3,23 @@
 
 שימוש:
   python3 build_template_registry.py --folders "<תיקייה>" ["<תיקייה נוספת>" ...] \
-      --out "Areo-נתונים/template-registry.json" [--playbook "Areo-נתונים/playbook-model.json"]
+      --out "Areo-נתונים/template-registry.json" [--playbook "Areo-נתונים/playbooks/<family_id>/playbook-model.json"] \
+      [--role receiving] --profile "<profile_path של הישות>" [--approved "<קובץ>" ...]
 
-הסקריפט מסווג כל מסמך ומחשב, לכל צירוף של משפחה, תפקיד ושפה, מי התבנית המאושרת הנוכחית.
+--playbook: הקובץ של הרשומה המתאימה ב-Areo-נתונים/playbooks/index.json.
+
+הסקריפט מסווג כל מסמך ומחשב, לכל צירוף של משפחה, תפקיד, שפה והדדיות, מי התבנית המאושרת הנוכחית.
+התפקיד נלקח מהארגומנט --role (מה שמסר המשתמש), אחרת מ-company_role_code של הפלייבוק לאותה משפחה, ורק
+בלעדיהם מספירת מילים בגוף, ואז הוא מסומן "טעון אישור" (company_role_basis).
 הוא אינו ממציא סיווג: מסמך שאינו ניתן לסיווג חד-משמעי נכנס לתור בדיקה עם ציון הסיבה.
+
+**תבנית מאושרת (approved_current) רק על נייר החברה, או באישור המשתמש.** שדות ריקים מעידים שזה טופס, לא
+שזה הטופס של החברה: טופס של גוף ציבורי, של לקוח או של הליך תחרותי מלא קווים ריקים בדיוק כמו תבנית של החברה. לכן
+מסמך נבחר רק כששם החברה (organization_name או organization_name_en בפרופיל, --company) או מספר הרישום שלה מופיע בבלוק הצדדים, או
+כשהמשתמש אישר אותו (--approved). בלי --profile ובלי --company אין בדיקה, ולכן אין תבנית מאושרת כלל.
+טופס שהצד הריק בפתיח שלו הוא הצד של החברה, או נוסח של הליך תחרותי כשהחברה אינה הגוף המזמין, הוא טופס של הצד שכנגד
+(paper_owner), ואינו נבחר גם כששם החברה בבלוק הצדדים, אלא באישור המשתמש. אותם סימנים כמו בבונה הפלייבוק.
+PDF נקרא ונרשם (סיווג, משפחה, נייר), אבל לעולם אינו נבחר כתבנית: הצרכנים במורד הזרם קוראים docx.
 
 זיהוי הסיווג נשען על סימנים בטקסט ובמבנה הקובץ בלבד. הוא כלי עזר לרכיב, לא תחליף לשיקול דעת:
 הרכיב מציג את המרשם למשתמש ומבקש אישור לפני שהוא מסתמך עליו.
@@ -14,12 +27,77 @@
 import argparse, hashlib, io, json, os, re, sys, zipfile
 from datetime import datetime
 
-PLACEHOLDER = re.compile(r"\[להשלים\]|\[TO COMPLETE\]|_{4,}|\bXXX+\b|\[\s{2,}\]|\[●\]|\[\*+\]")
+try:                                   # פלט עברי במסוף של Windows (cp1255) נשבר בלי זה
+    sys.stdout.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError):   # pragma: no cover
+    pass
+
+# ---- הגנה על קובצי הקלט: אותו כלל כמו common.cli.guard_out בספרייה המשותפת, שהמנסח אינו מוסיף לנתיב.
+# כל סקריפט של המנסח שכותב --out (או --cover, --json, --out-dir) קורא לה לפני הכתיבה
+PROTECTED_EXT = (".docx", ".doc", ".docm", ".dotx", ".pdf", ".xlsx", ".pptx")
+
+
+def _path_key(p):
+    return os.path.normcase(os.path.realpath(os.path.abspath(p)))
+
+
+def out_problem(out, inputs=(), force=False):
+    """None כשמותר לכתוב, אחרת הסיבה. הפלט לעולם אינו אחד מקובצי הקלט, ואינו מסמך קיים (docx, pdf, xlsx
+    וכו') בלי --force: הרצה חוזרת על טיוטה קיימת היא החלטה מפורשת, לא ברירת מחדל."""
+    if not out or not str(out).strip():
+        return "חסר נתיב פלט"
+    k = _path_key(out)
+    for p in inputs or ():
+        if p and _path_key(p) == k:
+            return "נתיב הפלט הוא קובץ קלט (%s). פלט לעולם אינו נכתב על קובץ קלט" % p
+    if not force and os.path.isfile(k) and os.path.splitext(k)[1].lower() in PROTECTED_EXT:
+        return "נתיב הפלט הוא מסמך קיים (%s). לדריסה מכוונת, הוסיפו --force" % out
+    return None
+
+
+def guard_out(out, inputs=(), force=False):
+    """עוצר בקוד יציאה 2, לפני כל כתיבה, כשנתיב הפלט אסור (out_problem)."""
+    problem = out_problem(out, inputs, force)
+    if problem:
+        print("הפלט לא נכתב: " + problem)
+        sys.exit(2)
+    return out
+
+# ציין החוסר האחיד בשתי השפות (areo-hard-rules 3.5): "[להשלים]" ו-"[to complete]", בכל רישיות, גם עם פירוט
+PLACEHOLDER = re.compile(r"\[\s*להשלים\s*(?::[^\]\n]{0,120})?\]|\[\s*(?i:to\s+complete)\s*(?::[^\]\n]{0,120})?\]|"
+                         r"_{4,}|\bXXX+\b|\[\s{2,}\]|\[●\]|\[\*+\]")
+# בלוק חתימה. אותו ביטוי בדיוק כמו SIGNED ב-`build_corpus_manifest.py` של בונה הפלייבוק, כדי ששני
+# הרכיבים יסווגו אותו מסמך באותה דרך; שינוי כאן נעשה גם שם. "Signed by" ו-"Executed by" רק
+# בתחילת שורה, כי "deemed executed by the parties" בגוף ההסכם אינו בלוק חתימה; ו-/s/ לא
+# בתוך כתובת אתר
 SIGN_DATE = re.compile(
-    r"(?:נחתם|תאריך החתימה|Signed on|Date of signature)\s*[:\-]?\s*\d"
-    r"|ולראיה\s+באו\s+הצדדים\s+על\s+החתום"
-    r"|IN\s+WITNESS\s+WHEREOF"
-    r"|ובאו\s+הצדדים\s+על\s+החתום", re.I)
+    r"IN\s+WITNESS\s+WHEREOF"
+    r"|ולראי{1,2}ה\s+(?:באו|באנו|חתמו|חתמנו)|ובאו\s+הצדדים\s+על\s+החתום|חתימת\s+הצדדים"
+    r"|(?m:^)[ \t]*(?-i:Signed|SIGNED|Executed|EXECUTED)\s+(?:by|for\s+and\s+on\s+behalf)\b"
+    r"|\b(?:have|has)\s+(?:duly\s+)?executed\s+this\b|(?<![\w/])/s/"
+    r"|signature\s+of\s+the\s+parties"
+    r"|(?:נחתם|תאריך\s+החתימה|Signed\s+on|Date\s+of\s+signature)\s*[:\-]?\s*\d", re.I)
+# קו חתימה בסוף המסמך אינו שדה למילוי אלא המקום לחתום בו, ולכן אינו נספר בתוך 300 התווים
+# האחרונים. כך גם בבונה הפלייבוק
+LINE_RUN = re.compile(r"_{4,}|\.{6,}")
+SIGN_TAIL = 300
+# תבנית של צד שכנגד, אותם סימנים כמו ב-`build_corpus_manifest.py` של בונה הפלייבוק (BLANK_PARTY, PROCEDURE_SIGN),
+# בכל סוג הסכם: חוזה של צד אחד, תנאים כלליים של צד, טופס שצד מפרסם, נספח להליך תחרותי.
+#   1. הסימן הכללי: הצד שפרטיו ריקים בפתיח ("________ (להלן: "<תפקיד>")") הוא הצד שהחברה ממלאת. בתבנית של החברה
+#      ריקים פרטי הצד שכנגד; בטופס של הצד שכנגד, פרטי החברה. נבדק רק כשהתפקיד של החברה ידוע (--role או פלייבוק).
+#   2. נוסח של הליך תחרותי, כשהחברה אינה הגוף המזמין. הסימן הכללי גובר עליו.
+BLANK_PARTY = re.compile(r'(?:_{4,}|\.{6,}|\[[^\]]{0,40}\]|<<[^>]{1,40}>>|\{\{[^}]{1,40}\}\})[^"״“()\n]{0,60}[()]\s*'
+                         r'(?:להלן\s*[:\-]?\s*|hereinafter(?:\s+(?:referred\s+to\s+as|called))?\s*[:,]?\s*(?:the\s+)?'
+                         r'|the\s+)?["״“]([^"״”()]{2,40})["״”]', re.I)
+PROCEDURE_SIGN = re.compile(r"המציע|הליך תחרותי|\bcompetitive\s+procedure\b|\bbidders?\b|\bRFP\b|request\s+for\s+proposals?"
+                         r"|invitation\s+to\s+(?:bid|tender)", re.I)
+
+
+def placeholder_count(text):
+    """שדות למילוי, בלי קווי חתימה ב-300 התווים האחרונים."""
+    cut = len(text) - SIGN_TAIL
+    return sum(1 for m in PLACEHOLDER.finditer(text)
+               if not (m.start() >= cut and LINE_RUN.fullmatch(m.group(0))))
 
 # שער מקדים: האם המסמך הוא בכלל מסמך חוזי. בתיקייה של לקוח אמיתי יש נהלים,
 # מדריכים, הצעות מחיר ומצגות, ואסור שייכנסו למרשם התבניות.
@@ -38,10 +116,10 @@ NON_CONTRACT_TITLES = re.compile(
     r"guide|manual|proposal|quote|presentation|minutes|report|skill", re.I)
 
 # שם קובץ שיש בו מילת הסכם, בכל מקום בשם ולא רק בפתיחה. "Reseller Agr." ו-
-# "MSA Final" הם שמות אמיתיים של הסכמים, והדרישה שהשם ייפתח במילה חסמה אותם.
+# שמות כמו "Final" הם שמות אמיתיים של הסכמים, והדרישה שהשם ייפתח במילה חסמה אותם.
 CONTRACT_TITLE = re.compile(
     r"הסכם|חוזה|תוספת|נספח|agreement|contract|addendum|amendment|"
-    r"\bagr\b|\bnda\b|\bmou\b|\bloi\b|\bmsa\b|\bsow\b|reseller|distribution|license", re.I)
+    r"\bagr\b|\bmou\b|\bloi\b|license", re.I)
 
 def is_contract(text, name, ext):
     """מחזיר (האם חוזי, סיבה). שמרני בכוונה: עדיף להוציא לתור בדיקה מאשר לזהם את המרשם."""
@@ -64,53 +142,56 @@ def is_contract(text, name, ext):
     if hits < threshold:
         return False, "לא אותרו סימני מסמך חוזי ב%s (%d מתוך %d)" % (hits and lang or lang, hits, total)
     return True, ""
-AMEND = re.compile(r"תיקון\s+(?:מס['׳]?\s*\d+\s+)?להסכם|נספח\s+תיקון|amendment|addendum", re.I)
+# תיקון מזוהה רק בשם הקובץ ובשורות הכותרת (שלוש הפסקאות הראשונות), ולא בגוף: "תיקון 13 לחוק",
+# או "Data Processing Addendum to the Agreement", אינם תיקון להסכם. Addendum נחשב תיקון רק
+# כשהוא פותח את הכותרת ("Addendum No. 2 to"); כשלפניו שם (Data Processing Addendum), זה שמו
+# של הסכם עומד בפני עצמו. אותו ביטוי כמו AMENDMENT ב-`build_corpus_manifest.py`
+AMEND = re.compile(r"תיקון\s*(?:מס(?:פר|['׳])?\.?\s*)?\d*\s*ל(?!חוק|תקנות|פקודת|פקודה|צו\b)"
+                   r"|נספח\s+תיקון|תוספת\s+להסכם|הסכם\s+תיקון"
+                   r"|\bamendment\s*(?:no\.?\s*\d+\s*)?to\b"
+                   r"|^\s*(?:(?:first|second|third|\d+(?:st|nd|rd|th)?)\s+)?addendum\b"
+                   r"\s*(?:(?:no\.?|number|#)\s*\d+\s*)?to\b", re.I)
 HE = re.compile(r"[֐-׿]")
 LAT = re.compile(r"[A-Za-z]")
 
-ROLES = {
-    "לקוח": ["הלקוח", "המזמין", "customer", "client"],
-    "ספק": ["הספק", "נותן השירותים", "supplier", "vendor", "service provider"],
-    "מרשה": ["המרשה", "נותן הרישיון", "licensor"],
-    "מורשה": ["המורשה", "מקבל הרישיון", "licensee"],
-    "משכיר": ["המשכיר", "lessor", "landlord"],
-    "שוכר": ["השוכר", "lessee", "tenant"],
-    "מזכה": ["המזכה", "franchisor"],
-    "זכיין": ["הזכיין", "franchisee"],
-    "מבוטח": ["המבוטח", "insured"],
-    "מבטח": ["המבטח", "insurer"],
-}
+# תפקידי הצדדים אינם רשימה בקוד. תפקיד החברה בא מהמשתמש (--role), מ-company_role_code של הפלייבוק, או נשאל
+# ("תפקיד לא ידוע"). הוא טקסט חופשי, בלשון המסמכים של הלקוח; אין מילון תפקידים ואין זוגות "צד מול צד שכנגד".
+# הצד שמזמין הצעות בהליך תחרותי (מבנה, לא סוג הסכם): ערך ש-company_role_code או --role נוקבים בו
+ISSUER_WORDS = {"issuer", "contracting_authority", "inviting_party", "מזמין", "הגוף המזמין"}
 
-# מילות המפתח ממוינות לפי סגוליות: מונח ארוך וסגולי גובר על מונח כללי.
-# "זכיינות" חייב לגבור על "רישוי", ו"ליסינג" חייב להיות משפחה בפני עצמה.
-FAMILIES = [
-    ("סודיות", ["הסכם סודיות", "אי גילוי", "שמירת סודיות", "non-disclosure", "confidentiality agreement", "nda"]),
-    ("שירותים", ["הסכם מסגרת שירותים", "הסכם שירותים", "מתן שירותים", "מיקור חוץ", "outsourcing", "services agreement", "master services", "msa"]),
-    ("רישוי תוכנה", ["רישוי תוכנה", "רישיון שימוש בתוכנה", "saas", "software license", "subscription agreement"]),
-    ("הפצה וזכיינות", ["זכיינות", "הסכם הפצה", "זיכיון", "reseller", "distribution agreement", "franchise"]),
-    ("ליסינג וחכירה", ["ליסינג", "חכירת", "חכירה", "leasing", "equipment lease"]),
-    ("שכירות", ["הסכם שכירות", "שכירות מסחרית", "דמי שכירות", "lease agreement", "tenancy"]),
-    ("העסקה", ["הסכם העסקה", "חוזה עבודה אישי", "employment agreement"]),
-    ("ביטוח", ["הסכם ביטוח", "פוליסת ביטוח", "אחריות מקצועית", "insurance policy"]),
-    ("רכש", ["הזמנת רכש", "הסכם רכש", "purchase order", "procurement agreement"]),
-    ("פיתוח ומחקר", ["הסכם פיתוח", "פיתוח תוכנה", "מחקר ופיתוח", "ניסוי קליני",
-                     "development agreement", "research agreement", "clinical trial",
-                     "statement of work", "sow"]),
-    ("קבלנות ובנייה", ["הסכם קבלנות", "עבודות בנייה", "ביצוע עבודות", "קבלן ראשי",
-                       "construction agreement", "works contract", "epc"]),
-    ("מיזוג ורכישה", ["מיזוג", "רכישת מניות", "רכישת פעילות", "הסכם מייסדים",
-                      "share purchase", "asset purchase", "merger", "spa", "founders"]),
-    ("מימון ואשראי", ["הסכם הלוואה", "מסגרת אשראי", "שטר הון", "ערבות בנקאית להלוואה",
-                      "loan agreement", "credit facility", "convertible"]),
-    ("שיתוף פעולה ומיזם משותף", ["שיתוף פעולה", "מיזם משותף", "הסכם שותפות",
-                                 "joint venture", "collaboration agreement", "teaming"]),
-    ("סוכנות ותיווך", ["הסכם סוכנות", "עמלת תיווך", "מתווך", "agency agreement", "broker"]),
-]
+# הסכם הדדי מול חד-צדדי: נוסח הדדי ונוסח חד-צדדי של אותה משפחה הם שתי תבניות שונות, ואסור שיתמזגו
+# במפתח. נבדק רק בשם הקובץ ובשורות הכותרת, כי "mutual covenants" מופיע בפתיח של כל הסכם
+MUTUAL = re.compile(r"(?<![\w֐-׿])(?:mutual|bilateral|reciprocal|הדדי|הדדית|דו[\s\-]?צדדי(?:ת)?)"
+                    r"(?![\w֐-׿])(?!\s+(?:covenants|promises|obligations|consent|understanding))", re.I)
+ONE_WAY = re.compile(r"(?<![\w֐-׿])(?:one[\s\-]way|unilateral|חד[\s\-]?צדדי(?:ת)?)(?![\w֐-׿])", re.I)
 
-# הרשימה שלמעלה היא **זרע ולא גבול.** אצל לקוח אחד יש הסכמי קבלנות, אצל אחר
-# הסכמי ניסוי קליני, ואצל שלישי הסכמים שאין להם שם מקובל בכלל. משפחה שאינה
-# ברשימה נלמדת משם הקובץ של הלקוח עצמו, ומאושרת מולו. ראה derive_family_name.
-FAMILY_EXT_FILE = "family-extensions.json"
+
+def _word_re(w, suffix):
+    """מילה שלמה: מילה לטינית אינה נמצאת בתוך מילה ארוכה יותר. בעברית מותרות אותיות שימוש
+    לפני המילה, וכש-suffix גם סיומת אחריה; לשם תפקיד לא."""
+    lw = w.lower()
+    if re.search(r"[a-z]", lw):
+        pat = r"(?<![a-z0-9])" + re.escape(lw) + r"(?![a-z0-9])"
+    else:
+        pat = r"(?<![֐-׿])[ובלמהשכ]{0,2}" + re.escape(lw) + ("" if suffix else r"(?![֐-׿])")
+    return re.compile(pat)
+
+
+_WORD_CACHE = {}
+
+
+def word_count(w, low, suffix=True):
+    """כמה פעמים w מופיע כמילה שלמה בטקסט low (באותיות קטנות)."""
+    if (w, suffix) not in _WORD_CACHE:
+        _WORD_CACHE[(w, suffix)] = _word_re(w, suffix)
+    return len(_WORD_CACHE[(w, suffix)].findall(low))
+
+
+# אין כאן רשימת משפחות (סוגי הסכם). המשפחה נגזרת בזמן ריצה משם הקובץ ומהכותרת של המסמך של הלקוח עצמו
+# (derive_family_name), מוצגת כהצעה, ואינה נקבעת בלי אישור המשתמש. מסמך שאין לו שם או כותרת מתאימים:
+# "לא סווג", ושואלים.
+FAMILIES = []
+
 
 def docx_text(path, limit=200000):
     try:
@@ -221,10 +302,128 @@ def docx_revisions(path):
     return out
 
 
+def pdf_text(path):
+    """(טקסט, סיבה). pymupdf קודם: pypdf מחזיר עברית בסדר חזותי, הפוך, ואז סימני הנייר החוזי אינם
+    נמצאים. PDF בעברית בלי pymupdf, או PDF סרוק, מחזיר טקסט ריק, והסיבה נרשמת בתור הבדיקה."""
+    try:
+        try:
+            import pymupdf as fitz
+        except ImportError:
+            import fitz
+        with fitz.open(path) as d:
+            return "\n".join(pg.get_text() for pg in d)[:200000], ""
+    except ImportError:
+        pass
+    except Exception:
+        return "", "לא ניתן היה לפתוח את ה-PDF"
+    try:
+        from pypdf import PdfReader
+        txt = "\n".join((pg.extract_text() or "") for pg in PdfReader(path).pages)[:200000]
+    except Exception:
+        return "", "אין בסביבה ספרייה לקריאת PDF (pymupdf)"
+    if HE.search(txt):
+        return "", "PDF בעברית, ואין pymupdf: הטקסט יוצא בסדר הפוך"
+    return txt, ""
+
+
+READ_EXT = (".docx", ".txt", ".md", ".pdf")
+# תיקיות ותוצרים של Areo אינם מקור: תיקיית הנתונים, ותוצרים שהסוכנים כותבים (דף ליווי, גיליון העמדות לאישור,
+# מרכז ההיערכות, דוחות). בלי זה גיליון העמדות נרשם כנייר החברה, ומשפחה שאין בה נייר של החברה נראית כאילו יש
+AREO_DIRS = ("Areo-נתונים",)
+AREO_OUTPUT = re.compile(r"דף ליווי|cover note|עמדות[\s_-]*לאישור|positions[\s_-]*for[\s_-]*approval|areo workspace|"
+                         r"מרכז היערכות|prep cent(?:er|re)|דוח שלמות|completeness report|translation-integrity|"
+                         r"integrity-|risk-register|תזכיר פנימי|internal memo|\.report\.json$", re.I)
+# תיקייה שבשמה מסומן שהמסמכים בה של הצד השני: הנייר שלהם, לעולם לא נייר החברה
+COUNTERPARTY_DIR = re.compile(r"מהצד[\s_-]*שכנגד|הצד[\s_-]*השני|מהצד[\s_-]*השני|counterparty|from[\s_-]*them|their[\s_-]*paper",
+                              re.I)
+
+
+def eml_parts(path):
+    """(גוף המייל כטקסט, [(שם צרופה, בייטים)]). מייל עם הסכם מצורף נקרא דרך הצרופה; הגוף נשמר לסיווג."""
+    import email
+    from email import policy
+    with open(path, "rb") as fh:
+        msg = email.message_from_binary_file(fh, policy=policy.default)
+    body = ""
+    try:
+        part = msg.get_body(preferencelist=("plain", "html"))
+        if part is not None:
+            body = part.get_content()
+            if part.get_content_type() == "text/html":
+                body = re.sub(r"<[^>]+>", " ", body)
+    except Exception:  # noqa: BLE001  גוף שאינו נקרא: נשארות הצרופות
+        body = ""
+    atts = []
+    for part in msg.iter_attachments():
+        name = part.get_filename() or ""
+        try:
+            data = part.get_payload(decode=True) or b""
+        except Exception:  # noqa: BLE001
+            data = b""
+        if name:
+            atts.append((os.path.basename(name), data))
+    return re.sub(r"\s+", " ", body or "").strip(), atts
+
+
+def eml_attachment_dir(path):
+    """תיקייה זמנית לצרופות של מייל: בתיקייה הזמנית של המחשב, לעולם לא בתיקיית הלקוח."""
+    import tempfile
+    h = hashlib.sha256(os.path.abspath(path).encode("utf-8", "ignore")).hexdigest()[:12]
+    d = os.path.join(tempfile.gettempdir(), "areo-eml", h)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def scan_items(folder, queue):
+    """(שם קובץ, תיקייה, נתיב, תוספות) לכל קובץ שאפשר לקרוא. מייל (.eml) נפתח לצרופות שלו. כל מה שאינו נקרא נרשם
+    בתור הבדיקה עם הסיבה, ולעולם אינו נעלם בשקט."""
+    for root, dirs, files in os.walk(folder):
+        for x in [x for x in dirs if x in AREO_DIRS]:
+            queue.append({"file": x + "/", "folder": root, "why": "תיקיית הנתונים של Areo אינה מקור", "excluded": True})
+        dirs[:] = sorted(x for x in dirs if x not in AREO_DIRS and not x.startswith("."))
+        cp = bool(COUNTERPARTY_DIR.search(os.path.relpath(root, folder))) if root != folder else False
+        for f in sorted(files):
+            if f.startswith("~$") or f.startswith("."):
+                continue          # קובץ נעילה או קובץ מערכת, לא מסמך
+            path = os.path.join(root, f)
+            ext = os.path.splitext(f)[1].lower()
+            if AREO_OUTPUT.search(f):
+                queue.append({"file": f, "folder": root, "why": "תוצר של Areo, אינו מקור", "excluded": True})
+                continue
+            extra = {"paper": "counterparty", "paper_basis": "folder"} if cp else {}
+            if ext == ".eml":
+                try:
+                    body, atts = eml_parts(path)
+                except Exception as e:  # noqa: BLE001
+                    queue.append({"file": f, "folder": root, "why": "לא ניתן היה לקרוא את המייל (%s)" % type(e).__name__})
+                    continue
+                readable = [(n, b) for n, b in atts if os.path.splitext(n)[1].lower() in READ_EXT]
+                for n, b in atts:
+                    if (n, b) not in readable:
+                        queue.append({"file": "%s / %s" % (f, n), "folder": root,
+                                      "why": "צרופה מסוג שאינו נקרא (%s)" % (os.path.splitext(n)[1] or "בלי סיומת")})
+                if not readable:
+                    queue.append({"file": f, "folder": root, "why": "מייל בלי צרופה שאפשר לקרוא; הגוף אינו הסכם"
+                                  if body else "מייל בלי גוף ובלי צרופה שאפשר לקרוא"})
+                d = eml_attachment_dir(path) if readable else None
+                for n, b in readable:
+                    ap = os.path.join(d, n)
+                    with open(ap, "wb") as fh:
+                        fh.write(b)
+                    yield n, d, ap, dict(extra, source_email=path)
+                continue
+            if ext not in READ_EXT:
+                queue.append({"file": f, "folder": root, "why": "סוג קובץ שאינו נקרא (%s)" % (ext or "בלי סיומת")})
+                continue
+            yield f, root, path, extra
+
+
 def read_text(path):
     ext = os.path.splitext(path)[1].lower()
     if ext == ".docx":
         return docx_text(path)
+    if ext == ".pdf":
+        return pdf_text(path)[0], False, False
     if ext in (".txt", ".md"):
         try:
             return io.open(path, encoding="utf-8", errors="ignore").read()[:200000], False, False
@@ -232,9 +431,23 @@ def read_text(path):
             return "", False, False
     return "", False, False
 
-AGR_WORD = re.compile(r"(?:הסכם|חוזה|agreement|contract)\s*(?:ה)?", re.I)
+AGR_WORD = re.compile(r"(?:הסכם|חוזה|agreement|contract)\s*", re.I)
 NOISE = re.compile(r"redline|final|draft|signed|v\d|\d{1,2}[-.]\d{1,2}[-.]\d{2,4}|"
                    r"טיוטה|חתום|סופי|מעודכן|עותק|\(\d+\)", re.I)
+# שם עצם שה-ה' שבראשו היא אות שורש ולא ה' הידיעה: בניין התפעל ("התקשרות", "התחייבות") ושם פעולה של
+# הפעיל. ה' הידיעה לפניו כתובה כפולה ("ההתקשרות")
+HE_INITIAL_NOUN = re.compile(r"^(?:הת[א-ת]{2,}|ה[א-ת]{2,4}ה|ה[א-ת]{2,3}ת)$")
+
+
+def strip_article(word):
+    """מסיר את ה' הידיעה מהמילה שאחרי "הסכם" ("הסכם השירותים" -> "שירותים"), אבל לא אות שורש
+    (מילה שאחרי "הסכם" שאות שורש ראשונה בה היא ה'). בספק, ה' נשארת: מילה שלמה עם ה'
+    עדיפה על מילה שאיבדה אות."""
+    if word.startswith("הה"):
+        return word[1:]
+    if word.startswith("ה") and len(word) > 3 and not HE_INITIAL_NOUN.match(word):
+        return word[1:]
+    return word
 
 
 def derive_family_name(fname):
@@ -255,44 +468,157 @@ def derive_family_name(fname):
             "בין", "עם", "של", "על", "לבין", "מול"}
     words = [w for w in re.split(r"\s+", base.strip())
              if len(w) > 1 and w.lower() not in STOP]
+    if m and words:
+        words[0] = strip_article(words[0])
     # שמות פרטיים של צדדים הם בדרך כלל המילים האחרונות; שומרים את השתיים הראשונות
     cand = " ".join(words[:2]).strip(" ,.-")
     return cand if 2 <= len(cand) <= 40 else None
 
 
 def pick_family(name, head, body):
-    """שם הקובץ והכותרת גוברים על הגוף. בגוף כל הסכם מוזכרים ביטוח, סודיות ורכש,
-       ולכן ספירה בגוף לבדה מסווגת שגוי כמעט תמיד."""
-    nm, hd, bd = name.lower(), head.lower(), body.lower()
-    scored = []
-    for label, words in FAMILIES:
-        # מונח ארוך יותר הוא סגולי יותר, ולכן משקלו גבוה יותר
-        w_name = sum(4 + len(w) for w in words if w.lower() in nm)
-        w_head = sum(2 + len(w) // 2 for w in words if w.lower() in hd)
-        w_body = sum(min(bd.count(w.lower()), 4) for w in words)
-        total = w_name + w_head + w_body
-        if total:
-            scored.append((w_name + w_head, total, label))
-    if not scored:
-        cand = derive_family_name(name)
+    """המשפחה נגזרת בזמן ריצה מהמסמך של הלקוח עצמו: שם הקובץ קודם, ואז שורות הכותרת. אין רשימת סוגים בקוד.
+    ללא שם מתאים: "לא זוהתה משפחה", והמשתמש נשאל. הצעה אינה נקבעת בלי אישור."""
+    for src, why in ((name, "נגזר משם הקובץ, טעון אישור המשתמש"),
+                     ((head or "").strip().splitlines()[0] if (head or "").strip() else "",
+                      "נגזר מכותרת המסמך, טעון אישור המשתמש")):
+        cand = derive_family_name(src) if src else None
         if cand:
-            return cand, [cand], "נגזר משם הקובץ, טעון אישור המשתמש"
-        return None, [], "לא זוהתה משפחה"
-    # קודם מי שזוהה בשם או בכותרת, ורק אז לפי הגוף
-    scored.sort(reverse=True)
-    top = scored[0]
-    conf = "שם הקובץ או הכותרת" if top[0] > 0 else "גוף המסמך בלבד, טעון אישור"
-    return top[2], [x[2] for x in scored[:3]], conf
+            return cand, [cand], why
+    return None, [], "לא זוהתה משפחה"
+
 
 def pick_role(text):
-    low = text.lower()
-    scored = []
-    for label, words in ROLES.items():
-        n = sum(low.count(w.lower()) for w in words)
-        if n:
-            scored.append((n, label))
-    scored.sort(reverse=True)
-    return [l for _, l in scored[:2]]
+    """אין זיהוי תפקיד לפי ספירת מילים: תפקיד החברה בא מהמשתמש או מהפלייבוק, ואחרת נשאל."""
+    return []
+
+
+def normalize_role(value):
+    """--role או company_role_code: טקסט חופשי בלשון הלקוח, בלי מילון. other או ריק: אין תפקיד."""
+    v = (value or "").strip()
+    if not v or v.lower() == "other":
+        return None
+    return v
+
+
+def playbook_roles(path):
+    """[(שמות המשפחה, תפקיד)] מ-contract_families[] של הפלייבוק, בכל עומק של הקובץ."""
+    out = []
+    try:
+        data = json.load(io.open(path, encoding="utf-8"))
+    except Exception:
+        return out
+    stack = [data]
+    while stack:
+        x = stack.pop()
+        if isinstance(x, dict):
+            for f in x.get("contract_families") or []:
+                if isinstance(f, dict) and normalize_role(f.get("company_role_code")):
+                    names = [f.get("contract_family_name"), f.get("contract_family_id")] + list(f.get("family_aliases") or [])
+                    out.append(([n for n in names if n], normalize_role(f.get("company_role_code"))))
+            stack.extend(v for v in x.values() if isinstance(v, (dict, list)))
+        elif isinstance(x, list):
+            stack.extend(x)
+    return out
+
+
+def family_matches(family, names):
+    """האם משפחת המרשם היא המשפחה של הפלייבוק: שם זהה, או אחד מכיל את השני כמילה שלמה."""
+    if not family:
+        return False
+    strip = lambda s: re.sub(r"^(?:הסכמי|הסכם)\s+|\s+agreements?$|_", " ", s.lower()).strip()
+    f = strip(family)
+    for n in names:
+        n = strip(str(n))
+        if f and n and (f == n or word_count(f, n) or word_count(n, f)):
+            return True
+    return False
+
+
+def parse_roles(values):
+    """--role: "receiving" לכל המסמכים, או "סודיות=receiving" למשפחה אחת. [(שמות או None, תפקיד)],
+    המשפחתיים קודם."""
+    out = []
+    for v in values or []:
+        fam, _, role = v.rpartition("=")
+        role = normalize_role(role)
+        if role:
+            out.append(([fam.strip()] if fam.strip() else None, role))
+    return sorted(out, key=lambda x: x[0] is None)
+
+
+def resolve_role(family, body, role_arg, pb_roles):
+    """(תפקיד החברה, בסיס, מועמדים). קודם מה שהמשתמש מסר (--role), אחר כך company_role_code של
+    פלייבוק לאותה משפחה, ורק בלעדיהם ספירת מילים, שמסומנת כטעונה אישור."""
+    counted = pick_role(body)
+    for names, role in role_arg:
+        if names is None or family_matches(family, names):
+            return role, "המשתמש (--role)", [role] + [r for r in counted if r != role]
+    for names, role in pb_roles:
+        if family_matches(family, names):
+            return role, "company_role_code בפלייבוק", [role] + [r for r in counted if r != role]
+    return None, "תפקיד לא ידוע, שאלה למשתמש", []
+
+
+def _alias_key(g):
+    g = re.sub(r"\s+", " ", re.sub(r"_{2,}|\.{3,}", " ", g or "")).strip(" .,:;").lower()
+    return re.sub(r"^the\s+", "", g)
+
+
+def blank_parties(text):
+    """כינויי הצדדים שפרטיהם ריקים בפתיח (עד 2500 תווים): "________ (להלן: "<תפקיד>")"."""
+    out = []
+    for m in BLANK_PARTY.finditer((text or "")[:2500]):
+        g = re.sub(r"\s+", " ", m.group(1)).strip()
+        if g and g not in out:
+            out.append(g)
+    return out
+
+
+DEFINED_ALIAS = re.compile(r'(?:להלן\s*[:\-]?\s*|hereinafter(?:\s+(?:referred\s+to\s+as|called))?\s*[:,]?\s*(?:the\s+)?'
+                           r'|the\s+)?["״“]([^"״”()]{2,40})["״”]', re.I)
+
+
+def whose_template(blanks, role, body=""):
+    """counterparty, company או None: הצד הריק בפתיח הוא הצד של החברה (טופס של הצד שכנגד) או הצד שכנגד (תבנית של
+    החברה). התפקיד הוא טקסט חופשי (מהמשתמש או מהפלייבוק), והוא נמצא בפתיח כמונח מוגדר, ריק או מלא. None כשהפתיח
+    אינו מכריע או כשהתפקיד אינו ידוע."""
+    if not role:
+        return None
+    r = _alias_key(role)
+    ours = {r, "ה" + r}
+    blank = {_alias_key(g) for g in blanks or ()}
+    defined = {_alias_key(m.group(1)) for m in DEFINED_ALIAS.finditer((body or "")[:2500])}
+    if blank & ours:
+        return "counterparty"
+    if blank and (defined & ours):
+        return "company"
+    return None
+
+
+def paper_owner(name, body, blanks, role, role_basis):
+    """(counterparty או company או None, הסיבה) לטופס עם שדות למילוי. הצד הריק בפתיח קודם, כשהתפקיד ידוע (מהמשתמש
+    או מהפלייבוק, לא מספירת מילים); אחריו נוסח של הליך תחרותי, כשהחברה אינה הגוף המזמין."""
+    known = role and not str(role_basis or "").startswith("תפקיד לא ידוע")
+    owner = whose_template(blanks, role, body) if known else None
+    if owner == "counterparty":
+        return owner, "הצד שפרטיו ריקים בפתיח הוא הצד של החברה"
+    if owner == "company":
+        return owner, "הצד שפרטיו ריקים בפתיח הוא הצד שכנגד"
+    m = PROCEDURE_SIGN.search(os.path.splitext(name)[0]) or PROCEDURE_SIGN.search(body or "")
+    if m and (role or "").strip().lower() not in ISSUER_WORDS:
+        return "counterparty", "נוסח של הליך תחרותי (%s), והחברה אינה הגוף המזמין" % m.group(0)
+    return None, None
+
+
+def mutuality(name, head):
+    """mutual, one_way או None, לפי שם הקובץ ושורות הכותרת בלבד."""
+    area = name + "\n" + head
+    if ONE_WAY.search(area):
+        return "one_way"
+    if MUTUAL.search(area):
+        return "mutual"
+    return None
+
 
 def language(text):
     he = len(HE.findall(text)); lat = len(LAT.findall(text))
@@ -300,15 +626,66 @@ def language(text):
         return "bilingual"
     return "he" if he >= lat else "en"
 
+# שם חברה בלי סיומת התאגדות: "אורבן תשתיות בע"מ", "אורבן תשתיות בעמ" ו"אורבן תשתיות" הם אותה חברה. גם עמותה
+# (ע"ר), חל"צ ו-charity באנגליה (CIO, CIC), עם סוגריים או בלעדיהם: הצד אינו תמיד חברה בע"מ
+CORP_SUFFIX = re.compile(r"\s*\(?(?:בע[\"'״׳]?מ|ע[\"'״׳]ר|חל[\"'״׳]?צ|ltd\.?|limited|inc\.?|llc|plc|gmbh|"
+                         r"cio|cic|corp(?:oration)?\.?|co\.)\)?\s*$", re.I)
+RECITALS = re.compile(r"הואיל|whereas|recitals|מבוא", re.I)
+
+
+def _norm_name(v):
+    v = re.sub(r"[\"'״׳`]", "", str(v or "").lower())
+    return re.sub(r"\s+", " ", v).strip()
+
+
+def company_markers(profile_path, extra):
+    """(שמות, מספרי רישום) של החברה: organization_name, organization_name_en ו-registration_number מהפרופיל,
+    ו---company."""
+    prof = {}
+    if profile_path and os.path.exists(profile_path):
+        try:
+            prof = json.load(io.open(profile_path, encoding="utf-8"))
+        except Exception:
+            prof = {}
+    names, regs = [], []
+    for n in [prof.get("organization_name"), prof.get("organization_name_en")] + list(extra or []):
+        core = _norm_name(CORP_SUFFIX.sub("", str(n or "").strip()))
+        if len(core) >= 3 and core not in names:
+            names.append(core)
+    for r in (prof.get("registration_number"), prof.get("organization_id")):
+        digits = re.sub(r"\D", "", str(r or ""))
+        if len(digits) >= 6 and digits not in regs:
+            regs.append(digits)
+    return names, regs
+
+
+def on_company_paper(body, names, regs):
+    """האם החברה היא צד בבלוק הצדדים: מתחילת המסמך ועד המבוא, ולכל היותר 3,000 תווים.
+    None כשלא נמסר שם חברה, ואז אין בדיקה."""
+    if not names and not regs:
+        return None
+    block = body[:3000]
+    m = RECITALS.search(block, 100)
+    if m:
+        block = block[:m.start()]
+    low = _norm_name(block)
+    if any(n in low for n in names):
+        return True
+    digits = re.sub(r"\D", "", block)
+    return any(r in digits for r in regs)
+
+
 def classify(text, tracked, comments, name):
+    """text הוא גוף המסמך, פסקה בשורה, כדי ששורות הכותרת וסוף המסמך יהיו ידועים."""
     reasons = []
-    if AMEND.search(name) or AMEND.search(text[:4000]):
-        return "amendment", ["הכותרת או הפתיח מזהים תיקון להסכם"]
+    head = [l.strip()[:200] for l in text.splitlines() if l.strip()][:3]
+    if AMEND.search(os.path.splitext(name)[0]) or any(AMEND.search(l) for l in head):
+        return "amendment", ["הכותרת או שם הקובץ מזהים תיקון להסכם"]
     if tracked:
         return "internal_draft", ["המסמך מכיל שינויים במעקב"]
     if comments:
         return "internal_draft", ["המסמך מכיל הערות"]
-    ph = len(PLACEHOLDER.findall(text))
+    ph = placeholder_count(text)
     signed = bool(SIGN_DATE.search(text))
     if signed and ph <= 2:
         return "signed", ["אותר תאריך חתימה ואין שדות ריקים מהותיים"]
@@ -323,23 +700,37 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--folders", nargs="+", required=True)
     p.add_argument("--out", required=True)
-    p.add_argument("--playbook")
+    p.add_argument("--playbook", help="playbook-model.json: company_role_code של המשפחה שלו קובע את התפקיד")
+    p.add_argument("--role", nargs="+", help="הצד שבו עומדת החברה, כפי שמסר המשתמש: קוד (customer, receiving, "
+                                             "processor ...) או תווית (לקוח, מקבל, מעבד ...), לכל המסמכים, או "
+                                             "משפחה=תפקיד למשפחה אחת. גובר על הפלייבוק ועל ספירת מילים")
+    p.add_argument("--profile", help="פרופיל-לקוח.json: שם החברה ומספר הרישום, לבדיקה שהמסמך על נייר החברה")
+    p.add_argument("--company", nargs="+", help="שמות נוספים של החברה (שם באנגלית, שם קודם)")
+    p.add_argument("--approved", nargs="+", help="שמות קבצים שהמשתמש אישר כתבנית, גם כשאינם על נייר החברה")
     a = p.parse_args()
+    guard_out(a.out, [a.playbook, a.profile])
+    names, regs = company_markers(a.profile, a.company)
+    approved = {os.path.basename(x) for x in (a.approved or [])}
+    role_arg = parse_roles(a.role)
+    pb_roles = playbook_roles(a.playbook) if a.playbook and os.path.exists(a.playbook) else []
 
     docs, queue, seen = [], [], {}
     for folder in a.folders:
-        for root, _dirs, files in os.walk(folder):
-            for f in sorted(files):
-                if f.startswith("~$") or os.path.splitext(f)[1].lower() not in (".docx", ".txt", ".md"):
-                    continue
-                path = os.path.join(root, f)
+        for f, root, path, extra in scan_items(folder, queue):
+            if True:
                 try:
                     size = os.path.getsize(path)
                 except OSError:
                     continue
-                text, tracked, comments = read_text(path)
+                is_pdf = f.lower().endswith(".pdf")
+                if is_pdf:
+                    (text, why_pdf), tracked, comments = pdf_text(path), False, False
+                else:
+                    (text, tracked, comments), why_pdf = read_text(path), ""
                 if not text.strip():
-                    queue.append({"file": f, "folder": root, "why": "לא ניתן היה לקרוא טקסט מהמסמך"})
+                    queue.append({"file": f, "folder": root,
+                                  "why": why_pdf or ("PDF סרוק, בלי שכבת טקסט" if is_pdf
+                                                     else "לא ניתן היה לקרוא טקסט מהמסמך")})
                     continue
                 h = hashlib.sha256(text[:20000].encode("utf-8", "ignore")).hexdigest()[:16]
                 if h in seen:
@@ -350,18 +741,39 @@ def main():
                     queue.append({"file": f, "folder": root, "why": why_not,
                                   "excluded": True})
                     continue
-                cls, why = classify(text, tracked, comments, f)
+                # הגוף פסקה בשורה: docx_text משטח הכול לשורה אחת ומצרף אחריו כותרות עליונות
+                # ותחתונות, ואז שורות הכותרת וסוף המסמך (קו החתימה) אינם ידועים
+                body = text
+                if path.lower().endswith(".docx"):
+                    body = "\n".join(docx_paragraphs(path)) or text
+                cls, why = classify(body, tracked, comments, f)
                 fam, fam_all, fam_conf = pick_family(f, text[:800], text[:20000])
-                roles = pick_role(text[:20000])
+                role, role_basis, roles = resolve_role(fam, text[:20000], role_arg, pb_roles)
                 rec = {
                     "file": f, "folder": root, "bytes": size,
                     "doc_class": cls, "class_reason": why,
                     "family": fam, "family_candidates": fam_all, "family_basis": fam_conf,
                     "company_role_candidates": roles,
+                    "company_role": role, "company_role_basis": role_basis,
+                    "mutuality": mutuality(f, "\n".join(body.splitlines()[:3])),
                     "language": language(text),
                     "doc_date": datetime.fromtimestamp(os.path.getmtime(path)).strftime("%Y-%m-%d"),
                     "approved_current": False,
+                    "format": "pdf" if is_pdf else os.path.splitext(f)[1].lower().lstrip("."),
+                    "company_paper": on_company_paper(body, names, regs) and extra.get("paper") != "counterparty",
+                    "user_approved": f in approved,
                 }
+                rec.update(extra)
+                if cls == "template":
+                    blanks = blank_parties(body)
+                    if blanks:
+                        rec["blank_parties"] = blanks
+                    owner, owner_why = paper_owner(f, body, blanks, role, role_basis)
+                    if owner:
+                        rec["paper_owner"], rec["paper_owner_basis"] = owner, owner_why
+                if is_pdf:
+                    rec["selectable_as_template"] = False
+                    rec["format_note"] = "PDF: נקרא לסיווג ולמבנה, ואינו נבחר כתבנית. לתבנית יש לשמור אותו כ-docx"
                 if tracked:
                     rev = docx_revisions(path)
                     rec["revisions"] = {
@@ -383,15 +795,41 @@ def main():
                 seen[h] = len(docs)
                 docs.append(rec)
 
-    # התבנית המאושרת הנוכחית לכל צירוף
+    # התבנית המאושרת הנוכחית לכל צירוף. הדדי וחד-צדדי הם צירופים נפרדים
     keyed = {}
     for i, d in enumerate(docs):
         if not d["family"]:
             continue
         role = (d["company_role_candidates"] or ["לא צוין"])[0]
-        key = (d["family"], role, d["language"])
+        key = (d["family"], role, d["language"], d.get("mutuality"))
         keyed.setdefault(key, []).append(i)
+    def eligible(i):
+        # שדות ריקים אינם הופכים מסמך לתבנית של החברה: רק נייר החברה או אישור המשתמש, ולא PDF
+        d = docs[i]
+        return d["format"] != "pdf" and (d["user_approved"] or (
+            d["company_paper"] is True and d.get("paper_owner") != "counterparty"))
+
+    third_party = []
     for key, idxs in keyed.items():
+        for i in idxs:
+            d = docs[i]
+            if d["doc_class"] in ("template", "signed") and not eligible(i):
+                d["not_approved_reason"] = (
+                    "PDF" if d["format"] == "pdf" else
+                    "טופס של הצד שכנגד: " + d["paper_owner_basis"] if d.get("paper_owner") == "counterparty" else
+                    "לא נמסר שם החברה (--profile), ולכן לא נבדק שהמסמך על נייר החברה" if d["company_paper"] is None
+                    else "שם החברה אינו בבלוק הצדדים: נייר של צד שלישי")
+                if d.get("paper_owner") == "company":
+                    d["not_approved_reason"] += ("; הצד שפרטיו ריקים בפתיח הוא הצד שכנגד, ולכן ייתכן שזו תבנית של "
+                                                 "החברה")
+                if d["doc_class"] == "template" and d["format"] != "pdf":
+                    queue.append({"file": d["file"], "folder": d["folder"],
+                                  "why": "טופס עם שדות למילוי שלא נבחר כתבנית מאושרת: " + d["not_approved_reason"]
+                                         + ". אם המשתמש מאשר אותו כתבנית, הרץ שוב עם --approved"})
+        if not any(eligible(i) for i in idxs):
+            third_party.append({"family": key[0], "role": key[1], "language": key[2], "mutuality": key[3],
+                                "documents": [docs[i]["file"] for i in idxs]})
+        idxs = [i for i in idxs if eligible(i)]
         templates = [i for i in idxs if docs[i]["doc_class"] == "template"]
         pool = templates or [i for i in idxs if docs[i]["doc_class"] == "signed"]
         basis = "template" if templates else ("signed" if pool else None)
@@ -405,6 +843,7 @@ def main():
             continue
         best = max(pool, key=lambda i: docs[i]["doc_date"])
         docs[best]["approved_current_basis"] = basis
+        docs[best]["approved_by"] = "company_paper" if docs[best]["company_paper"] else "user"
         if basis == "redline_base":
             docs[best]["approved_current_note"] = (
                 "אין בתיקייה תבנית נקייה ואין הסכם חתום, והבסיס נגזר ממסמך redline. "
@@ -423,6 +862,9 @@ def main():
             "last_updated": datetime.now().strftime("%Y-%m-%d"),
             "folders": list(a.folders),
             "playbook_used": bool(a.playbook and os.path.exists(a.playbook)),
+            "company_paper_checked": bool(names or regs),
+            # צירופים שיש בהם מסמכים ואף אחד מהם אינו על נייר החברה או מאושר: המנסח עובד בהם במצב 2ב
+            "third_party_paper_only": third_party,
             "note": "מרשם נגזר. הרכיב מציג אותו למשתמש ומבקש אישור לפני הסתמכות.",
         },
         "documents": docs,
@@ -437,8 +879,18 @@ def main():
     for k, v in sorted(by_class.items(), key=lambda x: -x[1]):
         print("  %-20s %d" % (k, v))
     print("תבניות מאושרות שנקבעו: %d" % sum(1 for d in docs if d["approved_current"]))
+    pdfs = sum(1 for d in docs if d["format"] == "pdf")
+    if pdfs:
+        print("PDF שנקראו ונרשמו: %d (אינם נבחרים כתבנית)" % pdfs)
+    if not (names or regs):
+        print("שים לב: לא נמסר שם החברה (--profile), ולכן אף מסמך לא נבחר כתבנית מאושרת")
+    elif third_party:
+        print("צירופים בלי אף מסמך על נייר החברה: %d" % len(third_party))
     excluded = sum(1 for q in queue if q.get("excluded"))
-    print("בתור בדיקה: %d, מתוכם %d הוצאו כמסמכים שאינם חוזיים" % (len(queue), excluded))
+    print("בתור בדיקה: %d, מתוכם %d הוצאו (לא חוזי, תוצר של Areo או תיקיית הנתונים)" % (len(queue), excluded))
+    not_read = [q for q in queue if not q.get("excluded")]
+    for q in not_read[:20]:
+        print("  לא נקרא: %s (%s)" % (q["file"], q["why"]))
 
 if __name__ == "__main__":
     main()

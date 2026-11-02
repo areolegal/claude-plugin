@@ -56,7 +56,7 @@ def test_quote_not_in_document_fails_in_every_family(fam, docx, state):
     assert any('הציטוט לא נמצא' in e for e in E)
 
 
-def test_supply_concession_and_pre_send_contract():
+def test_supply_concession_contract():
     reg, st = load('supply_register.json'), load('supply_state.json')
     corpus = [extract(str(FX / 'supply_response.docx'))]
     # הוויתור על ההצמדה (S02) חייב להופיע כסיכון שהתקבל
@@ -65,9 +65,10 @@ def test_supply_concession_and_pre_send_contract():
         if r['decision'].get('basis') == 'deliberate_waiver':
             r['decision'] = {'status': 'open', 'basis': None, 'state_clause_id': None, 'note': '', 'decided_at': None}
     assert any('S02' in e and 'אינו מופיע כסיכון שהתקבל' in e for e in validate(bad, corpus, state=st)[0])
-    # שורת "לתיקון" עם מזהה כלל במקום מזהה סעיף
+    # ויתור שהתקבל עם מזהה כלל במקום מזהה סעיף (השורות "לתיקון" יצאו: risk-register-schema.md:251)
     bad = copy.deepcopy(reg)
-    bad['pre_send_fixes'][0]['clause_ref'] = 'R-04'
+    w = next(r for r in bad['risks'] if r['decision'].get('basis') == 'deliberate_waiver')
+    w['decision']['state_clause_id'] = 'R-04'
     assert any('מזהה כלל' in e for e in validate(bad, corpus, state=st)[0])
     # בלי שרשרת אישורים
     bad = copy.deepcopy(reg)
@@ -104,6 +105,10 @@ def test_entity_report_for_individual_and_israeli_company_validates():
                {'name': 'חברה לדוגמה בע"מ', 'country': 'IL', 'registration_no': '510000000'},
                {'name': 'Example Partners LP', 'country': 'US', 'type': 'partnership'}):
         rep = {'meta': {'counterparty': cp}, 'confidence': [{'source_no': 1, 'label': 'high', 'why': 'המרשם עצמו'}],
-               'red_flags': [], 'sources': [{'no': 1, 'source': 'רשם', 'url': 'https://www.gov.il/x'}],
+               'red_flags': [], 'sources': [{'no': 1, 'source': 'רשם',
+                           'url': 'https://www.gov.il/he/departments/israeli_corporations_authority'}],
                'raw_copies': [], 'lookups': [], 'not_checked': []}
         assert validate_entity_report(rep) == [], cp
+    # gov.il מותר רק בנתיבים של הדפים המאושרים (מקורות-מאושרים.json, "gov.il רק בנתיבים של הדפים המאושרים")
+    rep['sources'][0]['url'] = 'https://www.gov.il/x'
+    assert any('דומיין' in e for e in validate_entity_report(rep))

@@ -16,7 +16,10 @@ def _rule(m, rid):
 
 
 def test_good_model_has_no_errors():
-    f = V.validate(H.good_model())
+    # כללי היסוד (playbook-qa.md סעיף 16 b-c): בלי ספר כיסוי ובלי sufficiency שנשאל המודל אינו נקי
+    codes = {x['code'] for x in V.errors(V.validate(H.good_model()))}
+    assert 'COVERAGE_MISSING' in codes, codes
+    f = V.validate(H.with_founding_blocks(H.good_model()))
     assert V.errors(f) == [], f
 
 

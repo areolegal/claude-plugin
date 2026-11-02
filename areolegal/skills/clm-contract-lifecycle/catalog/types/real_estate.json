@@ -1,0 +1,3 @@
+{"type_code": "real_estate", "label": "נדל\"ן ושכירות", "aliases": ["שכירות", "חכירה", "דמי שכירות", "המושכר", "lease"],
+ "type_fields": [{"key": "area", "label": "שטח המושכר", "kind": "text"}, {"key": "use", "label": "ייעוד", "kind": "text"},
+  {"key": "management_fee", "label": "דמי ניהול", "kind": "money"}, {"key": "return", "label": "השבת המושכר", "kind": "text"}]}

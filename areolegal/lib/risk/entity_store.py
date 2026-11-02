@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 """risk/entity_store.py: שמירת עותקים גולמיים של חקר ישות בתיקיית העסקה, בלי רשימות מלאות ובלי טוקנים.
 
-הבעיה (סבב 2): חקר הישות על Google שמר 82 עד 84 מ"ב בתיקיית OneDrive של הלקוחה (הרשימה הבריטית 50 מ"ב,
-האירופית 25 מ"ב), ושמר ב-entity-report.json כתובות חתומות (X-Amz-Security-Token של OFAC, sig= של האו"ם).
-המהנדס 13, המנהל המסחרי 13, מנכ"ל 13, סיכום C2 פערים 13 ו-14.
-
-הכללים (הערות מעריך הסיכונים 3.5, ההרחבה של שינוי 9):
+הכללים:
 1. מרשימה גדולה (סנקציות, מאגר פתוח) נשמרות רק השורות שהתאימו או הקרובות ביותר, עם מטא-נתוני השאילתה:
    המקור, הכתובת בלי טוקנים, תאריך הקובץ, הגודל המלא וה-SHA-256 של הקובץ המלא. הקובץ המלא אינו נשמר
    בתיקיית הלקוח לעולם; הוא נשאר בתיקייה הזמנית ונמחק בסוף ההרצה.
@@ -18,14 +14,13 @@
    (גרסה 1.2.0).
 5. התאמת שם מוגדרת: match_name() מחזיר exact / alias / near / none, ורק exact או alias הם "התאמה".
 
-נוסף בהערות 3.6 (סבב 3):
-6. אותו מבנה גם לעותקים של האימות הרגולטורי (סיכום C1, פער 5): store_page מחזיר רשומה שנכנסת כמו שהיא
+6. אותו מבנה גם לעותקים של האימות הרגולטורי: store_page מחזיר רשומה שנכנסת כמו שהיא
    ל-research.raw_copies (source_id, final_url, file, stored, full_size_bytes, full_sha256, sha256, saved_at).
 7. דף גדול נחתך לחלון סביב הקטע לפי הטקסט שלו (page_text): HTML בכל קידוד (windows-1255 של נבו), ו-PDF דרך
-   שכבת הטקסט; החלון נשמר כ-txt (סיכום C2, פער 6; C1, פער 5).
-8. מפענחים לרשימות הרשמיות (סיכום C2, פער 5): rows_from_csv_bytes עם מפריד, כותרות ושורות פתיחה;
+   שכבת הטקסט; החלון נשמר כ-txt.
+8. מפענחים לרשימות הרשמיות: rows_from_csv_bytes עם מפריד, כותרות ושורות פתיחה;
    OFAC_SDN_FIELDS (קובץ בלי שורת כותרות); rows_from_un_xml (הרשימה המאוחדת של מועצת הביטחון).
-9. חותמות זמן: ISO 8601 מלא עם היסט (המהנדס, ממצא 15).
+9. חותמות זמן: ISO 8601 מלא עם היסט.
 
 תקן: Python 3, ספרייה סטנדרטית בלבד.
 """
@@ -52,10 +47,12 @@ except ImportError:  # pragma: no cover
     from page_text import norm as _norm
 try:
     from common.cli import guard_out, parser, run, write_json
+    from common.paths import long_path
 except ImportError:  # pragma: no cover
     import sys as _sys
     _sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from common.cli import guard_out, parser, run, write_json
+    from common.paths import long_path
 
 
 def now_iso():
@@ -175,7 +172,7 @@ def entity_kind_compatible(query_type, record_type):
 
 
 def match_name(query_name, record_name, aliases=(), query_type='entity', record_type=''):
-    """ההגדרה המחייבת של "התאמה בשם" (הערות 3.5, ההרחבה של שינוי 9):
+    """ההגדרה המחייבת של "התאמה בשם":
     - exact: שדה השם של הרשומה, אחרי נרמול, זהה לשם המבוקש אחרי נרמול, וסוג הישות תואם.
     - alias: אחד מהכינויים הרשמיים של הרשומה (שדה כינוי, לא הערות), אחרי נרמול, זהה לשם המבוקש.
     - near: כל מילות השם המבוקש מופיעות בשם או בכינוי, או שהשם מופיע רק בשדה הערות, או שסוג הישות שונה.
@@ -203,7 +200,7 @@ def match_name(query_name, record_name, aliases=(), query_type='entity', record_
 
 def scan_rows(rows, query_name, name_field, alias_fields=(), type_field=None, note_fields=(), query_type='entity'):
     """עובר על שורות של רשימה (dict לכל שורה) ומחזיר (matches, near) עם הסיבה לכל אחת.
-    שם שמופיע רק בשדה הערות הוא near ולעולם לא התאמה (סיכום C2, פער 10: "GOOGLE, Mahdi")."""
+    שם שמופיע רק בשדה הערות הוא near ולעולם לא התאמה (למשל "GOOGLE, Mahdi")."""
     matches, near = [], []
     qn = normalize_name(query_name)
     for i, row in enumerate(rows):
@@ -275,7 +272,7 @@ def sha256_bytes(b):
 
 def sha256_file(path, chunk=1 << 20):
     h = hashlib.sha256()
-    with open(path, 'rb') as fh:
+    with open(long_path(path), 'rb') as fh:
         for blk in iter(lambda: fh.read(chunk), b''):
             h.update(blk)
     return h.hexdigest()
@@ -319,10 +316,10 @@ class EntityStore:
         """שומר מרשימה מלאה רק את חלון ההתאמה. full_bytes או full_path הם הקובץ המלא (בתיקייה זמנית); הוא
         משמש לגיבוב ולגודל בלבד ואינו נשמר. rows: השורות שכבר פוענחו (אחרת CSV מ-full_bytes)."""
         if full_bytes is None and full_path is not None:
-            full_size = os.path.getsize(full_path)
+            full_size = os.path.getsize(long_path(full_path))
             full_sha = sha256_file(full_path)
             if rows is None:
-                with open(full_path, 'rb') as fh:
+                with open(long_path(full_path), 'rb') as fh:
                     rows = rows_from_csv_bytes(fh.read())
         else:
             full_bytes = full_bytes or b''
@@ -424,8 +421,8 @@ def audit_deal_dir(deal_dir, cap_bytes=DEAL_CAP, report_json=None):
     if total > cap_bytes:
         problems.append('תיקיית העותקים בתיקיית העסקה: %d בתים, מעל התקרה %d' % (total, cap_bytes))
     rj = report_json or os.path.join(deal_dir, 'entity-report.json')
-    if os.path.exists(rj):
-        with open(rj, encoding='utf-8') as fh:
+    if os.path.exists(long_path(rj)):
+        with open(long_path(rj), encoding='utf-8') as fh:
             rep = json.load(fh)
         for key in ('raw_copies', 'sources', 'lookups'):
             for i, x in enumerate(rep.get(key) or []):
@@ -436,7 +433,7 @@ def audit_deal_dir(deal_dir, cap_bytes=DEAL_CAP, report_json=None):
 
 
 def main(argv=None):
-    """python -I entity_store.py audit --deal <deal_dir> [--out report.json]. קריאה בלבד; --out רק לדוח."""
+    """python3 -B entity_store.py audit --deal <deal_dir> [--out report.json]. קריאה בלבד; --out רק לדוח."""
     ap = parser('בדיקת תיקיית העותקים של עסקה', out_required=False)
     ap.add_argument('command', choices=['audit'])
     ap.add_argument('--deal', required=True, help='תיקיית העסקה (קריאה בלבד)')

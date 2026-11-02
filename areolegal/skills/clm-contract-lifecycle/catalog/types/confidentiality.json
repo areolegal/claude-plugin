@@ -1,0 +1,3 @@
+{"type_code": "confidentiality", "label": "סודיות", "aliases": ["סודיות", "NDA", "confidentiality", "non-disclosure"],
+ "type_fields": [{"key": "purpose", "label": "מטרת הגילוי", "kind": "text"}, {"key": "term", "label": "תקופת הסודיות", "kind": "text"},
+  {"key": "return_destroy", "label": "השבה או השמדה", "kind": "text"}]}

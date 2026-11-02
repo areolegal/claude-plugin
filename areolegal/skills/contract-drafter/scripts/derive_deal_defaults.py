@@ -16,6 +16,11 @@
 
 הרצה:
   python3 derive_deal_defaults.py --registry <template-registry.json> --out <deal-defaults.json>
+      [--family "<משפחה>"] [--role <company_role_code>]
+
+הספירה נעשית בנפרד לכל צירוף של משפחה ותפקיד החברה (family ו-company_role במרשם): תקרת אחריות
+של צד אחד, תנאי תשלום של צד אחר והודעה מוקדמת בהסכם אחר אינם אותו פרמטר. --family ו---role מסננים לצירוף של
+העסקה. בלי סינון ועם יותר מצירוף אחד, parameters ריק, וכל צירוף נמצא ב-groups.
 """
 import argparse
 import io
@@ -27,13 +32,45 @@ from collections import Counter
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_template_registry import docx_text, docx_paragraphs  # noqa: E402
+from build_template_registry import (docx_text, docx_paragraphs, guard_out,  # noqa: E402
+                                     family_matches, normalize_role)
+
+try:                                   # פלט עברי במסוף של Windows
+    sys.stdout.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError):   # pragma: no cover
+    pass
 
 WINDOW = 420   # תווים סביב העוגן
 
 
 def R(*parts):
     return re.compile("|".join(parts), re.I)
+
+
+# מטבע: סימן, קוד ISO 4217 או שם, לפני הסכום או אחריו (₪ 250,000, £250,000, 100,000 USD, 5,000 אירו).
+# בלי קבוצה לוכדת: הערך הוא הקבוצה הראשונה שאינה ריקה. check_draft_integrity משתמש באותו ביטוי.
+ISO_CODES = ("ILS", "NIS", "USD", "EUR", "GBP", "CHF", "JPY", "CNY", "CAD", "AUD", "NZD", "SGD", "HKD", "INR", "AED",
+             "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "RON", "TRY", "BRL", "MXN", "ZAR", "KRW")
+CUR = (r"(?:₪|ש\"ח|ש״ח|שקלים|שקל|\$|€|£|¥|(?<![A-Za-z])(?-i:%s)(?![A-Za-z])|דולר|אירו|יורו|ליש\"ט|ליש״ט|"
+       r"פאונד|לירות\s+שטרלינג|(?i:dollars?|euros?|pounds?(?:\s+sterling)?))" % "|".join(ISO_CODES))
+CUR_RX = re.compile(CUR)
+CUR_CODE = {"₪": "ILS", "ש\"ח": "ILS", "ש״ח": "ILS", "שקלים": "ILS", "שקל": "ILS", "NIS": "ILS", "€": "EUR",
+            "אירו": "EUR", "יורו": "EUR", "euro": "EUR", "euros": "EUR", "£": "GBP", "ליש\"ט": "GBP",
+            "ליש״ט": "GBP", "פאונד": "GBP", "pound": "GBP", "pounds": "GBP", "dollar": "$", "dollars": "$",
+            "דולר": "$"}
+
+
+def currency_of(s):
+    """המטבע שבקטע: קוד ISO 4217, או "$" כשהסימן אינו מכריע (דולר אמריקאי, קנדי, אוסטרלי...)."""
+    m = CUR_RX.search(s or "")
+    if not m:
+        return None
+    k = re.sub(r"\s+", " ", m.group(0))
+    if k in ISO_CODES:
+        return "ILS" if k == "NIS" else k
+    if k.startswith("לירות") or k.lower().endswith("sterling"):
+        return "GBP"
+    return CUR_CODE.get(k.lower(), k)
 
 
 SPELLED = re.compile(r"[A-Za-z\u0590-\u05FF]+[\s\-]*\(\s*(\d{1,4})\s*\)")
@@ -79,7 +116,7 @@ PARAMS = [
      "ימים", "כמה ימים לתיקון הפרה לפני שהיא מזכה בביטול"),
 
     ("תקופת ההתקשרות הראשונה",
-     R(r"תקופת\s+ה?(?:הסכם|התקשרות|שכירות|חכירה|ליסינג|רישיון|ביטוח)",
+     R(r"תקופת\s+ה?(?:הסכם|התקשרות|שירות|ההתקשרות)",
        r"ההסכם\s+יעמוד\s+בתוקפו", r"initial\s+term",
        r"initial\s+term", r"this\s+agreement\s+shall\s+(?:commence|be\s+effective)",
        r"continue\s+in\s+(?:full\s+force|effect)", r"shall\s+remain\s+in\s+effect",
@@ -111,17 +148,18 @@ PARAMS = [
        r"פי\s+(\d{1,2})\s+מ", r"מוגבלת\s+ל(?:סך\s+)?([\d,]{3,})",
        r"(\d{1,2})\s+חודשי\s+תמורה",
        r"(נזק\s+עקיף)",
-       r"(?:fees|amounts)\s+paid[^.]{0,60}?(\d{1,2})\s+months", r"(\d{1,2})\s+months\s+(?:preceding|prior)", r"exceed[^.]{0,40}?\$\s?([\d,]{4,})", r"(indirect,?\s+consequential)"),
+       r"(?:fees|amounts)\s+paid[^.]{0,60}?(\d{1,2})\s+months", r"(\d{1,2})\s+months\s+(?:preceding|prior)",
+       r"exceed[^.]{0,40}?" + CUR + r"\s?([\d,]{4,})", r"exceed[^.]{0,40}?([\d,]{4,})\s?" + CUR,
+       r"(indirect,?\s+consequential)"),
      "סכום או מכפיל", "כיצד מוגבלת האחריות בניירות שלך"),
 
     ("גבול אחריות ביטוחי",
      R(r"אישור\s+קיום\s+ביטוח", r"גבול\s+אחריות", r"סכום\s+ביטוח", r"פוליס",
        r"ביטוח\s+אחריות", r"insurance",
        r"insurance", r"policy\s+limits?", r"commercial\s+general\s+liability"),
-     R(r"([\d,]{6,})\s*ש\"ח", r"בגבול\s+אחריות\s+של\s+([\d,]{4,})",
-       r"סכום\s+ביטוח\s+של\s+([\d,]{4,})", r"\$\s*([\d,]{4,})",
-       r"\$\s?([\d,]{5,})", r"USD\s?([\d,]{5,})"),
-     'ש"ח', "גבול האחריות הביטוחי הנדרש"),
+     R(r"([\d,]{4,})\s*" + CUR, r"בגבול\s+אחריות\s+של\s+([\d,]{4,})",
+       r"סכום\s+ביטוח\s+של\s+([\d,]{4,})", CUR + r"\s?([\d,]{4,})"),
+     "סכום ומטבע", "גבול האחריות הביטוחי הנדרש"),
 
     ("ריבית פיגורים",
      R(r"ריבית\s+פיגורים", r"פיגור\s+בתשלום", r"איחור\s+בתשלום", r"late\s+payment",
@@ -155,45 +193,19 @@ PARAMS = [
     ("מקדמה או פיקדון",
      R(r"פיקדון", r"מקדמה", r"ערבות\s+בנקאית", r"בטוחה", r"security\s+deposit",
        r"deposit", r"advance\s+payment", r"prepayment", r"bank\s+guarantee"),
-     R(r"([\d,]{4,})\s*ש\"ח", r"בסך\s+(?:של\s+)?([\d,]{4,})",
-       r"(\d{1,2})\s+חודשי\s+(?:שכירות|דמי)",
-       r"\$\s?([\d,]{4,})", r"([\d,]{4,})\s*(?:USD|dollars)"),
+     R(r"([\d,]{4,})\s*" + CUR, r"בסך\s+(?:של\s+)?([\d,]{4,})",
+       r"(\d{1,2})\s+חודשי\s+(?:תשלום|דמי)",
+       CUR + r"\s?([\d,]{4,})"),
      "סכום", "גובה הפיקדון או הערבות הנהוג"),
 ]
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--registry", required=True)
-    ap.add_argument("--out", required=True)
-    ap.add_argument("--all-documents", action="store_true",
-                    help="לגזור מכל המסמכים החוזיים ולא רק מהתבניות המאושרות")
-    args = ap.parse_args()
-
-    reg = json.load(io.open(args.registry, encoding="utf-8"))
-    docs = reg.get("documents", [])
-    if not args.all_documents:
-        docs = [d for d in docs if d.get("approved_current")]
-    if not docs:
-        print("אין מסמכים לגזירה. יש להריץ תחילה את build_template_registry.py.")
-        sys.exit(2)
-
-    texts = []
-    for d in docs:
-        p = os.path.join(d.get("folder", ""), d["file"])
-        if p.lower().endswith(".docx"):
-            # ב-redline הטקסט הגולמי משרג ישן וחדש; קוראים את הנוסח המתאים
-            mode = "base" if d.get("approved_current_basis") == "redline_base" else "final"
-            t = " ".join(docx_paragraphs(p, limit=20000, mode=mode))
-        else:
-            t = io.open(p, encoding="utf-8", errors="ignore").read()
-        if t:
-            texts.append((d["file"], d.get("family"), normalize(t)))
-
+def derive(texts):
+    """הספירה לכל פרמטר על קבוצת מסמכים אחת: [(שם הקובץ, משפחה, טקסט, תפקיד)]."""
     results = []
     for name, anchor, value_rx, unit, explain in PARAMS:
         votes, evidence, per_doc = Counter(), {}, {}
-        for fname, family, t in texts:
+        for fname, family, t, _role in texts:
             found = set()
             for am in anchor.finditer(t):
                 win_start = max(0, am.start() - WINDOW // 3)
@@ -203,6 +215,10 @@ def main():
                     if not val:
                         continue
                     val = val.replace(",", "")
+                    # 250000 GBP ו-250000 ILS אינם אותו ערך; המטבע לפני הסכום או מיד אחריו
+                    cur = currency_of(window[m.start():m.end() + 12]) if len(val) >= 4 else None
+                    if cur:
+                        val = "%s %s" % (val, cur)
                     found.add(val)
                     evidence.setdefault(val, {
                         "source_file": fname, "family": family,
@@ -236,15 +252,80 @@ def main():
             "source_family": ev.get("family"),
             "quote": ev.get("quote"),
         })
+    return results
+
+
+def doc_role(d):
+    """התפקיד של החברה במסמך, כפי שהמרשם קבע אותו (company_role, ואחריו המועמד הראשון)."""
+    return d.get("company_role") or (d.get("company_role_candidates") or [None])[0]
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--registry", required=True)
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--all-documents", action="store_true",
+                    help="לגזור מכל המסמכים החוזיים ולא רק מהתבניות המאושרות")
+    ap.add_argument("--family", help="משפחת ההסכם של העסקה (family במרשם, או שם או כינוי שלה)")
+    ap.add_argument("--role", help="התפקיד של החברה בעסקה: company_role_code (<תפקיד החברה>) "
+                                   "או תווית המרשם")
+    args = ap.parse_args()
+    guard_out(args.out, [args.registry])
+
+    reg = json.load(io.open(args.registry, encoding="utf-8"))
+    docs = reg.get("documents", [])
+    if not args.all_documents:
+        docs = [d for d in docs if d.get("approved_current")]
+    n_before = len(docs)
+    if args.family:
+        docs = [d for d in docs if family_matches(d.get("family"), [args.family])]
+    want_role = normalize_role(args.role) if args.role else None
+    if want_role:
+        docs = [d for d in docs if doc_role(d) == want_role]
+    if n_before and not docs:
+        print("אין במרשם מסמכים של המשפחה והתפקיד שנמסרו (--family, --role). ערכים לא נגזרו, ויש לשאול את המשתמש.")
+        sys.exit(2)
+    if not docs:
+        print("אין מסמכים לגזירה. יש להריץ תחילה את build_template_registry.py.")
+        sys.exit(2)
+
+    texts = []
+    for d in docs:
+        p = os.path.join(d.get("folder", ""), d["file"])
+        if p.lower().endswith(".docx"):
+            # ב-redline הטקסט הגולמי משרג ישן וחדש; קוראים את הנוסח המתאים
+            mode = "base" if d.get("approved_current_basis") == "redline_base" else "final"
+            t = " ".join(docx_paragraphs(p, limit=20000, mode=mode))
+        else:
+            t = io.open(p, encoding="utf-8", errors="ignore").read()
+        if t:
+            texts.append((d["file"], d.get("family"), normalize(t), doc_role(d)))
+
+    keys = []
+    for x in texts:
+        if (x[1], x[3]) not in keys:
+            keys.append((x[1], x[3]))
+    groups = []
+    for fam, role in keys:
+        sub = [x for x in texts if (x[1], x[3]) == (fam, role)]
+        groups.append({"family": fam, "company_role": role, "documents_scanned": len(sub),
+                       "parameters": derive(sub)})
+    results = groups[0]["parameters"] if len(groups) == 1 else []
 
     out = {
-        "generated_at": date.today().strftime("%d.%m.%Y"),
+        "generated_at": date.today().isoformat(),   # ISO ב-JSON (כלל 3.6)
         "documents_scanned": len(texts),
+        "family": args.family or (groups[0]["family"] if len(groups) == 1 else None),
+        "company_role": want_role or (groups[0]["company_role"] if len(groups) == 1 else None),
+        "groups": groups,
         "scope": "כל המסמכים החוזיים" if args.all_documents else "תבניות מאושרות בלבד",
         "source": "נגזר מהניירות של הלקוח, אינו ברירת מחדל כללית",
         "method": ("לכל פרמטר עוגן נושאי, והערך נחפש רק בחלון שסביבו. "
                    "ערך שאותר מחוץ להקשרו אינו נספר."),
         "parameters": results,
+        "mixed_groups_note": (None if len(groups) <= 1 else
+                              "ההסכמים שייכים ליותר ממשפחה אחת או מתפקיד אחד של החברה, ולכן אין ערך אחד לכל "
+                              "פרמטר. הרץ שוב עם --family ו---role של העסקה, או קרא את הצירוף המתאים ב-groups."),
         "usage_rule": ("ערך נגזר מוצג למשתמש לאישור או לשינוי, ואינו נכנס לטיוטה בלי אישור. "
                        "ערך שסטטוסו שנוי או מופע יחיד מוצג כשאלה ולא כברירת מחדל. "
                        "כשקיים פלייבוק, עמדת הפלייבוק גוברת על הערך הנגזר. "
@@ -258,6 +339,11 @@ def main():
         json.dumps(out, ensure_ascii=False, indent=2))
 
     print("נגזרו ברירות מחדל מ-%d מסמכים" % len(texts))
+    if len(groups) > 1:
+        print("  שים לב: %d צירופים של משפחה ותפקיד. הרץ עם --family ו---role של העסקה:" % len(groups))
+        for g in groups:
+            print("    %s / %s: %d מסמכים" % (g["family"] or "לא זוהתה", g["company_role"] or "לא צוין",
+                                            g["documents_scanned"]))
     for r in results:
         dist = ""
         if r.get("distribution") and len(r["distribution"]) > 1:

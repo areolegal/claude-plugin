@@ -2,6 +2,12 @@
 import json, sys
 from pathlib import Path
 
+try:  # פלט עברי במסוף של Windows
+    sys.stdout.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError):  # pragma: no cover
+    pass
+
+# אין שער אישור של עורך דין על הטיוטה (כלל 6): הסטטוס מתאר את מצב הקובץ בלבד. InternalReview נשאר מוכר לקבצים ישנים
 VALID_STATUS={"Draft","InternalReview","ReadyForExternal","Superseded"}
 
 def main(path):
@@ -16,16 +22,12 @@ def main(path):
     if d.get('status')=='ReadyForExternal':
         if d.get('classification')!='external_shareable': e.append('ReadyForExternal requires external_shareable classification')
         if d.get('unresolved_material_placeholders'): e.append('ReadyForExternal has unresolved material placeholders')
-        for i,x in enumerate(d.get('deviations',[])):
-            if x.get('material') and x.get('approval_required') and not x.get('approved_at'):
-                e.append(f"deviations[{i}] material deviation lacks approval")
-        for i,a in enumerate(d.get('required_approvals',[])):
-            if a.get('required') and not a.get('approved_at'):
-                e.append(f"required_approvals[{i}] incomplete")
     if e:
         print('INVALID'); [print('-',x) for x in e]; return 1
     print('VALID'); return 0
 if __name__=='__main__':
-    if len(sys.argv)!=2:
-        print('usage: validate_draft_manifest.py MANIFEST.json'); raise SystemExit(2)
-    raise SystemExit(main(sys.argv[1]))
+    import argparse
+    ap=argparse.ArgumentParser(description='Validates a draft manifest (status, lineage, classification, placeholders; no approval gates). '
+                                           'Exit 0 valid, 1 invalid, 2 usage error.')
+    ap.add_argument('manifest', help='MANIFEST.json')
+    raise SystemExit(main(ap.parse_args().manifest))

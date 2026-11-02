@@ -66,13 +66,18 @@ def test_long_path_prefix():
     ('51-000000-3', True, 'ok'),
     ('11111111', False, 'wrong_length'),       # 8 ספרות: הומלץ בשתי השרשראות בסבב 2
     ('510000004', False, 'bad_check_digit'),
-    ('580000008', False, 'not_company'),        # קידומת 58: עמותה ולא חברה
+    ('580000008', True, 'ok'),                  # קידומת 58: עמותה, תאגיד ישראלי תקין (common/ids.py, 1.23)
+    ('123456782', False, 'not_company'),        # מספר זהות של אדם: קידומת שאינה של תאגיד
     ('', False, 'missing'),
     ('51000000X', False, 'not_digits'),
 ])
 def test_company_number_validation(raw, valid, reason):
     v = ids.validate_company_number(raw)
     assert v['valid'] is valid and v['reason'] == reason
+
+
+def test_amuta_prefix_is_a_valid_corporation_of_its_own_kind():
+    assert ids.validate_company_number('580000008')['kind'] == 'עמותה'
 
 
 def test_eight_digits_never_padded():

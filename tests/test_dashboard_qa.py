@@ -29,7 +29,12 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 WS = ROOT / "plugin" / "areolegal" / "skills" / "contract-playbook-builder" / "scripts"
-CONTENT = ROOT / "server" / "content" / "playbook-workspace"
+# נתוני ההדגמה: בתוכן של הבונה (המסירה של 01.11 העבירה אליו את playbook-workspace), ובעץ ישן מהמקום הקודם
+CONTENT = next((d for d in (ROOT / "server" / "content" / "contract-playbook-builder",
+                            ROOT / "server" / "content" / "playbook-workspace")
+                if (d / "demo-playbook-model.json").exists()), ROOT / "server" / "content" / "playbook-workspace")
+# התבניות שהדף נבנה מהן הן העותק שבתוסף (אין הורדה מהשרת בזמן ריצה): אלה שהרתמות נכתבו מולן
+ASSETS = ROOT / "plugin" / "areolegal" / "skills" / "contract-playbook-builder" / "assets"
 BASIS = (ROOT / "plugin" / "areolegal" / "skills" / "contract-playbook-builder"
          / "scripts" / "basis_line.py")
 JSDOM = os.environ.get("JSDOM_PATH", "")
@@ -93,7 +98,7 @@ def _segments(m):
 @pytest.fixture(scope="module")
 def pages(tmp_path_factory):
     out = tmp_path_factory.mktemp("pages")
-    tpl, wiz = CONTENT / "dashboard_template.html", CONTENT / "wizard_template.html"
+    tpl, wiz = ASSETS / "dashboard_template.html", ASSETS / "wizard_template.html"
     meta = CONTENT / "demo-playbook-meta.json"
 
     def build(model, name, extra=()):

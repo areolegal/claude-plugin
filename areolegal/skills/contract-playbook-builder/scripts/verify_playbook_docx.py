@@ -9,14 +9,19 @@
 | # | מה נבדק | מי בודק |
 |---|---|---|
 | 1 | כיווניות: פסקאות, ריצות, טבלאות, מקטעים, כותרות | `common/rtl.audit_docx` |
-| 2 | תוכן: מחזיקי מקום, אנגלית מהמודל, מבנה נתונים מודפס, שלושת המסלולים | כאן |
+| 2 | תוכן: מחזיקי מקום, אנגלית מהמודל, מבנה נתונים מודפס, שלושת המסלולים, מקפים (ציטוט מוחרג) | כאן |
 | 3 | שוויון מול הארטיפקט: כרטיס לכל נושא, שורה לכל ציטוט | כאן, עם `--artifact` |
 | 4 | בדיקה חזותית: המרה ל-PDF, כשיש כלי בסביבה | כאן, מדולגת בלעדיו |
 | 5 | מקורות ותווית: פרק המקורות, והתווית מילה במילה | `surfaces_render` + כאן |
 | 6 | מספור והפניות: מספרי נושאים זהים, אין הפניה לקובץ שלא נמסר | כאן |
 | 7 | קישורים חיצוניים: `w:hyperlink` עם יחס חיצוני, והיעד כמו ברשומה | כאן |
-| 8 | תווית ומעמד: אין "מאושר" ליד עמדה, ושורה לכל כלל ב"העמדות בקצרה" | כאן |
+| 8 | תווית ומעמד: אין "מאושר" כטענת מעמד (ציטוט מוחרג), ושורה לכל כלל ב"העמדות בקצרה" | כאן |
 | 9 | מאפייני הקובץ: אין python-docx, התאריכים אינם מוקדמים, המחבר | `audit_docx` + כאן |
+
+**שתי שפות.** שפת המסמך נקבעת ב-`--lang`, ובלעדיו מהמסמך עצמו (language במאפייני הקובץ, ובהיעדרו bidi
+במקטע). מסמך עברי עובר את בדיקת ה-RTL הקיימת (`audit_docx`). מסמך באנגלית עובר את בדיקת ה-LTR: אין bidi,
+rtl, bidiVisual או rtlGutter בשום פסקה, ריצה, טבלה או מקטע, ושאר בדיקות הקובץ (מספור, מאפיינים) כמו בעברית.
+כותרות הפרקים, שמות המסלולים והתווית נבדקים בשפת המסמך.
 
 **בדיקה שלא רצה אינה בדיקה שעברה.** המפרט מסיים ב"אל תכתוב שהמסמך
 נבדק כשהבדיקה לא רצה", ולכן כל בדיקה שדולגה מודפסת כ"דולגה", עם הסיבה,
@@ -25,6 +30,9 @@
     python3 scripts/verify_playbook_docx.py --docx "<הפלייבוק>.docx" \\
         --model playbook-model.json [--profile פרופיל-לקוח.json] \\
         [--artifact <סביבת העבודה>.html] [--run-date 2026-10-15] [--out <דוח>.json]
+
+`--out` אופציונלי: נתיב לדוח JSON (`{"passed", "checks"}`), לצד ההדפסה. בלעדיו: הדפסה בלבד. נתיב
+שאסור לכתוב אליו (קובץ קלט, תיקיית מקור) אינו נכתב, ומודפס הסירוב; קוד היציאה נקבע רק לפי הבדיקות.
 
 קוד יציאה: **0** עבר, **3** נכשל (ואין למסור), **2** קלט חסר.
 """
@@ -37,10 +45,11 @@ import subprocess
 import sys
 import zipfile
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # גם ב-python -I, שאינו מוסיף את תיקיית הסקריפט
 import areo_lib  # noqa: F401  מוסיף את areolegal/lib לנתיב הייבוא
 
 from common import rtl  # noqa: E402
-from common.cli import OutputRefused, guard_out, no_bytecode, parser  # noqa: E402
+from common.cli import OutputRefused, guard_out, load_docx_or_explain, no_bytecode, parser  # noqa: E402
 from lxml import etree  # noqa: E402
 from playbook import status as S, surfaces_render as R  # noqa: E402
 
@@ -51,17 +60,48 @@ PKG_REL = "{http://schemas.openxmlformats.org/package/2006/relationships}"
 # מחזיקי מקום: הנוסח שהמפרט נוקב בו, וכל סוגריים מרובעים שנשארו ריקים
 PLACEHOLDERS = ("טרם נכתב", "יושלם במעבר", "יושלם בהמשך", "TBD", "TODO", "[●]", "XXX")
 # "להשלים" הוא מחזיק מקום רק כשהוא עומד לבד ("[להשלים]", "להשלים." בסוף שדה), ולא הפועל בתוך משפט
-# ("מבקשים להשלים את ההתקנה"). בהרצה חיה ה-Word נכשל על המשפט הרגיל (20.10.2026)
-PLACEHOLDER_RX = re.compile(r"\[\s*להשלים\s*\]|(?:^|:\s*)להשלים\s*[.]?\s*$", re.M)
+# ("מבקשים להשלים את ההתקנה").
+PLACEHOLDER_RX = re.compile(r"\[\s*להשלים\s*\]|(?:^|:\s*)להשלים\s*[.]?\s*$|\[\s*to complete\s*\]", re.M | re.I)
 # מבנה נתונים שהודפס במקום נוסח: "{'he'", "{\"he\"", "dict(", "None"
 AS_DATA = (re.compile(r"\{\s*['\"]he['\"]"), re.compile(r"\{\s*['\"]en['\"]"),
-           re.compile(r"\bdict\("), re.compile(r"(?<![\w])None(?![\w])"),
+           # None כערך שהודפס (שורה שכולה None, או אחרי נקודתיים, פסיק או סוגריים), ולא "None of" בפרוזה
+           re.compile(r"\bdict\("), re.compile(r"(?:^|[:=,\[(]\s*)None(?=\s*(?:$|[,\]}).;]))", re.M),
            re.compile(r"\[\s*\{\s*['\"]"))
 AREO_TAG = "הצעת Areo (לא מבוסס על מסמכי הלקוח)"
 SOURCES_HEAD = "המקורות שעליהם נשען הפלייבוק"
 BRIEF_HEAD = "העמדות בקצרה"
 TRACKS = ("ירוק", "צהוב", "אדום")
 W_ID = re.compile(r"\bW-\d+\b")
+# אותם שמות במסמך באנגלית (build_playbook_docx.TX["en"])
+NAMES = {"he": {"sources": SOURCES_HEAD, "brief": BRIEF_HEAD, "tracks": TRACKS,
+                "approved": re.compile("מאושר")},
+         "en": {"sources": "Sources the playbook relies on", "brief": "Positions at a glance",
+                "tracks": ("Green", "Yellow", "Red"), "approved": re.compile(r"\bapproved\b", re.I)}}
+# 8: האיסור הוא על טענת מעמד, ולא על המילה. "דוח שעות מאושר" בציטוט מהסכם, או בתיאור של סעיף
+# בהסכם, אינו טענה שעמדה אושרה, ובהרצה חיה ה-Word נכשל עליו. טענת מעמד היא המילה
+# לבדה (תא או תווית), או המילה בסמוך (עד שתי מילים) למה שיש לו מעמד: הפלייבוק, המדיניות, עמדה,
+# מסלול, כרטיס, או "מעמד"/"סטטוס" עצמם
+_APPR_HE = r"(?:[והשכלמב]{0,3})(?:מאושר(?:ת|ים|ות)?|אושר(?:ה|ו)?)"
+_SUBJ_HE = r"(?:[והשכלמב]{0,3})(?:פלייבוק|מדיניות|עמד(?:ה|ת|ות)|מסלול(?:ים)?|כרטיס(?:ים)?|מעמד|סטטוס)"
+_APPR_EN = r"approved"
+_SUBJ_EN = r"(?:playbooks?|polic(?:y|ies)|positions?|tracks?|cards?|status)"
+_GAP = r"(?:[^\w\n]+\w+){0,2}[^\w\n]+"
+STATUS_CLAIM = {
+    lang: re.compile(r"^\W*%(a)s\W*$|(?<!\w)%(s)s%(g)s%(a)s(?!\w)|(?<!\w)%(a)s%(g)s%(s)s(?!\w)"
+                     % {"a": a, "s": s, "g": _GAP}, re.I)
+    for lang, a, s in (("he", _APPR_HE, _SUBJ_HE), ("en", _APPR_EN, _SUBJ_EN))}
+# ציטוט בתוך שורה שהמערכת כתבה: בין מירכאות, כשהפותחת אחרי רווח או תחילת שורה (ולא גרשיים של
+# קיצור כמו בע"מ) והסוגרת לפני רווח, פיסוק או סוף שורה
+INLINE_QUOTE = re.compile(r'(?:(?<=^)|(?<=[\s(\[:]))(?:"[^"\n]+"|“[^”\n]+”|„[^“”\n]+[“”]|«[^»\n]+»)(?=$|[\s.,;:)\]])')
+# מקף ארוך וקצר אסורים בטקסט שהמערכת כותבת (output-rules.md, word-export-spec.md, "כללי נוסח").
+# ציטוט מילולי ממסמך מקור נשאר כלשונו, כולל הפיסוק, ולכן מוחרג
+DASHES = re.compile("[\u2013\u2014]")
+# קודים מהמודל שאסור שיודפסו. באנגלית Draft, Approved וכו' הן מילים רגילות, ולכן נבדקים שם רק קודים מורכבים
+MODEL_CODES = {"he": ("green", "yellow", "red", "Draft", "PartiallyApproved", "Approved", "Superseded", "Invalid"),
+               "en": ("PartiallyApproved", "AgreeWithComments", "NotApproved", "own_plus_market", "market_built",
+                      "areo_proposal", "market_standard", "NotResearched", "NotAssessed")}
+# מחקר שוק שלא רץ: כל הערכים שבסכמה (playbook-schema.md: Performed | Partial | NotPerformed) ושמות קודמים
+NOT_RUN = (None, "", "not_run", "skipped", "NotPerformed", "not_performed", "NotRun", "none")
 
 
 class Result(object):
@@ -106,46 +146,175 @@ def text_of(parts):
     return out
 
 
-def check_content(lines, model):
-    """2. תוכן: מחזיקי מקום, אנגלית מהמודל, מבנה נתונים, שלושת המסלולים."""
+def doc_lang(parts):
+    """he או en: language ב-core.xml, ובהיעדרו bidi במקטע הראשון."""
+    core = (parts.get("docProps/core.xml") or b"").decode("utf-8", "replace")
+    m = re.search(r"<dc:language>([^<]*)</dc:language>", core)
+    if m and m.group(1).strip():
+        return "en" if m.group(1).strip().lower().startswith("en") else "he"
+    doc = etree.fromstring(parts["word/document.xml"])
+    sect = next(doc.iter(W + "sectPr"), None)
+    return "he" if sect is not None and sect.find(W + "bidi") is not None else "en"
+
+
+HEB = re.compile("[֐-׿]")
+# מסמך באנגלית שרוב פסקאותיו בעברית אינו מסמך באנגלית. עד הסף הזה נסלח (שם החברה, ציטוט מעברית); מעליו המסמך
+# חייב לומר ללקוח שהטקסט בעברית (LANG_NOTE), אחרת הוא נכשל
+HEBREW_SHARE_LIMIT = 0.2
+LANG_NOTE_EN = "written in Hebrew"
+
+
+def audit_ltr(path, run_date=None):
+    """1, במסמך באנגלית: LTR מלא לטקסט הלועזי, ו-RTL מלא לכל פסקה שיש בה עברית. פסקה עם עברית חייבת bidi וריצה עם
+    אות עברית חייבת rtl (בלי זה Word מציג אותה משמאל לימין); פסקה בלי עברית אינה bidi, ובמסמך אין w:bidiVisual,
+    ולא bidi או rtlGutter במקטע. בדיקות המספור ומאפייני הקובץ של audit_docx חלות כמו בעברית. וגם: מסמך באנגלית
+    שיותר מחמישית מפסקאותיו בעברית חייב להגיד זאת (LANG_NOTE_EN), ואחרת הוא אינו תוצר באנגלית."""
+    problems = [x for x in rtl.audit_docx(path, run_date=run_date, require_hebrew=False)
+                if x.startswith(("מאפייני הקובץ", "מספור", "אין sectPr"))]
+    total = heb = 0
+    note = False
+    with zipfile.ZipFile(path) as z:
+        for part in ["word/document.xml"] + sorted(n for n in z.namelist() if re.match(
+                r"word/(header|footer)\d*\.xml$|word/comments\.xml$|word/styles\.xml$", n)):
+            x = etree.fromstring(z.read(part))
+            missing_p = missing_r = 0
+            for p in x.iter(W + "p"):
+                ppr = p.find(W + "pPr")
+                has_bidi = ppr is not None and ppr.find(W + "bidi") is not None
+                t = "".join(n.text or "" for n in p.iter(W + "t"))
+                is_heb = bool(HEB.search(t))
+                heb_dom = is_heb and len(HEB.findall(t)) >= len(re.findall("[A-Za-z]", t))
+                if part == "word/document.xml" and t.strip():
+                    total += 1
+                    heb += is_heb
+                    note = note or LANG_NOTE_EN in t
+                if has_bidi and not is_heb:
+                    problems.append("%s: פסקה עם bidi במסמך באנגלית: %s" % (part, t[:40]))
+                if heb_dom and not has_bidi:
+                    missing_p += 1
+                    if missing_p <= 3:
+                        problems.append("%s: פסקה בעברית בלי bidi במסמך באנגלית: %s" % (part, t[:40]))
+                for r in p.iter(W + "r"):
+                    rt = "".join(n.text or "" for n in r.iter(W + "t"))
+                    rpr = r.find(W + "rPr")
+                    el = rpr.find(W + "rtl") if rpr is not None else None
+                    on = el is not None and el.get(W + "val") not in ("0", "false")
+                    if HEB.search(rt) and not on:
+                        missing_r += 1
+                    elif on and not HEB.search(rt):
+                        # ריצה של רווח, פיסוק או מספר בתוך פסקה עברית היא חלק מהפסקה: מותרת
+                        if not is_heb and rt.strip():
+                            problems.append("%s: ריצה לטינית עם rtl במסמך באנגלית: %s" % (part, rt[:30]))
+            if missing_p > 3:
+                problems.append("%s: עוד %d פסקאות בעברית בלי bidi" % (part, missing_p - 3))
+            if missing_r:
+                problems.append("%s: %d ריצות בעברית בלי rtl במסמך באנגלית" % (part, missing_r))
+            for _ in x.iter(W + "bidiVisual"):
+                problems.append("%s: טבלה עם bidiVisual במסמך באנגלית" % part)
+                break
+            for sp in x.iter(W + "sectPr"):
+                if sp.find(W + "bidi") is not None or sp.find(W + "rtlGutter") is not None:
+                    problems.append("%s: מקטע עם bidi או rtlGutter במסמך באנגלית" % part)
+    if total and heb / total > HEBREW_SHARE_LIMIT and not note:
+        problems.append("מסמך באנגלית ש-%d%% מפסקאותיו בעברית, בלי הודעה ללקוח שהטקסט בעברית" % round(100 * heb / total))
+    return problems
+
+
+def _qkey(text):
+    """מפתח השוואה לציטוט: אותיות וספרות בלבד. ה-Word מנרמל רווחים ושובר שורות, והמפתח לא."""
+    return re.sub(r"[\W_]+", "", text or "")
+
+
+def model_quotes(model):
+    """המפתחות של כל ציטוט מילולי במודל: `quote` בכל מקום, ו-`text` בתוך evidence/citations
+    (ה-Word מדפיס `quote` ובהיעדרו `text`, build_playbook_docx.ev_table)."""
+    keys = set()
+
+    def walk(v, parent=""):
+        if isinstance(v, dict):
+            for k, x in v.items():
+                if isinstance(x, str) and (k in ("quote", "verbatim", "quote_text")
+                                           or (k == "text" and parent in ("evidence", "citations"))):
+                    q = _qkey(x)
+                    if len(q) >= 4:
+                        keys.add(q)
+                else:
+                    walk(x, k if isinstance(x, list) else parent)
+        elif isinstance(v, list):
+            for x in v:
+                walk(x, parent)
+    walk(model)
+    return keys
+
+
+def _is_quote_line(line, quotes, blob=None):
+    """שורה שכולה ציטוט מהמודל, גם כשהודפסה מקוצרת."""
+    k = _qkey(line)
+    if not k or not quotes:
+        return False
+    if k in quotes:
+        return True
+    return len(k) >= 20 and blob is not None and k in blob
+
+
+def written_text(lines, quotes):
+    """מה שהמערכת כתבה: השורות שאינן ציטוט, ובלי קטעים שבין מירכאות."""
+    blob = "\x00".join(quotes)
+    return [INLINE_QUOTE.sub(" ", line) for line in lines if not _is_quote_line(line, quotes, blob)]
+
+
+def check_content(lines, model, lang="he", quotes=None):
+    """2. תוכן: מחזיקי מקום, אנגלית מהמודל, מבנה נתונים, שלושת המסלולים, ומקפים בטקסט שהמערכת
+    כתבה (ציטוט מילולי מוחרג)."""
     bad = []
     joined = "\n".join(lines)
+    quotes = model_quotes(model) if quotes is None else quotes
+    written_lines = written_text(lines, quotes)
+    # מחזיקי מקום, מבנה נתונים וקודים מהמודל נבדקים רק בטקסט שהמערכת כתבה: ציטוט מילולי מהסכם שנפתח
+    # ב-"None of our employees" או שמכיל "TBD" אינו תקלה של ה-Word
+    written = "\n".join(written_lines)
+    for line in written_lines:
+        if DASHES.search(line):
+            bad.append("מקף ארוך או קצר בטקסט שאינו ציטוט: %s" % line.strip()[:70])
     for ph in PLACEHOLDERS:
-        if ph in joined:
+        if ph in written:
             bad.append('מחזיק מקום במסמך: "%s"' % ph)
-    if PLACEHOLDER_RX.search(joined):
+    if PLACEHOLDER_RX.search(written):
         bad.append('מחזיק מקום במסמך: "להשלים"')
     for rx in AS_DATA:
-        m = rx.search(joined)
+        m = rx.search(written)
         if m:
             bad.append("נוסח שהודפס כמבנה נתונים: %s" % m.group(0))
     # ערך באנגלית מהמודל: קוד מסלול או קוד מעמד שנשאר בטקסט שמוצג
-    for code in ("green", "yellow", "red", "Draft", "PartiallyApproved",
-                 "Approved", "Superseded", "Invalid"):
-        if re.search(r"(?<![\w-])%s(?![\w-])" % code, joined):
+    for code in MODEL_CODES[lang]:
+        if re.search(r"(?<![\w-])%s(?![\w-])" % code, written):
             bad.append('ערך באנגלית מהמודל בטקסט: "%s"' % code)
-    for t in TRACKS:
+    for t in NAMES[lang]["tracks"]:
         if t not in joined:
             bad.append('אין במסמך את המסלול "%s"' % t)
     return bad
 
 
-def check_sources_and_label(parts, lines, model, st, docx=None):
+def check_sources_and_label(parts, lines, model, st, docx=None, lang="he", quotes=None):
     """5 ו-8: פרק המקורות, התווית מילה במילה בכותרת העליונה ובגוף, ואין "מאושר" ליד עמדה.
+
+    "מאושר" נבדק רק בטקסט שהמערכת כתבה, ורק כטענת מעמד (STATUS_CLAIM): ציטוט מילולי ממסמך מקור,
+    ותיאור של סעיף בהסכם ("משולם לפי דוח שעות מאושר"), אינם טענה שעמדה או הפלייבוק אושרו.
 
     התווית נקראת מה-Word עצמו (`check_surfaces` עם `word_path`). בלי הנתיב
     הבדיקה הזו לא קראה את הכותרת העליונה כלל, ומסמך בלי תווית עבר אותה.
     """
     bad = list(R.check_surfaces(st, word_path=docx, model=model) or ())
     joined = "\n".join(lines)
+    head = NAMES[lang]["sources"]
     research = (model.get("market_research") or {})
-    if research and research.get("status") not in (None, "not_run", "skipped"):
-        if SOURCES_HEAD not in joined:
-            bad.append('רץ מחקר שוק ואין פרק "%s"' % SOURCES_HEAD)
+    if research and research.get("status") not in NOT_RUN:
+        if head not in joined:
+            bad.append('רץ מחקר שוק ואין פרק "%s"' % head)
     ids_in_sources = set()
     in_sources = False
     for line in lines:
-        if SOURCES_HEAD in line:
+        if head in line:
             in_sources = True
             continue
         if in_sources and line.strip().startswith("##"):
@@ -153,15 +322,18 @@ def check_sources_and_label(parts, lines, model, st, docx=None):
         if in_sources:
             ids_in_sources |= set(W_ID.findall(line))
     for line in lines:
-        if SOURCES_HEAD in line:
+        if head in line:
             break
         for wid in W_ID.findall(line):
             if ids_in_sources and wid not in ids_in_sources:
                 bad.append("מזהה %s בשורת מקור ואינו בפרק המקורות" % wid)
-    # 8: "מאושר" לא יופיע ליד עמדה, מסלול או כרטיס
-    for line in lines:
-        if "מאושר" in line and not _is_status_line(line, st):
-            bad.append('המילה "מאושר" בשורה שאינה שורת המעמד: %s' % line[:70])
+    # 8: "מאושר" לא יופיע ליד עמדה, מסלול או כרטיס. שורת המעמד נגזרת בקוד ומוחרגת, וכך גם ציטוט
+    quotes = model_quotes(model) if quotes is None else quotes
+    for line in written_text([x for x in lines if not _is_status_line(x, st)], quotes):
+        # STATUS_CLAIM קורא גם "אושרה" ו"אושרו" ("העמדה אושרה"), ולא רק "מאושר"
+        if STATUS_CLAIM[lang].search(line):
+            bad.append('המילה "%s" כטענת מעמד בשורה שאינה שורת המעמד: %s'
+                       % ("approved" if lang == "en" else "מאושר", line.strip()[:70]))
     return bad
 
 
@@ -170,30 +342,72 @@ def _is_status_line(line, st):
     ו-`check_surfaces` משווה אותם לגזירה, ולכן "מאושר" בהם הוא המעמד עצמו."""
     label = st.get("label") or ""
     t = line.strip()
-    if t.startswith((R.SUMMARY_PREFIX.strip(), R.CELL_PREFIX.strip())):
+    if t.startswith(R.SUMMARY_PREFIXES + R.CELL_PREFIXES):
         return True
     return bool(label) and (label in line or t in (label, label + "."))
 
 
-def check_brief(lines, model):
+def _rule_keys(model):
+    """המפתח שבו כל כלל מופיע במסמך: שם הנושא. מזהה הכלל (R01) פנימי ואינו מודפס ללקוח (areo-voice.md), ולכן הבדיקות
+    מזהות כלל לפי שמו, ורק כלל בלי שם נבדק לפי המזהה."""
+    out = []
+    for r in model.get("rules") or []:
+        key = str(r.get("topic_name") or r.get("topic") or r.get("rule_id") or "").strip()
+        if key:
+            out.append(key)
+    return out
+
+
+def check_brief(lines, model, lang="he"):
     """8: ב"העמדות בקצרה" יש שורה לכל כלל במודל."""
-    rules = [r.get("rule_id") for r in (model.get("rules") or []) if r.get("rule_id")]
+    rules = _rule_keys(model)
     if not rules:
         return [], "אין כללים במודל"
     joined = "\n".join(lines)
-    if BRIEF_HEAD not in joined:
-        return ['אין פרק "%s"' % BRIEF_HEAD], None
-    after = joined.split(BRIEF_HEAD, 1)[1]
+    head = NAMES[lang]["brief"]
+    if head not in joined:
+        return ['אין פרק "%s"' % head], None
+    after = joined.split(head, 1)[1]
     missing = [r for r in rules if r not in after]
-    return (["אין שורה ב\"%s\" לכללים: %s" % (BRIEF_HEAD, ", ".join(missing[:8]))]
+    return (["אין שורה ב\"%s\" לכללים: %s" % (head, ", ".join(missing[:8]))]
             if missing else []), None
+
+
+RED_TITLE = {"he": "אדום: לא מתקבל", "en": "Red: not acceptable"}
+
+
+def _green_keys(model):
+    keys = set()
+    for r in model.get("rules") or []:
+        pc = ((r.get("traffic_light") or {}).get("green") or {}).get("proposed_clause")
+        for t in (pc.values() if isinstance(pc, dict) else [pc]):
+            k = _qkey(t) if isinstance(t, str) else ""
+            if len(k) >= 12:
+                keys.add(k)
+    return keys
+
+
+def check_red(lines, model, lang="he"):
+    """2: מתחת לכותרת האדום לא מודפס נוסח הירוק כאילו הוא נוסח האדום. הנוסח באדום הוא הנוסח החלופי,
+    בכותרת משלו, ונוסח זהה לירוק מוחלף בהפניה לירוק (build_playbook_docx.track)."""
+    title, greens, bad = RED_TITLE[lang], _green_keys(model), []
+    for i, line in enumerate(lines):
+        if not line.strip().startswith(title):
+            continue
+        for nxt in lines[i + 1:i + 5]:
+            if nxt.strip() in RED_TITLE.values() or re.match(r"^\d+\.\s", nxt.strip()):
+                break
+            if _qkey(nxt) in greens:
+                bad.append("נוסח הירוק מודפס מתחת לכותרת האדום: %s" % nxt.strip()[:70])
+                break
+    return bad
 
 
 def check_numbering(lines, model):
     """6: מספרי הנושאים זהים בכל הפרקים."""
-    rules = [r.get("rule_id") for r in (model.get("rules") or []) if r.get("rule_id")]
+    rules = _rule_keys(model)
     joined = "\n".join(lines)
-    return ["מזהה כלל שאינו במסמך: %s" % r for r in rules if r not in joined]
+    return ["נושא שאינו במסמך: %s" % r for r in rules if r not in joined]
 
 
 def check_links(parts, model):
@@ -229,15 +443,72 @@ def check_links(parts, model):
             bad.append('קישור חיצוני בלי יחס חיצוני: "%s"' % text[:40])
         elif urls and target.rstrip("/") not in urls:
             bad.append("יעד הקישור אינו ברשומה: %s" % target[:70])
-    # כתובת שהודפסה כטקסט בלבד
+    # כתובת שהודפסה כטקסט בלבד. כתובת שהיא חלק מציטוט מילולי או מנוסח חוזי (למשל "the list at
+    # https://...") היא טקסט ההסכם, ונשארת כלשונה: היא אינה קישור ואינה נבדקת כאן
     linked = {"".join(n.text or "" for n in l.iter(W + "t"))
               for l in doc.iter(W + "hyperlink")}
+    quotes = _verbatim_texts(model)
     for p in doc.iter(W + "p"):
         t = "".join(n.text or "" for n in p.iter(W + "t"))
         for m in re.finditer(r"https?://\S+", t):
-            if not any(m.group(0) in x for x in linked):
+            if not any(m.group(0) in x for x in linked) and not _in_quote(t, m, quotes):
                 bad.append("כתובת שמודפסת כטקסט בלבד: %s" % m.group(0)[:60])
     return bad
+
+
+def _norm(text):
+    """רווחים ומקפים כמו בבונה ה-Word (s(), track()), כדי שציטוט במודל יימצא כמו שהודפס."""
+    return " ".join(DASHES.sub(lambda d: ", " if ord(d.group(0)) == 0x2014 else "-", str(text or "")).split())
+
+
+def _verbatim_texts(model):
+    """כל נוסח מילולי ממסמך שהמודל מחזיק: הציטוטים (citations, evidence), הנוסחים המוצעים ונוסחי הנסיגה בכל
+    מסלול ובכל וריאנט, הסעיפים הייחודיים והתנאים המסחריים."""
+    out = []
+
+    def add(v):
+        if isinstance(v, dict):
+            for k in ("he", "en", "text"):
+                add(v.get(k))
+        elif isinstance(v, str) and "http" in v:
+            out.append(_norm(v))
+
+    for c in model.get("citations") or ():
+        if isinstance(c, dict):
+            add(c.get("quote")), add(c.get("text"))
+    for r in model.get("rules") or ():
+        if not isinstance(r, dict):
+            continue
+        for e in r.get("evidence") or ():
+            if isinstance(e, dict):
+                add(e.get("quote")), add(e.get("text"))
+        for tl in [r.get("traffic_light") or {}] + [v.get("traffic_light") or {} for v in
+                                                     r.get("segment_variants") or () if isinstance(v, dict)]:
+            for blk in tl.values():
+                if isinstance(blk, dict):
+                    add(blk.get("proposed_clause")), add(blk.get("fallback_wording"))
+    cov = model.get("coverage") or {}
+    for u in cov.get("unique_clauses") or ():
+        if isinstance(u, dict):
+            add(u.get("quote"))
+    for row in (model.get("commercial") or {}).get("rows") or ():
+        if isinstance(row, dict):
+            add(row.get("quote"))
+    return out
+
+
+def _in_quote(par, m, quotes):
+    """האם הכתובת שבפסקה היא חלק מנוסח מילולי שבמודל: הכתובת מופיעה בנוסח, וגם הטקסט שסביבה בפסקה."""
+    url = m.group(0).rstrip(".,;)\"'")
+    t = _norm(par)
+    for q in quotes:
+        i = q.find(url)
+        if i < 0:
+            continue
+        ctx = q[max(0, i - 40):i].strip() or q[i + len(url):i + len(url) + 40].strip()
+        if not ctx or ctx in t:
+            return True
+    return False
 
 
 def _iter_sources(model):
@@ -282,7 +553,7 @@ def check_parity(lines, artifact):
     bad = []
     rules = data.get("rules") or (data.get("model") or {}).get("rules") or []
     for r in rules:
-        rid = r.get("rule_id") or r.get("id")
+        rid = r.get("topic_name") or r.get("topic") or r.get("rule_id") or r.get("id")
         if rid and rid not in joined:
             bad.append("נושא בארטיפקט ואין לו כרטיס ב-Word: %s" % rid)
     return bad, None
@@ -336,18 +607,26 @@ def check_properties(parts, model, company=""):
 
 def main(argv=None):
     no_bytecode()
-    ap = parser(__doc__.split("\n")[0], out_required=False)
+    ap = parser(__doc__.split("\n")[0], out_required=False,
+                out_help="אופציונלי: נתיב לדוח הקבלה כ-JSON. בלעדיו: הדפסה בלבד")
     ap.add_argument("--docx", required=True, help="ה-Word שנבנה")
     ap.add_argument("--model", required=True, help="playbook-model.json")
     ap.add_argument("--artifact", help="סביבת העבודה, לבדיקת השוויון")
     ap.add_argument("--run-date", help="יום ההפקה (YYYY-MM-DD). ברירת מחדל: היום")
     ap.add_argument("--profile", help="פרופיל-לקוח.json: שם החברה, להשוואה למחבר הקובץ")
+    ap.add_argument("--lang", choices=("he", "en"),
+                    help="שפת המסמך. בלעדיו: מהמסמך עצמו (language במאפייני הקובץ, או bidi במקטע)")
     a = ap.parse_args(argv)
 
     for p, what in ((a.docx, "ה-Word"), (a.model, "המודל")):
         if not os.path.exists(p):
             print("%s אינו קיים: %s" % (what, p))
             return 2
+    # Word פגום, DOC, מוצפן או Strict: הודעה דו-לשונית וקוד 2, ולא traceback של zipfile
+    ok, msg, code = load_docx_or_explain(a.docx, loader=False)
+    if ok is None:
+        print(msg)
+        return code
     with open(a.model, encoding="utf-8") as fh:
         model = json.load(fh)
     try:
@@ -359,25 +638,33 @@ def main(argv=None):
 
     parts = doc_parts(a.docx)
     lines = text_of(parts)
-    st = S.derive_status(model)
+    lang = a.lang or doc_lang(parts)
+    # אותה גזירה כמו בבנייה ובשער המדיניות (status.gate_status), עם התאים של רשומת האישור האחרונה
+    st = S.gate_status(model, a.model, lang=lang)
+    print("שפת המסמך: %s (%s)" % (lang, "LTR" if lang == "en" else "RTL"))
 
     res = Result()
-    res.add(1, "כיווניות", rtl.audit_docx(a.docx, run_date=run_date))
-    res.add(2, "תוכן", check_content(lines, model))
+    quotes = model_quotes(model)
+    res.add(1, "כיווניות", audit_ltr(a.docx, run_date) if lang == "en"
+            else rtl.audit_docx(a.docx, run_date=run_date))
+    res.add(2, "תוכן", check_content(lines, model, lang, quotes) + check_red(lines, model, lang))
     par, skip = check_parity(lines, a.artifact)
     res.add(3, "שוויון מול הארטיפקט", par, skip)
     vis, skip = check_visual(a.docx, run_date)
     res.add(4, "בדיקה חזותית", vis, skip)
-    res.add(5, "מקורות ותווית", check_sources_and_label(parts, lines, model, st, a.docx))
+    res.add(5, "מקורות ותווית", check_sources_and_label(parts, lines, model, st, a.docx, lang, quotes))
     res.add(6, "מספור והפניות", check_numbering(lines, model))
     res.add(7, "קישורים חיצוניים", check_links(parts, model))
-    brief, skip = check_brief(lines, model)
+    brief, skip = check_brief(lines, model, lang)
     res.add(8, "תווית ומעמד", brief, skip)
     company = ""
     if a.profile:
         try:
             with open(a.profile, encoding="utf-8") as fh:
-                company = (json.load(fh).get("organization_name") or "").strip()
+                prof = json.load(fh)
+            # במסמך באנגלית המחבר הוא השם הרשום באנגלית, כמו בבנייה (build_playbook_docx.company_name)
+            company = ((lang == "en" and str(prof.get("organization_name_en") or "").strip())
+                       or prof.get("organization_name") or "").strip()
         except (OSError, ValueError):
             pass
         # כמו בשער: פרט שטרם הושלם בפרופיל ("ח.פ [●]") אינו חלק מהשם
@@ -409,6 +696,9 @@ def main(argv=None):
         except OutputRefused as exc:
             print("הדוח לא נכתב. סירוב: %s" % exc)
         else:
+            # תיקייה שאינה קיימת עוד נוצרת, ולא מפילה את הבדיקה אחרי שכבר רצה
+            if os.path.dirname(path):
+                os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path, "w", encoding="utf-8") as fh:
                 json.dump(res.to_dict(), fh, ensure_ascii=False, indent=2)
             print("נכתב %s" % path)

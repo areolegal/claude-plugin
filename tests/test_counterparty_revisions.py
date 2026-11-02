@@ -31,6 +31,8 @@ from lxml import etree  # noqa: E402
 
 THEM = "Contractor Legal"
 US = 'עו"ד דנה לוי'
+# הסימונים נחתמים בשם בלי התואר (lawyer.py, split_signer: באג 9, הרצה S1b, 28.10.2026); הנוסח המלא נשמר ככינוי
+SIGNER = 'דנה לוי'
 
 
 @pytest.fixture
@@ -96,7 +98,7 @@ def test_our_edit_next_to_their_revisions_passes_the_gate_and_keeps_theirs(recei
     assert p.returncode == 0, p.stdout + p.stderr
     root = etree.fromstring(dt.read_package(str(out))["word/document.xml"])
     rroot = etree.fromstring(dt.read_package(str(received["draft"]))["word/document.xml"])
-    assert dt.reject_ours_view(root, US) == [dt.para_text(x) for x in dt.body_paragraphs(rroot)]
+    assert dt.reject_ours_view(root, SIGNER) == [dt.para_text(x) for x in dt.body_paragraphs(rroot)]
     theirs = lambda x: Counter(k for k, a in re.findall(r'<w:(ins|del) [^>]*w:author="([^"]*)"', x) if a == THEM)
     assert theirs(zipfile.ZipFile(out).read("word/document.xml").decode()) == \
         theirs(zipfile.ZipFile(received["draft"]).read("word/document.xml").decode())
@@ -142,7 +144,7 @@ def test_we_answer_inside_their_change(received, mode, old, deleted):
     p, out = _apply(received, dec)
     assert p.returncode == 0, p.stdout + p.stderr
     revs = _revs(out)
-    assert ("del", US.replace('"', "&quot;"), deleted) in revs and ("ins", US.replace('"', "&quot;"), "45") in revs
+    assert ("del", SIGNER, deleted) in revs and ("ins", SIGNER, "45") in revs
     assert not [r for r in revs if r[1] == THEM and r[2] in ("30", "90")]      # השינוי שלהם בפסקה הוכרע
     assert any(r[1] == THEM for r in revs)                                      # ושינוי שלהם בפסקה אחרת נשאר
     root = etree.fromstring(dt.read_package(str(out))["word/document.xml"])

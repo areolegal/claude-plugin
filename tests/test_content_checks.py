@@ -103,8 +103,12 @@ def test_a_compliance_clause_needs_an_explicit_user_decision(tmp_path):
 
 
 def test_a_playbook_party_label_that_is_not_in_the_agreement_blocks(tmp_path):
-    assert "PARTY_LABEL" in codes(run(tmp_path, [ins("5. נותן השירותים יבטח את עצמו.")]), True)
-    assert "PARTY_LABEL" not in codes(run(tmp_path, [ins("5. הספק יבטח את עצמו.")]))
+    # אין רשימת כינויים בקוד (content_checks.PARTY_LABELS ריק): הכינויים באים מהפלייבוק (company_role_code,
+    # party_labels), כטקסט חופשי. בלי כינוי רשום הבדיקה אינה רצה
+    core = {"company_role_code": "נותן השירותים"}
+    assert "PARTY_LABEL" in codes(run(tmp_path, [ins("5. נותן השירותים יבטח את עצמו.")], core=core), True)
+    assert "PARTY_LABEL" not in codes(run(tmp_path, [ins("5. הספק יבטח את עצמו.")], core=core))
+    assert "PARTY_LABEL" not in codes(run(tmp_path, [ins("5. נותן השירותים יבטח את עצמו.")]))
 
 
 def test_a_red_marker_of_an_applicable_rule_needs_a_decision(tmp_path):

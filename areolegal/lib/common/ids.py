@@ -5,8 +5,12 @@
 כללים:
 - מספר תאגיד הוא 9 ספרות בדיוק. ספרת הביקורת לפי אותו אלגוריתם של מספר זהות: משקלות 1,2,1,2...
   משמאל, סכום הספרות של כל מכפלה, והסכום מתחלק ב-10.
-- בחברה (בע"מ) הקידומת היא 51 או 52. קידומת אחרת (למשל 58, עמותה) מסומנת "not_company" כשהצפי
-  הוא חברה, והשאלה עולה ללקוחה.
+- הקידומות התקינות של תאגיד ישראלי: 51 ו-52 (חברה, כולל חל"צ וחברה ממשלתית), 55 (שותפות), 56 (חברת חוץ),
+  57 (אגודה שיתופית), 58 (עמותה), 50 (גוף ציבורי: משרד ממשלתי, רשות מקומית, תאגיד סטטוטורי), ו-53, 54, 59
+  (מספרים אחרים שניתנים לגופים ציבוריים, למוסדות ולהקדשות). קידומת אחרת, למשל מספר זהות של אדם,
+  מסומנת "not_company" כשהצפי הוא תאגיד, והשאלה עולה ללקוחה.
+- ספרת הביקורת נבדקת רק כשהרישום ישראלי (incorporation_country או organization_type בפרופיל,
+  israeli_registry). מספר זר נבדק רק מול הפרופיל. בהיעדר מידע על ההתאגדות: אזהרה, ולא כשל.
 - מספר בן 8 ספרות אינו מספר תאגיד. לא משלימים לו אפס מוביל.
 - ההשוואה היא רק מול הפרופיל ומול מסמכי החברה (הסכם חתום, תעודת התאגדות, נייר פירמה). שם של
   תיקייה אינו מקור, לעולם.
@@ -21,7 +25,14 @@ import re
 SIGNING_BLANKS = {'he': '________ (יושלם בחתימה)', 'en': '________ (to be completed at signing)'}
 SIGNING_BLANK = SIGNING_BLANKS['he']  # תאימות לאחור: הנוסח העברי
 COMPANY_PREFIXES = ('51', '52')
-OTHER_PREFIXES = {'57': 'אגודה שיתופית', '58': 'עמותה'}  # כל קידומת אחרת: unknown_prefix, ונבדקת מול המסמך
+OTHER_PREFIXES = {'55': 'שותפות', '56': 'חברת חוץ', '57': 'אגודה שיתופית', '58': 'עמותה',
+                  '50': 'גוף ציבורי', '53': 'גוף ציבורי או מוסד', '54': 'גוף ציבורי או מוסד',
+                  '59': 'גוף ציבורי או מוסד'}  # כל קידומת אחרת: unknown_prefix
+# צורות התאגדות שמעידות על רישום ישראלי. "חברת חוץ" רשומה בישראל (קידומת 56) גם כשהתאגדה בחו"ל. בפרופיל
+# באנגלית צורת ההתאגדות נשמרת בתווית האנגלית של הטופס, ולכן גם היא כאן.
+ISRAELI_FORMS = ('חברה ממשלתית', 'עמותה', 'אגודה שיתופית', 'חברת חוץ', 'חל״צ', 'חל"צ',
+                 'Government company', 'Non-profit association (amuta)', 'Public benefit company (PBC)',
+                 'Cooperative society', 'Foreign company registered in Israel')
 ALLOWED_SOURCES = ('profile', 'signed_agreement', 'incorporation_certificate', 'letterhead', 'client_answer')
 COMPLETE_AT_SIGNING = re.compile(r'נשלים\s+(לפני|ב)\s*(ה)?חתימה|יושלם\s+(לפני|ב)\s*(ה)?חתימה|נמלא\s+(לפני|ב)\s*(ה)?חתימה|'
                                  r'complete(d)?\s+(at|before)\s+signing|to be completed at signing')
@@ -43,14 +54,36 @@ def normalize(raw):
     return re.sub(r'[\s\-.‎‏]', '', str(raw or ''))
 
 
-def validate_company_number(raw, expect_company=True):
+def israeli_registry(profile):
+    """האם מספר הרישום שלנו ישראלי: True, False, או None כשאין בפרופיל מידע להכריע."""
+    p = profile or {}
+    c = str(p.get('incorporation_country') or p.get('incorporation_country_name') or '').strip()
+    t = str(p.get('organization_type') or '').strip()
+    if t.startswith('חברת חוץ'):
+        return True
+    if c:
+        return c.upper() in ('IL', 'ISR', 'ISRAEL') or c == 'ישראל'
+    if t.startswith('חברה זרה') or t.startswith('Foreign company (not'):
+        return False
+    if t.startswith(ISRAELI_FORMS):
+        return True
+    return None
+
+
+def validate_company_number(raw, expect_company=True, israeli=True):
     """מחזיר dict: valid (bool), number, reason (ok / missing / not_digits / wrong_length / bad_check_digit /
-    not_company), kind. "valid" רק כשהמספר בן 9 ספרות, ספרת הביקורת תקינה, וכשמצפים לחברה, הקידומת 51 או 52.
+    not_company / foreign_not_checked), kind. ברישום ישראלי (ברירת המחדל): "valid" רק כשהמספר בן 9 ספרות,
+    ספרת הביקורת תקינה, וכשמצפים לתאגיד, הקידומת אחת מ-50 עד 59. kind: company, או שם הסוג
+    מ-OTHER_PREFIXES (עמותה, גוף ציבורי וכו').
+    israeli=False: מספר זר. אין בדיקת פורמט או ספרת ביקורת; הוא נבדק רק מול הפרופיל.
     """
     num = normalize(raw)
     out = {'raw': raw, 'number': num, 'valid': False, 'kind': None}
     if not num:
         out['reason'] = 'missing'
+        return out
+    if israeli is False:
+        out.update(valid=True, reason='foreign_not_checked', kind='foreign')
         return out
     if not num.isdigit():
         out['reason'] = 'not_digits'
@@ -64,7 +97,7 @@ def validate_company_number(raw, expect_company=True):
         return out
     prefix = num[:2]
     out['kind'] = 'company' if prefix in COMPANY_PREFIXES else OTHER_PREFIXES.get(prefix, 'unknown_prefix')
-    if expect_company and prefix not in COMPANY_PREFIXES:
+    if expect_company and prefix not in COMPANY_PREFIXES and prefix not in OTHER_PREFIXES:
         out['reason'] = 'not_company'
         return out
     out['valid'] = True
@@ -82,7 +115,7 @@ def validate_person_id(raw):
     return {'raw': raw, 'number': num, 'valid': ok, 'reason': 'ok' if ok else 'bad_check_digit'}
 
 
-def resolve_company_number(profile_value, document_values=(), folder_names=()):
+def resolve_company_number(profile_value, document_values=(), folder_names=(), israeli=True):
     """קובע את מספר התאגיד שלנו לנוסח. מקורות מותרים: הפרופיל ומסמכי החברה בלבד.
 
     document_values: רשימה של (source, value), כש-source אחד מ-ALLOWED_SOURCES. מקור אחר נדחה.
@@ -97,15 +130,16 @@ def resolve_company_number(profile_value, document_values=(), folder_names=()):
       ask: True כשצריך שאלה אחת במנת השאלות (מצב 3)
       checks: תוצאת הבדיקה לכל מקור
       ignored: מקורות שנדחו (כולל שמות תיקיות)
+    israeli: כמו ב-validate_company_number. מספר זר (False) נבדק רק בהשוואה בין המקורות.
     """
     checks, ignored = [], []
     if profile_value:
-        checks.append(('profile', validate_company_number(profile_value)))
+        checks.append(('profile', validate_company_number(profile_value, israeli=israeli)))
     for src, val in document_values:
         if src not in ALLOWED_SOURCES:
             ignored.append((src, val))
             continue
-        checks.append((src, validate_company_number(val)))
+        checks.append((src, validate_company_number(val, israeli=israeli)))
     for name in folder_names:
         ignored.append(('folder_name', name))
     valid_numbers = sorted({c['number'] for _, c in checks if c['valid']})

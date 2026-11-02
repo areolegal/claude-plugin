@@ -121,12 +121,27 @@ def test_a_field_the_core_supplies_is_accepted_from_the_core(tmp_path):
 
 
 def test_a_core_that_contradicts_the_model_is_an_error(tmp_path):
+    # מעמד שונה בגרעין ובמודל: שגיאה בחוזה, כי הקורא אינו יודע במי להאמין
+    model = copy.deepcopy(GOOD_MODEL)
+    core = {"clauses": [{"rule_id": "R-01"}], "playbook_status": "Approved"}
+    r = _run(_write(tmp_path, model, core))
+    assert r.returncode == 3, r.stdout
+    assert "במי להאמין" in r.stdout
+
+
+def test_a_label_gap_is_shown_with_the_gate_label_and_does_not_fail(tmp_path):
+    # תווית שונה בגרעין אינה שגיאה בחוזה מאז 01.11: התווית של שער המדיניות נגזרת בקוד (status.gate_status), והקורא
+    # מציג אותה ולא את התווית שבגרעין (check_playbook_contract.py, "פער תוויות")
     model = copy.deepcopy(GOOD_MODEL)
     core = {"clauses": [{"rule_id": "R-01"}],
             "status_label": "מדיניות מאושרת, 01.01.2026, בידי אחר, תפקיד"}
     r = _run(_write(tmp_path, model, core))
-    assert r.returncode == 3, r.stdout
-    assert "במי להאמין" in r.stdout
+    assert r.returncode == 0, r.stdout
+    assert "LABEL MISMATCH" in r.stdout
+    gate = next(line for line in r.stdout.splitlines() if "התווית של שער המדיניות" in line)
+    assert "מדיניות מאושרת" not in gate          # הגרעין אינו מאשר את הפלייבוק בעיני הקורא
+    assert 'core: "מדיניות מאושרת, 01.01.2026' in r.stdout
+    assert "לבנות מחדש את הגרעין" in r.stdout
 
 
 def test_a_rule_in_the_core_that_is_not_in_the_model_is_an_error(tmp_path):

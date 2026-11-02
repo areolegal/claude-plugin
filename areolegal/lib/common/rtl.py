@@ -388,3 +388,203 @@ def audit_docx(path, run_date=None, require_hebrew=True):
         if require_hebrew and not has_hebrew:
             problems.append('אין טקסט עברי במסמך: הבדיקה חלה על מסמכים בעברית')
     return problems
+
+
+
+# ------------------------------------------------------------------ תוצר באנגלית: LTR מלא
+# דרישת מוצר (28.10.2026): deliverable_language קובע את שפת התוצר. תוצר באנגלית הוא LTR מלא: בלי bidi, בלי rtl,
+# בלי bidiVisual ו-rtlGutter, יישור לשמאל ומספור "1.". הבונים כותבים דרך אותם עוזרים (add_paragraph וכו'),
+# ו-enforce_document_ltr מסיר בסוף את סימוני ה-RTL, כמו ש-enforce_document מוסיף אותם בתוצר עברי.
+LATIN_FONT = 'Calibri'
+
+
+def is_en(lang):
+    """he או en לפי ערך שפה חופשי: en, english, אנגלית, en-US."""
+    v = str(lang or '').strip().lower()
+    return v[:2] == 'en' or v in ('english', 'אנגלית')
+
+
+def lang_of(*values, default='he'):
+    """הערך הראשון שאינו ריק, מנורמל ל-he או en."""
+    for v in values:
+        if v not in (None, ''):
+            return 'en' if is_en(v) else 'he'
+    return default
+
+
+def _strip(parent, *tags):
+    if parent is None:
+        return
+    for tag in tags:
+        for el in parent.findall(qn(tag)):
+            parent.remove(el)
+
+
+def _ind_left(ind):
+    """הזחה שנכתבה לצד ימין (התחלת שורה ב-RTL) עוברת לצד שמאל."""
+    if ind is not None and ind.get(qn('w:right')) and not ind.get(qn('w:left')):
+        ind.set(qn('w:left'), ind.get(qn('w:right')))
+        del ind.attrib[qn('w:right')]
+
+
+def _ppr_ltr(p_el):
+    pPr = _child(p_el, 'w:pPr')
+    _strip(pPr, 'w:bidi')
+    jc = pPr.find(qn('w:jc'))
+    if jc is None:
+        _ensure(pPr, 'w:jc', _ORDER_PPR).set(qn('w:val'), 'left')
+    elif jc.get(qn('w:val')) in ('right', 'end'):
+        jc.set(qn('w:val'), 'left')
+    _ind_left(pPr.find(qn('w:ind')))
+    return pPr
+
+
+def _rpr_ltr(r_el, font=LATIN_FONT):
+    rPr = r_el.find(qn('w:rPr'))
+    if rPr is None:
+        return
+    _strip(rPr, 'w:rtl')
+    fonts = rPr.find(qn('w:rFonts'))
+    if fonts is not None:
+        for att in ('w:ascii', 'w:hAnsi', 'w:cs'):
+            if fonts.get(qn(att)) in (None, HEBREW_FONT):
+                fonts.set(qn(att), font)
+
+
+def enforce_document_ltr(doc, author='', title=None, font=LATIN_FONT):
+    """המקבילה של enforce_document לתוצר באנגלית: מקטעים, סגנונות, מספור, כל הפסקאות והריצות, ומאפייני הקובץ."""
+    for section in doc.sections:
+        _strip(section._sectPr, 'w:bidi', 'w:rtlGutter')
+        for hf in (section.header, section.footer):
+            for p in hf._element.iter(qn('w:p')):
+                _ppr_ltr(p)
+                for r in p.iter(qn('w:r')):
+                    _rpr_ltr(r, font)
+    for name in RTL_STYLES:
+        try:
+            st = doc.styles[name]
+        except KeyError:
+            continue
+        _strip(st.element.find(qn('w:pPr')), 'w:bidi')
+        rPr = st.element.find(qn('w:rPr'))
+        _strip(rPr, 'w:rtl')
+        fonts = rPr.find(qn('w:rFonts')) if rPr is not None else None
+        if fonts is not None:
+            for att in ('w:ascii', 'w:hAnsi', 'w:cs'):
+                if fonts.get(qn(att)) == HEBREW_FONT:
+                    fonts.set(qn(att), font)
+    try:
+        numbering = doc.part.numbering_part.element
+    except Exception:  # noqa: BLE001  מסמך בלי numbering.xml
+        numbering = None
+    if numbering is not None:
+        for lvl in numbering.iter(qn('w:lvl')):
+            lpPr = lvl.find(qn('w:pPr'))
+            _strip(lpPr, 'w:bidi')
+            _ind_left(lpPr.find(qn('w:ind')) if lpPr is not None else None)
+    body = doc.element.body
+    for tbl in body.iter(qn('w:tbl')):
+        _strip(tbl.find(qn('w:tblPr')), 'w:bidiVisual')
+    for p in body.iter(qn('w:p')):
+        _ppr_ltr(p)
+        for r in p.iter(qn('w:r')):
+            _rpr_ltr(r, font)
+    clean_metadata(doc, author=author, title=title)
+    return doc
+
+
+def hebrew_dominant(text):
+    """True כשיש בטקסט לפחות כמו אותיות עבריות כמו אותיות לטיניות. פסקה כזו RTL; פסקה לטינית עם מילה עברית אחת
+    נשארת LTR, והמילה העברית בה היא ריצת rtl."""
+    heb = len(_HEB.findall(text))
+    return heb > 0 and heb >= len(re.findall('[A-Za-z]', text))
+
+
+def keep_hebrew_rtl(doc):
+    """אחרי enforce_document_ltr, במסמך באנגלית שיש בו עברית (שם צד, ציטוט, נימוק שנכתב בעברית): פסקה שרובה עברית
+    מקבלת bidi, וכל ריצה עם אות עברית מקבלת rtl, כך שהפיסוק והספרות נשארים במקומם. פסקה בלי עברית נשארת LTR.
+    בגוף, בטבלאות, בכותרות העליונות והתחתונות. מחזיר את מספר הפסקאות העבריות."""
+    roots = [doc.element.body]
+    for section in doc.sections:
+        for hf in (section.header, section.footer):
+            if not hf.is_linked_to_previous:       # בלי זה python-docx מוסיף כותרת ריקה לקובץ
+                roots.append(hf._element)
+    n = 0
+    for root in roots:
+        for p in root.iter(qn('w:p')):
+            t = ''.join(x.text or '' for x in p.iter(qn('w:t')))
+            if not _HEB.search(t):
+                continue
+            n += 1
+            if hebrew_dominant(t):
+                _ppr_rtl(p)
+            for r in p.iter(qn('w:r')):
+                if _HEB.search(''.join(x.text or '' for x in r.iter(qn('w:t')))):
+                    _rpr_rtl(r)
+    return n
+
+
+def enforce(doc, lang, author='', title=None, keep_hebrew=False):
+    """אכיפה לפי שפת התוצר: RTL מלא לעברית, LTR מלא לאנגלית. keep_hebrew: בתוצר באנגלית, פסקה בעברית נשארת RTL."""
+    if is_en(lang):
+        enforce_document_ltr(doc, author=author, title=title)
+        if keep_hebrew:
+            keep_hebrew_rtl(doc)
+        return doc
+    return enforce_document(doc, author=author, title=title)
+
+
+def audit_docx_ltr(path, run_date=None):
+    """בדיקת תוצר באנגלית: אין bidi בפסקה, אין rtl פעיל בריצה, אין bidiVisual, אין bidi ו-rtlGutter במקטע, אין
+    יישור לימין, ומספור "1.". מאפייני הקובץ כמו ב-audit_docx. טקסט עברי מצוטט מותר (הנוסח נשאר בשפת המקור)."""
+    problems = []
+    with zipfile.ZipFile(path) as z:
+        names = z.namelist()
+        parts = ['word/document.xml'] + sorted(n for n in names if re.match(
+            r'word/(header|footer)\d*\.xml$|word/comments\.xml$', n))
+        for part in parts:
+            x = etree.fromstring(z.read(part))
+            for p in x.iter(_q('p')):
+                t = _text(p)
+                if not t.strip():
+                    continue
+                ppr = p.find(_q('pPr'))
+                if ppr is not None and ppr.find(_q('bidi')) is not None and not _HEB.search(t):
+                    problems.append('%s: bidi in an English paragraph: %s' % (part, t[:40]))
+                if ppr is not None and any(j.get(_q('val')) in ('right', 'end') for j in ppr.findall(_q('jc'))):
+                    problems.append('%s: right-aligned paragraph: %s' % (part, t[:40]))
+            for r in x.iter(_q('r')):
+                rpr = r.find(_q('rPr'))
+                el = rpr.find(_q('rtl')) if rpr is not None else None
+                if el is not None and el.get(_q('val')) not in ('0', 'false') and _text(r).strip()                         and not _HEB.search(_text(r)):
+                    problems.append('%s: rtl run in an English document: %s' % (part, _text(r)[:40]))
+            for tb in x.iter(_q('tbl')):
+                tp = tb.find(_q('tblPr'))
+                if tp is not None and tp.find(_q('bidiVisual')) is not None:
+                    problems.append('%s: table with bidiVisual (reversed columns)' % part)
+        doc = etree.fromstring(z.read('word/document.xml'))
+        for sp in doc.iter(_q('sectPr')):
+            if sp.find(_q('bidi')) is not None or sp.find(_q('rtlGutter')) is not None:
+                problems.append('section with bidi or rtlGutter')
+        if 'word/numbering.xml' in names:
+            nx = etree.fromstring(z.read('word/numbering.xml'))
+            for lvl in nx.iter(_q('lvl')):
+                lt = lvl.find(_q('lvlText'))
+                v = lt.get(_q('val')) if lt is not None else ''
+                if v and re.match(r'^\.\s*%\d', v):
+                    problems.append('numbering with the dot before the number: %s' % v)
+                lp = lvl.find(_q('pPr'))
+                if lp is not None and lp.find(_q('bidi')) is not None:
+                    problems.append('numbering level with bidi')
+        if 'docProps/core.xml' in names:
+            core = z.read('docProps/core.xml').decode('utf-8', 'replace')
+            if 'python-docx' in core:
+                problems.append('file properties: "python-docx" in core.xml')
+    return problems
+
+
+def audit(path, lang, run_date=None):
+    """בדיקה לפי שפת התוצר."""
+    if is_en(lang):
+        return audit_docx_ltr(path, run_date=run_date)
+    return audit_docx(path, run_date=run_date)
