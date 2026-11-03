@@ -32,7 +32,7 @@ from pathlib import Path
 
 DEFAULT_API_URL = "https://areo.co.il"
 PROTOCOL_VERSION = "2024-11-05"
-PLUGIN_VERSION = "1.23.0"   # kept in step with plugin.json by release.sh
+PLUGIN_VERSION = "1.24.0"   # kept in step with plugin.json by release.sh
 SERVER_INFO = {"name": "areolegal", "version": "1.0.4"}
 # הוראות השרת נכנסות להנחיות המערכת של כל שיחה שהתוסף פעיל בה (initialize.instructions), ולכן הן
 # המקום החזק ביותר לכלל השפה. בהרצה חיה (20.10.2026) Claude כתב ללקוח הודעות ביניים באנגלית ("Now
@@ -158,6 +158,15 @@ TOOLS = [
             "required": ["profile"],
             "additionalProperties": False,
         },
+    },
+    {
+        "name": "get_profile",
+        "description": (
+            "Read the organisation profile Areo keeps for this licence's organisation (public company "
+            "fields only, no signatories). Call it at the start of setup, before asking any question: "
+            "when it is found, offer to use it instead of asking the company questions again."
+        ),
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
     {
         "name": "record_action",
@@ -408,6 +417,14 @@ def call_tool(name: str, args: dict) -> str:
     key = license_key()
     if not key:
         return NO_KEY_MSG
+
+    if name == "get_profile":
+        status, body = http_get("/v1/profile", key)
+        if status == 0:
+            return CONN_ERR_MSG.format(err=body.get("error", "unknown"))
+        if status != 200:
+            return denial_text(status, body)
+        return json.dumps(body, ensure_ascii=False)
 
     if name in ("save_profile", "record_action"):
         if name == "save_profile":

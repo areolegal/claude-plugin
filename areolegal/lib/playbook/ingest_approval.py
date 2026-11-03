@@ -519,6 +519,10 @@ _NEGATE = ('לא לאשר', 'לא מאשר', 'אל תאשר', 'לא אישור',
            'not accept', "don't accept", 'do not accept')
 _REVIEWED = ('נבדק', 'נבדקה', 'reviewed')
 _SKIP = ('לדלג', 'דלג', 'skip')
+# "לעורך דין": דילוג שהמאשר ביקש במפורש שעורך דין יעבור עליו. נרשם כמו דילוג (שום תא אינו מאושר), עם הסיבה, כדי
+# שסביבת העבודה תציג "מחכה לעורך דין" ולא רק "לא אושר"
+_LAWYER_LATER = ('לעורך דין', 'לבדיקת עורך דין', 'for a lawyer', 'lawyer later')
+REASON_LAWYER_LATER = 'מחכה לבדיקה של עורך דין, לבקשת המאשר'
 _ALL = ('הכול', 'הכל', 'כל המנה', 'all')
 _EXCEPT = ('חוץ מ', 'למעט', 'except')
 _CHANGE = re.compile(r'^(?:לשנות|שינוי|change)\s*([^:]{0,20}):\s*(.+)$', re.S | re.I)
@@ -1122,6 +1126,8 @@ def _classify(cmd, item, lang='he'):
                 return {'action': 'choose', 'option': k}
     if _has(cmd, _NEGATE):
         raise ReplyError('תשובה שלילית בפריט %d: כדי לא לאשר, "לשנות: <הנוסח>" או "לדלג"' % item['n'])
+    if _has(cmd, _LAWYER_LATER):
+        return {'action': 'skip', 'lawyer_later': True}
     if _has(cmd, _SKIP):
         return {'action': 'skip'}
     if _has(cmd, _APPROVE):
@@ -1393,10 +1399,13 @@ def apply_answers(model, batch, answers, approver, role=None, reply='', today=No
         else:
             summary['pending'] += 1
 
-    def skip_key(key, ans):
+    def skip_key(key, ans, lawyer_later=False):
         if not S.cell_counts(cells.get(key) or {}):
             cells[key] = {'status': 'skipped', 'policy_claim': False, 'simulated': False, 'skipped_by': approver,
-                          'skipped_at': today, 'via': 'chat', 'answer': ans, 'reason': 'דולג בתור האישור'}
+                          'skipped_at': today, 'via': 'chat', 'answer': ans,
+                          'reason': REASON_LAWYER_LATER if lawyer_later else 'דולג בתור האישור'}
+            if lawyer_later:
+                cells[key]['lawyer_later'] = True
             touched.add(key)
         skipped.append(key)
         summary['skipped'] += 1
@@ -1422,7 +1431,7 @@ def apply_answers(model, batch, answers, approver, role=None, reply='', today=No
                 continue
             if act == 'skip':
                 for k in keys:
-                    skip_key(k, verbatim)
+                    skip_key(k, verbatim, ans.get('lawyer_later'))
                 continue
             if act == 'approve':
                 sel = [k for k in keys if not ans.get('track') or k.endswith('|' + ans['track'])]

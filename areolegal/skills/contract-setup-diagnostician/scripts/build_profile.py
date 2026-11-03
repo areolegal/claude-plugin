@@ -409,6 +409,7 @@ T = {
            "fields": {"display_language": "שפת הממשק", "deliverable_language": "שפת התוצרים",
                       "deliverable_language_basis": "הבסיס לשפת התוצרים", "organization_name_en": "השם הרשום באנגלית",
                       "registration_number": "מספר הרישום", "branding.signatories": "מורשי החתימה",
+                      "branding.policy_approver": "מאשר המדיניות",
                       "branding.lawyer_name": "החותם", "branding.website": "אתר החברה", "branding.theme": "המיתוג",
                       "branding.logo_path": "הלוגו", "branding.logo_status": "הלוגו", "branding.logo_added_at": "הלוגו",
                       "departments_involved": "המחלקות המעורבות", "connections": "החיבורים"},
@@ -459,6 +460,7 @@ T = {
                       "deliverable_language_basis": "Basis for the output language",
                       "organization_name_en": "Registered English name", "registration_number": "Registration number",
                       "branding.signatories": "Signatories", "branding.lawyer_name": "Signer",
+                      "branding.policy_approver": "Policy approver",
                       "branding.website": "Company website", "branding.theme": "Branding",
                       "branding.logo_path": "Logo", "branding.logo_status": "Logo", "branding.logo_added_at": "Logo",
                       "departments_involved": "Departments involved", "connections": "Connections"},
@@ -1140,7 +1142,8 @@ def report(p, path):
 SET_PROTECTED = ("profile_id", "schema_version", "core_version", "generated_at", "checked_at", "version")
 # שדה שאפשר להוסיף גם כשאינו בקובץ: פרופיל שנבנה לפני שהשדה נוסף, ותשובות המשתמש על הארגון שרכיב אחר רושם
 # אחרי ההקמה (שפת התוצר ובסיסה, המחלקות המעורבות לכל משפחת הסכמים). שום דבר שנגזר ממסמך, מפלייבוק או מעסקה.
-SET_NEW_OK = ("organization_name_en", "branding.signatories", "deliverable_language", "deliverable_language_basis",
+SET_NEW_OK = ("organization_name_en", "branding.signatories", "branding.policy_approver", "deliverable_language",
+              "deliverable_language_basis",
               "departments_involved", "departments_involved.asked_at", "branding.website", "branding.theme",
               "branding.lawyer_name_en", "branding.lawyer_role_en")
 # departments_involved.<משפחת ההסכמים>: כל משפחה, ערך רשימת JSON של שמות מחלקות
@@ -1150,8 +1153,8 @@ DELIVERABLE_LANGS = ("he", "en", "both")
 # החיבורים, לוגו שנוסף מאוחר יותר, ושדות שההקמה מתקנת בעצמה לבקשת המשתמש בלי לשנות את גזירת הרגולטורים (מספר
 # הרישום, החותם). כל שדה אחר: סירוב. שינוי שמשפיע על הגזירה או על זהות הארגון עובר בעדכון פרופיל, מקובץ תשובות.
 SET_ALLOWED = ("organization_name_en", "registration_number",
-               "branding.signatories", "branding.lawyer_name", "branding.lawyer_role", "branding.lawyer_name_en",
-               "branding.lawyer_role_en", "branding.logo_path", "branding.logo_status", "branding.logo_added_at",
+               "branding.signatories", "branding.policy_approver", "branding.lawyer_name", "branding.lawyer_role",
+               "branding.lawyer_name_en", "branding.lawyer_role_en", "branding.logo_path", "branding.logo_status", "branding.logo_added_at",
                "branding.website", "branding.theme", "deliverable_language", "deliverable_language_basis")
 SET_ALLOWED_PREFIXES = (SET_FAMILY_FIELD, "connections")
 # שפת הממשק: הערכים בפרופיל (רשימות, רגולטורים, בסיס) נשמרים בה, ולכן שינוי שלה הוא עדכון פרופיל (update_profile),
@@ -1218,8 +1221,25 @@ def areo_copy(path, to=None):
     return 0
 
 
+# מילים שמעידות שנכתב תפקיד ולא אדם (כמו ב-lib/playbook/ingest_approval.py): כל אישור נרשם בשם אדם מלא
+ROLE_WORDS = ('היועץ', 'היועצת', 'המשפטי', 'המשפטית', 'מנכ"ל', 'מנכ״ל', 'סמנכ"ל', 'הלשכה', 'המחלקה',
+              'general counsel', 'legal counsel', 'ceo')
+
+
+def is_person_name(name):
+    n = " ".join(str(name or "").split())
+    return len(n.split()) >= 2 and not any(w.lower() in n.lower() for w in ROLE_WORDS)
+
+
 def check_set_value(key, val):
     """(ערך, None) או (None, הודעת שגיאה) לשדות שרכיבים אחרים רושמים. שדה אחר עובר כמו שהוא."""
+    if key == "branding.policy_approver":
+        # מי שמאשר את המדיניות (הפלייבוקים): נשאל בשלב הפלייבוק, ונשמר רק בפרופיל שבתיקייה, לא ב-Areo
+        if val is None:
+            return None, None
+        if not isinstance(val, dict) or not is_person_name(val.get("name")):
+            return None, 'branding.policy_approver: {"name": "<שם פרטי ומשפחה>", "role": "<תפקיד>"}, שם אדם מלא'
+        return {"name": " ".join(val["name"].split()), "role": " ".join(str(val.get("role") or "").split()) or None}, None
     if key == "branding.website":
         site = normalize_website(val)
         if val not in (None, "") and not site:

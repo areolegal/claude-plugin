@@ -103,7 +103,9 @@ def _ingest(built, signed, tmp_path, extra=()):
             "--model", p["model"], "--core", p["core"], "--index", p["index"],
             "--records", tmp_path / "אישורים", "--today", "2026-10-14",
             "--received-via", "user_upload",
-            "--upload-ref", str(signed)] + list(extra)
+            "--upload-ref", str(signed),
+            # העותק המקומי נכתב לתיקייה של הבדיקה, ולא ל-Areo-playbooks-local בתיקיית הבית של מי שמריץ
+            "--local-copy-dir", tmp_path / "local"] + list(extra)
     return _run(INGEST, args)
 
 

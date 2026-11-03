@@ -39,7 +39,9 @@ LOCAL_COPY_DIRNAME = 'Areo-playbooks-local'
 def local_copy_dir(family_id, base=None):
     """תיקיית העותק המקומי: base (אם נמסר), או <בית המשתמש>/Areo-playbooks-local, ובתוכה תיקייה למשפחה."""
     fam = re.sub(r'[^\w.-]+', '_', str(family_id or 'playbook'), flags=re.U).strip('._') or 'playbook'
-    return os.path.join(base or os.path.join(os.path.expanduser('~'), LOCAL_COPY_DIRNAME), fam)
+    # AREO_LOCAL_COPY_BASE: לבדיקות בלבד, כדי שקליטה בבדיקה לא תכתוב לתיקיית הבית של מי שמריץ אותה
+    base = base or os.environ.get('AREO_LOCAL_COPY_BASE') or os.path.join(os.path.expanduser('~'), LOCAL_COPY_DIRNAME)
+    return os.path.join(base, fam)
 
 
 def save_local_copy(paths, family_id, base=None):
@@ -86,6 +88,36 @@ def close_questions(model, record, record_id):
     return closed
 
 
+LEGAL_Q_PREFIXES = ('טעון בדיקה משפטית', 'Legal review required', 'Needs legal review')
+
+
+def close_legal_questions(model, cells, record, record_id):
+    """נעילה אחת לבדיקה משפטית. שאלת תור מסוג "טעון בדיקה משפטית" על כלל (rule_id או rule_ids) נסגרת כשכל
+    התאים הטעונים בדיקה משפטית בכללים שלה נספרים כמאושרים ונרשם בהם מי בדק ומתי. בלי זה עורך דין שענה
+    "נבדק ולאשר" פתח רק את התא, והשאלה המכריעה על אותה בדיקה המשיכה לחסום את הנושא. מחזיר את מזהי השאלות."""
+    closed = []
+    for qi in model.get('validation_queue') or []:
+        st = qi.get('status') or ('closed' if qi.get('answered') else 'open')
+        if st != 'open' or qi.get('answered'):
+            continue
+        if not str(qi.get('question') or '').strip().startswith(LEGAL_Q_PREFIXES):
+            continue
+        rids = [r for r in (qi.get('rule_ids') or [qi.get('rule_id')]) if r and r != 'GLOBAL']
+        if not rids:
+            continue
+        legal = [(k, c) for k, c in cells.items() if k.split('|')[0] in rids and (c or {}).get('legal_review_required')]
+        if not legal or set(k.split('|')[0] for k, _ in legal) != set(rids):
+            continue
+        if not all(S.cell_counts(c) and c.get('legal_review_done_by') for _, c in legal):
+            continue
+        by = sorted({c.get('legal_review_done_by') for _, c in legal})
+        at = max(str(c.get('legal_review_done_at') or record.get('received_at') or '') for _, c in legal)
+        qi.update(status='closed', answered=True, answered_via=record_id, answered_by=', '.join(by), answered_at=at,
+                  answer_verbatim='נבדק בידי %s ואושר כפי שהוא' % ', '.join(by), closed_by='legal_review')
+        closed.append(qi.get('id') or qi.get('queue_id'))
+    return closed
+
+
 def record_entry(record, record_id, record_path, cells):
     """הרשומה כפי שהיא נשמרת במודל (approval_records[]): הראיה, הבחירות וההנחות שאושרו."""
     assumptions = []
@@ -119,6 +151,7 @@ def apply_ingest(model, core, index_entry, result, record_path, word_path=None, 
             saved = json.load(fh)
         rec['supersedes'] = saved.get('supersedes')
     closed = close_questions(model, rec, record_id)
+    closed += close_legal_questions(model, cells, rec, record_id)
     entries = [e for e in model.get('approval_records') or [] if e.get('record_id') != record_id]
     entries.append(record_entry(rec, record_id, record_path, cells))
     model['approval_records'] = entries

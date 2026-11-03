@@ -419,6 +419,7 @@ def build_rules(m, cites, lang="he", extract=None):
     ex_idx = E.doc_index(extract) if extract else {}
     names = E.party_names(m)
     company = pick(m, "company_name") or ""
+    rule_ids_all = {x.get("rule_id") for x in m.get("rules") or [] if isinstance(x, dict)}
     for r in m.get("rules") or []:
         rid = pick(r, "rule_id", "id")
         if not rid:
@@ -472,9 +473,19 @@ def build_rules(m, cites, lang="he", extract=None):
             row["norms"] = norms
         impacts = []
         for i in r.get("related_clause_impacts") or r.get("related_clauses") or r.get("impacts") or []:
-            impacts.append({"related_rule_id": pick(i, "related_rule_id", "rule_id", "ref") or "",
+            rel_id = pick(i, "related_rule_id", "rule_id", "ref") or ""
+            # סעיף קשור מוצג רק כשהנושא קיים, אינו הנושא עצמו, ויש הסבר (ps3-rule-and-evidence.md, "סעיפים קשורים")
+            if not rel_id or rel_id == r.get("rule_id") or rel_id not in rule_ids_all or not (pick(i, "impact", "relation", "effect") or "").strip():
+                continue
+            ev = [e for e in (i.get("evidence") or []) if isinstance(e, dict) and (e.get("quote") or "").strip()]
+            direction = pick(i, "direction") or "mutual"
+            impacts.append({"related_rule_id": rel_id,
+                            "direction": direction if direction in ("affects", "affected_by", "mutual") else "mutual",
                             "impact": pick(i, "impact", "relation", "effect") or "",
-                            "action": pick(i, "action") or ""})
+                            "action": pick(i, "action") or "",
+                            "basis": "areo_proposal" if (i.get("basis") == "areo_proposal" or not ev) else "corpus",
+                            "evidence": [{"clause": e.get("clause_ref") or "", "quote": first_line(e.get("quote") or "", 400),
+                                          "count": e.get("count") or 1} for e in ev[:2]]})
         if impacts:
             row["impacts"] = impacts
         # סעיפים קשורים בלי הסבר: מודל שמציין רק את המזהים (related_rule_ids) מציג אותם בכל זאת

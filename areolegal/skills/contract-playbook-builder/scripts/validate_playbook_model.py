@@ -435,6 +435,58 @@ def _guard(out, inputs):
         return None
 
 
+def validate_qa_summary(errors, data):
+    """playbook-qa.md, "qa_summary": status Completed מחייב את המספרים ואת track_coherence כבר בבנייה,
+    ולא רק באישור. אחרת טיוטה עוברת את הבדיקה ונפסלת ברגע שעורך הדין מאשר אותה (הרצה מקצה לקצה, 02.11)."""
+    qa = data.get("qa_summary")
+    if not isinstance(qa, dict):
+        add(errors, "qa_summary must be object")
+        return
+    status = qa.get("status")
+    if status not in VALID_QA_STATUS:
+        add(errors, "qa_summary invalid status")
+    if data.get("playbook_status") == "Approved" and status != "Completed":
+        add(errors, "Approved playbook requires completed QA back-test")
+    if status != "Completed":
+        return
+
+    hint = "or record qa_summary.status Partial with untested_rule_ids (playbook-qa.md, \"qa_summary\")"
+    rules = [r for r in (data.get("rules") or []) if isinstance(r, dict)]
+    count = qa.get("tested_rule_count")
+    if not isinstance(count, int) or isinstance(count, bool):
+        add(errors, f"qa_summary status Completed requires tested_rule_count, {hint}")
+    elif count != len(rules):
+        add(errors, f"qa_summary status Completed requires tested_rule_count equal to the number of rules "
+                    f"({count} != {len(rules)}), {hint}")
+    src = qa.get("tested_source_count")
+    if not isinstance(src, int) or isinstance(src, bool) or src < 0:
+        add(errors, f"qa_summary status Completed requires tested_source_count, {hint}")
+    if not nonempty(qa.get("checked_at")):
+        add(errors, "qa_summary status Completed requires checked_at")
+
+    tc = qa.get("track_coherence")
+    if not isinstance(tc, list) or not tc:
+        add(errors, f"qa_summary status Completed requires track_coherence[], one entry per rule and per "
+                    f"segment variant {{rule_id, segment_id}}, {hint}")
+        return
+    covered = set()
+    for entry in tc:
+        if isinstance(entry, dict) and nonempty(entry.get("rule_id")):
+            covered.add((entry["rule_id"], entry.get("segment_id") or None))
+    missing = []
+    for rule in rules:
+        rid = rule.get("rule_id")
+        if (rid, None) not in covered:
+            missing.append(str(rid))
+        for var in rule.get("segment_variants") or []:
+            if isinstance(var, dict) and nonempty(var.get("segment_id")) \
+                    and (rid, var["segment_id"]) not in covered:
+                missing.append(f"{rid}/{var['segment_id']}")
+    if missing:
+        add(errors, "qa_summary status Completed requires a track_coherence entry for every rule and segment "
+                    f"variant; missing: {', '.join(missing)}, {hint}")
+
+
 def main(path, core=None, index_entry=None, word=None, workspace=None, inventory=None, extract=None,
          coverage_out=None, skeleton_out=None, inputs=()):
     if skeleton_out and not Path(path).exists():
@@ -686,18 +738,7 @@ def main(path, core=None, index_entry=None, word=None, workspace=None, inventory
             add(errors, "market_research NotPerformed requires not_performed_reason "
                         "(%s)" % ", ".join(sorted(VALID_NOT_PERFORMED_REASON)))
 
-    qa = data.get("qa_summary")
-    if not isinstance(qa, dict):
-        add(errors, "qa_summary must be object")
-    else:
-        if qa.get("status") not in VALID_QA_STATUS:
-            add(errors, "qa_summary invalid status")
-        if data.get("playbook_status") == "Approved":
-            if qa.get("status") != "Completed":
-                add(errors, "Approved playbook requires completed QA back-test")
-            for key in ["tested_rule_count", "tested_source_count", "checked_at"]:
-                if not nonempty(qa.get(key)):
-                    add(errors, f"Approved playbook requires qa_summary.{key}")
+    validate_qa_summary(errors, data)
 
     # מלאי הסעיפים: ההוכחה שאף סעיף לא נשר בשקט. הבדיקה כולה ב-playbook/validate_model.py (coverage_findings),
     # שרצה מתוך content_findings, גם מול clause-inventory.json וקובץ החילוץ כשהם נמצאים
