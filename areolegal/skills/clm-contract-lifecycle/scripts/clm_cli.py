@@ -169,7 +169,11 @@ def cmd_assemble(a):
                              previous=previous, default_owner=a.default_owner, bad_extracts=bad,
                              playbooks=playbooks, home_law=a.home_law or _profile_home_law(a.data_dir, lang),
                              home_law_source="flag" if a.home_law else "profile",
-                             company_aliases=aliases, lang=lang)
+                             company_aliases=aliases, lang=lang,
+                             # the real time of this run when it is today's run; a date in the past or future keeps
+                             # the fixed morning stamp (tests, a rebuild "as of" another day)
+                             as_of=(dt.datetime.now().strftime("%Y-%m-%dT%H:%M")
+                                    if a.today == dt.date.today().isoformat() else None))
     _dump(data, out_path)
     # state.json מתקדם רק לקובץ שחולץ. קובץ שהשתנה ולא חולץ שומר את ה-sha הקודם, ולכן נשאר בתור החילוץ
     # ומסומן "הוסר" אם יימחק; קובץ חדש שלא חולץ אינו נרשם ונשאר "חדש".

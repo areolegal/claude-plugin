@@ -32,7 +32,7 @@ from pathlib import Path
 
 DEFAULT_API_URL = "https://areo.co.il"
 PROTOCOL_VERSION = "2024-11-05"
-PLUGIN_VERSION = "1.24.0"   # kept in step with plugin.json by release.sh
+PLUGIN_VERSION = "1.25.0"   # kept in step with plugin.json by release.sh
 SERVER_INFO = {"name": "areolegal", "version": "1.0.4"}
 # הוראות השרת נכנסות להנחיות המערכת של כל שיחה שהתוסף פעיל בה (initialize.instructions), ולכן הן
 # המקום החזק ביותר לכלל השפה. בהרצה חיה (20.10.2026) Claude כתב ללקוח הודעות ביניים באנגלית ("Now
@@ -208,6 +208,26 @@ TOOLS = [
             "additionalProperties": False,
         },
     },
+    {
+        "name": "open_mail_draft",
+        "description": (
+            "Open a new email in Outlook on this computer, ready to send: recipients, subject, the text "
+            "and the Word file attached. Runs only on this machine; nothing is sent to the Areo service "
+            "and nothing is sent by email: the lawyer reviews the message and presses Send in Outlook."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "to": {"type": "array", "items": {"type": "string"}},
+                "subject": {"type": "string"},
+                "body_html": {"type": "string"},
+                "file_name": {"type": "string"},
+                "file_base64": {"type": "string"},
+            },
+            "required": ["to"],
+            "additionalProperties": False,
+        },
+    },
 ]
 
 
@@ -265,7 +285,8 @@ def api_url() -> str:
 def now_iso() -> str:
     import datetime
 
-    return datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+    # the user's own date: setup done at 01:00 in Israel is that day, not yesterday in UTC
+    return datetime.date.today().isoformat()
 
 
 def device_id() -> str:
@@ -361,6 +382,12 @@ def denial_text(status: int, body: dict) -> str:
 
 
 def call_tool(name: str, args: dict) -> str:
+    if name == "open_mail_draft":
+        # local only: no license call and no network, the file never leaves this computer
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from mail_local import open_mail_draft
+        return open_mail_draft(args)
+
     if name == "activate":
         key = (args.get("license_key") or "").strip()
         if not key:

@@ -1168,6 +1168,21 @@ def _find_beside(model_path, candidates):
     return None
 
 
+def _scripts_closed(s):
+    """Every real <script> block has its </script>. Text inside a block is skipped, so a page embedded as data
+    (the comments wizard carries its own "<script" inside a string, with escaped closings) is not counted twice."""
+    low = s.lower()
+    i = 0
+    while True:
+        o = low.find("<script", i)
+        if o < 0:
+            return True
+        c = low.find("</script>", o)
+        if c < 0:
+            return False
+        i = c + len("</script>")
+
+
 def workspace_file_problems(workspace):
     """הקובץ של סביבת העבודה קיים, שלם ופתיח: מסמך HTML מלא, בלי נקודת הזרקה שנשארה ריקה."""
     import os
@@ -1177,7 +1192,7 @@ def workspace_file_problems(workspace):
     out = []
     if not s.lstrip().lower().startswith("<!doctype html"):
         out.append("Workspace: הקובץ אינו מסמך HTML שלם (חסר doctype)")
-    if "</html>" not in s or s.count("<script") != s.count("</script>"):
+    if "</html>" not in s or not _scripts_closed(s):
         out.append("Workspace: הקובץ נחתך או לא נסגר (חסר </html> או תג script לא סגור)")
     if "/*__DATA__*/null" in s:
         out.append("Workspace: הנתונים לא הוזרקו לדף (נקודת ההזרקה נשארה ריקה)")

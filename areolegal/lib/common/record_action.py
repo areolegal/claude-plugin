@@ -47,7 +47,7 @@ def payload(skill, action, today=None):
     if skill not in ACTIONS:
         raise ValueError("unknown skill: %s" % skill)
     if action not in ACTIONS[skill]:
-        raise ValueError("not a counted action for %s: %s" % (skill, action))
+        raise ValueError("not a counted action for %s: %s (counted: %s)" % (skill, action, ", ".join(ACTIONS[skill])))
     out = {"skill": skill, "action": action, "count": 1, "date": (today or datetime.date.today()).isoformat()}
     assert tuple(out) == PAYLOAD_KEYS
     return out

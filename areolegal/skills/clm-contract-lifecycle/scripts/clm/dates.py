@@ -101,7 +101,8 @@ def _passed_occurrence(main, ev, when, renewal):
                                           "The recurring date of %s has passed. Confirm what happened: %s") % (
             fmt(when), _hint(ev["consequence"]))
     p = dict(main)
-    p.update(date=when.isoformat(), act_by=None, next_reminder=None, state=state, state_note=note, action=note,
+    p.pop("label_contract", None)
+    p.update(label=ev.get("label", main.get("label")), date=when.isoformat(), act_by=None, next_reminder=None, state=state, state_note=note, action=note,
              history=[], derived=when.isoformat() != ev.get("date"), renewed=False, occurrence="passed",
              renewal_check=renewal)
     return p
@@ -157,6 +158,11 @@ def derive_all(ev, today, events_catalog, role_confirmed=True, cp=None):
         notice = t(" (הודעה של %d יום מראש)", " (%d day's notice)" if nd == 1 else " (%d days' notice)") % nd if nd else ""
         out["action"] = c["action"].format(cp=cp, date=fmt(date) or when, act_by=fmt(act_by) or when,
                                            notice=notice, title=ev["label"])
+    if rolled and renewal and ev["event_code"] == "term_end":
+        # the agreement's own label names the first term ("תום תקופת המנוי הראשונה"); after a renewal that is no
+        # longer true. The rolled date gets a plain label, and the label from the agreement stays with the past one
+        out["label_contract"] = ev.get("label")
+        out["label"] = t("תום התקופה הנוכחית, אחרי חידוש", "End of the current term, after renewal")
     if rolled:
         return [out, _passed_occurrence(out, ev, parse(history[-1]), renewal)]
     return [out]

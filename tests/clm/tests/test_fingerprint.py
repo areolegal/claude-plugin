@@ -79,3 +79,16 @@ def test_unreadable_file_does_not_abort_and_keeps_previous_sha(tmp_path, monkeyp
     assert by["הסכמים/b.docx"]["status"] == "same" and len(by) == 2
     new = {x["path"]: x for x in fingerprint.scan([str(root)])}
     assert new["הסכמים/a.docx"]["status"] == "unreadable" and new["הסכמים/a.docx"]["sha256"] is None
+
+
+def test_drafter_report_beside_its_draft_is_not_a_file_to_review(tmp_path):
+    # overnight run 05.11.2026: the drafter's "<draft>.report.json" opened a "file we did not read" item
+    root = tmp_path / "טיוטות יוצאות"
+    _write(str(root / "הסכם מנוי - טיוטה.docx"), "D")
+    _write(str(root / "הסכם מנוי - טיוטה.report.json"), "{}")
+    _write(str(root / "יתום.report.json"), "{}")   # no draft beside it: still reported, never silent
+    report = {}
+    by = {x["path"]: x for x in fingerprint.scan([str(root)], report=report)}
+    assert "טיוטות יוצאות/הסכם מנוי - טיוטה.report.json" not in by
+    assert report["system"] == ["טיוטות יוצאות/הסכם מנוי - טיוטה.report.json"]
+    assert by["טיוטות יוצאות/יתום.report.json"]["status"] == "unsupported"

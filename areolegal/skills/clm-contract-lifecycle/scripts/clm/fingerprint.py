@@ -178,6 +178,20 @@ def _copy_last(name):
     return (bool(COPY_NAME.search(name)), name)
 
 
+# A file Areo writes next to its own output (the drafter's "<draft>.report.json"). Skipped only when the document
+# it belongs to is right beside it; otherwise it is an ordinary unreadable file and is reported as one
+AREO_SIDECARS = (".report.json",)
+
+
+def _areo_sidecar(dirpath, name):
+    low = name.lower()
+    for suf in AREO_SIDECARS:
+        if low.endswith(suf):
+            stem = name[:-len(suf)]
+            return any(os.path.isfile(os.path.join(dirpath, stem + ext)) for ext in (".docx", ".doc", ".pdf"))
+    return False
+
+
 def _status(key, sha, previous, seen):
     if sha in seen:
         return "duplicate"
@@ -306,7 +320,7 @@ def scan(folders, previous=None, excluded=(), work_dir=None, report=None):
                 full = os.path.join(dirpath, name)
                 rel = os.path.relpath(full, folder).replace("\\", "/")
                 key = top + "/" + rel
-                if name.startswith("~$") or name.lower() in SYSTEM_FILES:
+                if name.startswith("~$") or name.lower() in SYSTEM_FILES or _areo_sidecar(dirpath, name):
                     report["system"].append(key)
                     continue
                 if _is_excluded(full, rel, key, rules):

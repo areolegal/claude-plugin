@@ -142,8 +142,11 @@ def rule_sources(r, playbook=None):
     for ev in r.get("evidence") or []:
         if not isinstance(ev, dict):
             continue
-        sid = ev.get("source_ref") or ev.get("source_id")
-        agr = titles.get(sid) or _text(ev.get("agreement") or ev.get("source_title")) or sid
+        sid = ev.get("source_id") or ev.get("source_ref")
+        ref = _text(ev.get("source_ref"))
+        # source_ref may carry a paragraph anchor ("S01#p6"): the agreement is the part before it, never the raw code
+        agr = (titles.get(sid) or titles.get(ref.split("#")[0]) or _text(ev.get("agreement") or ev.get("source_title"))
+               or sid)
         cl = _text(ev.get("clause_ref") or ev.get("clause"))
         if agr and (agr, cl) not in seen:
             seen.add((agr, cl))

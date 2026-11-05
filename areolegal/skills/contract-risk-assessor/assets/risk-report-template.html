@@ -1140,7 +1140,7 @@ const DX=LANG==='en'?{
  noAmt:"אין סכום", noDv:"לא ידוע", how:"מאיפה הסכום", upto:"עד ", to:" עד ", unl:"בלי הגבלה",
  per:{"שנתי":"לשנה","כולל":"בסך הכול","annual":"לשנה","total":"בסך הכול"},
  sideBy:"סכומים רק מההסכם או מהלקוח, זה לצד זה. לא חיברנו אותם ולא חישבנו יחס.",
- risks:"סיכונים", crit:"קריטיים", high:"גבוהים", and:" ו-", top:"הכי חשוב: ", topB:"הכי חשוב לנו: ",
+ risks:"סיכונים", crit:"קריטיים", high:"גבוהים", crit1:"קריטי אחד", high1:"גבוה אחד", and:" ו-", top:"הכי חשוב: ", topB:"הכי חשוב לנו: ",
  downResp:"ההערות שלנו מורידות את הדרגה של ", downGen:"הבקרות הקיימות מורידות את הדרגה של ", ofThem:" מהם.",
  found:"מצאנו ", serious:" צריכים תיקון לפני החתימה.", outOf:"מתוך ",
  sign:{yes:"אפשר לחתום כמו שהוא",with_fixes:"אפשר לחתום אחרי תיקונים",no:"לא מומלץ לחתום כמו שהוא"},
@@ -1495,7 +1495,9 @@ document.getElementById('content').addEventListener('click',e=>{const s=e.target
   const top=ranked[0], cl=clauseOf(top);
   if(VIEW==='law'){
    let h=esc(signTxt())+esc(DX.found)+'<b>'+n+'</b> '+esc(DX.risks);
-   if(cr||hi) h+=': '+(cr?'<b>'+cr+'</b> '+esc(DX.crit):'')+(cr&&hi?esc(DX.and):'')+(hi?'<b>'+hi+'</b> '+esc(DX.high):'');
+   // one in Hebrew is a word after the noun ("קריטי אחד"), never "1 קריטיים"
+   const cnt=(n,many,one)=>(n===1&&one)?'<b>'+esc(one)+'</b>':'<b>'+n+'</b> '+esc(many);
+   if(cr||hi) h+=': '+(cr?cnt(cr,DX.crit,DX.crit1):'')+(cr&&hi?esc(DX.and):'')+(hi?cnt(hi,DX.high,DX.high1):'');
    h+='. ';
    if(dn) h+=esc(RESP?DX.downResp:DX.downGen)+'<b>'+dn+'</b>'+esc(DX.ofThem)+' ';
    return h+esc(DX.top)+esc(top.name||'')+(cl?' ('+esc(cl)+')':'')+'.';

@@ -117,3 +117,14 @@ def test_non_positive_recurrence_does_not_roll_or_hang():
     r2 = dates.derive(ev(event_code="term_end", consequence="auto_change", date="2026-08-31", recurrence=None,
                          renewal_months=-1), TODAY, CAT)
     assert r2["state"] == "needs_action"
+
+
+def test_renewed_term_end_is_not_called_the_first_term():
+    # overnight run 05.11.2026: "תום תקופת המנוי הראשונה" was shown on 9.1.2027, a date reached only by renewal
+    main, passed = dates.derive_all(ev(event_code="term_end", consequence="auto_change", date="2026-01-09",
+                                       label="תום תקופת המנוי הראשונה", recurrence=None, renewal_months=12),
+                                    TODAY, CAT)
+    assert main["date"] == "2027-01-09" and "הראשונה" not in main["label"]
+    assert main["label_contract"] == "תום תקופת המנוי הראשונה"
+    assert passed["date"] == "2026-01-09" and passed["label"] == "תום תקופת המנוי הראשונה"
+    assert "label_contract" not in passed
