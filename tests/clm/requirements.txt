@@ -1,7 +1,0 @@
-# Areo Workspace | Contracts (CLM): optional dependencies.
-# The agent runs on the Python standard library (3.9+). These only add PDF checks and text recognition.
-# When one is missing, the scan continues, says what was not checked, and scanned files are read from the page images.
-pymupdf>=1.23   # checks whether a PDF has a text layer, and renders pages for text recognition
-pypdf>=3.0      # fallback text-layer check when pymupdf is not installed (no rendering, so no text recognition)
-# System program, not pip: tesseract 5 with the "heb" and "eng" language data, on PATH
-# (Windows: C:\Program Files\Tesseract-OCR). Without it, scanned PDFs are flagged and read from the page images.

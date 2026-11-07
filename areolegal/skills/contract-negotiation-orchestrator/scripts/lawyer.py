@@ -1,67 +1,26 @@
 # -*- coding: utf-8 -*-
-"""שם עורך הדין שחותם על הבועות, מהמקום שבו הפרופיל באמת שומר אותו.
-
-רכיב ההקמה כותב את השם ב-`branding.lawyer_name` (`storage-and-identity.md`,
-"שם החותם על המסמכים היוצאים"). קוד הייחוס קורא `lawyer_name` בשורש הפרופיל
-(`orchestrator/qa_gate.author_for`). בלי היישור הזה, על פרופיל אמיתי השער
-נופל ב-KeyError, וכלי הסימון אינו מוצא את מי שחותם.
-
-השדות מועתקים לשורש רק כשאינם שם כבר, כך שפרופיל שכבר כתוב בשורש אינו משתנה.
-כשאין פרופיל בכלל (שינוי 45, "פלייבוק מוצע" בלי הקמה), השם נלקח מ-
-`profile_gap.signer_name`.
-
-פרופיל שנבנה לפני שההקמה פיצלה את החותם (באג 9, הרצה S1b, 28.10.2026) שומר
-ב-`lawyer_name` את כל התשובה, למשל "עו"ד מיכל לוי, יועצת משפטית (Michal Levi,
-General Counsel)". השם מפוצל כאן כמו ב-build_profile.split_signer: השם בלי תואר
-ובלי תפקיד, והשם שבסוגריים ל-`lawyer_name_en`. הנוסח המקורי נשמר ב-
-`lawyer_aliases`, כדי שסימונים קודמים בשמו עדיין יזוהו כשלנו.
-"""
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
 import re
-
-FIELDS = ("lawyer_name", "lawyer_name_en", "lawyer_initials", "lawyer_aliases", "lawyer_role", "lawyer_role_en")
-COUNSEL_TITLE_RE = re.compile(r'^\s*(?:עו(?:"|״|\x27\x27|”)ד|עוה(?:"|״)ד|עורך הדין|עורכת הדין|Adv\.?|Advocate)\s+',
-                              re.I)
-HEB = re.compile("[֐-׿]")
-
-
+FIELDS='lawyer_name','lawyer_name_en','lawyer_initials','lawyer_aliases','lawyer_role','lawyer_role_en'
+COUNSEL_TITLE_RE=re.compile('^\\s*(?:עו(?:"|״|\\x27\\x27|”)ד|עוה(?:"|״)ד|עורך הדין|עורכת הדין|Adv\\.?|Advocate)\\s+',re.I)
+HEB=re.compile('[\u0590-\u05ff]')
 def split_signer(raw):
-    """(שם, תפקיד, שם באנגלית, תפקיד באנגלית), כמו build_profile.split_signer."""
-    raw = (raw or "").strip()
-    name_en = role_en = None
-    m = re.search(r"\(([^()]*)\)\s*$", raw)
-    if m and re.search(r"[A-Za-z]", m.group(1)):
-        en = [x.strip() for x in m.group(1).split(",", 1)]
-        name_en = COUNSEL_TITLE_RE.sub("", en[0]).strip() or None
-        role_en = en[1] if len(en) > 1 and en[1] else None
-        raw = raw[:m.start()].strip()
-    parts = [x.strip() for x in raw.split(",", 1)]
-    name = COUNSEL_TITLE_RE.sub("", parts[0]).strip() or None
-    return name, (parts[1] if len(parts) > 1 and parts[1] else None), name_en, role_en
-
-
+	A=raw;A=(A or'').strip();E=F=None;B=re.search('\\(([^()]*)\\)\\s*$',A)
+	if B and re.search('[A-Za-z]',B.group(1)):C=[A.strip()for A in B.group(1).split(',',1)];E=COUNSEL_TITLE_RE.sub('',C[0]).strip()or None;F=C[1]if len(C)>1 and C[1]else None;A=A[:B.start()].strip()
+	D=[A.strip()for A in A.split(',',1)];G=COUNSEL_TITLE_RE.sub('',D[0]).strip()or None;return G,D[1]if len(D)>1 and D[1]else None,E,F
 def lawyer_view(profile):
-    p = dict(profile or {})
-    branding = p.get("branding") or {}
-    for k in FIELDS:
-        if not p.get(k) and branding.get(k):
-            p[k] = branding[k]
-    gap = p.get("profile_gap") or {}
-    if not p.get("lawyer_name") and gap.get("signer_name"):
-        p["lawyer_name"] = gap["signer_name"]
-    raw = p.get("lawyer_name")
-    if raw:
-        name, role, name_en, role_en = split_signer(raw)
-        if name and name != raw:
-            p["lawyer_name"] = name
-            p["lawyer_aliases"] = list(p.get("lawyer_aliases") or []) + [raw]
-            for k, v in (("lawyer_role", role), ("lawyer_name_en", name_en), ("lawyer_role_en", role_en)):
-                if v and not p.get(k):
-                    p[k] = v
-        if not p.get("lawyer_name_en") and not HEB.search(p["lawyer_name"]):
-            p["lawyer_name_en"] = p["lawyer_name"]   # שם בלי אותיות עבריות משמש גם בנייר באנגלית
-    return p
-
-
-def needs_english_name(profile, lang):
-    """בהסכם באנגלית הבועות נחתמות בשם האנגלי. אין שם כזה: שואלים שאלה אחת, ולא חותמים בשם העברי."""
-    return lang == "en" and bool(profile.get("lawyer_name")) and not profile.get("lawyer_name_en")
+	A=dict(profile or{});E=A.get('branding')or{}
+	for B in FIELDS:
+		if not A.get(B)and E.get(B):A[B]=E[B]
+	F=A.get('profile_gap')or{}
+	if not A.get('lawyer_name')and F.get('signer_name'):A['lawyer_name']=F['signer_name']
+	C=A.get('lawyer_name')
+	if C:
+		D,H,I,J=split_signer(C)
+		if D and D!=C:
+			A['lawyer_name']=D;A['lawyer_aliases']=list(A.get('lawyer_aliases')or[])+[C]
+			for(B,G)in(('lawyer_role',H),('lawyer_name_en',I),('lawyer_role_en',J)):
+				if G and not A.get(B):A[B]=G
+		if not A.get('lawyer_name_en')and not HEB.search(A['lawyer_name']):A['lawyer_name_en']=A['lawyer_name']
+	return A
+def needs_english_name(profile,lang):A=profile;return lang=='en'and bool(A.get('lawyer_name'))and not A.get('lawyer_name_en')

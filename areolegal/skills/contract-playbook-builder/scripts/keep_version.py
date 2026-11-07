@@ -1,98 +1,37 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""שומר את הגרסה הקיימת של פלייבוק לפני שכותבים עליה.
-
-הכלל חל על כל פלייבוק, לא רק על אחד שסומן מאושר, כי כמעט כל מה שהבונה
-מפיק הוא טיוטה, וטיוטה שנדרסת אובדת (`core-contract.md`, "Draft status and
-auditability"; `workflow.md` שלב 10). הגרסה הקודמת נשמרת בתיקיית הסוג שלה
-בלבד, ואין נגיעה בפלייבוק של סוג אחר או של פוזיציה אחרת.
-
-  python3 keep_version.py <תיקיית-הסוג>            # שומר, ומדפיס לאן
-  python3 keep_version.py <תיקיית-הסוג> --check     # בודק בלבד, בלי לכתוב
-
-תיקיית הסוג היא זו שבה יושב `playbook-model.json`, למשל
-`Areo-נתונים/playbooks/fam_services_customer`.
-"""
-import argparse
-import datetime
-import io
-import json
-import shutil
-import sys
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+import argparse,datetime,io,json,shutil,sys
 from pathlib import Path
-
-for _s in (sys.stdout, sys.stderr):  # עברית בקונסולה שאינה UTF-8 (cp1252): בלי UnicodeEncodeError
-    try:
-        _s.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):   # לא TextIOWrapper (לכידה בבדיקות, pythonw)
-        pass
-
-# מה נשמר: המודל, הגרעין שהרכיבים קוראים, והתוצרים שהופקו מהם
-KEEP = ["playbook-model.json", "playbook-core.json", "decisions-applied.json",
-        "corpus-manifest.json", "clause-inventory.json"]
-KEEP_GLOBS = ["*.docx", "*.xlsx", "*.pptx", "*.html"]
-
-
+for _s in(sys.stdout,sys.stderr):
+	try:_s.reconfigure(encoding='utf-8',errors='replace')
+	except(AttributeError,ValueError):pass
+KEEP=['playbook-model.json','playbook-core.json','decisions-applied.json','corpus-manifest.json','clause-inventory.json']
+KEEP_GLOBS=['*.docx','*.xlsx','*.pptx','*.html']
 def version_of(folder):
-    """גרסת הפלייבוק שיושב בתיקייה, כדי לתת לה שם בארכיון."""
-    model = folder / "playbook-model.json"
-    if not model.is_file():
-        return None
-    try:
-        d = json.loads(io.open(model, encoding="utf-8").read())
-    except ValueError as e:
-        sys.exit("playbook-model.json אינו JSON תקין, ולכן אין לכתוב עליו: %s" % e)
-    return str(d.get("version") or "0.0")
-
-
+	A=folder/'playbook-model.json'
+	if not A.is_file():return
+	try:B=json.loads(io.open(A,encoding='utf-8').read())
+	except ValueError as C:sys.exit('playbook-model.json אינו JSON תקין, ולכן אין לכתוב עליו: %s'%C)
+	return str(B.get('version')or'0.0')
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("folder")
-    ap.add_argument("--check", action="store_true", help="בדיקה בלבד")
-    a = ap.parse_args()
-    folder = Path(a.folder).resolve()
-    if not folder.is_dir():
-        sys.exit("אין תיקייה כזאת: %s" % folder)
-
-    ver = version_of(folder)
-    if ver is None:
-        print("אין בתיקייה playbook-model.json: זו בנייה ראשונה, ואין גרסה לשמור.")
-        return 0
-
-    # אותה גרסה בדיוק כבר נשמרה (הכלי הורץ פעמיים לפני אותה כתיבה): אין עותק נוסף ב-versions/
-    current = (folder / "playbook-model.json").read_bytes()
-    for prev in (folder / "versions").glob("**/*playbook-model.json") if (folder / "versions").is_dir() else ():
-        if prev.read_bytes() == current:
-            print("הגרסה הזו כבר שמורה ב-%s, ואין צורך לשמור אותה שוב." % prev.parent.relative_to(folder))
-            return 0
-
-    dest = folder / "versions" / ver
-    # שתי בניות באותו יום לאותה גרסה אינן דורסות זו את זו
-    if dest.exists():
-        stamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M")
-        dest = folder / "versions" / ("%s-%s" % (ver, stamp))
-
-    items = [folder / n for n in KEEP if (folder / n).is_file()]
-    for pat in KEEP_GLOBS:
-        items += [p for p in folder.glob(pat) if p.is_file()]
-    if not items:
-        print("אין מה לשמור בתיקייה %s" % folder)
-        return 0
-
-    if a.check:
-        print("ישמרו %d קבצים ל-%s:" % (len(items), dest))
-        for p in items:
-            print("   ", p.name)
-        return 0
-
-    dest.mkdir(parents=True)
-    for p in items:
-        shutil.copy2(p, dest / p.name)
-    print("הגרסה הקודמת (%s) נשמרה ב-%s, %d קבצים."
-          % (ver, dest.relative_to(folder), len(items)))
-    print("אפשר לכתוב עכשיו את הגרסה החדשה.")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+	F=argparse.ArgumentParser();F.add_argument('folder');F.add_argument('--check',action='store_true',help='בדיקה בלבד');G=F.parse_args();A=Path(G.folder).resolve()
+	if not A.is_dir():sys.exit('אין תיקייה כזאת: %s'%A)
+	D=version_of(A)
+	if D is None:print('אין בתיקייה playbook-model.json: זו בנייה ראשונה, ואין גרסה לשמור.');return 0
+	I=(A/'playbook-model.json').read_bytes()
+	for H in(A/'versions').glob('**/*playbook-model.json')if(A/'versions').is_dir()else():
+		if H.read_bytes()==I:print('הגרסה הזו כבר שמורה ב-%s, ואין צורך לשמור אותה שוב.'%H.parent.relative_to(A));return 0
+	B=A/'versions'/D
+	if B.exists():J=datetime.datetime.now().strftime('%Y-%m-%d-%H%M');B=A/'versions'/('%s-%s'%(D,J))
+	C=[A/B for B in KEEP if(A/B).is_file()]
+	for K in KEEP_GLOBS:C+=[A for A in A.glob(K)if A.is_file()]
+	if not C:print('אין מה לשמור בתיקייה %s'%A);return 0
+	if G.check:
+		print('ישמרו %d קבצים ל-%s:'%(len(C),B))
+		for E in C:print('   ',E.name)
+		return 0
+	B.mkdir(parents=True)
+	for E in C:shutil.copy2(E,B/E.name)
+	print('הגרסה הקודמת (%s) נשמרה ב-%s, %d קבצים.'%(D,B.relative_to(A),len(C)));print('אפשר לכתוב עכשיו את הגרסה החדשה.');return 0
+if __name__=='__main__':raise SystemExit(main())

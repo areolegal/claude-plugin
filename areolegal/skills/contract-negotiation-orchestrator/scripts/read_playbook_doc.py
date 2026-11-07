@@ -1,252 +1,106 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""קורא פלייבוק של הלקוח ממסמך Word, PDF או Excel, בלי לכתוב דבר לתיקיית הלקוח.
-
-מסמך של הלקוח משמש כמו שהוא (`n3-decisions.md`, "מקור העמדות", "יש פלייבוק:
-שימוש"; הערות הנושא ונותן, שינוי 45). הקורא מחזיר את מה שבמסמך, בלי להשלים
-ובלי לפרש: הנושאים, המסלולים ותנאיהם, סימני האדום, הנוסחים החלופיים, הסגמנטים,
-וכללי ההפעלה שהמסמך קובע לעצמו (פרק "הוראות הפעלה"). שדה שאין לו מקור במסמך
-נשאר ריק, וההחלה ממלאת אותו לפי `n3b-matrix.md`, ולא הקורא.
-
-איך הוא קורא:
-* **טבלה** שבשורת הכותרת שלה עמודות של מסלולים (ירוק, צהוב, אדום; Green,
-  Yellow, Red; מועדף, נסיגה, קו אדום; Preferred, Fallback, Walk-away; Standard,
-  Acceptable, Unacceptable), לפי מילה שלמה: כל שורה היא נושא.
-* **כותרות**: כל כותרת (סגנון כותרת, שורה ממוספרת קצרה, או שורה מודגשת קצרה)
-  פותחת נושא, והשורות שאחריה משויכות למסלול לפי התווית שבתחילתן.
-* **Excel**: כל גיליון עם שורת כותרת כזו; נדרש openpyxl.
-* **PDF**: שכבת הטקסט, שורה אחר שורה; PDF סרוק אינו נקרא, ונאמר.
-
-    python "AREO_RT/skills/contract-negotiation-orchestrator/scripts/read_playbook_doc.py" "<המסמך>" [--out <תיקייה זמנית>/playbook-read.json]
-
-קוד יציאה: **0** נקרא, **3** לא נמצא בו אף נושא (המסמך אינו פלייבוק, או שאינו
-קריא), **2** קלט חסר, או Word פגום, DOC, מוצפן או Strict (הודעה דו-לשונית), **1** `--out` בתיקיית הלקוח, על
-המסמך עצמו או על מסמך קיים.
-"""
-import argparse
-import io
-import json
-import os
-import re
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # גם ב-python -I, שאינו מוסיף את תיקיית הסקריפט
-import areo_lib  # noqa: F401  מוסיף את areolegal/lib לנתיב הייבוא
-
-from common.cli import OutputRefused, guard_out, load_docx_or_explain  # noqa: E402
-
-# ביקורת כלליות, ממצא 5: אותן תוויות לכותרת של עמודה ולתווית בתחילת שורה, ותמיד כמילה שלמה ("red" אינו
-# נמצא בתוך "Preferred", "acceptable" אינו נמצא בתוך "Unacceptable"). אדום נבדק ראשון, כי "לא מקובל" ו-"Not
-# acceptable" מכילים מילה של צהוב.
-TRACK_WORDS = {
-    "red": r"מסלול אדום|קו(?:ים)? אדום|קווים אדומים|אדום|לא מקובל(?:ת)?|לא מתקבל|"
-           r"red[\s\-]lines?|red|unacceptable|not acceptable|walk[\s\-]?away|deal[\s\-]?breakers?|no[\s\-]?go",
-    "yellow": r"מסלול צהוב|צהוב|עמדת נסיגה|נסיגה|ויתור מותר|פשרה|"
-              r"yellow|fall[\s\-]?back|acceptable|compromise",
-    "green": r"מסלול ירוק|ירוק|עמדה מועדפת|מועדפ(?:ת|ים|ות)|מועדף|רגיל(?:ה)?|ברירת מחדל|העמדה שלנו|"
-             r"green|preferred(?: position)?|standard(?: position)?|ideal",
-}
-_LB, _LA = r"(?<![^\W\d_])", r"(?![^\W\d_])"   # לא אות לפני המונח ולא אות אחריו
-# "Red flags:" היא תווית של סימני אדום (FIELD_LABELS), ולא של המסלול האדום
-TRACK_LABELS = {k: r"^(?:ה)?(?:%s)%s(?!\s+flags)" % (rx, _LA) for k, rx in TRACK_WORDS.items()}
-FIELD_LABELS = {
-    "red_flags": r"^(?:סימני אדום|סימני זיהוי|סימנים|red flags|flags|watch for)\b",
-    "alternatives": r"^(?:נוסח חלופי|נוסח מוצע|נוסח|alternative wording|proposed wording|wording|clause)\b",
-    "segment": r"^(?:סגמנט|פלח|segment)\b",
-    "notes": r"^(?:הערה|הערות|הסבר|נימוק|note|notes|rationale)\b",
-}
-OPERATING = re.compile(r"הוראות הפעלה|כללי הפעלה|אופן השימוש|operating (?:rules|instructions)|how to use", re.I)
-HEADER_TRACKS = {k: re.compile(_LB + r"(?:[וה])?(?:%s)" % rx + _LA, re.I) for k, rx in TRACK_WORDS.items()}
-HEADER_TOPIC = re.compile(_LB + r"(?:ה)?(?:נושא|סעיף|topic|clause|issue|term|provision)s?" + _LA, re.I)
-HEADER_FLAGS = re.compile(r"סימני|flags", re.I)
-
-
-def strip_label(text, rx):
-    return re.sub(rx + r"\s*[:\-.]?\s*", "", text, count=1, flags=re.I).strip()
-
-
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+'קורא פלייבוק של הלקוח ממסמך Word, PDF או Excel, בלי לכתוב דבר לתיקיית הלקוח.'
+import argparse,io,json,os,re,sys
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+import areo_lib
+from common.cli import OutputRefused,guard_out,load_docx_or_explain
+TRACK_WORDS={'red':'מסלול אדום|קו(?:ים)? אדום|קווים אדומים|אדום|לא מקובל(?:ת)?|לא מתקבל|red[\\s\\-]lines?|red|unacceptable|not acceptable|walk[\\s\\-]?away|deal[\\s\\-]?breakers?|no[\\s\\-]?go','yellow':'מסלול צהוב|צהוב|עמדת נסיגה|נסיגה|ויתור מותר|פשרה|yellow|fall[\\s\\-]?back|acceptable|compromise','green':'מסלול ירוק|ירוק|עמדה מועדפת|מועדפ(?:ת|ים|ות)|מועדף|רגיל(?:ה)?|ברירת מחדל|העמדה שלנו|green|preferred(?: position)?|standard(?: position)?|ideal'}
+_LB,_LA='(?<![^\\W\\d_])','(?![^\\W\\d_])'
+TRACK_LABELS={A:'^(?:ה)?(?:%s)%s(?!\\s+flags)'%(B,_LA)for(A,B)in TRACK_WORDS.items()}
+FIELD_LABELS={'red_flags':'^(?:סימני אדום|סימני זיהוי|סימנים|red flags|flags|watch for)\\b','alternatives':'^(?:נוסח חלופי|נוסח מוצע|נוסח|alternative wording|proposed wording|wording|clause)\\b','segment':'^(?:סגמנט|פלח|segment)\\b','notes':'^(?:הערה|הערות|הסבר|נימוק|note|notes|rationale)\\b'}
+OPERATING=re.compile('הוראות הפעלה|כללי הפעלה|אופן השימוש|operating (?:rules|instructions)|how to use',re.I)
+HEADER_TRACKS={A:re.compile(_LB+'(?:[וה])?(?:%s)'%B+_LA,re.I)for(A,B)in TRACK_WORDS.items()}
+HEADER_TOPIC=re.compile(_LB+'(?:ה)?(?:נושא|סעיף|topic|clause|issue|term|provision)s?'+_LA,re.I)
+HEADER_FLAGS=re.compile('סימני|flags',re.I)
+def strip_label(text,rx):return re.sub(rx+'\\s*[:\\-.]?\\s*','',text,count=1,flags=re.I).strip()
 def header_track(h):
-    """המסלול של כותרת עמודה, או None. אדום קודם, ואחריו צהוב וירוק (HEADER_TRACKS לפי הסדר)."""
-    if HEADER_FLAGS.search(h):
-        return None
-    return next((k for k, rx in HEADER_TRACKS.items() if rx.search(h)), None)
-
-
+	if HEADER_FLAGS.search(h):return
+	return next((A for(A,B)in HEADER_TRACKS.items()if B.search(h)),None)
 def topic_from_table(rows):
-    """rows: רשימת רשימות. מחזיר נושאים כשבשורת הכותרת יש עמודות של מסלולים."""
-    # שורת הכותרת היא הראשונה, מבין עשר השורות הראשונות, שיש בה שתי עמודות של מסלולים לפחות: בגיליון Excel
-    # יש לעיתים שורת כותרת של המסמך מעל הטבלה
-    for n, row in enumerate((rows or [])[:10]):
-        head = [str(c or "") for c in row]
-        tracks = [header_track(h) for h in head]
-        cols = {k: next((i for i, t in enumerate(tracks) if t == k), None) for k in ("green", "yellow", "red")}
-        if sum(v is not None for v in cols.values()) >= 2:
-            rows = rows[n:]
-            break
-    else:
-        return []
-    tcol = next((i for i, h in enumerate(head) if HEADER_TOPIC.search(h) and tracks[i] is None), 0)
-    fcol = next((i for i, h in enumerate(head) if HEADER_FLAGS.search(h)), None)
-    out = []
-    for r in rows[1:]:
-        r = [str(c or "").strip() for c in r]
-        if not any(r) or tcol >= len(r) or not r[tcol]:
-            continue
-        t = {"topic": r[tcol], "red_flags": [], "alternatives": [], "notes": []}
-        for k, i in cols.items():
-            t[k] = r[i] if i is not None and i < len(r) else ""
-        if fcol is not None and fcol < len(r) and r[fcol]:
-            t["red_flags"] = [x.strip() for x in re.split(r"[;\n•]", r[fcol]) if x.strip()]
-        out.append(t)
-    return out
-
-
+	B=rows
+	for(K,L)in enumerate((B or[])[:10]):
+		D=[str(A or'')for A in L];H=[header_track(A)for A in D];I={A:next((B for(B,C)in enumerate(H)if C==A),None)for A in('green','yellow','red')}
+		if sum(A is not None for A in I.values())>=2:B=B[K:];break
+	else:return[]
+	E=next((A for(A,B)in enumerate(D)if HEADER_TOPIC.search(B)and H[A]is None),0);C=next((A for(A,B)in enumerate(D)if HEADER_FLAGS.search(B)),None);J=[]
+	for A in B[1:]:
+		A=[str(A or'').strip()for A in A]
+		if not any(A)or E>=len(A)or not A[E]:continue
+		F={'topic':A[E],'red_flags':[],'alternatives':[],'notes':[]}
+		for(M,G)in I.items():F[M]=A[G]if G is not None and G<len(A)else''
+		if C is not None and C<len(A)and A[C]:F['red_flags']=[A.strip()for A in re.split('[;\\n•]',A[C])if A.strip()]
+		J.append(F)
+	return J
 def topics_from_lines(lines):
-    """lines: [(text, is_heading)]. כותרת פותחת נושא; שורה עם תווית משויכת למסלול או לשדה."""
-    topics, segments, operating, cur, in_ops = [], [], [], None, False
-    for text, heading in lines:
-        text = text.strip()
-        if not text:
-            continue
-        if heading:
-            in_ops = bool(OPERATING.search(text))
-            if not in_ops:
-                cur = {"topic": re.sub(r"^\d+(?:\.\d+)*[.)]?\s*", "", text), "green": "", "yellow": "", "red": "",
-                       "red_flags": [], "alternatives": [], "notes": []}
-                topics.append(cur)
-            continue
-        if in_ops:
-            operating.append(text)
-            continue
-        if cur is None:
-            continue
-        for k, rx in TRACK_LABELS.items():
-            if re.search(rx, text, re.I):
-                cur[k] = (cur[k] + " " + strip_label(text, rx)).strip()
-                break
-        else:
-            for k, rx in FIELD_LABELS.items():
-                if re.search(rx, text, re.I):
-                    val = strip_label(text, rx)
-                    if k == "segment":
-                        segments.append({"topic": cur["topic"], "segment": val})
-                    elif k == "red_flags":
-                        cur["red_flags"] += [x.strip() for x in re.split(r"[;•]", val) if x.strip()]
-                    else:
-                        cur[k].append(val)
-                    break
-            else:
-                cur["notes"].append(text)
-    topics = [t for t in topics if t["green"] or t["yellow"] or t["red"] or t["red_flags"]]
-    return topics, segments, operating
-
-
-def read_docx(path, d=None):
-    if d is None:
-        import docx
-        d = docx.Document(path)
-    topics = []
-    for tb in d.tables:
-        topics += topic_from_table([[c.text for c in row.cells] for row in tb.rows])
-    lines = []
-    for p in d.paragraphs:
-        t = p.text.strip()
-        style = (p.style.name or "").lower() if p.style is not None else ""
-        bold = bool(p.runs) and all(r.bold for r in p.runs if r.text.strip())
-        heading = style.startswith(("heading", "כותרת", "title")) or \
-            (len(t) <= 70 and (bold or re.match(r"^\d+(?:\.\d+)?[.)]\s+\S", t)) and not re.search(r"[.:]$", t)
-             and not any(re.search(rx, t, re.I) for rx in list(TRACK_LABELS.values()) + list(FIELD_LABELS.values())))
-        lines.append((t, heading))
-    more, segments, operating = topics_from_lines(lines)
-    return topics + more, segments, operating
-
-
+	E,H,I,B,F=[],[],[],None,False
+	for(A,J)in lines:
+		A=A.strip()
+		if not A:continue
+		if J:
+			F=bool(OPERATING.search(A))
+			if not F:B={'topic':re.sub('^\\d+(?:\\.\\d+)*[.)]?\\s*','',A),'green':'','yellow':'','red':'','red_flags':[],'alternatives':[],'notes':[]};E.append(B)
+			continue
+		if F:I.append(A);continue
+		if B is None:continue
+		for(C,D)in TRACK_LABELS.items():
+			if re.search(D,A,re.I):B[C]=(B[C]+' '+strip_label(A,D)).strip();break
+		else:
+			for(C,D)in FIELD_LABELS.items():
+				if re.search(D,A,re.I):
+					G=strip_label(A,D)
+					if C=='segment':H.append({'topic':B['topic'],'segment':G})
+					elif C=='red_flags':B['red_flags']+=[A.strip()for A in re.split('[;•]',G)if A.strip()]
+					else:B[C].append(G)
+					break
+			else:B['notes'].append(A)
+	E=[A for A in E if A['green']or A['yellow']or A['red']or A['red_flags']];return E,H,I
+def read_docx(path,d=None):
+	if d is None:import docx;d=docx.Document(path)
+	C=[]
+	for E in d.tables:C+=topic_from_table([[A.text for A in A.cells]for A in E.rows])
+	D=[]
+	for A in d.paragraphs:B=A.text.strip();F=(A.style.name or'').lower()if A.style is not None else'';G=bool(A.runs)and all(A.bold for A in A.runs if A.text.strip());H=F.startswith(('heading','כותרת','title'))or len(B)<=70 and(G or re.match('^\\d+(?:\\.\\d+)?[.)]\\s+\\S',B))and not re.search('[.:]$',B)and not any(re.search(A,B,re.I)for A in list(TRACK_LABELS.values())+list(FIELD_LABELS.values()));D.append((B,H))
+	I,J,K=topics_from_lines(D);return C+I,J,K
 def read_pdf(path):
-    from risk.page_text import PdfTextUnavailable, pdf_text
-    with open(path, "rb") as fh:
-        raw = fh.read()
-    try:
-        text = pdf_text(raw)
-    except PdfTextUnavailable as exc:
-        raise ValueError("ה-PDF אינו נקרא (%s): בקשו מהלקוח עותק Word" % exc)
-    lines = []
-    for l in text.splitlines():
-        t = l.strip()
-        heading = bool(re.match(r"^\d+(?:\.\d+)?[.)]?\s+\S", t)) and len(t) <= 70 and not re.search(r"[.:]$", t)
-        lines.append((t, heading))
-    return topics_from_lines(lines)
-
-
+	from risk.page_text import PdfTextUnavailable as C,pdf_text as D
+	with open(path,'rb')as E:F=E.read()
+	try:G=D(F)
+	except C as H:raise ValueError('ה-PDF אינו נקרא (%s): בקשו מהלקוח עותק Word'%H)
+	B=[]
+	for I in G.splitlines():A=I.strip();J=bool(re.match('^\\d+(?:\\.\\d+)?[.)]?\\s+\\S',A))and len(A)<=70 and not re.search('[.:]$',A);B.append((A,J))
+	return topics_from_lines(B)
 def read_xlsx(path):
-    try:
-        import openpyxl
-    except ImportError:
-        raise ValueError("לקריאת Excel נדרש openpyxl (pip install openpyxl)")
-    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-    topics, operating = [], []
-    for ws in wb.worksheets:
-        rows = [list(r) for r in ws.iter_rows(values_only=True)]
-        found = topic_from_table(rows)
-        if found:
-            topics += found
-        elif OPERATING.search(ws.title or ""):
-            operating += [" ".join(str(c) for c in r if c) for r in rows if any(r)]
-    return topics, [], operating
-
-
+	try:import openpyxl as F
+	except ImportError:raise ValueError('לקריאת Excel נדרש openpyxl (pip install openpyxl)')
+	G=F.load_workbook(path,read_only=True,data_only=True);A,B=[],[]
+	for C in G.worksheets:
+		D=[list(A)for A in C.iter_rows(values_only=True)];E=topic_from_table(D)
+		if E:A+=E
+		elif OPERATING.search(C.title or''):B+=[' '.join(str(A)for A in A if A)for A in D if any(A)]
+	return A,[],B
 def main(argv=None):
-    sys.dont_write_bytecode = True
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("file")
-    ap.add_argument("--out", help="קובץ JSON בתיקייה זמנית; לעולם לא בתיקיית הלקוח")
-    a = ap.parse_args(argv)
-    if not os.path.exists(a.file):
-        print("המסמך אינו קיים: %s" % a.file)
-        return 2
-    if a.out and os.path.commonpath([os.path.realpath(a.out), os.path.realpath(os.path.dirname(a.file))]) == \
-            os.path.realpath(os.path.dirname(a.file)):
-        print("--out בתיקיית הלקוח (%s). הקורא אינו כותב לשם; בחרו תיקייה זמנית." % os.path.dirname(a.file))
-        return 1
-    if a.out:
-        # גם מחוץ לתיקייה של המסמך: לא על המסמך עצמו, לא על מסמך קיים ולא בתיקיית מקור של הלקוח
-        try:
-            guard_out(a.out, inputs=[a.file])
-        except OutputRefused as exc:
-            print("סירוב: %s" % exc)
-            return 1
-    ext = os.path.splitext(a.file)[1].lower()
-    doc = None
-    if ext in (".docx", ".doc", ".docm"):
-        # Word פגום, DOC, מוצפן או Strict: הודעה דו-לשונית וקוד 2, ולא traceback של python-docx
-        doc, msg, code = load_docx_or_explain(a.file)
-        if doc is None:
-            print(msg)
-            return code
-    try:
-        if ext in (".docx", ".doc", ".docm"):
-            topics, segments, operating = read_docx(a.file, doc)
-        elif ext == ".pdf":
-            topics, segments, operating = read_pdf(a.file)
-        elif ext in (".xlsx", ".xlsm"):
-            topics, segments, operating = read_xlsx(a.file)
-        else:
-            print("פורמט שאינו נקרא: %s. Word, PDF או Excel." % ext)
-            return 2
-    except ValueError as exc:
-        print(str(exc))
-        return 3
-    out = {"source": os.path.basename(a.file), "format": ext[1:], "topics": topics, "segments": segments,
-           "operating_rules": operating}
-    if a.out:
-        with io.open(a.out, "w", encoding="utf-8") as fh:
-            json.dump(out, fh, ensure_ascii=False, indent=1)
-    print(json.dumps(out, ensure_ascii=False, indent=1))
-    if not topics:
-        print("לא נמצא במסמך אף נושא עם מסלולים. ייתכן שאינו פלייבוק, או שהוא מסמך רקע (n1b-learning.md, \"מסמך רקע אינו מועמד\").")
-        return 3
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+	sys.dont_write_bytecode=True;sys.stdout.reconfigure(encoding='utf-8',errors='replace');D=argparse.ArgumentParser(description=__doc__.split('\n')[0]);D.add_argument('file');D.add_argument('--out',help='קובץ JSON בתיקייה זמנית; לעולם לא בתיקיית הלקוח');A=D.parse_args(argv)
+	if not os.path.exists(A.file):print('המסמך אינו קיים: %s'%A.file);return 2
+	if A.out and os.path.commonpath([os.path.realpath(A.out),os.path.realpath(os.path.dirname(A.file))])==os.path.realpath(os.path.dirname(A.file)):print('--out בתיקיית הלקוח (%s). הקורא אינו כותב לשם; בחרו תיקייה זמנית.'%os.path.dirname(A.file));return 1
+	if A.out:
+		try:guard_out(A.out,inputs=[A.file])
+		except OutputRefused as E:print('סירוב: %s'%E);return 1
+	B=os.path.splitext(A.file)[1].lower();F=None
+	if B in('.docx','.doc','.docm'):
+		F,J,K=load_docx_or_explain(A.file)
+		if F is None:print(J);return K
+	try:
+		if B in('.docx','.doc','.docm'):C,G,H=read_docx(A.file,F)
+		elif B=='.pdf':C,G,H=read_pdf(A.file)
+		elif B in('.xlsx','.xlsm'):C,G,H=read_xlsx(A.file)
+		else:print('פורמט שאינו נקרא: %s. Word, PDF או Excel.'%B);return 2
+	except ValueError as E:print(str(E));return 3
+	I={'source':os.path.basename(A.file),'format':B[1:],'topics':C,'segments':G,'operating_rules':H}
+	if A.out:
+		with io.open(A.out,'w',encoding='utf-8')as L:json.dump(I,L,ensure_ascii=False,indent=1)
+	print(json.dumps(I,ensure_ascii=False,indent=1))
+	if not C:print('לא נמצא במסמך אף נושא עם מסלולים. ייתכן שאינו פלייבוק, או שהוא מסמך רקע (n1b-learning.md, "מסמך רקע אינו מועמד").');return 3
+	return 0
+if __name__=='__main__':sys.exit(main())

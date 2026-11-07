@@ -1,3 +1,2 @@
 # -*- coding: utf-8 -*-
-"""מימוש ייחוס למעריך הסיכונים (הערות מעריך הסיכונים 3.6): validate_register, page_text, extract_corpus, render_check,
-entity_store, build, logo; התבנית המוגשת של דוח חקר הישות ב-resources. שכבת הרשת: common/net.py."""
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms

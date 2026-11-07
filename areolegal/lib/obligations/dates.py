@@ -1,599 +1,200 @@
 # -*- coding: utf-8 -*-
-"""obligations/dates.py: מנוע המועדים של מרשם ההתחייבויות. דטרמיניסטי, ספרייה סטנדרטית בלבד.
-
-המודל אינו כותב תאריך יעד. הוא כותב `timing` מלשון ההסכם, והמנוע מחשב ממנו את המועד ואת שורת
-החישוב שמוצגת ללקוח ("90 ימים לפני תום התקופה הנוכחית (31.12.2027) = 2.10.2027").
-
-סוגי timing:
-  fixed         {"date": "2027-03-01"}
-  relative      {"anchor": <עוגן>, "offset": {"n": 30, "unit": "days", "direction": "after", "clear_days": false}}
-  recurring     {"every": {"n": 3, "unit": "months"}, "start": <עוגן או תאריך>, "start_offset": {...}, "until": <עוגן או תאריך>}
-  renewal_notice {}            המועד האחרון להודעה על אי חידוש, מ-agreement.dates.auto_renewal
-  term_end      {}             תום התקופה הנוכחית (מתגלגל בחידוש אוטומטי)
-  event         {"event": "אירוע אבטחה", "offset": {"n": 48, "unit": "hours", "direction": "after"}}
-  ongoing       {"until": <עוגן>}   חובה מתמשכת (ביטוח לאורך התקופה)
-  survival      {"period": {"n": 3, "unit": "years"}} או {"period": "indefinite"}
-  any kind may add "qualifier": "reasonable" | "promptly" | "without_delay" | "other" -> טעון בדיקה משפטית.
-
-עוגנים: signing_date, effective_date, end_date (תום התקופה הראשונה), term_end (תום התקופה הנוכחית),
-renewal_date (היום שאחרי term_end), custom:<שם> (agreement.dates.anchors), obl:<מזהה> (מועד של חובה אחרת).
-
-מעמד המועד (date_status): computed, to_complete (עוגן חסר: [להשלים], לעולם לא ניחוש), needs_verification
-(ימי עסקים וחגים, שעות שעוגלו לימים, יום שקוצץ לסוף חודש, מסירה נחשבת שלא חושבה), needs_legal_review (מועד
-עמום), event_driven, ongoing.
-
-ימי עסקים: הגדרת "יום עסקים" שבהסכם גוברת (agreement.business_days: {"weekend": ["friday", "saturday"],
-"calendars": ["England"], "clause": "1.1"}); אחריה סמכות השיפוט (agreement.jurisdiction, בקוד ISO-2 או ISO-3, בשם
-או בתואר, בעברית או באנגלית: "IL", "ISR", "Israeli law", "הדין הישראלי"), לפי טבלת סופי השבוע; בלעדיהן, הונח
-שבת וראשון, ושורת החישוב אומרת זאת. החגים אינם נוכים, ולכן כל מועד בימי עסקים "טעון אימות".
-
-מסירה נחשבת (agreement.notice_delivery: {"deemed_after": {"n": 2, "unit": "business_days"}, "cutoff_time": "17:00",
-"tz": "Europe/London", "clause": "19.3", "text": "..."}), מסעיף ההודעות: בהודעה ששולחים אנחנו (סוג notice או
-renewal_notice, obligor us או both, והמועד האחרון להודעה על אי חידוש), המועד הוא מועד השליחה: היום האחרון
-לקבלה פחות תקופת המסירה הנחשבת. כשסעיף ההודעות קובע מסירה נחשבת או שעת סגירה שאי אפשר לחשב (רק text), המועד
-needs_verification והסיבה בשורת החישוב.
-
-תאריך בשורת החישוב (כלל 3.6): D.M.YYYY בעברית; באנגלית צורה חד-משמעית, "3 April 2027"; ISO ב-JSON.
-"""
-import calendar
-import datetime as dt
-import re
-
-UNITS = ('days', 'business_days', 'weeks', 'months', 'years', 'hours')
-KINDS = ('fixed', 'relative', 'recurring', 'renewal_notice', 'term_end', 'event', 'ongoing', 'survival')
-QUALIFIERS = ('reasonable', 'promptly', 'without_delay', 'other')
-STATUSES = ('computed', 'to_complete', 'needs_verification', 'needs_legal_review', 'event_driven', 'ongoing')
-IL_NAMES = ('il', 'israel', 'ישראל')   # תאימות לאחור; הנרמול המלא ב-jurisdiction_code
-EN_MONTHS = ('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
-             'November', 'December')
-# ימי השבוע (weekday של פייתון: שני=0)
-DAY_NAMES = {'monday': 0, 'mon': 0, 'tuesday': 1, 'tue': 1, 'wednesday': 2, 'wed': 2, 'thursday': 3, 'thu': 3,
-             'friday': 4, 'fri': 4, 'saturday': 5, 'sat': 5, 'sunday': 6, 'sun': 6,
-             'שני': 0, 'שלישי': 1, 'רביעי': 2, 'חמישי': 3, 'שישי': 4, 'שבת': 5, 'ראשון': 6,
-             'יום שני': 0, 'יום שלישי': 1, 'יום רביעי': 2, 'יום חמישי': 3, 'יום שישי': 4, 'יום ראשון': 6}
-# סוף שבוע שישי-שבת. כל סמכות שיפוט ידועה אחרת: שבת-ראשון (כולל AE)
-FRI_SAT = ('IL', 'SA', 'KW', 'QA', 'BH', 'OM', 'JO', 'EG')
-DEFAULT_WEEKEND = (5, 6)
-# שמות, תארים וקודים תלת-אותיים של סמכויות שיפוט, לנרמול agreement.jurisdiction לקוד ISO-2
-JURIS_NAMES = {
-    'IL': ('israel', 'israeli', 'isr', 'state of israel', 'ישראל', 'ישראלי', 'הישראלי', 'ישראלית', 'הישראלית'),
-    'GB': ('united kingdom', 'uk', 'gbr', 'great britain', 'britain', 'british', 'england', 'english', 'wales',
-           'welsh', 'england and wales', 'scotland', 'scottish', 'northern ireland', 'בריטניה', 'אנגליה',
-           'הבריטי', 'האנגלי', 'אנגלי', 'בריטי'),
-    'US': ('united states', 'usa', 'us', 'american', 'new york', 'delaware', 'california', 'texas', 'florida',
-           'illinois', 'massachusetts', 'new jersey', 'washington', 'ארצות הברית', 'ארה"ב', 'ניו יורק',
-           'דלאוור', 'קליפורניה', 'האמריקאי', 'אמריקאי'),
-    'DE': ('germany', 'german', 'deu', 'גרמניה', 'הגרמני', 'גרמני'),
-    'FR': ('france', 'french', 'fra', 'צרפת', 'הצרפתי', 'צרפתי'),
-    'NL': ('netherlands', 'dutch', 'nld', 'holland', 'הולנד', 'ההולנדי', 'הולנדי'),
-    'IE': ('ireland', 'irish', 'irl', 'אירלנד', 'האירי', 'אירי'),
-    'CY': ('cyprus', 'cypriot', 'cyp', 'קפריסין', 'הקפריסאי', 'קפריסאי'),
-    'CH': ('switzerland', 'swiss', 'che', 'שווייץ', 'שוויץ', 'השווייצרי', 'שווייצרי'),
-    'AE': ('united arab emirates', 'uae', 'emirati', 'dubai', 'abu dhabi', 'difc', 'adgm',
-           'איחוד האמירויות', 'דובאי'),
-    'SA': ('saudi arabia', 'saudi', 'sau', 'ksa', 'ערב הסעודית', 'סעודיה', 'הסעודי'),
-    'KW': ('kuwait', 'kuwaiti', 'kwt', 'כווית'), 'QA': ('qatar', 'qatari', 'qat', 'קטאר'),
-    'BH': ('bahrain', 'bahraini', 'bhr', 'בחריין'), 'OM': ('oman', 'omani', 'omn', 'עומאן'),
-    'JO': ('jordan', 'jordanian', 'jor', 'ירדן', 'הירדני'), 'EG': ('egypt', 'egyptian', 'egy', 'מצרים', 'המצרי'),
-    'IT': ('italy', 'italian', 'ita', 'איטליה'), 'ES': ('spain', 'spanish', 'esp', 'ספרד'),
-    'SG': ('singapore', 'sgp', 'סינגפור'), 'HK': ('hong kong', 'hkg', 'הונג קונג'),
-    'CA': ('canada', 'canadian', 'can', 'קנדה'), 'AU': ('australia', 'australian', 'aus', 'אוסטרליה'),
-}
-_JURIS_KEYS = sorted(((k, c) for c, ks in JURIS_NAMES.items() for k in ks), key=lambda x: -len(x[0]))
-
-T = {
-    'he': {
-        'unit': {'days': ('יום אחד', '%d ימים'), 'business_days': ('יום עסקים אחד', '%d ימי עסקים'),
-                 'weeks': ('שבוע אחד', '%d שבועות'), 'months': ('חודש אחד', '%d חודשים'),
-                 'years': ('שנה אחת', '%d שנים'), 'hours': ('שעה אחת', '%d שעות')},
-        'before': 'לפני', 'after': 'אחרי',
-        'anchor': {'signing_date': 'מועד החתימה', 'effective_date': 'מועד התחילה',
-                   'end_date': 'תום התקופה הראשונה', 'term_end': 'תום התקופה הנוכחית',
-                   'renewal_date': 'מועד החידוש הקרוב'},
-        'obl': 'המועד של %s',
-        'fixed': 'מועד קבוע בהסכם: %s',
-        'by': 'עד %s = %s',
-        'missing': '[להשלים] חסר: %s',
-        'calc': '%s %s %s (%s) = %s',
-        'clear': '; ספירה שמרנית של ימים שלמים',
-        'bd': '; טעון אימות: ימי המנוחה לפי סמכות השיפוט, %s (%s); החגים לא נוכו',
-        'bd_def': '; טעון אימות: ימי המנוחה לפי הגדרת "יום עסקים" בהסכם%s (%s)%s; החגים לא נוכו',
-        'bd_cal': '; לוח החגים: %s',
-        'bd_assumed': '; טעון אימות: סמכות השיפוט אינה ידועה, ולכן הונח שימי המנוחה הם %s; החגים לא נוכו',
-        'clause_ref': ', סעיף %s', 'clause_paren': ' (סעיף %s)',
-        'days': ('שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת', 'ראשון'), 'and': ' ו',
-        'send_by': '; המסירה נחשבת %s אחרי השליחה%s, ולכן מועד השליחה: %s',
-        'cutoff': '; מסירה אחרי השעה %s%s אינה נחשבת לאותו יום',
-        'notice_unclear': '; טעון אימות: סעיף ההודעות%s קובע מסירה נחשבת או שעת סגירה שלא חושבו (%s), ולכן ייתכן שיש לשלוח מוקדם יותר',
-        'hours': '; טעון אימות: %d שעות עוגלו ל-%d ימים',
-        'clamp': '; היום קוצץ לסוף החודש',
-        'term': '%s ועוד %s, עד היום שלפניו = %s',
-        'term_given': 'תום התקופה כתוב בהסכם: %s',
-        'renewed': '; התחדש %s, כל פעם ל-%s, עד %s',
-        'times': ('פעם אחת', '%d פעמים'),
-        'expired': 'ההסכם הסתיים ב-%s, אחרי מספר החידושים המרבי',
-        'no_renewal': 'אין חידוש אוטומטי בהסכם',
-        'window_closed': '; חלון ההודעה למחזור שמסתיים ב-%s נסגר ב-%s, ולכן מוצג המחזור הבא',
-        'recurring': 'כל %s, החל מ-%s; המועד הקרוב: %s',
-        'recurring_end': 'כל %s, החל מ-%s; אין מועד נוסף עד %s',
-        'event': 'תלוי באירוע: %s',
-        'event_off': '%s מ%s',
-        'ongoing': 'חובה מתמשכת',
-        'ongoing_until': 'חובה מתמשכת עד %s (%s)',
-        'survival': 'שורדת את סיום ההסכם: %s אחרי הסיום',
-        'survival_if': '; אם ההסכם יסתיים בתום התקופה הנוכחית (%s): עד %s',
-        'survival_ind': 'שורדת את סיום ההסכם, בלי הגבלת זמן',
-        'qualifier': 'טעון בדיקה משפטית: המועד אינו קצוב בהסכם (%s)',
-        'qual': {'reasonable': 'זמן סביר', 'promptly': 'מיד', 'without_delay': 'ללא דיחוי', 'other': 'לשון עמומה'},
-        'il': 'ישראל (שישי ושבת)', 'intl': 'שבת וראשון',
-        'notice_period': 'תקופת ההודעה',
-    },
-    'en': {
-        'unit': {'days': ('1 day', '%d days'), 'business_days': ('1 business day', '%d business days'),
-                 'weeks': ('1 week', '%d weeks'), 'months': ('1 month', '%d months'),
-                 'years': ('1 year', '%d years'), 'hours': ('1 hour', '%d hours')},
-        'before': 'before', 'after': 'after',
-        'anchor': {'signing_date': 'the signing date', 'effective_date': 'the effective date',
-                   'end_date': 'the end of the initial term', 'term_end': 'the end of the current term',
-                   'renewal_date': 'the next renewal date'},
-        'obl': 'the date of %s',
-        'fixed': 'Fixed date in the agreement: %s',
-        'by': 'By %s = %s',
-        'missing': '[to complete] missing: %s',
-        'calc': '%s %s %s (%s) = %s',
-        'clear': '; conservative count of clear days',
-        'bd': '; needs verification: weekend days per the jurisdiction, %s (%s); holidays not deducted',
-        'bd_def': '; needs verification: weekend days per the agreement\'s "Business Day" definition%s (%s)%s; holidays not deducted',
-        'bd_cal': '; holiday calendar: %s',
-        'bd_assumed': '; needs verification: the jurisdiction is not known, so the weekend was assumed to be %s; holidays not deducted',
-        'clause_ref': ', clause %s', 'clause_paren': ' (clause %s)',
-        'days': ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), 'and': ' and ',
-        'send_by': '; notice is deemed received %s after sending%s, so send by: %s',
-        'cutoff': '; delivery after %s%s is not deemed received that day',
-        'notice_unclear': '; needs verification: the notices clause%s sets deemed receipt or a cut-off time that was not computed (%s), so notice may have to be sent earlier',
-        'hours': '; needs verification: %d hours rounded up to %d days',
-        'clamp': '; day clamped to the end of the month',
-        'term': '%s plus %s, to the day before = %s',
-        'term_given': 'End of term stated in the agreement: %s',
-        'renewed': '; renewed %s, each for %s, to %s',
-        'times': ('once', '%d times'),
-        'expired': 'The agreement ended on %s, after the maximum number of renewals',
-        'no_renewal': 'The agreement has no automatic renewal',
-        'window_closed': '; the notice window for the term ending %s closed on %s, so the next term is shown',
-        'recurring': 'Every %s, starting %s; next: %s',
-        'recurring_end': 'Every %s, starting %s; no further date until %s',
-        'event': 'Event driven: %s',
-        'event_off': '%s from %s',
-        'ongoing': 'Continuing obligation',
-        'ongoing_until': 'Continuing obligation until %s (%s)',
-        'survival': 'Survives termination: %s after termination',
-        'survival_if': '; if the agreement ends at the end of the current term (%s): until %s',
-        'survival_ind': 'Survives termination, without time limit',
-        'qualifier': 'Needs legal review: the agreement sets no fixed period (%s)',
-        'qual': {'reasonable': 'reasonable time', 'promptly': 'promptly', 'without_delay': 'without delay',
-                 'other': 'vague wording'},
-        'il': 'Israel (Friday and Saturday)', 'intl': 'Saturday and Sunday',
-        'notice_period': 'notice period',
-    },
-}
-
-
-def _t(lang):
-    return T['en' if str(lang or '').lower().startswith('en') else 'he']
-
-
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+import calendar,datetime as dt,re
+UNITS='days','business_days','weeks','months','years','hours'
+KINDS='fixed','relative','recurring','renewal_notice','term_end','event','ongoing','survival'
+QUALIFIERS='reasonable','promptly','without_delay','other'
+STATUSES='computed','to_complete','needs_verification','needs_legal_review','event_driven','ongoing'
+IL_NAMES='il','israel','ישראל'
+EN_MONTHS='January','February','March','April','May','June','July','August','September','October','November','December'
+DAY_NAMES={'monday':0,'mon':0,'tuesday':1,'tue':1,'wednesday':2,'wed':2,'thursday':3,'thu':3,'friday':4,'fri':4,'saturday':5,'sat':5,'sunday':6,'sun':6,'שני':0,'שלישי':1,'רביעי':2,'חמישי':3,'שישי':4,'שבת':5,'ראשון':6,'יום שני':0,'יום שלישי':1,'יום רביעי':2,'יום חמישי':3,'יום שישי':4,'יום ראשון':6}
+FRI_SAT='IL','SA','KW','QA','BH','OM','JO','EG'
+DEFAULT_WEEKEND=5,6
+JURIS_NAMES={'IL':('israel','israeli','isr','state of israel','ישראל','ישראלי','הישראלי','ישראלית','הישראלית'),'GB':('united kingdom','uk','gbr','great britain','britain','british','england','english','wales','welsh','england and wales','scotland','scottish','northern ireland','בריטניה','אנגליה','הבריטי','האנגלי','אנגלי','בריטי'),'US':('united states','usa','us','american','new york','delaware','california','texas','florida','illinois','massachusetts','new jersey','washington','ארצות הברית','ארה"ב','ניו יורק','דלאוור','קליפורניה','האמריקאי','אמריקאי'),'DE':('germany','german','deu','גרמניה','הגרמני','גרמני'),'FR':('france','french','fra','צרפת','הצרפתי','צרפתי'),'NL':('netherlands','dutch','nld','holland','הולנד','ההולנדי','הולנדי'),'IE':('ireland','irish','irl','אירלנד','האירי','אירי'),'CY':('cyprus','cypriot','cyp','קפריסין','הקפריסאי','קפריסאי'),'CH':('switzerland','swiss','che','שווייץ','שוויץ','השווייצרי','שווייצרי'),'AE':('united arab emirates','uae','emirati','dubai','abu dhabi','difc','adgm','איחוד האמירויות','דובאי'),'SA':('saudi arabia','saudi','sau','ksa','ערב הסעודית','סעודיה','הסעודי'),'KW':('kuwait','kuwaiti','kwt','כווית'),'QA':('qatar','qatari','qat','קטאר'),'BH':('bahrain','bahraini','bhr','בחריין'),'OM':('oman','omani','omn','עומאן'),'JO':('jordan','jordanian','jor','ירדן','הירדני'),'EG':('egypt','egyptian','egy','מצרים','המצרי'),'IT':('italy','italian','ita','איטליה'),'ES':('spain','spanish','esp','ספרד'),'SG':('singapore','sgp','סינגפור'),'HK':('hong kong','hkg','הונג קונג'),'CA':('canada','canadian','can','קנדה'),'AU':('australia','australian','aus','אוסטרליה')}
+_JURIS_KEYS=sorted(((C,A)for(A,B)in JURIS_NAMES.items()for C in B),key=lambda x:-len(x[0]))
+T={'he':{'unit':{'days':('יום אחד','%d ימים'),'business_days':('יום עסקים אחד','%d ימי עסקים'),'weeks':('שבוע אחד','%d שבועות'),'months':('חודש אחד','%d חודשים'),'years':('שנה אחת','%d שנים'),'hours':('שעה אחת','%d שעות')},'before':'לפני','after':'אחרי','anchor':{'signing_date':'מועד החתימה','effective_date':'מועד התחילה','end_date':'תום התקופה הראשונה','term_end':'תום התקופה הנוכחית','renewal_date':'מועד החידוש הקרוב'},'obl':'המועד של %s','fixed':'מועד קבוע בהסכם: %s','by':'עד %s = %s','missing':'[להשלים] חסר: %s','calc':'%s %s %s (%s) = %s','clear':'; ספירה שמרנית של ימים שלמים','bd':'; טעון אימות: ימי המנוחה לפי סמכות השיפוט, %s (%s); החגים לא נוכו','bd_def':'; טעון אימות: ימי המנוחה לפי הגדרת "יום עסקים" בהסכם%s (%s)%s; החגים לא נוכו','bd_cal':'; לוח החגים: %s','bd_assumed':'; טעון אימות: סמכות השיפוט אינה ידועה, ולכן הונח שימי המנוחה הם %s; החגים לא נוכו','clause_ref':', סעיף %s','clause_paren':' (סעיף %s)','days':('שני','שלישי','רביעי','חמישי','שישי','שבת','ראשון'),'and':' ו','send_by':'; המסירה נחשבת %s אחרי השליחה%s, ולכן מועד השליחה: %s','cutoff':'; מסירה אחרי השעה %s%s אינה נחשבת לאותו יום','notice_unclear':'; טעון אימות: סעיף ההודעות%s קובע מסירה נחשבת או שעת סגירה שלא חושבו (%s), ולכן ייתכן שיש לשלוח מוקדם יותר','hours':'; טעון אימות: %d שעות עוגלו ל-%d ימים','clamp':'; היום קוצץ לסוף החודש','term':'%s ועוד %s, עד היום שלפניו = %s','term_given':'תום התקופה כתוב בהסכם: %s','renewed':'; התחדש %s, כל פעם ל-%s, עד %s','times':('פעם אחת','%d פעמים'),'expired':'ההסכם הסתיים ב-%s, אחרי מספר החידושים המרבי','no_renewal':'אין חידוש אוטומטי בהסכם','window_closed':'; חלון ההודעה למחזור שמסתיים ב-%s נסגר ב-%s, ולכן מוצג המחזור הבא','recurring':'כל %s, החל מ-%s; המועד הקרוב: %s','recurring_end':'כל %s, החל מ-%s; אין מועד נוסף עד %s','event':'תלוי באירוע: %s','event_off':'%s מ%s','ongoing':'חובה מתמשכת','ongoing_until':'חובה מתמשכת עד %s (%s)','survival':'שורדת את סיום ההסכם: %s אחרי הסיום','survival_if':'; אם ההסכם יסתיים בתום התקופה הנוכחית (%s): עד %s','survival_ind':'שורדת את סיום ההסכם, בלי הגבלת זמן','qualifier':'טעון בדיקה משפטית: המועד אינו קצוב בהסכם (%s)','qual':{'reasonable':'זמן סביר','promptly':'מיד','without_delay':'ללא דיחוי','other':'לשון עמומה'},'il':'ישראל (שישי ושבת)','intl':'שבת וראשון','notice_period':'תקופת ההודעה'},'en':{'unit':{'days':('1 day','%d days'),'business_days':('1 business day','%d business days'),'weeks':('1 week','%d weeks'),'months':('1 month','%d months'),'years':('1 year','%d years'),'hours':('1 hour','%d hours')},'before':'before','after':'after','anchor':{'signing_date':'the signing date','effective_date':'the effective date','end_date':'the end of the initial term','term_end':'the end of the current term','renewal_date':'the next renewal date'},'obl':'the date of %s','fixed':'Fixed date in the agreement: %s','by':'By %s = %s','missing':'[to complete] missing: %s','calc':'%s %s %s (%s) = %s','clear':'; conservative count of clear days','bd':'; needs verification: weekend days per the jurisdiction, %s (%s); holidays not deducted','bd_def':'; needs verification: weekend days per the agreement\'s "Business Day" definition%s (%s)%s; holidays not deducted','bd_cal':'; holiday calendar: %s','bd_assumed':'; needs verification: the jurisdiction is not known, so the weekend was assumed to be %s; holidays not deducted','clause_ref':', clause %s','clause_paren':' (clause %s)','days':('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'),'and':' and ','send_by':'; notice is deemed received %s after sending%s, so send by: %s','cutoff':'; delivery after %s%s is not deemed received that day','notice_unclear':'; needs verification: the notices clause%s sets deemed receipt or a cut-off time that was not computed (%s), so notice may have to be sent earlier','hours':'; needs verification: %d hours rounded up to %d days','clamp':'; day clamped to the end of the month','term':'%s plus %s, to the day before = %s','term_given':'End of term stated in the agreement: %s','renewed':'; renewed %s, each for %s, to %s','times':('once','%d times'),'expired':'The agreement ended on %s, after the maximum number of renewals','no_renewal':'The agreement has no automatic renewal','window_closed':'; the notice window for the term ending %s closed on %s, so the next term is shown','recurring':'Every %s, starting %s; next: %s','recurring_end':'Every %s, starting %s; no further date until %s','event':'Event driven: %s','event_off':'%s from %s','ongoing':'Continuing obligation','ongoing_until':'Continuing obligation until %s (%s)','survival':'Survives termination: %s after termination','survival_if':'; if the agreement ends at the end of the current term (%s): until %s','survival_ind':'Survives termination, without time limit','qualifier':'Needs legal review: the agreement sets no fixed period (%s)','qual':{'reasonable':'reasonable time','promptly':'promptly','without_delay':'without delay','other':'vague wording'},'il':'Israel (Friday and Saturday)','intl':'Saturday and Sunday','notice_period':'notice period'}}
+def _t(lang):return T['en'if str(lang or'').lower().startswith('en')else'he']
 def parse(s):
-    if not s:
-        return None
-    if isinstance(s, dt.date):
-        return s
-    try:
-        return dt.date.fromisoformat(str(s)[:10])
-    except ValueError:
-        return None
-
-
-def fmt(d, lang='he'):
-    """התאריך בטקסט שהלקוח רואה (כלל 3.6): D.M.YYYY בעברית; באנגלית "3 April 2027", שאינו מתפרש כחודש-יום."""
-    if d is None:
-        return ''
-    if str(lang or '').lower().startswith('en'):
-        return '%d %s %d' % (d.day, EN_MONTHS[d.month - 1], d.year)
-    return '%d.%d.%d' % (d.day, d.month, d.year)
-
-
-def iso(d):
-    return None if d is None else d.isoformat()
-
-
-def add_months(d, n):
-    """מוסיף n חודשים. יום שאינו קיים בחודש היעד מקוצץ לסוף החודש; מחזיר (תאריך, קוצץ)."""
-    m = d.month - 1 + n
-    y, m = d.year + m // 12, m % 12 + 1
-    last = calendar.monthrange(y, m)[1]
-    return dt.date(y, m, min(d.day, last)), d.day > last
-
-
+	if not s:return
+	if isinstance(s,dt.date):return s
+	try:return dt.date.fromisoformat(str(s)[:10])
+	except ValueError:return
+def fmt(d,lang='he'):
+	if d is None:return''
+	if str(lang or'').lower().startswith('en'):return'%d %s %d'%(d.day,EN_MONTHS[d.month-1],d.year)
+	return'%d.%d.%d'%(d.day,d.month,d.year)
+def iso(d):return None if d is None else d.isoformat()
+def add_months(d,n):A=d.month-1+n;B,A=d.year+A//12,A%12+1;C=calendar.monthrange(B,A)[1];return dt.date(B,A,min(d.day,C)),d.day>C
 def jurisdiction_code(j):
-    """קוד ISO-2 מ-agreement.jurisdiction: קוד דו-אותי או תלת-אותי, US-NY או GB-EAW, שם או תואר, בעברית או
-    באנגלית, גם בתוך ביטוי ("Israeli law", "the laws of England and Wales", "הדין הישראלי"). לא מזוהה: None."""
-    s = re.sub(r'\s+', ' ', str(j or '').replace('״', '"').strip()).casefold()
-    if not s:
-        return None
-    m = re.fullmatch(r'([a-z]{2})(-[a-z]{2,3})?', s)
-    if m:
-        c = m.group(1).upper()
-        return 'GB' if c == 'UK' else c
-    for k, c in _JURIS_KEYS:
-        if re.search(r'(?<![\w])%s(?![\w])' % re.escape(k.casefold()), s):
-            return c
-    return None
-
-
+	B=re.sub('\\s+',' ',str(j or'').replace('״','"').strip()).casefold()
+	if not B:return
+	C=re.fullmatch('([a-z]{2})(-[a-z]{2,3})?',B)
+	if C:A=C.group(1).upper();return'GB'if A=='UK'else A
+	for(D,A)in _JURIS_KEYS:
+		if re.search('(?<![\\w])%s(?![\\w])'%re.escape(D.casefold()),B):return A
 def weekend_of(agreement):
-    """(ימי המנוחה, מקור, קוד): ההגדרה שבהסכם (agreement.business_days.weekend) גוברת; אחריה סמכות השיפוט;
-    בלעדיהן, שבת וראשון בהנחה. מקור: 'defined', 'jurisdiction' או 'assumed'."""
-    a = agreement or {}
-    bd = a.get('business_days') if isinstance(a.get('business_days'), dict) else {}
-    days = []
-    for x in bd.get('weekend') or []:
-        k = str(x).strip().casefold()
-        if k in DAY_NAMES and DAY_NAMES[k] not in days:
-            days.append(DAY_NAMES[k])
-    if days:
-        return tuple(sorted(days)), 'defined', None
-    code = jurisdiction_code(a.get('jurisdiction'))
-    if code:
-        return ((4, 5) if code in FRI_SAT else DEFAULT_WEEKEND), 'jurisdiction', code
-    return DEFAULT_WEEKEND, 'assumed', None
-
-
-def weekend_days(jurisdiction):
-    """ימי המנוחה השבועיים (weekday של פייתון: שני=0) לפי סמכות השיפוט בלבד. תאימות לאחור."""
-    return weekend_of({'jurisdiction': jurisdiction})[0]
-
-
-def shift(d, n, unit, sign, weekend=(5, 6)):
-    """מזיז את d ב-n יחידות, קדימה (sign=1) או אחורה (sign=-1). מחזיר (תאריך, קוצץ, ימים_משעות)."""
-    if unit == 'days':
-        return d + dt.timedelta(days=sign * n), False, 0
-    if unit == 'weeks':
-        return d + dt.timedelta(days=sign * 7 * n), False, 0
-    if unit == 'months':
-        r, c = add_months(d, sign * n)
-        return r, c, 0
-    if unit == 'years':
-        r, c = add_months(d, sign * 12 * n)
-        return r, c, 0
-    if unit == 'hours':
-        days = -(-n // 24)
-        return d + dt.timedelta(days=sign * days), False, days
-    if unit == 'business_days':
-        cur, left = d, n
-        while left > 0:
-            cur += dt.timedelta(days=sign)
-            if cur.weekday() not in weekend:
-                left -= 1
-        return cur, False, 0
-    raise ValueError('unit %r' % unit)
-
-
-def span(off, lang):
-    t = _t(lang)
-    one, many = t['unit'][off['unit']]
-    return one if int(off['n']) == 1 else many % int(off['n'])
-
-
-class Ctx(object):
-    """העוגנים של הסכם אחד, נכון ליום as_of."""
-
-    def __init__(self, agreement, as_of, lang='he', obligations=None):
-        self.a = agreement or {}
-        self.d = self.a.get('dates') or {}
-        self.as_of = parse(as_of) or dt.date.today()
-        self.lang = lang
-        self.t = _t(lang)
-        self.weekend, self.weekend_src, self.juris = weekend_of(self.a)
-        nd = self.a.get('notice_delivery')
-        self.nd = nd if isinstance(nd, dict) and nd else None
-        self.obls = {o.get('id'): o for o in (obligations or [])}
-        self.fmt = lambda d: fmt(d, lang)
-        self.done = {}
-        self.term = self._term()
-
-    # ---- תקופת ההסכם וחידוש אוטומטי
-    def _term(self):
-        t, d = self.t, self.d
-        out = {'end_date': None, 'term_end': None, 'calc': '', 'renewals': 0, 'expired': False, 'clamp': False,
-               'missing': t['anchor']['end_date']}
-        start = parse(d.get('effective_date'))
-        if not start and not d.get('end_date') and d.get('initial_term'):
-            out['missing'] = t['anchor']['effective_date']
-        end = parse(d.get('end_date'))
-        if end:
-            out['calc'] = t['term_given'] % self.fmt(end)
-        elif start and d.get('initial_term'):
-            it = d['initial_term']
-            e, c, _ = shift(start, int(it['n']), it['unit'], 1, self.weekend)
-            end = e - dt.timedelta(days=1)
-            out['clamp'] = c
-            out['calc'] = t['term'] % (self.fmt(start), span(it, self.lang), self.fmt(end))
-        if not end:
-            return out
-        out['end_date'] = end
-        cur = end
-        ar = d.get('auto_renewal')
-        if ar and ar.get('period'):
-            p, mx, k = ar['period'], ar.get('max_renewals'), 0
-            while cur < self.as_of and (mx is None or k < int(mx)):
-                nxt, _, _ = shift(cur + dt.timedelta(days=1), int(p['n']), p['unit'], 1, self.weekend)
-                cur, k = nxt - dt.timedelta(days=1), k + 1
-            out['renewals'] = k
-            if k:
-                times = t['times'][0] if k == 1 else t['times'][1] % k
-                out['calc'] += t['renewed'] % (times, span(p, self.lang), self.fmt(cur))
-            if cur < self.as_of:
-                out['expired'] = True
-        elif cur < self.as_of:
-            out['expired'] = True
-        out['term_end'] = cur
-        return out
-
-    def renewal_notice(self):
-        """(מועד, חישוב, מעמד) של המועד האחרון להודעה על אי חידוש, למחזור הרלוונטי הקרוב."""
-        t, ar = self.t, self.d.get('auto_renewal')
-        if not ar or not ar.get('period'):
-            return None, t['no_renewal'], 'computed'
-        if not ar.get('notice'):
-            return None, t['missing'] % t['notice_period'], 'to_complete'
-        end = self.term['term_end']
-        if end is None:
-            return None, t['missing'] % self.term['missing'], 'to_complete'
-        if self.term['expired']:
-            return None, t['expired'] % self.fmt(end), 'computed'
-        n = ar['notice']
-        ours = ar.get('by') in (None, 'either', 'us', 'both')
-
-        def last_day(end):
-            # היום האחרון לקבלת ההודעה, ובהודעה שלנו מועד השליחה לפי המסירה הנחשבת
-            dl, _, hd = self._before(end, n)
-            calc = t['calc'] % (span(n, self.lang), t['before'], t['anchor']['term_end'], self.fmt(end),
-                                self.fmt(dl))
-            calc, status = self._notes(calc, n, hd, False, 'computed')
-            return self.send_by(dl, calc, status) if ours else (dl, calc, status)
-        note = ''
-        dl, calc, status = last_day(end)
-        if dl < self.as_of:
-            mx = ar.get('max_renewals')
-            if mx is not None and self.term['renewals'] >= int(mx):
-                return None, t['expired'] % self.fmt(end), 'computed'
-            p = ar['period']
-            nxt, _, _ = shift(end + dt.timedelta(days=1), int(p['n']), p['unit'], 1, self.weekend)
-            note = t['window_closed'] % (self.fmt(end), self.fmt(dl))
-            end = nxt - dt.timedelta(days=1)
-            dl, calc, status = last_day(end)
-        return dl, calc + note, status
-
-    def send_by(self, d, calc, status):
-        """הודעה ששולחים אנחנו: מהיום האחרון לקבלה למועד השליחה, לפי המסירה הנחשבת שבסעיף ההודעות
-        (agreement.notice_delivery). בלי notice_delivery: ללא שינוי. מסירה נחשבת שאי אפשר לחשב: טעון אימות."""
-        nd, t = self.nd, self.t
-        if not nd or d is None:
-            return d, calc, status
-        cl = t['clause_ref'] % nd['clause'] if nd.get('clause') else ''
-        da = nd.get('deemed_after')
-        ok = isinstance(da, dict) and da.get('unit') in UNITS and str(da.get('n', '')).isdigit()
-        if ok and int(da['n']) > 0:
-            r, c, hd = shift(d, int(da['n']), da['unit'], -1, self.weekend)
-            calc += t['send_by'] % (span(da, self.lang), cl, self.fmt(r))
-            calc, status = self._notes(calc, da, hd, c, status)
-            d = r
-        elif da or (nd.get('text') and not nd.get('cutoff_time')):
-            cp = t['clause_paren'] % nd['clause'] if nd.get('clause') else ''
-            calc += t['notice_unclear'] % (cp, nd.get('text') or str(da))
-            return d, calc, 'needs_verification' if status == 'computed' else status
-        if nd.get('cutoff_time'):
-            tz = ' (%s)' % nd['tz'] if nd.get('tz') else ''
-            calc += t['cutoff'] % (nd['cutoff_time'], tz)
-            if not nd.get('tz'):
-                status = 'needs_verification' if status == 'computed' else status
-        return d, calc, status
-
-    def _before(self, d, off):
-        r, c, hd = shift(d, int(off['n']), off['unit'], -1, self.weekend)
-        if off.get('clear_days'):
-            r -= dt.timedelta(days=1)
-        return r, c, hd
-
-    def _notes(self, calc, off, hd, clamp, status):
-        t = self.t
-        if off.get('clear_days'):
-            calc += t['clear']
-        if off['unit'] == 'business_days':
-            calc += self._bd_note()
-            status = 'needs_verification'
-        if hd:
-            calc += t['hours'] % (int(off['n']), hd)
-            status = 'needs_verification'
-        if clamp:
-            calc += t['clamp']
-            status = 'needs_verification'
-        return calc, status
-
-    def _days(self):
-        t = self.t
-        names = [t['days'][i] for i in self.weekend]
-        return t['and'].join(names) if len(names) < 3 else ', '.join(names[:-1]) + t['and'] + names[-1]
-
-    def _bd_note(self):
-        t = self.t
-        if self.weekend_src == 'defined':
-            bd = self.a.get('business_days') or {}
-            cl = t['clause_ref'] % bd['clause'] if bd.get('clause') else ''
-            cal = t['bd_cal'] % ', '.join(str(x) for x in bd['calendars']) if bd.get('calendars') else ''
-            return t['bd_def'] % (cl, self._days(), cal)
-        if self.weekend_src == 'jurisdiction':
-            return t['bd'] % (self.juris, self._days())
-        return t['bd_assumed'] % self._days()
-
-    # ---- עוגנים
-    def anchor(self, name):
-        """(תאריך או None, תווית)."""
-        t = self.t
-        if isinstance(name, str) and parse(name):
-            return parse(name), self.fmt(parse(name))
-        if name in ('signing_date', 'effective_date'):
-            return parse(self.d.get(name)), t['anchor'][name]
-        if name == 'end_date':
-            return self.term['end_date'], t['anchor'][name] if self.term['end_date'] else self.term['missing']
-        if name == 'term_end':
-            return self.term['term_end'], t['anchor'][name] if self.term['term_end'] else self.term['missing']
-        if name == 'renewal_date':
-            e = self.term['term_end']
-            return (e + dt.timedelta(days=1) if e else None), t['anchor'][name]
-        if isinstance(name, str) and name.startswith('custom:'):
-            k = name[7:]
-            v = (self.d.get('anchors') or {}).get(k)
-            if isinstance(v, dict):
-                return parse(v.get('date')), v.get('label') or k
-            return parse(v), k
-        if isinstance(name, str) and name.startswith('obl:'):
-            oid = name[4:]
-            o = self.obls.get(oid)
-            label = t['obl'] % ((o or {}).get('title') or oid)
-            if o is None:
-                return None, label
-            r = self.compute(o)
-            return parse(r['due_date']), label
-        return None, str(name)
-
-    # ---- חובה אחת
-    def compute(self, o):
-        oid = o.get('id')
-        if oid in self.done:
-            return self.done[oid]
-        self.done[oid] = {'due_date': None, 'calc': '', 'date_status': 'to_complete'}   # מעגל: [להשלים]
-        r = self._compute(o.get('timing') or {})
-        kind = (o.get('timing') or {}).get('kind')
-        if (o.get('type') in ('notice', 'renewal_notice') and o.get('obligor') in ('us', 'both')
-                and kind in ('fixed', 'relative') and r.get('due_date')):
-            d, c, st = self.send_by(parse(r['due_date']), r['calc'], r['date_status'])
-            r = dict(r, due_date=iso(d), calc=c, date_status=st)
-        q = (o.get('timing') or {}).get('qualifier')
-        if q:
-            r['calc'] = self.t['qualifier'] % self.t['qual'].get(q, q) + ('; ' + r['calc'] if r['calc'] else '')
-            r['date_status'] = 'needs_legal_review'
-        self.done[oid] = r
-        return r
-
-    def _compute(self, tm):
-        t, kind = self.t, tm.get('kind')
-        res = lambda d, c, s, **kw: dict({'due_date': iso(d), 'calc': c, 'date_status': s}, **kw)
-        if kind == 'fixed':
-            d = parse(tm.get('date'))
-            return res(d, t['fixed'] % self.fmt(d), 'computed') if d else res(None, t['missing'] % 'date', 'to_complete')
-        if kind == 'relative':
-            a, label = self.anchor(tm.get('anchor'))
-            if a is None:
-                return res(None, t['missing'] % label, 'to_complete')
-            off = tm.get('offset') or {'n': 0, 'unit': 'days', 'direction': 'after'}
-            if off.get('direction') == 'before':
-                d, c, hd = self._before(a, off)
-            else:
-                d, c, hd = shift(a, int(off['n']), off['unit'], 1, self.weekend)
-            if int(off['n']) == 0:                       # "עד מועד החתימה", "לפני תום התקופה"
-                calc = t['by'] % (label, self.fmt(d))
-            else:
-                calc = t['calc'] % (span(off, self.lang), t[off.get('direction', 'after')], label, self.fmt(a), self.fmt(d))
-            calc, st = self._notes(calc, off, hd, c, 'computed')
-            return res(d, calc, st)
-        if kind == 'renewal_notice':
-            d, calc, st = self.renewal_notice()
-            return res(d, calc, st)
-        if kind == 'term_end':
-            e = self.term['term_end']
-            if e is None:
-                return res(None, t['missing'] % self.term['missing'], 'to_complete')
-            st = 'needs_verification' if self.term['clamp'] else 'computed'
-            return res(e, self.term['calc'], st)
-        if kind == 'recurring':
-            occ, calc, st = self.occurrences(tm, self.as_of, None, first_only=True)
-            return res(occ[0] if occ else None, calc, st)
-        if kind == 'event':
-            off = tm.get('offset')
-            ev = tm.get('event') or ''
-            txt = t['event_off'] % (span(off, self.lang), ev) if off else ev
-            return res(None, t['event'] % txt, 'event_driven')
-        if kind == 'ongoing':
-            if tm.get('until'):
-                a, label = self.anchor(tm['until'])
-                if a:
-                    return res(a, t['ongoing_until'] % (self.fmt(a), label), 'ongoing')
-            return res(None, t['ongoing'], 'ongoing')
-        if kind == 'survival':
-            p = tm.get('period')
-            if p in (None, 'indefinite'):
-                return res(None, t['survival_ind'], 'ongoing')
-            calc = t['survival'] % span(p, self.lang)
-            e = self.term['term_end']
-            if e:
-                u, _, _ = shift(e, int(p['n']), p['unit'], 1, self.weekend)
-                calc += t['survival_if'] % (self.fmt(e), self.fmt(u))
-            return res(None, calc, 'ongoing')
-        return res(None, t['missing'] % 'timing', 'to_complete')
-
-    def occurrences(self, tm, frm, to, first_only=False):
-        """מועדי חובה חוזרת בטווח [frm, to]. מחזיר (רשימת תאריכים, חישוב, מעמד)."""
-        t = self.t
-        ev = tm.get('every') or {}
-        a, label = self.anchor(tm.get('start'))
-        if a is None or not ev.get('n'):
-            return [], t['missing'] % label, 'to_complete'
-        st = 'computed'
-        clamp = hd = False
-        if tm.get('start_offset'):
-            off = tm['start_offset']
-            if off.get('direction') == 'before':
-                a, clamp, hd = self._before(a, off)
-            else:
-                a, clamp, hd = shift(a, int(off['n']), off['unit'], 1, self.weekend)
-        until = None
-        if tm.get('until'):
-            until, _ = self.anchor(tm['until'])
-        elif self.term['term_end']:
-            until = self.term['term_end']
-        limit = to or (frm + dt.timedelta(days=3660))
-        out, k = [], 0
-        while k < 2000:
-            n = int(ev['n']) * k
-            if ev['unit'] in ('months', 'years'):
-                d, c = add_months(a, n * (12 if ev['unit'] == 'years' else 1))
-                clamp = clamp or c
-            else:
-                d, _, _ = shift(a, n, ev['unit'], 1, self.weekend)
-            k += 1
-            if (until and d > until) or d > limit:
-                break
-            if d >= frm:
-                out.append(d)
-                if first_only:
-                    break
-        every = span(ev, self.lang)
-        if out:
-            calc = t['recurring'] % (every, self.fmt(a), self.fmt(out[0]))
-        else:
-            calc = t['recurring_end'] % (every, self.fmt(a), self.fmt(until or limit))
-        off = dict(ev, n=ev['n'])
-        calc, st = self._notes(calc, off, hd, clamp, st)
-        return out, calc, st
-
-
-def compute_all(agreement, obligations, as_of=None, lang='he'):
-    """מחזיר {id: {due_date, calc, date_status}} ואת פרטי התקופה."""
-    ctx = Ctx(agreement, as_of, lang, obligations)
-    out = {o.get('id'): ctx.compute(o) for o in obligations}
-    term = {'end_date': iso(ctx.term['end_date']), 'term_end': iso(ctx.term['term_end']),
-            'renewals': ctx.term['renewals'], 'expired': ctx.term['expired'], 'calc': ctx.term['calc']}
-    d, c, s = ctx.renewal_notice()
-    term['renewal_notice'] = {'date': iso(d), 'calc': c, 'date_status': s}
-    return out, term
+	B=agreement or{};E=B.get('business_days')if isinstance(B.get('business_days'),dict)else{};A=[]
+	for F in E.get('weekend')or[]:
+		C=str(F).strip().casefold()
+		if C in DAY_NAMES and DAY_NAMES[C]not in A:A.append(DAY_NAMES[C])
+	if A:return tuple(sorted(A)),'defined',None
+	D=jurisdiction_code(B.get('jurisdiction'))
+	if D:return(4,5)if D in FRI_SAT else DEFAULT_WEEKEND,'jurisdiction',D
+	return DEFAULT_WEEKEND,'assumed',None
+def weekend_days(jurisdiction):return weekend_of({'jurisdiction':jurisdiction})[0]
+def shift(d,n,unit,sign,weekend=(5,6)):
+	B=sign;A=unit
+	if A=='days':return d+dt.timedelta(days=B*n),False,0
+	if A=='weeks':return d+dt.timedelta(days=B*7*n),False,0
+	if A=='months':C,D=add_months(d,B*n);return C,D,0
+	if A=='years':C,D=add_months(d,B*12*n);return C,D,0
+	if A=='hours':F=-(-n//24);return d+dt.timedelta(days=B*F),False,F
+	if A=='business_days':
+		E,G=d,n
+		while G>0:
+			E+=dt.timedelta(days=B)
+			if E.weekday()not in weekend:G-=1
+		return E,False,0
+	raise ValueError('unit %r'%A)
+def span(off,lang):A=off;B=_t(lang);C,D=B['unit'][A['unit']];return C if int(A['n'])==1 else D%int(A['n'])
+class Ctx:
+	def __init__(A,agreement,as_of,lang='he',obligations=None):B=lang;A.a=agreement or{};A.d=A.a.get('dates')or{};A.as_of=parse(as_of)or dt.date.today();A.lang=B;A.t=_t(B);A.weekend,A.weekend_src,A.juris=weekend_of(A.a);C=A.a.get('notice_delivery');A.nd=C if isinstance(C,dict)and C else None;A.obls={A.get('id'):A for A in obligations or[]};A.fmt=lambda d:fmt(d,B);A.done={};A.term=A._term()
+	def _term(A):
+		C,D=A.t,A.d;B={'end_date':None,'term_end':None,'calc':'','renewals':0,'expired':False,'clamp':False,'missing':C['anchor']['end_date']};H=parse(D.get('effective_date'))
+		if not H and not D.get('end_date')and D.get('initial_term'):B['missing']=C['anchor']['effective_date']
+		E=parse(D.get('end_date'))
+		if E:B['calc']=C['term_given']%A.fmt(E)
+		elif H and D.get('initial_term'):J=D['initial_term'];N,O,L=shift(H,int(J['n']),J['unit'],1,A.weekend);E=N-dt.timedelta(days=1);B['clamp']=O;B['calc']=C['term']%(A.fmt(H),span(J,A.lang),A.fmt(E))
+		if not E:return B
+		B['end_date']=E;F=E;I=D.get('auto_renewal')
+		if I and I.get('period'):
+			K,M,G=I['period'],I.get('max_renewals'),0
+			while F<A.as_of and(M is None or G<int(M)):P,L,L=shift(F+dt.timedelta(days=1),int(K['n']),K['unit'],1,A.weekend);F,G=P-dt.timedelta(days=1),G+1
+			B['renewals']=G
+			if G:Q=C['times'][0]if G==1 else C['times'][1]%G;B['calc']+=C['renewed']%(Q,span(K,A.lang),A.fmt(F))
+			if F<A.as_of:B['expired']=True
+		elif F<A.as_of:B['expired']=True
+		B['term_end']=F;return B
+	def renewal_notice(A):
+		B,D=A.t,A.d.get('auto_renewal')
+		if not D or not D.get('period'):return None,B['no_renewal'],'computed'
+		if not D.get('notice'):return None,B['missing']%B['notice_period'],'to_complete'
+		C=A.term['term_end']
+		if C is None:return None,B['missing']%A.term['missing'],'to_complete'
+		if A.term['expired']:return None,B['expired']%A.fmt(C),'computed'
+		F=D['notice'];M=D.get('by')in(None,'either','us','both')
+		def G(end):D,H,G=A._before(end,F);C=B['calc']%(span(F,A.lang),B['before'],B['anchor']['term_end'],A.fmt(end),A.fmt(D));C,E=A._notes(C,F,G,False,'computed');return A.send_by(D,C,E)if M else(D,C,E)
+		H='';E,I,J=G(C)
+		if E<A.as_of:
+			K=D.get('max_renewals')
+			if K is not None and A.term['renewals']>=int(K):return None,B['expired']%A.fmt(C),'computed'
+			L=D['period'];N,O,O=shift(C+dt.timedelta(days=1),int(L['n']),L['unit'],1,A.weekend);H=B['window_closed']%(A.fmt(C),A.fmt(E));C=N-dt.timedelta(days=1);E,I,J=G(C)
+		return E,I+H,J
+	def send_by(E,d,calc,status):
+		D=calc;C=status;A,F=E.nd,E.t
+		if not A or d is None:return d,D,C
+		H=F['clause_ref']%A['clause']if A.get('clause')else'';B=A.get('deemed_after');I=isinstance(B,dict)and B.get('unit')in UNITS and str(B.get('n','')).isdigit()
+		if I and int(B['n'])>0:G,J,K=shift(d,int(B['n']),B['unit'],-1,E.weekend);D+=F['send_by']%(span(B,E.lang),H,E.fmt(G));D,C=E._notes(D,B,K,J,C);d=G
+		elif B or A.get('text')and not A.get('cutoff_time'):L=F['clause_paren']%A['clause']if A.get('clause')else'';D+=F['notice_unclear']%(L,A.get('text')or str(B));return d,D,'needs_verification'if C=='computed'else C
+		if A.get('cutoff_time'):
+			M=' (%s)'%A['tz']if A.get('tz')else'';D+=F['cutoff']%(A['cutoff_time'],M)
+			if not A.get('tz'):C='needs_verification'if C=='computed'else C
+		return d,D,C
+	def _before(C,d,off):
+		A=off;B,D,E=shift(d,int(A['n']),A['unit'],-1,C.weekend)
+		if A.get('clear_days'):B-=dt.timedelta(days=1)
+		return B,D,E
+	def _notes(E,calc,off,hd,clamp,status):
+		C=off;B=status;A=calc;D=E.t
+		if C.get('clear_days'):A+=D['clear']
+		if C['unit']=='business_days':A+=E._bd_note();B='needs_verification'
+		if hd:A+=D['hours']%(int(C['n']),hd);B='needs_verification'
+		if clamp:A+=D['clamp'];B='needs_verification'
+		return A,B
+	def _days(C):B=C.t;A=[B['days'][A]for A in C.weekend];return B['and'].join(A)if len(A)<3 else', '.join(A[:-1])+B['and']+A[-1]
+	def _bd_note(A):
+		B=A.t
+		if A.weekend_src=='defined':C=A.a.get('business_days')or{};D=B['clause_ref']%C['clause']if C.get('clause')else'';E=B['bd_cal']%', '.join(str(A)for A in C['calendars'])if C.get('calendars')else'';return B['bd_def']%(D,A._days(),E)
+		if A.weekend_src=='jurisdiction':return B['bd']%(A.juris,A._days())
+		return B['bd_assumed']%A._days()
+	def anchor(B,name):
+		A=name;C=B.t
+		if isinstance(A,str)and parse(A):return parse(A),B.fmt(parse(A))
+		if A in('signing_date','effective_date'):return parse(B.d.get(A)),C['anchor'][A]
+		if A=='end_date':return B.term['end_date'],C['anchor'][A]if B.term['end_date']else B.term['missing']
+		if A=='term_end':return B.term['term_end'],C['anchor'][A]if B.term['term_end']else B.term['missing']
+		if A=='renewal_date':G=B.term['term_end'];return G+dt.timedelta(days=1)if G else None,C['anchor'][A]
+		if isinstance(A,str)and A.startswith('custom:'):
+			E=A[7:];D=(B.d.get('anchors')or{}).get(E)
+			if isinstance(D,dict):return parse(D.get('date')),D.get('label')or E
+			return parse(D),E
+		if isinstance(A,str)and A.startswith('obl:'):
+			H=A[4:];F=B.obls.get(H);I=C['obl']%((F or{}).get('title')or H)
+			if F is None:return None,I
+			J=B.compute(F);return parse(J['due_date']),I
+		return None,str(A)
+	def compute(B,o):
+		C=o.get('id')
+		if C in B.done:return B.done[C]
+		B.done[C]={'due_date':None,'calc':'','date_status':'to_complete'};A=B._compute(o.get('timing')or{});E=(o.get('timing')or{}).get('kind')
+		if o.get('type')in('notice','renewal_notice')and o.get('obligor')in('us','both')and E in('fixed','relative')and A.get('due_date'):F,G,H=B.send_by(parse(A['due_date']),A['calc'],A['date_status']);A=dict(A,due_date=iso(F),calc=G,date_status=H)
+		D=(o.get('timing')or{}).get('qualifier')
+		if D:A['calc']=B.t['qualifier']%B.t['qual'].get(D,D)+('; '+A['calc']if A['calc']else'');A['date_status']='needs_legal_review'
+		B.done[C]=A;return A
+	def _compute(A,tm):
+		F=tm;B,H=A.t,F.get('kind');C=lambda d,c,s,**A:dict({'due_date':iso(d),'calc':c,'date_status':s},**A)
+		if H=='fixed':G=parse(F.get('date'));return C(G,B['fixed']%A.fmt(G),'computed')if G else C(None,B['missing']%'date','to_complete')
+		if H=='relative':
+			I,L=A.anchor(F.get('anchor'))
+			if I is None:return C(None,B['missing']%L,'to_complete')
+			D=F.get('offset')or{'n':0,'unit':'days','direction':'after'}
+			if D.get('direction')=='before':G,N,O=A._before(I,D)
+			else:G,N,O=shift(I,int(D['n']),D['unit'],1,A.weekend)
+			if int(D['n'])==0:E=B['by']%(L,A.fmt(G))
+			else:E=B['calc']%(span(D,A.lang),B[D.get('direction','after')],L,A.fmt(I),A.fmt(G))
+			E,J=A._notes(E,D,O,N,'computed');return C(G,E,J)
+		if H=='renewal_notice':G,E,J=A.renewal_notice();return C(G,E,J)
+		if H=='term_end':
+			K=A.term['term_end']
+			if K is None:return C(None,B['missing']%A.term['missing'],'to_complete')
+			J='needs_verification'if A.term['clamp']else'computed';return C(K,A.term['calc'],J)
+		if H=='recurring':P,E,J=A.occurrences(F,A.as_of,None,first_only=True);return C(P[0]if P else None,E,J)
+		if H=='event':D=F.get('offset');Q=F.get('event')or'';R=B['event_off']%(span(D,A.lang),Q)if D else Q;return C(None,B['event']%R,'event_driven')
+		if H=='ongoing':
+			if F.get('until'):
+				I,L=A.anchor(F['until'])
+				if I:return C(I,B['ongoing_until']%(A.fmt(I),L),'ongoing')
+			return C(None,B['ongoing'],'ongoing')
+		if H=='survival':
+			M=F.get('period')
+			if M in(None,'indefinite'):return C(None,B['survival_ind'],'ongoing')
+			E=B['survival']%span(M,A.lang);K=A.term['term_end']
+			if K:S,T,T=shift(K,int(M['n']),M['unit'],1,A.weekend);E+=B['survival_if']%(A.fmt(K),A.fmt(S))
+			return C(None,E,'ongoing')
+		return C(None,B['missing']%'timing','to_complete')
+	def occurrences(A,tm,frm,to,first_only=False):
+		D=tm;K=A.t;C=D.get('every')or{};B,S=A.anchor(D.get('start'))
+		if B is None or not C.get('n'):return[],K['missing']%S,'to_complete'
+		L='computed';F=M=False
+		if D.get('start_offset'):
+			E=D['start_offset']
+			if E.get('direction')=='before':B,F,M=A._before(B,E)
+			else:B,F,M=shift(B,int(E['n']),E['unit'],1,A.weekend)
+		G=None
+		if D.get('until'):G,O=A.anchor(D['until'])
+		elif A.term['term_end']:G=A.term['term_end']
+		P=to or frm+dt.timedelta(days=3660);I,N=[],0
+		while N<2000:
+			Q=int(C['n'])*N
+			if C['unit']in('months','years'):H,T=add_months(B,Q*(12 if C['unit']=='years'else 1));F=F or T
+			else:H,O,O=shift(B,Q,C['unit'],1,A.weekend)
+			N+=1
+			if G and H>G or H>P:break
+			if H>=frm:
+				I.append(H)
+				if first_only:break
+		R=span(C,A.lang)
+		if I:J=K['recurring']%(R,A.fmt(B),A.fmt(I[0]))
+		else:J=K['recurring_end']%(R,A.fmt(B),A.fmt(G or P))
+		E=dict(C,n=C['n']);J,L=A._notes(J,E,M,F,L);return I,J,L
+def compute_all(agreement,obligations,as_of=None,lang='he'):B=obligations;A=Ctx(agreement,as_of,lang,B);D={B.get('id'):A.compute(B)for B in B};C={'end_date':iso(A.term['end_date']),'term_end':iso(A.term['term_end']),'renewals':A.term['renewals'],'expired':A.term['expired'],'calc':A.term['calc']};E,F,G=A.renewal_notice();C['renewal_notice']={'date':iso(E),'calc':F,'date_status':G};return D,C

@@ -1,100 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""הפקת גיליון "עמדות משא ומתן לאישור", והמניפסט שלו.
-
-הגיליון הוא המסמך שהיועץ המשפטי של החברה חותם עליו, ובו לכל כלל שלושת
-התאים (ירוק, צהוב, אדום), הנוסח שיוחל מילה במילה, שורות ההשפעה לפי
-הפוזיציה של החברה, וההנחות שהבונה הניח ושצריך לאשר.
-
-**המניפסט אינו נספח, והוא חובה.** הוא נשמר לצד הגיליון, והוא מה שמאפשר
-לקליטה לדעת לאיזו הפקה העותק החתום שייך (`token`), איזו שורה היא איזה
-כלל, ומה היה הגיבוב של הקובץ שיצא. בלי המניפסט אין קליטה: קובץ חתום בלי
-ההפקה שלו אינו ניתן לאימות, ו-`ingest_approval.py` יסרב לו.
-
-    python3 scripts/approval_sheet.py --model playbook-model.json \\
-        --out-dir "Areo-נתונים/גיליונות" --company "<שם החברה>"
-
-שפת הגיליון היא שפת התוצר: `--lang he|en`, ובלעדיו `deliverable_language` מ-`--profile`, ואז
-`scope_summary.deliverable_language` מהמודל, וברירת המחדל עברית. גיליון באנגלית הוא LTR מלא, עם אותן
-עמודות, אותן תגיות ואותה קליטה; הנוסח המצוטט נשאר בשפת המקור.
-
-המימוש ב-`areolegal/lib/playbook/approval_sheet.py`,
-וכך גם שער הנוסח שעוצר הפקה שבה נוסח תא חסר או אינו עברית. הסקריפט הזה
-אינו מנסח, אינו מסדר ואינו מחליט דבר על הגיליון.
-"""
-import json
-import os
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # גם ב-python -I, שאינו מוסיף את תיקיית הסקריפט
-import areo_lib  # noqa: F401  מוסיף את areolegal/lib לנתיב הייבוא
-
-from common.cli import OutputRefused, guard_out, no_bytecode, parser  # noqa: E402
-from playbook.approval_sheet import build_sheet  # noqa: E402
-from playbook.status import deliverable_lang  # noqa: E402
-
-MANIFEST = "approval-sheet-manifest.json"
-
-
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+'הפקת גיליון "עמדות משא ומתן לאישור", והמניפסט שלו.'
+import json,os,sys
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+import areo_lib
+from common.cli import OutputRefused,guard_out,no_bytecode,parser
+from playbook.approval_sheet import build_sheet
+from playbook.status import deliverable_lang
+MANIFEST='approval-sheet-manifest.json'
 def main(argv=None):
-    no_bytecode()
-    ap = parser(__doc__.split("\n")[0], out_required=False,
-                out_help="נתיב המניפסט. בלעדיו הוא נכתב כ-%s לצד הגיליון" % MANIFEST)
-    ap.add_argument("--model", required=True, help="playbook-model.json")
-    ap.add_argument("--out-dir", required=True, help="התיקייה שבה ייכתבו הגיליון והמניפסט")
-    ap.add_argument("--company", default="", help="שם החברה, לשער הגיליון")
-    ap.add_argument("--lang", default=None, choices=("he", "en"),
-                    help="שפת הגיליון. בלעדיו: deliverable_language מהפרופיל או מהמודל, וברירת המחדל עברית")
-    ap.add_argument("--profile", help="פרופיל-לקוח.json: deliverable_language, לשפת הגיליון")
-    ap.add_argument("--token-uid", help="מזהה ההפקה. לבדיקות בלבד; בלעדיו הוא מוגרל")
-    ap.add_argument("--no-wording-gate", action="store_true",
-                    help="מדלג על שער הנוסח. לאבחון בלבד, ולא להפקה שנשלחת לחתימה")
-    a = ap.parse_args(argv)
-
-    if not os.path.exists(a.model):
-        print("המודל אינו קיים: %s" % a.model)
-        return 2
-    with open(a.model, encoding="utf-8") as fh:
-        model = json.load(fh)
-    profile = None
-    if a.profile and os.path.exists(a.profile):
-        with open(a.profile, encoding="utf-8") as fh:
-            profile = json.load(fh)
-    lang = deliverable_lang(model, profile, a.lang)
-
-    os.makedirs(a.out_dir, exist_ok=True)
-    manifest_path = a.out or os.path.join(a.out_dir, MANIFEST)
-    try:
-        manifest_path = guard_out(manifest_path, inputs=[a.model])
-    except OutputRefused as exc:
-        print("סירוב: %s" % exc)
-        return 1
-
-    try:
-        path, manifest = build_sheet(model, a.out_dir, company=a.company, lang=lang,
-                                     token_uid=a.token_uid,
-                                     check_wording=not a.no_wording_gate)
-    except Exception as exc:
-        # שער הנוסח עוצר הפקה פגומה, וזו תשובה: גיליון בלי נוסח תא אינו
-        # מסמך שאפשר לחתום עליו
-        print("ההפקה נעצרה: %s" % exc)
-        return 3
-
-    with open(manifest_path, "w", encoding="utf-8") as fh:
-        json.dump(manifest, fh, ensure_ascii=False, indent=1)
-
-    print("הגיליון : %s" % path)
-    print("המניפסט : %s" % manifest_path)
-    print("ההפקה   : %s" % manifest["token"])
-    print("השפה    : %s" % lang)
-    print("שורות   : %d   תאים: %d   שאלות מכריעות: %d"
-          % (len(manifest.get("rows") or {}), len(manifest.get("cells") or {}),
-             len(manifest.get("questions") or {})))
-    print("שמור את המניפסט. בלעדיו העותק החתום אינו ניתן לקליטה.")
-    if a.no_wording_gate:
-        print("אזהרה: שער הנוסח דולג. אין לשלוח את הגיליון הזה לחתימה.")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+	no_bytecode();B=parser(__doc__.split('\n')[0],out_required=False,out_help='נתיב המניפסט. בלעדיו הוא נכתב כ-%s לצד הגיליון'%MANIFEST);B.add_argument('--model',required=True,help='playbook-model.json');B.add_argument('--out-dir',required=True,help='התיקייה שבה ייכתבו הגיליון והמניפסט');B.add_argument('--company',default='',help='שם החברה, לשער הגיליון');B.add_argument('--lang',default=None,choices=('he','en'),help='שפת הגיליון. בלעדיו: deliverable_language מהפרופיל או מהמודל, וברירת המחדל עברית');B.add_argument('--profile',help='פרופיל-לקוח.json: deliverable_language, לשפת הגיליון');B.add_argument('--token-uid',help='מזהה ההפקה. לבדיקות בלבד; בלעדיו הוא מוגרל');B.add_argument('--no-wording-gate',action='store_true',help='מדלג על שער הנוסח. לאבחון בלבד, ולא להפקה שנשלחת לחתימה');A=B.parse_args(argv)
+	if not os.path.exists(A.model):print('המודל אינו קיים: %s'%A.model);return 2
+	with open(A.model,encoding='utf-8')as C:G=json.load(C)
+	H=None
+	if A.profile and os.path.exists(A.profile):
+		with open(A.profile,encoding='utf-8')as C:H=json.load(C)
+	I=deliverable_lang(G,H,A.lang);os.makedirs(A.out_dir,exist_ok=True);E=A.out or os.path.join(A.out_dir,MANIFEST)
+	try:E=guard_out(E,inputs=[A.model])
+	except OutputRefused as F:print('סירוב: %s'%F);return 1
+	try:J,D=build_sheet(G,A.out_dir,company=A.company,lang=I,token_uid=A.token_uid,check_wording=not A.no_wording_gate)
+	except Exception as F:print('ההפקה נעצרה: %s'%F);return 3
+	with open(E,'w',encoding='utf-8')as C:json.dump(D,C,ensure_ascii=False,indent=1)
+	print('הגיליון : %s'%J);print('המניפסט : %s'%E);print('ההפקה   : %s'%D['token']);print('השפה    : %s'%I);print('שורות   : %d   תאים: %d   שאלות מכריעות: %d'%(len(D.get('rows')or{}),len(D.get('cells')or{}),len(D.get('questions')or{})));print('שמור את המניפסט. בלעדיו העותק החתום אינו ניתן לקליטה.')
+	if A.no_wording_gate:print('אזהרה: שער הנוסח דולג. אין לשלוח את הגיליון הזה לחתימה.')
+	return 0
+if __name__=='__main__':sys.exit(main())

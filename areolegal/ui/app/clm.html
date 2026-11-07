@@ -1,0 +1,899 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}body{margin:0}
+.areo-by{display:none}
+</style></head><body><title>ניהול חוזים (CLM)</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700&family=Assistant:wght@400;500;600;700&family=Poppins:wght@400;700&display=swap">
+<style>
+/* Same family as the playbook Workspace: side menu, one calm column, tables over charts */
+:root{
+  --night:#0d0f14; --panel:#14171f; --raised:#1b1f29; --line:#272d3a; --line-strong:#353c4c;
+  --ink:#eef1f5; --mist:#9aa3b2; --faint:#6b7486;
+  --aurora:#2fe6a6; --aurora-ink:#06231a; --aurora-soft:rgba(47,230,166,.12);
+  --g:#38d39f; --g-soft:rgba(56,211,159,.10); --y:#f2b45c; --y-soft:rgba(242,180,92,.10); --r:#f2676c; --r-soft:rgba(242,103,108,.10);
+  --legal:#b6a3ff; --legal-soft:rgba(167,139,250,.14);
+  --display:'Rubik','Assistant',system-ui,sans-serif; --body:'Assistant',system-ui,-apple-system,'Segoe UI',sans-serif; --mark:'Poppins','Assistant',sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  --night:#F4F7F5; --panel:#FFFFFF; --raised:#F0F3F6; --line:#DBE4E0; --line-strong:#C6D3CD;
+  --ink:#10221C; --mist:#4F615A; --faint:#7A8A84;
+  --aurora:#0B8C66; --aurora-ink:#FFFFFF; --aurora-soft:#E1F5EC;
+  --g:#0F9D6E; --g-soft:#E7F6EF; --y:#B07A06; --y-soft:#FBF3DF; --r:#C93434; --r-soft:#FCEBEB;
+  --legal:#4A30A8; --legal-soft:#EFEAFD; color-scheme:light}}
+:root[data-theme="light"]{
+  --night:#F4F7F5; --panel:#FFFFFF; --raised:#F0F3F6; --line:#DBE4E0; --line-strong:#C6D3CD;
+  --ink:#10221C; --mist:#4F615A; --faint:#7A8A84;
+  --aurora:#0B8C66; --aurora-ink:#FFFFFF; --aurora-soft:#E1F5EC;
+  --g:#0F9D6E; --g-soft:#E7F6EF; --y:#B07A06; --y-soft:#FBF3DF; --r:#C93434; --r-soft:#FCEBEB;
+  --legal:#4A30A8; --legal-soft:#EFEAFD; color-scheme:light}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--night);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+button{font:inherit}
+.app{display:grid;grid-template-columns:250px 1fr;min-height:100%}
+.app>aside{background:var(--panel);border-inline-end:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:14px;position:sticky;top:0;height:100vh;overflow:auto}
+.wordmark{font-family:var(--mark);font-weight:700;font-size:20px;direction:ltr;text-align:right;letter-spacing:-.3px;padding:0 6px}
+.wordmark span{color:var(--mist);font-weight:400}
+.product{font-size:13.5px;color:var(--aurora);font-weight:600;padding:0 6px;margin-top:-10px}
+.product .clmtag{font-family:var(--mark);font-size:11px;font-weight:600;color:var(--mist);margin-inline-start:2px}
+.co{font-size:13px;color:var(--mist);padding:0 6px;margin-top:-12px}
+.switch{display:grid;grid-template-columns:1fr 1fr;background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.switch a,.switch b{display:block;text-align:center;border-radius:9px;padding:6px 4px;font-size:14px;text-decoration:none}
+.switch a{color:var(--mist)}.switch a:hover{color:var(--ink)}
+.switch b{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+nav{display:flex;flex-direction:column;gap:2px}
+.nv{display:flex;align-items:center;gap:10px;width:100%;text-align:start;background:none;border:0;border-inline-start:3px solid transparent;border-radius:10px;padding:9px 10px;color:var(--mist);font-size:15px;cursor:pointer}
+.nv:hover{background:var(--raised);color:var(--ink)}
+.nv[aria-current="page"]{background:var(--aurora-soft);color:var(--aurora);font-weight:600;border-inline-start-color:var(--aurora)}
+.nv .cnt{margin-inline-start:auto;font-size:12px;font-weight:700;background:var(--raised);color:var(--mist);border-radius:999px;padding:0 8px;line-height:20px;font-variant-numeric:tabular-nums}
+.nv .cnt.w{background:var(--legal-soft);color:var(--legal)}.nv .cnt.r{background:var(--r-soft);color:var(--r)}
+.xlink{margin-top:auto;display:flex;align-items:center;gap:10px;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--ink);text-decoration:none}
+.xlink:hover{border-color:var(--aurora)}.xlink b{display:block;font-size:14.5px}.xlink small{display:block;font-size:12.5px;color:var(--mist)}
+.xlink svg{width:17px;height:17px;color:var(--mist);flex:0 0 auto}
+.asidefoot{font-size:12.5px;color:var(--faint);padding:0 6px;display:flex;flex-direction:column;gap:2px}
+main{padding:18px 22px 60px;min-width:0}
+.col{max-width:1160px;display:flex;flex-direction:column;gap:16px}
+.bar0{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.crumb{font-size:13.5px;color:var(--mist)}
+.tools{display:flex;gap:8px;align-items:center}
+.iconbtn{height:38px;min-width:38px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;border:1px solid var(--line-strong);background:var(--raised);color:var(--ink);cursor:pointer;font-size:14px}
+.iconbtn svg{width:17px;height:17px}
+.find{display:flex;align-items:center;gap:8px;height:38px;background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;padding:0 12px;min-width:260px}
+.find:focus-within{border-color:var(--aurora)}
+.find input{flex:1;min-width:0;background:none;border:0;outline:none;color:var(--ink);font:inherit;font-size:14.5px}
+.find svg{width:16px;height:16px;color:var(--mist)}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.25;text-wrap:balance}
+h1{font-size:26px;font-weight:700}h2{font-size:19px;font-weight:600}h3{font-size:16px;font-weight:600}
+.lead{margin:0;color:var(--mist);max-width:70ch}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.cardh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.cardh small{color:var(--mist);font-size:13px}
+.ledger{display:flex;flex-wrap:wrap;border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line)}
+.ledger button{flex:1 1 120px;text-align:start;background:none;border:0;border-inline-start:1px solid var(--line);padding:12px 16px 10px;color:var(--ink);cursor:pointer}
+.ledger button:first-child{border-inline-start:0;padding-inline-start:2px}
+.ledger button:hover b{color:var(--aurora)}
+.ledger b{display:block;font-family:var(--display);font-size:32px;font-weight:600;line-height:1.05;font-variant-numeric:tabular-nums}
+.ledger b.r{color:var(--r)}.ledger b.w{color:var(--legal)}
+.ledger span{font-size:13px;color:var(--mist)}
+.grid2{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+.pill{display:inline-block;font-size:12.5px;font-weight:700;border-radius:999px;padding:1px 10px;white-space:nowrap}
+.pill.g{background:var(--g-soft);color:var(--g)}.pill.y{background:var(--y-soft);color:var(--y)}.pill.r{background:var(--r-soft);color:var(--r)}
+.pill.w{background:var(--legal-soft);color:var(--legal)}.pill.n{background:var(--raised);color:var(--mist)}
+.btn{border:0;border-radius:11px;padding:9px 16px;font-size:14.5px;font-weight:700;cursor:pointer}
+.btn.primary{background:var(--aurora);color:var(--aurora-ink)}
+.btn.soft{background:var(--raised);color:var(--ink);border:1px solid var(--line-strong)}
+.btn.small{padding:6px 12px;font-size:13.5px}
+.linkbtn{background:none;border:0;color:var(--aurora);font-size:14px;font-weight:600;cursor:pointer;padding:0}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line-strong);background:transparent;color:var(--ink);border-radius:999px;padding:5px 13px;font-size:14px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--aurora-soft);border-color:var(--aurora);color:var(--aurora);font-weight:600}
+.chip small{color:var(--mist);font-weight:400;margin-inline-start:2px}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:720px}
+th,td{text-align:start;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mist);font-weight:600;font-size:13px;background:var(--raised);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+tbody tr.click{cursor:pointer}tbody tr.click:hover td{background:var(--raised)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+td .sub{display:block;font-size:13px;color:var(--mist)}
+tr.child td:first-child{padding-inline-start:30px}
+tr.child td:first-child::before{content:"";display:inline-block;width:10px;height:10px;border-inline-start:1.5px solid var(--line-strong);border-bottom:1.5px solid var(--line-strong);margin-inline-end:6px;transform:translateY(-3px)}
+.muted{color:var(--mist)}.faint{color:var(--faint)}
+/* Tasks */
+.grp{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--mist);margin:6px 2px 0}
+.grp::after{content:"";flex:1;height:1px;background:var(--line)}
+.grp.r{color:var(--r)}
+.task{display:grid;grid-template-columns:86px 1fr auto;gap:14px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.task.crit{border-inline-start:3px solid var(--y)}.task.late{border-inline-start:3px solid var(--r)}
+.task.done{opacity:.6}
+.when{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--raised);border-radius:10px;padding:6px 4px;text-align:center;line-height:1.2}
+.when b{font-family:var(--display);font-size:20px;font-variant-numeric:tabular-nums}
+.when small{font-size:12px;color:var(--mist)}
+.when.r b{color:var(--r)}
+.tmain{min-width:0;display:flex;flex-direction:column;gap:3px}
+.tmain .t{font-weight:700;font-size:15.5px}
+.tmain .a{font-size:13.5px;color:var(--mist)}
+.tmain .act{font-size:14.5px}
+.tside{display:flex;flex-direction:column;gap:6px;align-items:stretch;min-width:170px}
+.ddb{display:flex;align-items:center;gap:8px;width:100%;min-height:36px;background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;padding:5px 10px;color:var(--ink);font-size:13.5px;cursor:pointer;text-align:start}
+.ddb:hover,.ddb[aria-expanded=true]{border-color:var(--aurora)}
+.ddb .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ddb small{color:var(--mist);font-size:12px}
+.av{flex:0 0 24px;height:24px;border-radius:50%;background:var(--aurora-soft);color:var(--aurora);font-size:11px;font-weight:700;display:grid;place-items:center;font-family:var(--display)}
+.av.b{background:var(--legal-soft);color:var(--legal)}
+.sd{flex:0 0 9px;height:9px;border-radius:50%;background:var(--faint)}
+.sd.c2{background:#4b86d8}.sd.y{background:var(--y)}.sd.g{background:var(--g)}.sd.r{background:var(--r)}.sd.w{background:var(--legal)}
+.field .ddb{min-height:42px;font-size:14.5px}
+.mail{width:230px;max-width:45%;background:var(--panel);border:1px solid var(--line-strong);border-radius:9px;padding:7px 10px;color:var(--ink);font:inherit;font-size:13.5px;text-align:left}
+.mail:focus{border-color:var(--aurora);outline:none}
+.rd .av{flex:0 0 28px;height:28px}
+.pop{position:fixed;z-index:80;min-width:240px;max-width:min(360px,92vw);max-height:min(360px,60vh);overflow:auto;background:var(--panel);border:1px solid var(--line-strong);border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,.22),0 2px 6px rgba(0,0,0,.08);padding:6px}
+.pop .it{display:flex;gap:10px;align-items:center;width:100%;background:none;border:0;border-radius:9px;padding:8px 10px;color:var(--ink);text-align:start;cursor:pointer;font-size:14px}
+.pop .it:hover,.pop .it:focus-visible{background:var(--raised);outline:none}
+.pop .it .tx{flex:1;min-width:0}.pop .it .tx small{display:block;color:var(--mist);font-size:12px;line-height:1.3}
+.pop .it[aria-selected=true]{font-weight:700}
+.pop .ck{color:var(--aurora);font-weight:700;width:14px;text-align:center}
+.pop .sep{font-size:12px;color:var(--faint);font-weight:700;padding:8px 10px 3px}
+.pop .sep:first-child{padding-top:4px}
+.tmeta{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--mist)}
+.more{font-size:13.5px}
+.more summary{cursor:pointer;color:var(--aurora);font-weight:600;list-style:none}
+.more summary::-webkit-details-marker{display:none}
+.more .in{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+q.quote,.quote{display:block;border-inline-start:2px solid var(--line-strong);padding-inline-start:10px;color:var(--ink);font-size:14px;quotes:none}
+.quote small{display:block;color:var(--mist);font-size:12.5px}
+.seg{display:inline-flex;background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.seg button{background:none;border:0;border-radius:7px;padding:5px 12px;color:var(--mist);cursor:pointer;font-size:14px}
+.seg button[aria-pressed=true]{background:var(--panel);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+/* Renewal timeline */
+.tl{display:flex;flex-direction:column;gap:10px}
+.tlh,.tlr{display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center}
+.tlh .ax{display:grid;grid-template-columns:repeat(12,1fr);font-size:12px;color:var(--mist)}
+.tlr .nm{font-size:14px;line-height:1.3}.tlr .nm small{display:block;color:var(--mist);font-size:12.5px}
+.track{position:relative;height:26px;background:var(--raised);border-radius:7px}
+.track .run{position:absolute;top:8px;height:10px;border-radius:5px;background:color-mix(in srgb,var(--aurora) 35%,transparent)}
+.track .win{position:absolute;top:4px;height:18px;border-radius:5px;background:var(--y-soft);border:1.5px solid var(--y)}
+.track .dl{position:absolute;top:0;bottom:0;width:2px;background:var(--r)}
+.track .now{position:absolute;top:-4px;bottom:-4px;width:1.5px;background:var(--ink);opacity:.5}
+.tlkey{display:flex;gap:16px;font-size:12.5px;color:var(--mist);flex-wrap:wrap}
+.tlkey i{display:inline-block;width:14px;height:9px;border-radius:3px;margin-inline-end:6px;vertical-align:0}
+/* Policy */
+.pt{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(70px,.5fr));gap:8px;align-items:center;width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:10px 6px;color:var(--ink);text-align:start;cursor:pointer}
+.pt:hover{background:var(--raised)}
+.pt.h{cursor:default;font-size:13px;color:var(--mist);font-weight:600;border-bottom-color:var(--line-strong)}
+.pt.h:hover{background:none}
+.pt .c{text-align:center;font-family:var(--display);font-size:17px;font-variant-numeric:tabular-nums}
+.pt .c.zero{color:var(--faint);font-family:var(--body);font-size:14px}
+.pt .c.r{color:var(--r)}.pt .c.g{color:var(--g)}
+.pt .nm small{display:block;font-size:12.5px;color:var(--mist)}
+.dev{border:1px solid var(--line);border-inline-start:3px solid var(--r);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:var(--panel)}
+.dev .vs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dev .vs small{display:block;font-size:12px;font-weight:700;color:var(--mist)}
+@media (max-width:640px){.dev .vs{grid-template-columns:1fr}}
+/* Approve */
+.rv{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.rv.ok{opacity:.62}
+.rv .opts{display:flex;gap:8px;flex-wrap:wrap}
+.rv .done{font-size:13.5px;color:var(--g);font-weight:600}
+.who{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--raised);border-radius:12px;padding:10px 14px;font-size:14px}
+.who input{background:var(--panel);border:1px solid var(--line-strong);border-radius:9px;padding:6px 10px;color:var(--ink);font:inherit;font-size:14px}
+/* Readiness */
+.rd{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.rd:last-child{border-bottom:0}
+.rd i{flex:0 0 22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12.5px;font-weight:700}
+.rd i.ok{background:var(--g-soft);color:var(--g)}.rd i.no{background:var(--y-soft);color:var(--y)}
+.rd .x{flex:1;min-width:0}.rd b{display:block;font-size:14.5px}.rd span{font-size:13px;color:var(--mist)}
+/* Drawer */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50}
+.drawer{position:fixed;top:0;bottom:0;inset-inline-end:0;width:min(640px,100%);background:var(--night);border-inline-start:1px solid var(--line-strong);z-index:51;display:flex;flex-direction:column;box-shadow:0 0 50px rgba(0,0,0,.35)}
+.dh{padding:16px 20px 0;display:flex;flex-direction:column;gap:8px;background:var(--panel);border-bottom:1px solid var(--line)}
+.dh .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.backlink{align-self:flex-start;background:none;border:0;color:var(--aurora);font-size:14px;font-weight:600;cursor:pointer;padding:0}
+.dh .x{background:var(--raised);border:1px solid var(--line-strong);color:var(--ink);width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:18px;flex:0 0 auto}
+.tabs{display:flex;gap:4px;overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:2.5px solid transparent;padding:9px 12px;color:var(--mist);cursor:pointer;font-size:14.5px;white-space:nowrap}
+.tabs button[aria-pressed=true]{color:var(--ink);font-weight:600;border-bottom-color:var(--aurora)}
+.db{flex:1;overflow:auto;padding:18px 20px 30px;display:flex;flex-direction:column;gap:12px}
+.db>*{flex-shrink:0}
+.db{overscroll-behavior:contain}
+html.locked,html.locked body{overflow:hidden}
+.scrim{overscroll-behavior:contain;touch-action:none}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 14px;font-size:14.5px}
+.kv dt{color:var(--mist)}.kv dd{margin:0}
+.field{display:flex;flex-direction:column;gap:5px;font-size:14px}
+.field input,.field textarea{background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;padding:9px 11px;color:var(--ink);font:inherit;font-size:14.5px}
+.field textarea{min-height:90px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:560px){.row2{grid-template-columns:1fr}}
+.field input::placeholder,.field textarea::placeholder{color:var(--faint)}
+.field{font-weight:600}.field input,.field textarea,.field .ddb{font-weight:400}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--night);padding:10px 18px;border-radius:12px;font-size:14px;font-weight:600;z-index:70;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.saved{font-size:12.5px;color:var(--g);font-weight:600}
+.hero{border-radius:20px;border:1px solid var(--line);padding:20px 22px;display:flex;flex-direction:column;gap:6px;background:radial-gradient(110% 140% at 100% 0%,var(--aurora-soft) 0%,transparent 55%),var(--panel)}
+.hero .eb{font-size:12.5px;font-weight:700;color:var(--aurora)}
+.hero h1{font-size:27px}
+.next{display:flex;flex-direction:column}
+.nx{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line);background:none;border-inline:0;border-top:0;color:var(--ink);text-align:start;cursor:pointer;width:100%}
+.nx:last-child{border-bottom:0}.nx:hover{background:var(--raised)}
+.nx .d{font-family:var(--display);font-size:15px;font-variant-numeric:tabular-nums;text-align:center}
+.nx .d small{display:block;font-family:var(--body);font-size:12px;color:var(--mist)}
+.nx .d.r{color:var(--r)}
+.nx b{display:block;font-size:14.5px}
+.pf{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media (max-width:760px){.pf{grid-template-columns:1fr}}
+.kan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start}
+@media (max-width:1100px){.kan{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:620px){.kan{grid-template-columns:1fr}}
+.kcol{background:var(--raised);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:10px;min-height:120px}
+.kh{display:flex;justify-content:space-between;align-items:center;padding:2px 4px}.kh b{font-size:14.5px}
+.kh .cnt{font-size:12px;font-weight:700;background:var(--panel);color:var(--mist);border-radius:999px;padding:0 8px;line-height:20px}
+.ng{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.ng.late{border-inline-start:3px solid var(--y)}
+.ngw{font-size:13px;font-weight:600;align-self:flex-start;border-radius:999px;padding:1px 10px}
+.ngw.us{background:var(--legal-soft);color:var(--legal)}.ngw.them{background:var(--raised);color:var(--mist)}
+.flagrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13.5px}
+.chip.sm{padding:3px 11px;font-size:13.5px}
+.abar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.owners3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}@media (max-width:560px){.owners3{grid-template-columns:1fr}}
+tr.ended td{color:var(--mist)}
+.docrow{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.docrow .x{flex:1;min-width:0}.docrow b{display:block;font-size:14.5px;overflow-wrap:anywhere}.docrow span{font-size:13px;color:var(--mist)}
+.ficon{flex:0 0 30px;width:30px;height:38px}
+.ficon .pg{fill:var(--raised);stroke:var(--line-strong);stroke-width:1.5}
+.ficon .fold{fill:none;stroke:var(--line-strong);stroke-width:1.5}
+.ficon text{font:700 7.5px var(--mark);text-anchor:middle;fill:var(--mist);letter-spacing:.02em}
+.ficon.doc text{fill:#3f6fb5}.ficon.pdf text{fill:#b8322f}
+.docrow .dbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+a.btn{text-decoration:none;display:inline-block}
+.note2{background:var(--raised);border-radius:12px;padding:10px 14px;font-size:14px;color:var(--mist)}
+.rbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 0 12px}
+.paper{background:#fff;color:#1d2622;border:1px solid var(--line);border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:36px 40px;font-size:15.5px;line-height:1.85}
+.paper p{margin:0 0 12px;border-radius:6px;padding:2px 6px;transition:background .3s}
+.paper p.ttl{font-family:var(--display);font-size:20px;font-weight:700;text-align:center;margin-bottom:18px}
+.paper .pc{font-weight:700;color:#4f615a;margin-inline-end:4px}
+.paper p.hl{background:#fdf1cf;box-shadow:inset -3px 0 0 #d39a12}
+@media (max-width:560px){.paper{padding:22px 18px}}
+.hstat{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:2px 0 4px}
+.life{flex:1;min-width:240px}
+.ltrack{position:relative;height:6px;border-radius:6px;background:var(--line)}
+.lfill{position:absolute;inset-inline-start:0;top:0;bottom:0;border-radius:6px;background:var(--aurora)}
+.lmark{position:absolute;top:-4px;width:3px;height:14px;border-radius:2px;background:var(--y);transform:translateX(50%)}
+.llab{position:relative;display:flex;justify-content:space-between;font-size:12px;color:var(--mist);margin-top:5px;min-height:18px}
+.lmid{position:absolute;transform:translateX(50%);white-space:nowrap;color:var(--y);font-weight:600}
+.tabs .cnt{font-size:11.5px;font-weight:700;background:var(--raised);color:var(--mist);border-radius:999px;padding:0 7px;margin-inline-start:4px}
+.tabs .cnt.r{background:var(--r-soft);color:var(--r)}
+.nextbox{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:start;background:var(--panel);border:1px solid var(--line);border-inline-start:3px solid var(--aurora);border-radius:14px;padding:12px 14px;color:var(--ink);cursor:pointer}
+.nextbox:hover{border-color:var(--aurora)}
+.nb-d{flex:0 0 64px;text-align:center;background:var(--raised);border-radius:10px;padding:6px 4px;line-height:1.2}.nb-d b{display:block;font-family:var(--display);font-size:18px}.nb-d small{font-size:11.5px;color:var(--mist)}.nb-d.r b{color:var(--r)}
+.nb-t{display:flex;flex-direction:column;gap:2px;min-width:0}.nb-t small{font-size:12px;color:var(--mist);font-weight:700}.nb-t b{font-size:15px}.nb-t span{font-size:13.5px;color:var(--mist)}
+.banner{display:flex;justify-content:space-between;gap:10px;align-items:center;width:100%;text-align:start;background:var(--raised);border:0;border-radius:12px;padding:10px 14px;color:var(--ink);font-size:14px;cursor:pointer}
+.banner span{color:var(--aurora);font-weight:600;white-space:nowrap}.banner.r{background:var(--r-soft)}.banner.r span{color:var(--r)}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+.facts>div{padding:10px 14px;border-bottom:1px solid var(--line)}.facts>div:nth-child(odd){border-inline-end:1px solid var(--line)}
+.facts dt{font-size:12.5px;color:var(--mist)}.facts dd{margin:2px 0 0;font-size:14.5px}.facts dd small{display:block;font-size:12.5px;color:var(--mist)}
+@media (max-width:560px){.facts{grid-template-columns:1fr}.facts>div:nth-child(odd){border-inline-end:0}}
+.fold{border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.fold>summary{cursor:pointer;padding:10px 14px;font-weight:600;font-size:14.5px;list-style:none}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::before{content:"+";display:inline-block;width:16px;color:var(--aurora);font-weight:700}
+.fold[open]>summary::before{content:"−"}
+.fold .in{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px}
+.hrow{display:flex;justify-content:space-between;gap:10px;font-size:14px;border-bottom:1px solid var(--line);padding-bottom:6px}.hrow:last-child{border-bottom:0}.hrow small{color:var(--mist);white-space:nowrap}
+.cl{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:5px}
+.cl.bad{border-inline-start:3px solid var(--r)}
+.vs2{background:var(--raised);border-radius:8px;padding:8px 10px;font-size:14px}.vs2 small{display:block;font-size:12px;font-weight:700;color:var(--mist)}
+.clinks{display:flex;gap:14px}
+.okline{background:var(--g-soft);color:var(--g);border-radius:12px;padding:10px 14px;font-weight:600;font-size:14.5px}
+.nf{font-size:13.5px;color:var(--mist);margin:2px 0 0}.nf b{color:var(--ink);font-weight:600}
+.ficon-ph{flex:0 0 30px;height:38px;border:1.5px dashed var(--line-strong);border-radius:4px}
+.ngc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.ngnow{background:var(--raised);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.nh{display:flex;flex-direction:column;gap:8px}
+.np{display:flex;gap:10px;align-items:flex-start}.np b{display:block;font-size:14px}.np span{font-size:13.5px}.np>div span{color:var(--mist)}
+.rowbtn{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--ink);text-align:start;cursor:pointer}
+.rowbtn:hover{border-color:var(--aurora)}.rowbtn b{display:block;font-size:14.5px}.rowbtn small{display:block;color:var(--mist);font-size:12.5px}
+.pfb{display:flex;align-items:center;gap:22px;min-width:0;justify-content:flex-start}
+.pfb svg{flex:0 0 150px;width:150px;height:150px;overflow:visible}
+.pfb .seg{fill:none;stroke-width:15;stroke-linecap:butt;transition:stroke-width .15s;cursor:pointer;outline:none}
+.pfb .seg:focus-visible{stroke-width:19}
+button.pli{background:none;border:0;padding:3px 6px;margin:0 -6px;border-radius:8px;color:var(--ink);text-align:start;cursor:pointer;font:inherit;font-size:14px}
+button.pli:hover{background:var(--raised)}button.pli:hover span{color:var(--aurora)}
+.pfb .seg:hover{stroke-width:19}
+.pfb .trk{fill:none;stroke-width:15}
+.pfb .big{font-family:var(--display);font-size:26px;font-weight:600;fill:var(--ink);text-anchor:middle}
+.pfb .cap{font-family:var(--body);font-size:10.5px;fill:var(--mist);text-anchor:middle}
+.pfl{display:flex;flex-direction:column;gap:6px;min-width:0;flex:0 1 auto}
+.pft{font-size:14.5px;margin-bottom:2px}
+.pli{display:grid;grid-template-columns:10px 112px 28px;gap:9px;align-items:center;font-size:14px}
+.pli i{width:10px;height:10px;border-radius:3px}
+.pli b{font-variant-numeric:tabular-nums}
+.pli.zero{color:var(--faint)}.pli.zero i{opacity:.35}
+.pfl small{font-size:12.5px;color:var(--mist)}.nx span{font-size:13px;color:var(--mist)}
+@media (max-width:820px){.app{grid-template-columns:1fr}.app>aside{position:relative;height:auto;flex-direction:column}nav{flex-direction:row;overflow-x:auto}.nv{white-space:nowrap}.asidefoot{display:none}.find{min-width:0;flex:1}.task{grid-template-columns:70px 1fr}.tside{grid-column:1/-1;flex-direction:row;flex-wrap:wrap}.tlh,.tlr{grid-template-columns:120px 1fr}}
+</style>
+
+<div class="app" dir="rtl" lang="he">
+  <aside>
+    <div class="wordmark">Areo<span>Contracts.</span></div>
+    <div class="product">ניהול חוזים <span class="clmtag">· <bdi>CLM</bdi></span></div>
+    <div class="co" id="co"></div>
+    <nav id="nav" aria-label="מסכים"></nav>
+    <div class="asidefoot" id="foot"></div>
+  </aside>
+  <main><div class="col" id="view"></div></main>
+</div>
+<div id="layer" dir="rtl" lang="he"></div>
+<div class="toast" id="toast" dir="rtl" hidden></div>
+
+<script>
+document.documentElement.setAttribute('dir','rtl');document.documentElement.setAttribute('lang','he');
+/* The client's data is placed here by lib/app/clm_view.py, from Areo-נתונים/clm-data.json. Every field may be missing:
+   the page fills the gaps with empty values and never shows a sample. */
+function areoData(x){
+  x=(x&&typeof x==='object')?x:{};
+  const arr=v=>Array.isArray(v)?v:[],obj=v=>(v&&typeof v==='object'&&!Array.isArray(v))?v:{};
+  const m=obj(x.meta);
+  return {files:obj(x.files),texts:obj(x.texts),docAccess:Object.assign({mode:'local',baseUrl:''},obj(x.docAccess)),flags:arr(x.flags),
+    negotiations:arr(x.negotiations),cpinfo:obj(x.cpinfo),emails:obj(x.emails),
+    meta:{company:m.company||'',built:m.built||'',files:m.files||0,folders:arr(m.folders)},
+    types:arr(x.types).map(t=>Object.assign({code:'',label:'',playbook:null},t,{owner:obj(t&&t.owner)})),
+    agreements:arr(x.agreements).filter(a=>a&&a.id).map(a=>Object.assign({title:'',cp:'',type:'',docs:[],kc:[],not_found:[],flags:[]},a,
+      {docs:arr(a.docs),kc:arr(a.kc),not_found:arr(a.not_found),flags:arr(a.flags)})),
+    tasks:arr(x.tasks).filter(t=>t&&t.id),review:arr(x.review).filter(r=>r&&r.id).map(r=>Object.assign({},r,{options:arr(r.options)})),
+    readiness:arr(x.readiness),lead:arr(x.lead),topics:obj(x.topics),playbook_name:x.playbook_name||''};
+}
+const D=areoData(/*__AREO_CLM__*/null);
+const EMPTY=!D.agreements.length&&!D.negotiations.length;
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const TODAY=(()=>{const n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate())})();
+const pd=s=>{if(!s)return null;const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const days=s=>s?Math.round((pd(s)-TODAY)/864e5):null;
+const ISO=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const TODAYS=ISO(TODAY);
+const nn=(n,one,many)=>n===1?one:n+' '+many;
+const fmt=s=>{if(!s)return '';const d=pd(s);return d.getDate()+'.'+(d.getMonth()+1)+'.'+d.getFullYear()};
+const AG=Object.fromEntries(D.agreements.map(a=>[a.id,a]));
+const TY=Object.fromEntries(D.types.map(t=>[t.code,t]));
+function ty(code){return TY[code]||{code:code||'',label:code||'',playbook:null,owner:{}}}
+const STATUSES=['חדש','בטיפול','ממתין לגורם אחר','נדחה עד מועד','הוסלם','הושלם','בוטל'];
+/* State: in the page store when there is one (shared, with name and time), otherwise in this browser */
+const KEY='areo-clm:'+(D.meta.company||'');
+let S={status:{},owner:{},decided:{},manual:[],who:'',view:'overview',mine:false,tview:'list',people:[],emails:{},typeOwner:{},aowner:{},astate:{}};
+try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){}
+let DB=null;
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function mark(kind,id,value){
+  const rec={value,by:S.who||'',at:new Date().toISOString()};
+  S[kind][id]=rec;persist();
+  if(DB){try{DB.collection('marks').doc(kind+'__'+id).set(Object.assign({kind,id},rec))}catch(e){}}
+}
+(async()=>{try{if(window.claude&&claude.use){DB=await claude.use('db');if(DB){try{DB.collection('settings').onSnapshot(sn=>{(sn.docs||[]).forEach(d=>{const x=d.data?d.data():d;if(x&&x.people){S.people=x.people;S.emails=x.emails||{};S.typeOwner=x.typeOwner||{};S.aowner=x.aowner||{};if(x.docBase!=null)S.docBase=x.docBase}});persist();render()},()=>{})}catch(e){}DB.collection('marks').onSnapshot(sn=>{(sn.docs||[]).forEach(d=>{const x=d.data?d.data():d;if(x&&S[x.kind])S[x.kind][x.id]={value:x.value,by:x.by,at:x.at}});persist();render()},()=>{})}}}catch(e){}})();
+
+/* People and owners: the default comes from the agreement type (set in setup), the page can change it per item */
+function owner(a){const t=ty(a.type)||{};return Object.assign({},t.owner||{},S.typeOwner[a.type]||{},(a.id&&S.aowner&&S.aowner[a.id])||{})}
+const ASTATES=['בתוקף','הסתיים','בוטל בהסכמה','הוחלף בהסכם חדש'];
+/* The repository's own state (agreement_state) is the default; a mark made on the page wins */
+const DSTATE={ended:'הסתיים',ended_early:'הסתיים',replaced:'הוחלף בהסכם חדש'};
+function aState(a){const m=S.astate&&S.astate[a.id];return m?m.value:(DSTATE[a.state]||'בתוקף')}
+function ended(a){return aState(a)!=='בתוקף'}
+/* The team is just the people named as owners, with an email for reminders. No accounts: names and emails stay in the folder */
+function people(){return [...new Set(D.types.flatMap(t=>{const o=owner({type:t.code});return [o.lawyer,o.business,o.backup]}).concat(Object.keys(D.emails||{}),S.people||[]).filter(Boolean))]}
+function emailOf(p){return (S.emails&&p in S.emails)?S.emails[p]:((D.emails||{})[p]||'')}
+const okMail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e||'');
+function saveTeam(){persist();if(DB){try{DB.collection('settings').doc('team').set({people:S.people,emails:S.emails,typeOwner:S.typeOwner,aowner:S.aowner,docBase:S.docBase||'',by:S.who||'',at:new Date().toISOString()})}catch(e){}}}
+/* Opening the source document (the playbook's four docAccess modes): a cloud folder address opens it in Word;
+   the file from the folder opens by relative path; a shared page cannot reach the computer, so it shows the path */
+function docBase(){return (S.docBase!=null&&S.docBase!=='')?S.docBase:((D.docAccess||{}).baseUrl||'')}
+function docLinks(path){const base=docBase(),isWord=/\.docx?$/i.test(path);
+  if(base){const web=base.replace(/ /g,'%20').replace(/\/?$/,'/')+path.split('/').map(encodeURIComponent).join('/');return {word:isWord?'ms-word:ofe|u|'+web:'',web}}
+  if(location.protocol==='file:')return {local:'../'+path.split('/').map(encodeURIComponent).join('/')};
+  return {}}
+function fileIcon(p){const pdf=/\.pdf$/i.test(p),ext=pdf?'PDF':'DOCX';
+  return '<svg class="ficon '+(pdf?'pdf':'doc')+'" viewBox="0 0 32 40" aria-hidden="true"><path class="pg" d="M4 2h16l8 8v26a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path class="fold" d="M20 2v6a2 2 0 0 0 2 2h6"/><text x="15" y="30">'+ext+'</text></svg>'}
+function docBtns(path){const L=docLinks(path);
+  if(L.web)return (L.word?'<a class="btn primary small" href="'+esc(L.word)+'">פתיחה ב-Word</a>':'')+'<a class="btn '+(L.word?'soft':'primary')+' small" href="'+esc(L.web)+'" target="_blank" rel="noopener">'+(L.word?'בדפדפן':'פתיחה')+'</a>';
+  if(L.local)return '<a class="btn primary small" href="'+esc(L.local)+'">פתיחה</a>';
+  return '<button class="btn soft small" data-copypath="'+esc(path)+'">העתקת הנתיב</button>'}
+function readerDrawer(id,q){showD('read:'+id,'להסכם המלא',()=>_reader(id,q))}
+/* The page never carries the agreement itself. Without the full text, the reader shows the passages quoted from it */
+function quotesOf(id){const seen={},out=[];const add=(t,c)=>{t=String(t||'').trim();if(!t||seen[t])return;seen[t]=1;out.push({t,c:c||''})};
+  ((AG[id]||{}).kc||[]).forEach(k=>add(k.quote,k.clause));allTasks().filter(t=>t.agr===id).forEach(t=>add(t.quote,t.clause));
+  D.review.filter(r=>r.agr===id).forEach(r=>add(r.quote,r.clause));return out}
+function _reader(id,q){
+  const a=AG[id];if(!a)return;const full=(D.texts||{})[id]||[],P=full.length?full:quotesOf(id),doc=(a.docs||[])[0]||{};let hi=-1;
+  if(!full.length&&q&&!P.some(p=>p.t===q))P.unshift({t:q,c:''});
+  if(q){const key=q.replace(/\s+/g,' ').slice(0,36);hi=P.findIndex(p=>p.t.replace(/\s+/g,' ').indexOf(key)>=0)}
+  const L=docLinks(doc.path||'');
+  drawer('<div class="dh"><div class="top"><div><span class="muted" style="font-size:13px">'+esc(a.number)+' · '+esc(doc.file||'')+'</span><h2>'+esc(a.title)+'</h2></div><button class="x" data-close aria-label="סגירה">×</button></div>'+
+   '<div class="rbar">'+(doc.orig?'<button class="btn soft small" data-dl="'+esc(doc.orig)+'" data-fn="'+esc(doc.file)+'">הורדת הקובץ המקורי</button>':'')+(L.word?'<a class="btn soft small" href="'+esc(L.word)+'">לפתוח ב-Word</a>':'')+(hi>=0?'<button class="linkbtn" data-jumphl>חזרה לסעיף המסומן</button>':'')+'</div></div>'+
+   '<div class="db">'+(!full.length?'<div class="note2">כאן מוצגים רק הסעיפים שצוטטו מההסכם. ההסכם המלא נשאר בתיקייה שלכם'+(doc.path?': <bdi>'+esc(doc.path)+'</bdi>':'')+'.</div>'+(doc.path?'<div class="rbar">'+docBtns(doc.path)+'</div>':''):'')+
+   (P.length?'':'<p class="muted">לא צוטטו סעיפים מההסכם הזה.</p>')+
+   '<article class="paper" dir="rtl" lang="he">'+P.map((p,i)=>'<p'+(i===hi?' class="hl" id="hl"':'')+(i===0&&full.length?' class="ttl"':'')+'>'+(p.c&&p.t.indexOf(p.c)!==0?'<span class="pc">'+esc(p.c)+'</span> ':'')+esc(p.t)+'</p>').join('')+'</article></div>');
+  const h=$('#hl');if(h)setTimeout(()=>h.scrollIntoView({block:'center'}),30);
+}
+function personOf(p){p=String(p||'');const i=p.indexOf(', ');const lawyer=p.indexOf('עו"ד')===0;const name=(i>0?p.slice(0,i):p).replace(/^עו"ד\s*/,'');return {full:p,name:name,role:lawyer?'עורך דין':(i>0?p.slice(i+2):''),lawyer:lawyer,ini:name.split(/\s+/).map(w=>w[0]).join('').slice(0,2)}}
+const STC={'חדש':'','בטיפול':'c2','ממתין לגורם אחר':'y','נדחה עד מועד':'w','הוסלם':'r','הושלם':'g','בוטל':''};
+function ownerBtn(kind,id,val){if(!val)return '<button type="button" class="ddb" data-dd="'+kind+'" data-id="'+id+'" aria-haspopup="listbox" aria-expanded="false"><span class="nm muted">לא הוגדר</span></button>';const p=personOf(val||'');return '<button type="button" class="ddb" data-dd="'+kind+'" data-id="'+id+'" aria-haspopup="listbox" aria-expanded="false" aria-label="אחראי"><span class="av'+(p.lawyer?'':' b')+'">'+esc(p.ini)+'</span><span class="nm">'+esc(p.name)+(p.role?' <small>'+esc(p.role)+'</small>':'')+'</span></button>'}
+function statusBtn(id,st){return '<button type="button" class="ddb" data-dd="status" data-id="'+id+'" aria-haspopup="listbox" aria-expanded="false" aria-label="מעמד"><span class="sd '+STC[st]+'"></span><span class="nm">'+esc(st)+'</span></button>'}
+let NT={};
+function openPop(btn){
+  closePop();const kind=btn.dataset.dd,id=btn.dataset.id;let items='',cur;
+  const it=(val,label,sub,lead,sel)=>'<button type="button" class="it" role="option" data-pick="'+esc(val)+'" aria-selected="'+sel+'">'+lead+'<span class="tx">'+label+(sub?'<small>'+sub+'</small>':'')+'</span><span class="ck">'+(sel?'✓':'')+'</span></button>';
+  if(['owner','ntowner','tlaw','tbiz','tbak','alaw','abiz','abak'].includes(kind)){
+    const fld={tlaw:'lawyer',tbiz:'business',tbak:'backup',alaw:'lawyer',abiz:'business',abak:'backup'}[kind];
+    cur=kind==='owner'?taskOwner(allTasks().find(x=>x.id===id)):(kind==='ntowner'?NT.owner:(kind[0]==='a'?owner(AG[id]):owner({type:id}))[fld]);
+    const ps=people().map(personOf),grp=(l,arr)=>arr.length?'<div class="sep">'+l+'</div>'+arr.map(p=>it(p.full,esc(p.name),esc(p.role)+(emailOf(p.full)?'':' · אין מייל'),'<span class="av'+(p.lawyer?'':' b')+'">'+esc(p.ini)+'</span>',p.full===cur)).join(''):'';
+    items=grp('עורכי דין',ps.filter(p=>p.lawyer))+grp('גורמים עסקיים',ps.filter(p=>!p.lawyer))+(fld&&fld!=='lawyer'?it('','לא הוגדר','','<span class="av" style="opacity:.4">−</span>',!cur):'')+
+      '<div class="sep"></div><button type="button" class="it" data-addperson="'+kind+'|'+(id||'')+'"><span class="av">+</span><span class="tx">להוסיף אדם<small>שם ומייל לתזכורות</small></span></button>'}
+  else if(kind==='astate'){cur=aState(AG[id]);items=ASTATES.map(s=>it(s,esc(s),'','<span class="sd '+(s==='בתוקף'?'g':'')+'"></span>',s===cur)).join('')}
+  else if(kind==='status'){cur=status(allTasks().find(x=>x.id===id));items=STATUSES.map(s=>it(s,esc(s),'','<span class="sd '+STC[s]+'"></span>',s===cur)).join('')}
+  else if(kind==='ntagr'){cur=NT.agr;items=D.agreements.map(a=>it(a.id,esc(a.cp),esc(a.title),'',a.id===cur)).join('')}
+  const pop=document.createElement('div');pop.className='pop';pop.id='pop';pop.setAttribute('role','listbox');pop.dir='rtl';pop.dataset.kind=kind;pop.dataset.id=id||'';pop.innerHTML=items;document.body.appendChild(pop);
+  const r=btn.getBoundingClientRect(),w=Math.max(r.width,pop.offsetWidth);pop.style.minWidth=r.width+'px';
+  let top=r.bottom+6;if(top+pop.offsetHeight>innerHeight-8)top=Math.max(8,r.top-6-pop.offsetHeight);
+  pop.style.top=top+'px';pop.style.left=Math.max(8,Math.min(innerWidth-w-8,r.right-w))+'px';
+  btn.setAttribute('aria-expanded','true');openPop.btn=btn;(pop.querySelector('[aria-selected=true]')||pop.querySelector('.it')).focus();
+}
+function closePop(){const p=$('#pop');if(p)p.remove();if(openPop.btn){openPop.btn.setAttribute('aria-expanded','false');openPop.btn=null}}
+function pick(val){const p=$('#pop');if(!p)return;const kind=p.dataset.kind,id=p.dataset.id;const btn=openPop.btn;closePop();
+  if(kind==='owner'){mark('owner',id,val);toast('נשמר');render()}
+  else if(kind==='status'){mark('status',id,val);toast('נשמר');render()}
+  else if(kind==='ntowner'){NT.owner=val;btn.outerHTML=ownerBtn('ntowner','',val)}
+  else if(['alaw','abiz','abak'].includes(kind)){const f={alaw:'lawyer',abiz:'business',abak:'backup'}[kind];S.aowner[id]=Object.assign({},S.aowner[id]||{},{[f]:val});saveTeam();toast('נשמר');agrDrawer(id);render()}
+  else if(kind==='astate'){mark('astate',id,val);toast('נשמר');agrDrawer(id);render()}
+  else if(['tlaw','tbiz','tbak'].includes(kind)){const f={tlaw:'lawyer',tbiz:'business',tbak:'backup'}[kind];S.typeOwner[id]=Object.assign({},S.typeOwner[id]||{},{[f]:val});saveTeam();toast('נשמר');settingsDrawer();render()}
+  else if(kind==='ntagr'){NT.agr=val;const a=AG[val];btn.querySelector('.nm').innerHTML=esc(a.cp)+' <small>'+esc(a.title)+'</small>';
+    if(!NT.owner){NT.owner=owner(a).lawyer;const ob=document.querySelector('.drawer [data-dd=ntowner]');if(ob)ob.outerHTML=ownerBtn('ntowner','',NT.owner)}}}
+function taskOwner(t){const m=S.owner[t.id];if(m)return m.value;const a=AG[t.agr];return a?owner(a).lawyer:''}
+function status(t){const m=S.status[t.id];return m?m.value:'חדש'}
+function allTasks(){return D.tasks.concat(S.manual||[])}
+function closed(t){return ['הושלם','בוטל'].includes(status(t))}
+function bucket(t){
+  if(closed(t))return 'done';
+  if(!t.date)return 'event';
+  const n=days(t.act_by||t.date);
+  if(n<0)return 'late';if(n<=7)return 'week';if(n<=31)return 'month';if(n<=90)return 'q';return 'later';
+}
+const BUCKETS=[['late','באיחור','r'],['week','השבוע',''],['month','החודש',''],['q','ב-90 הימים הקרובים',''],['later','בהמשך',''],['event','בלי תאריך: תלוי באירוע',''],['done','סגורות','']];
+function openReview(){return D.review.filter(r=>!S.decided[r.id])}
+function deviations(){const out=[];D.agreements.forEach(a=>(a.kc||[]).forEach(k=>{if(k.policy==='differs')out.push({a,k})}));return out}
+
+/* Calendar file: works in Outlook, Google and Apple, with or without Claude */
+function ics(list){
+  const p=n=>String(n).padStart(2,'0'),dt=s=>s.replace(/-/g,'');
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Areo//Contracts//HE','CALSCALE:GREGORIAN'];
+  list.forEach(t=>{const d=t.act_by||t.date;if(!d)return;const a=AG[t.agr]||{};const end=pd(d);end.setDate(end.getDate()+1);
+    L.push('BEGIN:VEVENT','UID:'+t.id+'@areo','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z','DTSTART;VALUE=DATE:'+dt(d),
+      'DTEND;VALUE=DATE:'+end.getFullYear()+p(end.getMonth()+1)+p(end.getDate()),'SUMMARY:'+(t.label+' · '+(a.cp||'')).replace(/[,;]/g,' '),
+      'DESCRIPTION:'+(t.action||'').replace(/[,;]/g,' ').replace(/\n/g,' '),'BEGIN:VALARM','TRIGGER:-P7D','ACTION:DISPLAY','DESCRIPTION:תזכורת','END:VALARM','END:VEVENT')});
+  L.push('END:VCALENDAR');return L.join('\r\n');
+}
+async function save(name,text,type){
+  try{const dl=window.claude&&claude.use?await claude.use('downloads'):null;if(dl){await dl.save({filename:name,data:text});return}}catch(e){}
+  const b=new Blob([text],{type}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
+
+/* ---------- Menu ---------- */
+const SCREENS=[['overview','סקירה'],['agreements','הסכמים'],['nego','משא ומתן'],['cps','צדדים שכנגד'],['tasks','משימות'],['policy','מול המדיניות'],['approve','לאישור']];
+function navHtml(){
+  const late=allTasks().filter(t=>bucket(t)==='late').length,week=allTasks().filter(t=>bucket(t)==='week').length;
+  const c={agreements:[D.agreements.length,''],nego:[(D.negotiations||[]).length,(D.negotiations||[]).some(n=>n.waiting==='us')?'w':''],cps:[cpList().length,''],tasks:[late+week,late?'r':''],policy:[deviations().length,deviations().length?'r':''],approve:[openReview().length,'w']};
+  return SCREENS.map(([k,l])=>'<button class="nv" data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+l+(c[k]&&c[k][0]?'<span class="cnt '+c[k][1]+'">'+c[k][0]+'</span>':'')+'</button>').join('');
+}
+function topbar(title){
+  return '<div class="bar0"><span class="crumb">ניהול חוזים · '+esc(D.meta.company)+' · '+title+'</span><div class="tools">'+
+   '<label class="find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="חיפוש בהסכמים ובסעיפים" value="'+esc(S.q||'')+'"></label>'+
+   '<button class="iconbtn" data-act="export" title="ייצוא">ייצוא</button>'+
+   '<button class="iconbtn" data-act="settings" title="הגדרות" aria-label="הגדרות"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>'+
+   '<button class="iconbtn" data-act="theme" aria-label="בהיר או כהה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>'+
+   '</div></div>';
+}
+
+/* ---------- Overview ---------- */
+function vOverview(){
+  const T=allTasks(),late=T.filter(t=>bucket(t)==='late'),week=T.filter(t=>bucket(t)==='week'),month=T.filter(t=>bucket(t)==='month');
+  const dev=deviations(),rv=openReview();
+  const nxt=T.filter(t=>t.date&&!closed(t)&&days(t.act_by||t.date)>=0).sort((a,b)=>(a.act_by||a.date).localeCompare(b.act_by||b.date))[0];
+  const head=late.length?nn(late.length,'משימה אחת באיחור','משימות באיחור')+(week.length?', ועוד '+nn(week.length,'אחת','')+' השבוע.':'.'):(week.length?nn(week.length,'משימה אחת','משימות')+' לטיפול השבוע.':'השבוע אין משימות לטיפול.');
+  const sub=nxt?'הבאה בתור: '+nxt.label+', '+(AG[nxt.agr]||{}).cp+', עד '+fmt(nxt.act_by||nxt.date)+'.':'';
+  const next=T.filter(t=>t.date&&!closed(t)).sort((a,b)=>(a.act_by||a.date).localeCompare(b.act_by||b.date)).slice(0,6);
+  const ren=D.tasks.filter(t=>t.renewal&&t.date&&days(t.date)>=0&&!closed(t)).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,4);
+  return topbar('סקירה')+
+  '<section class="hero"><span class="eb">נכון להיום, '+fmt(TODAYS)+'</span><h1>'+esc(head)+'</h1><p class="lead">'+esc(sub)+'</p></section>'+
+  '<div class="ledger">'+
+   '<button data-go="tasks"><b class="'+(late.length?'r':'')+'">'+late.length+'</b><span>באיחור</span></button>'+
+   '<button data-go="tasks"><b>'+week.length+'</b><span>לטפל השבוע</span></button>'+
+   '<button data-go="tasks"><b>'+month.length+'</b><span>החודש</span></button>'+
+   '<button data-go="policy"><b class="'+(dev.length?'r':'')+'">'+dev.length+'</b><span>סטיות מהמדיניות</span></button>'+
+   '<button data-go="approve"><b class="w">'+rv.length+'</b><span>מחכים לאישור</span></button></div>'+
+  portfolio()+
+  '<div class="grid2"><section class="card"><div class="cardh"><h2>הבא בתור</h2><button class="linkbtn" data-go="tasks">לכל המשימות</button></div><div class="next">'+
+   next.map(t=>{const n=days(t.act_by||t.date),a=AG[t.agr]||{};return '<button class="nx" data-task="'+t.id+'"><span class="d '+(n<0?'r':'')+'">'+fmt(t.act_by||t.date).replace(/\.\d{4}$/,'')+'<small>'+(n<0?'לפני '+(-n)+' ימים':n===0?'היום':'בעוד '+n+' ימים')+'</small></span><span><b>'+esc(t.label)+'</b><span>'+esc(a.cp||'')+' · '+esc(taskOwner(t))+'</span></span>'+'<span></span>'+'</button>'}).join('')+
+  '</div></section><section class="card"><div class="cardh"><h2>מה חסר</h2><small>מתעדכן בכל סריקה</small></div><div>'+
+   (D.readiness.some(r=>!r.ok)?'':'<p class="muted" style="margin:6px 0">הכול מוכן.</p>')+D.readiness.filter(r=>!r.ok).map(r=>'<div class="rd"><i class="'+(r.ok?'ok':'no')+'">'+(r.ok?'✓':'!')+'</i><div class="x"><b>'+esc(r.label)+'</b><span>'+esc(r.detail)+'</span></div>'+(r.action?'<button class="linkbtn" data-act="ready">'+esc(r.action)+'</button>':'')+'</div>').join('')+(D.readiness.some(r=>r.ok)?'<p class="muted" style="font-size:13px;margin:10px 0 0">מוכן: '+D.readiness.filter(r=>r.ok).map(r=>esc(r.label)).join(', ')+'.</p>':'')+
+  '</div></section></div>';
+}
+/* The portfolio at a glance: how soon each agreement needs a decision, and how much of what was signed matches the policy */
+function arc(cx,cy,r,a0,a1){const p=a=>[cx+r*Math.sin(a),cy-r*Math.cos(a)],[x0,y0]=p(a0),[x1,y1]=p(a1);return 'M'+x0.toFixed(2)+' '+y0.toFixed(2)+' A'+r+' '+r+' 0 '+(a1-a0>Math.PI?1:0)+' 1 '+x1.toFixed(2)+' '+y1.toFixed(2)}
+const PB=[['late','באיחור','var(--r)'],['m1','עד 30 יום','#3f7bd0'],['m3','31 עד 90 יום','#9dbde9'],['far','מעל 90 יום','var(--g)'],['none','בלי מועד פתוח','var(--line-strong)']];
+function aBucket(a){const n=nextTask(a),d=n?days(n.act_by||n.date):null;return d==null?'none':d<0?'late':d<=30?'m1':d<=90?'m3':'far'}
+function portfolio(){
+  const top=D.agreements.filter(a=>!a.parent);
+  const B=PB;
+  const cnt=Object.fromEntries(B.map(b=>[b[0],[]]));
+  top.forEach(a=>cnt[aBucket(a)].push(a));
+  const tot=top.length,C=2*Math.PI,gap=tot>1?.035:0;let a0=0;
+  const segs=B.filter(b=>cnt[b[0]].length).map(b=>{const n=cnt[b[0]].length,a1=a0+C*n/tot,p='<path class="seg" d="'+arc(60,60,46,a0+gap/2,a1-gap/2)+'" stroke="'+b[2]+'" data-seg="'+b[0]+'" tabindex="0" role="button"><title>'+b[1]+': '+n+' · '+cnt[b[0]].map(a=>a.cp).join(', ')+'</title></path>';a0=a1;return p}).join('');
+  const kc=D.agreements.flatMap(a=>(a.kc||[]).filter(k=>k.rule&&k.policy!=='not_compared'));
+  const ok=kc.filter(k=>k.policy==='match').length,dv=kc.length-ok,pct=kc.length?ok/kc.length:0;
+  const ring='<path d="'+arc(60,60,46,0,C*.9999)+'" stroke="var(--raised)" class="trk"/>'+(dv?'<path d="'+arc(60,60,46,C*pct+.03,C*.9999-.03)+'" stroke="var(--r)" class="seg" data-go="policy" tabindex="0" role="button"><title>'+dv+' סעיפים סוטים מהמדיניות</title></path>':'')+'<path d="'+arc(60,60,46,.0001,Math.max(.001,C*pct-.03))+'" stroke="var(--g)" class="seg" data-go="policy" tabindex="0" role="button"><title>'+ok+' סעיפים תואמים למדיניות</title></path>';
+  return '<section class="card"><div class="cardh"><h2>תמונת התיק</h2><button class="linkbtn" data-act="timeline">לציר החידושים</button></div><div class="pf">'+
+   '<div class="pfb"><svg viewBox="0 0 120 120" role="img" aria-label="ההסכמים לפי מועד ההחלטה הבא">'+segs+'<text x="60" y="58" class="big">'+tot+'</text><text x="60" y="76" class="cap">הסכמים</text></svg>'+
+    '<div class="pfl"><b class="pft">מתי צריך להחליט</b>'+B.map(b=>cnt[b[0]].length?'<button type="button" class="pli" data-seg="'+b[0]+'"><i style="background:'+b[2]+'"></i><span>'+b[1]+'</span><b>'+cnt[b[0]].length+'</b></button>':'<div class="pli zero"><i style="background:'+b[2]+'"></i><span>'+b[1]+'</span><b>0</b></div>').join('')+'<small>לפי המשימה הבאה בכל הסכם</small></div></div>'+
+   '<div class="pfb"><svg viewBox="0 0 120 120" role="img" aria-label="סעיפים מול המדיניות">'+ring+'<text x="60" y="60" class="big">'+Math.round(pct*100)+'%</text><text x="60" y="77" class="cap">תואם למדיניות</text></svg>'+
+    '<div class="pfl"><b class="pft">מה נחתם מול הפלייבוק</b><button type="button" class="pli" data-go="policy"><i style="background:var(--g)"></i><span>סעיפים תואמים</span><b>'+ok+'</b></button><button type="button" class="pli" data-go="policy"><i style="background:var(--r)"></i><span>סעיפים סוטים</span><b>'+dv+'</b></button>'+
+    '<small>'+D.agreements.filter(a=>!ty(a.type).playbook&&!a.parent).length+' הסכמים בלי פלייבוק לא נספרים</small><button class="linkbtn" data-go="policy" style="align-self:flex-start;margin-top:4px">למסך מול המדיניות</button></div></div>'+
+  '</div></section>';
+}
+
+
+/* ---------- Agreements ---------- */
+function policyOf(a){const k=a.kc||[];if(!ty(a.type).playbook)return ['n','אין פלייבוק'];if(!k.length)return ['n','לא הושווה'];const d=k.filter(x=>x.policy==='differs').length;return d?['r',d+' סטיות']:['g','תואם']}
+function nextTask(a){if(ended(a))return null;return allTasks().filter(t=>t.agr===a.id&&t.date&&!closed(t)).sort((x,y)=>(x.act_by||x.date).localeCompare(y.act_by||y.date))[0]}
+function vAgreements(){
+  const f=S.af||'all',q=(S.q||'').trim();
+  let list=D.agreements.filter(a=>!a.parent);
+  if(f!=='all')list=list.filter(a=>a.type===f);
+  const bk=S.abucket&&PB.find(b=>b[0]===S.abucket);if(bk)list=list.filter(a=>aBucket(a)===bk[0]);
+  if(S.aflag)list=list.filter(a=>(a.flags||[]).includes(S.aflag));
+  if(q)list=list.filter(a=>(a.title+a.cp+JSON.stringify(a.kc)).includes(q));
+  const chips=['<button class="chip" data-af="all" aria-pressed="'+(f==='all')+'">הכול<small>'+D.agreements.filter(a=>!a.parent).length+'</small></button>'].concat(D.types.map(t=>'<button class="chip" data-af="'+t.code+'" aria-pressed="'+(f===t.code)+'">'+esc(t.label)+'<small>'+D.agreements.filter(a=>!a.parent&&a.type===t.code).length+'</small></button>')).join('');
+  const row=(a,child)=>{const o=owner(a),p=policyOf(a),n=nextTask(a);
+    return '<tr class="click'+(child?' child':'')+(ended(a)?' ended':'')+'" data-agr="'+a.id+'"><td>'+esc(child?a.title:a.cp)+(!a.role&&!child?' <span class="pill w">הצד שלנו לאישור</span>':'')+(ended(a)?' <span class="pill n">'+esc(aState(a))+'</span>':'')+'<span class="sub">'+esc(child?'':a.title)+'</span></td><td>'+esc(ty(a.type).label)+'</td><td>'+esc(a.value_short||'')+'</td><td class="num">'+(a.end?fmt(a.end):'<span class="faint">לפי ההסכם הראשי</span>')+'</td><td class="num">'+(n?fmt(n.act_by||n.date)+'<span class="sub">'+esc(n.label)+'</span>':'<span class="faint">אין</span>')+'</td><td>'+esc(personOf(o.lawyer).name)+'</td><td>'+(child?'':'<span class="pill '+p[0]+'">'+p[1]+'</span>')+'</td></tr>'};
+  return topbar('הסכמים')+
+  '<div class="cardh"><h1>הסכמים</h1><button class="btn primary small" data-act="addagr">+ הוספת הסכם</button></div><p class="lead">כל הסכם עם התיקונים וההזמנות שלו. לחיצה על שורה פותחת את עיקרי ההסכם, המועדים וההשוואה למדיניות.</p>'+
+  '<div class="chips">'+chips+(bk?'<button class="chip" data-abucket="" aria-pressed="true" title="הסרת הסינון"><i style="display:inline-block;width:9px;height:9px;border-radius:3px;background:'+bk[2]+';margin-inline-end:6px"></i>מתי צריך להחליט: '+bk[1]+' ×</button>':'')+'</div>'+
+  '<div class="flagrow"><span class="muted">סעיפים שכדאי להכיר:</span>'+(D.flags||[]).map(([k,l])=>{const n=D.agreements.filter(a=>!a.parent&&(a.flags||[]).includes(k)).length;return n?'<button class="chip sm" data-aflag="'+k+'" aria-pressed="'+(S.aflag===k)+'">'+esc(l)+'<small>'+n+'</small></button>':''}).join('')+'</div>'+
+  '<div class="tblwrap"><table><thead><tr><th>צד שכנגד</th><th>סוג</th><th>תמורה</th><th>בתוקף עד</th><th>המועד הבא</th><th>עו"ד אחראי</th><th>מול המדיניות</th></tr></thead><tbody>'+
+  (list.length?list.map(a=>row(a)+D.agreements.filter(c=>c.parent===a.id).map(c=>row(c,true)).join('')).join(''):'<tr><td colspan="7" class="muted">לא נמצאו הסכמים.</td></tr>')+
+  '</tbody></table></div>';
+}
+
+/* ---------- Tasks ---------- */
+function taskCard(t){
+  const a=AG[t.agr]||{},b=bucket(t),n=days(t.act_by||t.date),st=status(t),m=S.status[t.id];
+  const when=t.date?'<div class="when '+(b==='late'?'r':'')+'"><b>'+fmt(t.act_by||t.date).replace(/\.\d{4}$/,'')+'</b><small>'+(n<0?'באיחור '+(-n)+' ימים':n===0?'היום':'בעוד '+n+' ימים')+'</small></div>':'<div class="when"><small>תלוי באירוע</small></div>';
+  return '<div class="task '+(b==='late'?'late':t.critical?'crit':'')+(closed(t)?' done':'')+'" id="t-'+t.id+'">'+when+
+   '<div class="tmain"><span class="t">'+esc(t.label)+(t.manual?' <span class="pill n">ידנית</span>':'')+(t.obligor==='them'?' <span class="pill n">חובה של הצד השני</span>':'')+'</span>'+
+   '<span class="a">'+esc(a.cp||'')+' · '+esc(a.title?ty(a.type).label:'')+(t.date&&t.act_by&&t.act_by!==t.date?' · המועד בהסכם '+fmt(t.date):'')+'</span>'+
+   (t.action?'<span class="act">'+esc(t.action)+'</span>':'')+
+   ((t.quote||t.if_nothing)?'<details class="more"><summary>מה כתוב בהסכם, ומה אם לא נטפל</summary><div class="in">'+(t.if_nothing?'<div><b>אם לא נטפל:</b> '+esc(t.if_nothing)+'</div>':'')+(t.quote?'<span class="quote"><small>'+esc(t.clause)+'</small>'+esc(t.quote)+'</span><button class="linkbtn" style="align-self:flex-start" data-read="'+t.agr+'" data-q="'+esc(t.quote)+'">לראות בהסכם</button>':'')+'</div></details>':'')+
+   (m&&m.by?'<span class="saved">'+esc(st)+' · '+esc(m.by)+(m.at?'<span class="areo-by">, '+new Date(m.at).toLocaleDateString('he-IL')+'</span>':'')+'</span>':'')+
+   '</div><div class="tside">'+ownerBtn('owner',t.id,taskOwner(t))+
+   statusBtn(t.id,st)+
+   (t.date?'<button class="btn soft small" data-ics="'+t.id+'">להוסיף ליומן</button>':'')+'</div></div>';
+}
+function vTasks(){
+  let T=allTasks();
+  const me=people()[0];
+  if(S.mine)T=T.filter(t=>taskOwner(t)===me);
+  const q=(S.q||'').trim();if(q)T=T.filter(t=>(t.label+t.action+(AG[t.agr]||{}).cp).includes(q));
+  const sw='<div class="row" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><div class="seg"><button data-mine="0" aria-pressed="'+!S.mine+'">הצוות</button>'+(me?'<button data-mine="1" aria-pressed="'+!!S.mine+'">שלי ('+esc(personOf(me).name)+')</button>':'')+'</div>'+
+   '<div class="seg"><button data-tv="list" aria-pressed="'+(S.tview==='list')+'">רשימה</button><button data-tv="tl" aria-pressed="'+(S.tview==='tl')+'">ציר חידושים</button></div>'+
+   '<div style="display:flex;gap:8px"><button class="btn soft small" data-act="icsall">כל המועדים ליומן</button><button class="btn primary small" data-act="newtask">+ משימה</button></div></div>';
+  let body;
+  if(S.tview==='tl')body=timeline();
+  else body=BUCKETS.map(([k,l,c])=>{const L=T.filter(t=>bucket(t)===k).sort((a,b)=>((a.act_by||a.date||'9')).localeCompare(b.act_by||b.date||'9'));if(!L.length)return '';
+    const inner=L.map(taskCard).join('');
+    return (k==='event'||k==='done')?'<details class="more"><summary class="grp" style="color:var(--mist)">'+l+' ('+L.length+')</summary><div class="in" style="gap:10px;margin-top:10px">'+inner+'</div></details>':'<div class="grp '+c+'">'+l+' ('+L.length+')</div>'+inner}).join('');
+  return topbar('משימות')+'<h1>משימות</h1><p class="lead">כל מה שצריך לעשות לפי ההסכמים, לפי מועד היעד לטיפול. המועד מחושב מההסכם פחות ימי ההתראה שנקבעו בהגדרות.</p>'+sw+body;
+}
+function timeline(){
+  const start=new Date(TODAY.getFullYear(),TODAY.getMonth(),1),end=new Date(start);end.setMonth(end.getMonth()+12);
+  const span=end-start,pos=d=>Math.max(0,Math.min(100,(pd(d)-start)/span*100));
+  const months=[...Array(12)].map((_,i)=>{const d=new Date(start);d.setMonth(d.getMonth()+i);return (d.getMonth()+1)+'.'+String(d.getFullYear()).slice(2)});
+  const rows=D.agreements.filter(a=>!a.parent&&a.end).map(a=>{
+    const ts=D.tasks.filter(t=>t.agr===a.id&&t.renewal&&t.date&&days(t.date)>=0);
+    const s=a.signed&&pd(a.signed)>start?pos(a.signed):0,e=pos(a.end);
+    return '<div class="tlr"><span class="nm">'+esc(a.cp)+'<small>'+esc(ty(a.type).label)+' · עד '+fmt(a.end)+'</small></span><div class="track"><span class="run" style="inset-inline-start:'+s+'%;width:'+Math.max(1,e-s)+'%"></span>'+
+     ts.map(t=>'<span class="win" title="'+esc(t.label)+'" style="inset-inline-start:'+pos(t.act_by||t.date)+'%;width:'+Math.max(1.2,pos(t.date)-pos(t.act_by||t.date))+'%"></span><span class="dl" title="'+esc(t.label+' '+fmt(t.date))+'" style="inset-inline-start:'+pos(t.date)+'%"></span>').join('')+
+     '<span class="now" style="inset-inline-start:'+pos(TODAYS)+'%"></span></div></div>'}).join('');
+  return '<section class="card"><div class="tl"><div class="tlh"><span></span><div class="ax">'+months.map(m=>'<span>'+m+'</span>').join('')+'</div></div>'+rows+'</div>'+
+   '<div class="tlkey"><span><i style="background:color-mix(in srgb,var(--aurora) 35%,transparent)"></i>תקופת ההסכם</span><span><i style="background:var(--y-soft);border:1.5px solid var(--y)"></i>חלון להחלטה</span><span><i style="background:var(--r);width:3px"></i>המועד האחרון בהסכם</span></div></section>';
+}
+
+/* ---------- Negotiation: deals not signed yet, from the negotiator's state per deal ---------- */
+const NSTAGES=[['draft','טיוטה אצלנו'],['with_them','אצל הצד השני'],['theirs','הערות הצד השני'],['sign','מוכן לחתימה']];
+function vNego(){
+  const N=D.negotiations||[];
+  const card=n=>{const d=-days(n.since),late=n.waiting==='us'?d>7:d>30,o=owner({type:n.type});
+    return '<div class="ng'+(late?' late':'')+'"><div class="cardh"><b>'+esc(n.cp)+'</b>'+(n.round?'<span class="pill n">סבב '+n.round+'</span>':'')+'</div>'+
+     '<span class="muted" style="font-size:13.5px">'+esc(n.title)+' · '+esc(ty(n.type).label)+'</span>'+
+     '<span class="ngw '+(n.waiting==='us'?'us':'them')+'">'+(n.waiting==='us'?'ממתין לנו':'ממתין להם')+(n.since?' '+d+' ימים':'')+(late?' · ארוך מהרגיל':'')+'</span>'+
+     (n.open?'<span class="tmeta"><span>'+n.open+' נקודות פתוחות</span>'+(n.red?'<span style="color:var(--r)">'+n.red+' מעבר לקו האדום</span>':'')+'</span>':'')+
+     '<span style="font-size:14px">'+esc(n.next)+'</span>'+
+     '<div class="cardh" style="margin-top:2px"><span class="muted" style="font-size:13px">'+esc(personOf(o.lawyer).name)+'</span><button class="linkbtn" data-nego="'+n.id+'">לפתוח בנושא ונותן</button></div></div>'};
+  return topbar('משא ומתן')+'<h1>משא ומתן</h1><p class="lead">עסקאות שעוד לא נחתמו, לפי השלב. המידע מגיע מהנושא ונותן, מכל עסקה שעובדים עליה איתו. כשהסכם נחתם, הוא עובר להסכמים ומקבל משימות.</p>'+
+   '<div class="kan">'+NSTAGES.map(([k,l])=>{const L=N.filter(n=>n.stage===k);return '<section class="kcol"><div class="kh"><b>'+l+'</b><span class="cnt">'+L.length+'</span></div>'+(L.length?L.map(card).join(''):'<p class="muted" style="font-size:13.5px;margin:6px 2px">אין כרגע.</p>')+'</section>'}).join('')+'</div>';
+}
+/* ---------- Counterparties ---------- */
+function cpList(){const m={};D.agreements.forEach(a=>{(m[a.cp]=m[a.cp]||{cp:a.cp,ags:[],ngs:[]}).ags.push(a)});(D.negotiations||[]).forEach(n=>{(m[n.cp]=m[n.cp]||{cp:n.cp,ags:[],ngs:[]}).ngs.push(n)});return Object.values(m)}
+function vCps(){
+  const q=(S.q||'').trim();let L=cpList();if(q)L=L.filter(c=>c.cp.includes(q));
+  L.sort((x,y)=>{const nx=x.ags.map(nextTask).filter(Boolean).map(t=>t.act_by||t.date).sort()[0]||'9',ny=y.ags.map(nextTask).filter(Boolean).map(t=>t.act_by||t.date).sort()[0]||'9';return nx.localeCompare(ny)});
+  return topbar('צדדים שכנגד')+'<h1>צדדים שכנגד</h1><p class="lead">כל מה שיש לנו מול כל צד: הסכמים, עסקאות במשא ומתן, המועד הבא, וסטיות מהמדיניות.</p>'+
+   '<div class="tblwrap"><table><thead><tr><th>צד שכנגד</th><th>הסכמים</th><th>במשא ומתן</th><th>המועד הבא</th><th>סטיות מהמדיניות</th><th>אחראי</th></tr></thead><tbody>'+
+   L.map(c=>{const ts=c.ags.map(nextTask).filter(Boolean).sort((a,b)=>(a.act_by||a.date).localeCompare(b.act_by||b.date)),n=ts[0],dv=c.ags.reduce((s,a)=>s+(a.kc||[]).filter(k=>k.policy==='differs').length,0),
+     types=[...new Set(c.ags.map(a=>ty(a.type).label).concat(c.ngs.map(x=>ty(x.type).label)))],own=c.ags[0]?owner(c.ags[0]).lawyer:owner({type:c.ngs[0].type}).lawyer;
+     return '<tr class="click" data-cp="'+esc(c.cp)+'"><td>'+esc(c.cp)+'<span class="sub">'+esc(types.join(', '))+'</span></td><td class="num">'+(c.ags.filter(a=>!a.parent).length||'<span class="faint">אין</span>')+(c.ags.some(a=>a.parent)?'<span class="sub">ועוד '+c.ags.filter(a=>a.parent).length+' תיקון</span>':'')+'</td><td>'+(c.ngs.length?esc(c.ngs.map(x=>(NSTAGES.find(s=>s[0]===x.stage)||[])[1]).join(', ')):'<span class="faint">אין</span>')+'</td>'+
+      '<td class="num">'+(n?fmt(n.act_by||n.date)+'<span class="sub">'+esc(n.label)+'</span>':'<span class="faint">אין</span>')+'</td><td>'+(dv?'<span class="pill r">'+dv+'</span>':'<span class="faint">אין</span>')+'</td><td>'+esc(personOf(own).name)+'</td></tr>'}).join('')+
+   '</tbody></table></div>';
+}
+function cpDrawer(cp){showD('cp:'+cp,'לצד שכנגד',()=>_cpDrawer(cp))}
+function _cpDrawer(cp){
+  const c=cpList().find(x=>x.cp===cp);if(!c)return;const info=(D.cpinfo||{})[cp]||{};
+  const T=allTasks().filter(t=>c.ags.some(a=>a.id===t.agr)&&!closed(t)&&t.date).sort((a,b)=>(a.act_by||a.date).localeCompare(b.act_by||b.date));
+  const dv=c.ags.flatMap(a=>(a.kc||[]).filter(k=>k.policy==='differs').map(k=>({a,k})));
+  drawer('<div class="dh"><div class="top"><div><span class="muted" style="font-size:13px">צד שכנגד</span><h2>'+esc(cp)+'</h2></div><button class="x" data-close aria-label="סגירה">×</button></div><div style="height:12px"></div></div><div class="db">'+
+   '<dl class="kv"><dt>מספר רישום</dt><dd>'+esc(info.reg||'לא נמצא בהסכמים')+'</dd>'+(info.country?'<dt>מדינה</dt><dd>'+esc(info.country)+'</dd>':'')+(info.addr?'<dt>כתובת להודעות</dt><dd>'+esc(info.addr)+'</dd>':'')+(info.note?'<dt>הערה</dt><dd>'+esc(info.note)+'</dd>':'')+'</dl>'+
+   '<h3>הסכמים ('+c.ags.length+')</h3>'+(c.ags.length?c.ags.map(a=>'<button class="rowbtn" data-agr="'+a.id+'"><span><b>'+esc(a.title)+'</b><small>'+esc(ty(a.type).label)+(a.end?' · בתוקף עד '+fmt(a.end):'')+'</small></span><span class="pill '+policyOf(a)[0]+'">'+policyOf(a)[1]+'</span></button>').join(''):'<p class="muted">אין הסכמים חתומים.</p>')+
+   (c.ngs.length?'<h3>במשא ומתן</h3>'+c.ngs.map(n=>'<button class="rowbtn" data-go="nego"><span><b>'+esc(n.title)+'</b><small>'+esc((NSTAGES.find(s=>s[0]===n.stage)||[])[1])+(n.round?' · סבב '+n.round:'')+'</small></span></button>').join(''):'')+
+   '<h3>משימות פתוחות</h3>'+(T.length?T.map(taskCard).join(''):'<p class="muted">אין משימות פתוחות.</p>')+
+   (dv.length?'<h3>סטיות מהמדיניות</h3>'+dv.map(({a,k})=>'<div class="dev"><b>'+esc(k.label)+'</b><span>'+esc(k.summary)+'</span><span class="muted" style="font-size:13px">'+esc((D.topics[k.rule]||{}).g||'')+'</span></div>').join(''):'')+
+  '</div>');
+}
+
+/* ---------- Policy ---------- */
+function vPolicy(){
+  const rows={};
+  D.agreements.forEach(a=>(a.kc||[]).forEach(k=>{if(!k.rule)return;const r=rows[k.rule]||(rows[k.rule]={rule:k.rule,match:0,differs:0,none:0,items:[]});r[k.policy==='differs'?'differs':k.policy==='match'?'match':'none']++;r.items.push({a,k})}));
+  const list=Object.values(rows).sort((x,y)=>y.differs-x.differs||x.rule.localeCompare(y.rule));
+  const sel=S.prule&&rows[S.prule]?rows[S.prule]:null;
+  const noPb=D.types.filter(t=>!t.playbook);
+  const devs=deviations().filter(x=>!sel||x.k.rule===sel.rule);
+  return topbar('מול המדיניות')+'<h1>מול המדיניות</h1><p class="lead">כל הסכם חתום מושווה לעמדות שבפלייבוק, סעיף אחר סעיף. סטייה היא סעיף שנחתם מעבר למה שהמדיניות מאפשרת היום.</p>'+
+  '<section class="card"><div class="cardh"><h2>לפי נושא בפלייבוק</h2><small>'+esc(D.playbook_name)+'</small></div><div>'+
+   '<div class="pt h"><span>נושא</span><span class="c">תואם</span><span class="c">סוטה</span><span class="c">לא הושווה</span></div>'+
+   list.map(r=>'<button class="pt" data-prule="'+r.rule+'"'+(sel===r?' style="background:var(--raised)"':'')+'><span class="nm">'+esc((D.topics[r.rule]||{}).name||r.rule)+'<small>'+esc(((D.topics[r.rule]||{}).g||'').slice(0,90))+'</small></span><span class="c g'+(r.match?'':' zero')+'">'+(r.match||'אין')+'</span><span class="c r'+(r.differs?'':' zero')+'">'+(r.differs||'אין')+'</span><span class="c'+(r.none?'':' zero')+'">'+(r.none||'אין')+'</span></button>').join('')+
+  '</div></section>'+
+  '<div class="cardh"><h2>'+(sel?'סטיות בנושא: '+esc((D.topics[sel.rule]||{}).name||sel.rule):'כל הסטיות')+'</h2>'+(sel?'<button class="linkbtn" data-prule="">להציג הכול</button>':'')+'</div>'+
+  (devs.length?devs.map(({a,k})=>{const tp=D.topics[k.rule]||{};return '<div class="dev"><div class="cardh"><b>'+esc(a.cp)+' · '+esc(k.label)+'</b><button class="linkbtn" data-agr="'+a.id+'">להסכם</button></div><div class="vs"><div><small>נחתם ('+esc(k.clause)+')</small>'+esc(k.summary)+'<span class="quote" style="margin-top:4px">'+esc(k.quote)+'</span></div><div><small>המדיניות: העמדה המועדפת</small>'+esc(tp.g||'אין עמדה בפלייבוק')+(tp.r?'<small style="margin-top:6px">קו אדום</small>'+esc(tp.r):'')+'</div></div>'+
+   '<div class="tmeta"><span>'+(nextTask(a)&&nextTask(a).renewal?'הזדמנות לתקן: בחידוש, עד '+fmt(nextTask(a).act_by):'אין חידוש קרוב')+'</span><button class="linkbtn" data-newtask="'+a.id+'" data-topic="'+esc(k.label)+'">ליצור משימה לפתוח את הסעיף מחדש</button></div></div>'}).join(''):'<div class="card muted">אין סטיות'+(sel?' בנושא הזה':'')+'.</div>')+
+  (noPb.length?'<section class="card"><div class="cardh"><h2>סוגי הסכמים בלי פלייבוק</h2></div><p class="lead">'+noPb.map(t=>esc(t.label)+' ('+D.agreements.filter(a=>a.type===t.code).length+')').join(', ')+': אין להם עדיין מדיניות, ולכן הם לא מושווים.</p><div><button class="btn soft small" data-act="ready">לבנות פלייבוק</button></div></section>':'');
+}
+
+/* ---------- Approve ---------- */
+function vApprove(){
+  const G={role:'הצד של החברה',outcome:'מועד שחלף: מה קרה?',amend:'תיקון: האם נחתם?',missing:'פרט חסר בהסכם'};
+  const all=D.review,open=openReview(),gl=r=>r.group||G[r.kind]||'לבדיקה';
+  /* groups in the order they first appear, by the label the repository gave each item */
+  const keys=[...new Set(all.map(gl))];
+  const groups=keys.map(k=>{const L=all.filter(r=>gl(r)===k);if(!L.length)return '';
+    return '<div class="grp">'+esc(k)+' ('+L.filter(r=>!S.decided[r.id]).length+')</div>'+L.map(r=>{const dd=S.decided[r.id],a=AG[r.agr]||{};
+      return '<div class="rv'+(dd?' ok':'')+'"><b>'+esc(r.text)+'</b>'+(r.quote?'<span class="quote"><small>'+esc(r.clause)+'</small>'+esc(r.quote)+'</span>':'')+
+       (dd?'<span class="done">✓ '+esc(dd.value)+(dd.by?' · '+esc(dd.by):'')+' · '+new Date(dd.at).toLocaleDateString('he-IL')+' <button class="linkbtn" data-undo="'+r.id+'">לבטל</button></span>':'<div class="opts">'+r.options.map(o=>'<button class="btn soft small" data-dec="'+r.id+'" data-val="'+esc(o)+'">'+esc(o)+'</button>').join('')+(a.id?'<button class="linkbtn" data-agr="'+a.id+'">להסכם</button>':'')+'</div>')+'</div>'}).join('')}).join('')+(all.length?'':'<div class="card muted">אין פרטים שמחכים לאישור.</div>');
+  return topbar('לאישור')+'<h1>לאישור</h1><p class="lead">פרטים שצריך לאשר כדי שהנתונים יהיו נכונים: מי אנחנו בהסכם, מה קרה עם מועד שחלף, האם תיקון נחתם. כל החלטה נשמרת עם השם והתאריך.</p>'+
+   '<div class="who">מי מאשר: <input id="who" value="'+esc(S.who)+'" placeholder="שם מלא"> <span class="muted">'+(open.length?open.length+' פרטים פתוחים':'הכול אושר')+'</span></div>'+groups;
+}
+
+/* ---------- Drawers ---------- */
+/* While a drawer is open the page behind it stays still: only the drawer scrolls */
+/* Drawer history: a drawer opened from inside another one gets "back" to the one before it, not only × */
+let DSTACK=[],DCUR=null,DBACK=false;
+function showD(key,label,fn){
+  const open=!!$('#layer .drawer');
+  if(!open)DSTACK=[];
+  else if(DCUR&&!DBACK&&DCUR.key!==key){if(DCUR.key==='nt'){NT.l=($('#nt-l')||{}).value||NT.l||'';NT.d=($('#nt-d')||{}).value||NT.d||'';NT.x=($('#nt-x')||{}).value||NT.x||'';DCUR.fn=()=>_nt(NT.agr,null,true)}DSTACK.push(DCUR)}
+  DBACK=false;DCUR={key,label,fn};fn();
+}
+function goBack(){const p=DSTACK.pop();if(!p){closeDrawer();return}DBACK=true;showD(p.key,p.label,p.fn)}
+function drawer(html){const prev=DSTACK[DSTACK.length-1];if(prev)html=html.replace('<div class="dh">','<div class="dh"><button type="button" class="backlink" data-back>→ חזרה '+esc(prev.label)+'</button>');
+  $('#layer').innerHTML='<div class="scrim" data-close></div><aside class="drawer" role="dialog" aria-modal="true">'+html+'</aside>';document.documentElement.classList.add('locked')}
+function closeDrawer(){DSTACK=[];DCUR=null;$('#layer').innerHTML='';document.documentElement.classList.remove('locked')}
+function agrDrawer(id,tab){showD('agr:'+id,'להסכם',()=>_agrDrawer(id,tab))}
+/* Agreement card: calm by default. The header says where the agreement stands; each tab leads with what matters,
+   and the rest opens on request */
+const RENEW={auto:'אוטומטי',option:'באופציה',mutual:'בהסכמת הצדדים'};
+function aStatus(a){if(ended(a))return ['n',aState(a)];const n=nextTask(a);
+  if(n&&n.renewal&&days(n.act_by||n.date)<=60)return ['y','בחלון החלטה על חידוש'];if(a.end&&days(a.end)<0)return ['n','התקופה הסתיימה'];return ['g','בתוקף']}
+function lifeBar(a){
+  const s=a.signed,e=a.end;if(!s||!e)return '';const tot=pd(e)-pd(s),now=Math.max(0,Math.min(1,(TODAY-pd(s))/tot));
+  const n=nextTask(a),np=n&&(n.act_by||n.date)?Math.max(0,Math.min(1,(pd(n.act_by||n.date)-pd(s))/tot)):null;
+  return '<div class="life"><div class="ltrack"><span class="lfill" style="width:'+(now*100)+'%"></span>'+(np!=null?'<span class="lmark" style="inset-inline-start:'+(np*100)+'%" title="'+esc(n.label)+'"></span>':'')+'</div>'+
+   '<div class="llab"><span>נחתם '+fmt(s)+'</span>'+(np!=null&&np>.18&&np<.82?'<span class="lmid" style="inset-inline-start:'+(np*100)+'%">להחליט עד '+fmt(n.act_by||n.date)+'</span>':'')+'<span>עד '+fmt(e)+'</span></div></div>'}
+function aHistory(a){
+  const ev=[];const add=(m,txt)=>{if(m&&m.at)ev.push({at:m.at,by:m.by,txt})};
+  add(S.astate[a.id],'מצב ההסכם: '+aState(a));
+  allTasks().filter(t=>t.agr===a.id).forEach(t=>{add(S.status[t.id],t.label+': '+status(t));add(S.owner[t.id],t.label+': אחראי '+personOf(taskOwner(t)).name)});
+  D.review.filter(r=>r.agr===a.id).forEach(r=>add(S.decided[r.id],'אושר: '+(S.decided[r.id]||{}).value));
+  ev.sort((x,y)=>y.at.localeCompare(x.at));
+  if(D.meta.built)ev.push({at:D.meta.built+'T08:00:00',by:'Areo',txt:'נקרא מהתיקייה, עם '+(a.kc||[]).length+' סעיפי מפתח'});
+  return ev}
+function _agrDrawer(id,tab){
+  const a=AG[id];if(!a)return;tab=tab||'sum';const o=owner(a),T=allTasks().filter(t=>t.agr===id),kids=D.agreements.filter(c=>c.parent===id),par=a.parent?AG[a.parent]:null;
+  const dv=(a.kc||[]).filter(k=>k.policy==='differs'),ok=(a.kc||[]).filter(k=>k.policy!=='differs');
+  const ngs=(D.negotiations||[]).filter(n=>n.cp===a.cp&&!a.parent);
+  const dated=T.filter(t=>t.date&&!closed(t)),undated=T.filter(t=>!t.date),done=T.filter(t=>t.date&&closed(t));
+  const tabs=[['sum','תמצית'],['cl','סעיפים'+(dv.length?' <span class="cnt r">'+dv.length+'</span>':'')],['dates','מועדים'+(dated.length?' <span class="cnt">'+dated.length+'</span>':'')],['docs','מסמכים']];
+  const st=aStatus(a),n=nextTask(a);let b='';
+  if(tab==='sum'){
+    const facts=[['הצד שלנו',a.role?esc(a.role):'<span class="pill w">לאישור</span>'],['תמורה',esc(a.value||'לא צוין')+(a.pay?'<small>'+esc(a.pay)+'</small>':'')],
+      a.renewal&&RENEW[a.renewal.kind]?['חידוש',RENEW[a.renewal.kind]+(a.renewal.months?', '+a.renewal.months+' חודשים':'')+(a.renewal.notice?'<small>הודעה '+a.renewal.notice+' יום מראש</small>':'')]:null,
+      a.security?['בטוחות',esc(a.security)]:null,['דין ושיפוט',esc(a.law||'לא צוין')],['עו"ד אחראי',esc(personOf(o.lawyer).name)+(o.business?'<small>'+esc(personOf(o.business).name)+', גורם עסקי</small>':'')]].filter(Boolean);
+    b=(n?'<button class="nextbox" data-atab="dates" data-id="'+id+'"><span class="nb-d '+(days(n.act_by||n.date)<0?'r':'')+'"><b>'+fmt(n.act_by||n.date).replace(/\.\d{4}$/,'')+'</b><small>'+(days(n.act_by||n.date)<0?'באיחור':'בעוד '+days(n.act_by||n.date)+' ימים')+'</small></span><span class="nb-t"><small>הדבר הבא</small><b>'+esc(n.label)+'</b><span>'+esc(n.action||'')+'</span></span></button>':'')+
+      (dv.length?'<button class="banner r" data-atab="cl" data-id="'+id+'">'+(dv.length===1?'סעיף אחד סוטה':dv.length+' סעיפים סוטים')+' מהמדיניות: '+esc(dv.map(k=>k.label).join(', '))+'<span>לסעיפים</span></button>':'')+
+
+      (par?'<button class="banner" data-agr="'+par.id+'">זה תיקון ל'+esc(par.title)+'<span>להסכם הראשי</span></button>':'')+
+      '<dl class="facts">'+facts.map(f=>'<div><dt>'+f[0]+'</dt><dd>'+f[1]+'</dd></div>').join('')+'</dl>'+
+      ((ngs.length||a.nhist)?'<section class="ngc"><div class="cardh"><h3>משא ומתן</h3>'+(ngs.length?'<button class="linkbtn" data-go="nego">למסך משא ומתן</button>':'')+'</div>'+
+        ngs.map(g=>{const d=-days(g.since);return '<div class="ngnow"><div class="cardh"><b>'+esc(g.title)+'</b><span class="pill '+(g.stage==='sign'?'g':'w')+'">'+esc((NSTAGES.find(x=>x[0]===g.stage)||[])[1])+'</span></div><span class="muted" style="font-size:13.5px">'+(g.round?'סבב '+g.round+' · ':'')+(g.waiting==='us'?'ממתין לנו':'ממתין להם')+(g.since?' '+d+' ימים':'')+'</span><span style="font-size:14px">'+esc(g.next)+'</span></div>'}).join('')+
+        (a.nhist?'<div class="nh"><span class="muted" style="font-size:13.5px">ההסכם עצמו: נחתם ב-'+fmt(a.nhist.signed)+' אחרי '+a.nhist.rounds+' סבבים, על '+esc(a.nhist.paper)+'.</span>'+
+          '<details class="fold"><summary>על מה התווכחו, ואיך זה נגמר</summary><div class="in">'+a.nhist.points.map(p=>'<div class="np"><span class="pill '+({'עמדנו':'g','פשרה':'y','ויתרנו':'r'}[p.res]||'n')+'">'+esc(p.res)+'</span><div><b>'+esc(p.t)+'</b><span>'+esc(p.r)+'</span></div></div>').join('')+'</div></details></div>':'')+
+      '</section>':'')+
+      '<details class="fold"><summary>אחראים ומצב ההסכם</summary><div class="in">'+
+        '<div class="owners3"><div class="field">עו"ד אחראי'+ownerBtn('alaw',id,o.lawyer)+'</div><div class="field">גורם עסקי'+ownerBtn('abiz',id,o.business)+'</div><div class="field">גיבוי'+ownerBtn('abak',id,o.backup)+'</div></div>'+
+        '<p class="muted" style="font-size:13px;margin:0">ברירת המחדל לפי סוג ההסכם. שינוי כאן חל רק על ההסכם הזה.</p>'+
+        '<div class="field" style="max-width:260px">מצב ההסכם<button type="button" class="ddb" data-dd="astate" data-id="'+id+'" aria-haspopup="listbox" aria-expanded="false"><span class="sd '+(ended(a)?'':'g')+'"></span><span class="nm">'+esc(aState(a))+'</span></button></div></div></details>'+
+      (function(){const h=aHistory(a);return '<details class="fold"><summary>היסטוריה <span class="muted" style="font-weight:400">('+h.length+')</span></summary><div class="in">'+h.slice(0,8).map(x=>'<div class="hrow"><span>'+esc(x.txt)+'</span><small>'+esc(x.by||'')+' · '+new Date(x.at).toLocaleDateString('he-IL')+'</small></div>').join('')+'</div></details>'})()}
+  if(tab==='cl'){
+    const pb=ty(a.type).playbook;
+    const clause=(k,full)=>{const tp=D.topics[k.rule]||{};return '<div class="cl'+(k.policy==='differs'?' bad':'')+'"><div class="cardh"><b>'+esc(k.label)+'</b>'+(k.policy==='differs'?'<span class="pill r">סוטה מהמדיניות</span>':'')+'</div><span>'+esc(k.summary)+'</span>'+
+      (full&&tp.g?'<div class="vs2"><small>המדיניות</small>'+esc(tp.g)+'</div>':'')+'<div class="clinks"><button class="linkbtn" data-read="'+a.id+'" data-q="'+esc(k.quote||'')+'">לראות את '+esc(k.clause)+' בהסכם</button></div></div>'};
+    b=(!pb?'<div class="note2">אין עדיין פלייבוק להסכמים מסוג '+esc(ty(a.type).label)+', ולכן הסעיפים לא הושוו למדיניות.</div>':'')+
+      (dv.length?dv.map(k=>clause(k,true)).join(''):(pb&&(a.kc||[]).length?'<div class="okline">✓ כל '+(a.kc||[]).length+' הסעיפים שנבדקו תואמים למדיניות.</div>':''))+
+      (ok.length?(dv.length?'<details class="fold"><summary>'+(ok.length===1?'סעיף נוסף אחד'+(pb?', תואם למדיניות':''):ok.length+' סעיפים נוספים'+(pb?', תואמים למדיניות':''))+'</summary><div class="in">'+ok.map(k=>clause(k,false)).join('')+'</div></details>':ok.map(k=>clause(k,false)).join('')):'')+
+      ((a.not_found||[]).length?'<p class="nf"><b>נבדק ולא נמצא בהסכם:</b> '+esc(a.not_found.join(', '))+'</p>':'');
+    if(!(a.kc||[]).length&&!(a.not_found||[]).length)b+='<p class="muted">לא נמצאו בהסכם סעיפי מפתח.</p>';}
+  if(tab==='dates'){
+    b=(dated.length?dated.sort((x,y)=>(x.act_by||x.date).localeCompare(y.act_by||y.date)).map(taskCard).join(''):'<p class="muted">אין מועדים פתוחים.</p>')+
+      (undated.length?'<details class="fold"><summary>'+(undated.length===1?'התחייבות אחת':undated.length+' התחייבויות')+' בלי תאריך</summary><div class="in">'+undated.map(t=>'<div class="hrow"><span>'+esc(t.label)+'</span><small>'+esc(t.clause||'')+'</small></div>').join('')+'</div></details>':'')+
+      (done.length?'<details class="fold"><summary>'+done.length+' סגורות</summary><div class="in">'+done.map(taskCard).join('')+'</div></details>':'')+
+      '<div><button class="btn soft small" data-newtask="'+id+'">+ משימה להסכם הזה</button></div>';}
+  if(tab==='docs'){
+    const docRow=(ag,x,sub)=>'<div class="docrow">'+fileIcon(x.path||x.file)+'<div class="x"><b>'+esc(sub||x.file)+'</b><span>'+esc(x.kind)+(x.date?' · '+fmt(x.date):'')+'</span></div><div class="dbtns"><button class="btn primary small" data-read="'+ag.id+'">צפייה</button>'+(x.orig?'<button class="btn soft small" data-dl="'+esc(x.orig)+'" data-fn="'+esc(x.file)+'">הורדה</button>':'')+(docLinks(x.path||'').web?docBtns(x.path):'')+'</div></div>';
+    b=(a.docs||[]).map(x=>docRow(a,x)).join('')+kids.map(c=>(c.docs||[]).map(x=>docRow(c,x,c.title)).join('')).join('')+
+      ngs.filter(g=>g.stage!=='sign'||true).map(g=>'<div class="docrow"><span class="ficon-ph"></span><div class="x"><b>'+esc(g.title)+'</b><span>טיוטה במשא ומתן · '+esc((NSTAGES.find(x=>x[0]===g.stage)||[])[1])+'</span></div><div class="dbtns"><button class="btn soft small" data-go="nego">למשא ומתן</button></div></div>').join('')+
+      (docLinks('x.docx').web||location.protocol==='file:'?'':'<p class="muted" style="font-size:13px;margin:4px 0 0">כדי לפתוח ישירות ב-Word, חברו בהגדרות את כתובת התיקייה בענן. <button class="linkbtn" data-act="settings">להגדרות</button></p>');}
+  drawer('<div class="dh"><div class="top"><div><span class="muted" style="font-size:13px">'+esc(a.number)+' · '+esc(ty(a.type).label)+'</span><h2>'+esc(a.title)+'</h2></div><button class="x" data-close aria-label="סגירה">×</button></div>'+
+    '<div class="hstat"><span class="pill '+st[0]+'">'+esc(st[1])+(st[0]==='y'&&n?' · עד '+fmt(n.act_by||n.date):'')+'</span>'+(a.parent?'':lifeBar(a))+'</div>'+
+    '<div class="tabs">'+tabs.map(([k,l])=>'<button data-atab="'+k+'" data-id="'+id+'" aria-pressed="'+(k===tab)+'">'+l+'</button>').join('')+'</div></div><div class="db">'+b+'</div>');
+}
+function settingsDrawer(){showD('settings','להגדרות',()=>_settingsDrawer())}
+function _settingsDrawer(){
+  const ps=people().map(personOf);
+  drawer('<div class="dh"><div class="top"><h2>הגדרות</h2><button class="x" data-close aria-label="סגירה">×</button></div><div style="height:12px"></div></div><div class="db">'+
+   '<h3>אחראים לפי סוג הסכם</h3><div class="tblwrap"><table style="min-width:0"><thead><tr><th>סוג</th><th>עו"ד אחראי</th><th>גורם עסקי</th><th>גיבוי</th></tr></thead><tbody>'+D.types.map(t=>{const o=owner({type:t.code});return '<tr><td>'+esc(t.label)+'</td><td>'+ownerBtn('tlaw',t.code,o.lawyer)+'</td><td>'+ownerBtn('tbiz',t.code,o.business)+'</td><td>'+ownerBtn('tbak',t.code,o.backup)+'</td></tr>'}).join('')+'</tbody></table></div>'+
+   '<div class="cardh"><h3>מיילים לתזכורות</h3><button class="linkbtn" data-addperson="|">+ להוסיף אדם</button></div>'+
+   '<div class="card" style="gap:0;padding:4px 14px">'+ps.map(p=>{const e=emailOf(p.full),bad=e&&!okMail(e);return '<div class="rd" style="align-items:center"><span class="av'+(p.lawyer?'':' b')+'">'+esc(p.ini)+'</span><div class="x"><b>'+esc(p.name)+'</b><span>'+esc(p.role)+(e?'':' · <span style="color:var(--y)">בלי מייל לא יקבל תזכורות</span>')+(bad?' · <span style="color:var(--r)">המייל לא תקין</span>':'')+'</span></div><input class="mail" type="email" dir="ltr" data-email="'+esc(p.full)+'" value="'+esc(e)+'" placeholder="name@company.co.il" aria-label="המייל של '+esc(p.name)+'"></div>'}).join('')+'</div>'+
+   '<h3>כמה זמן מראש להתריע</h3><p class="lead" style="font-size:14px">מועד היעד לטיפול הוא המועד בהסכם פחות הימים האלה.</p><div class="tblwrap"><table style="min-width:0"><tbody>'+D.lead.map(l=>'<tr><td>'+esc(l.label)+'</td><td class="num">'+l.days+' ימים</td></tr>').join('')+'</tbody></table></div>'+
+   '<h3>פתיחת מסמכים</h3><p class="lead" style="font-size:14px">כשהתיקייה של ההסכמים נמצאת ב-SharePoint, ב-OneDrive או ב-Google Drive, הדביקו כאן את הכתובת שלה כפי שהיא בדפדפן. מכאן כל מסמך ייפתח ב-Word בלחיצה, גם בעמוד ששיתפתם.</p>'+
+   '<div class="field"><input type="url" dir="ltr" data-docbase value="'+esc(docBase())+'" placeholder="https://company.sharepoint.com/sites/legal/Shared Documents"></div>'+
+   (D.meta.folders.length?'<h3>תיקיות</h3><p>'+D.meta.folders.map(esc).join(' · ')+'</p>':'')+'<p class="muted" style="font-size:14px">לא נכנסים ללוח: תבניות וטפסים ריקים.</p>'+
+   '<p class="muted" style="font-size:13px">השמות והמיילים נשמרים בתיקייה שלכם בלבד. הם לא נשלחים ל-Areo.</p></div>');
+}
+function _oldGoBack(){const b=NT.back;NT.back=null;if(b&&b.indexOf('agr:')===0)agrDrawer(b.slice(4));else if(b==='nt')newTaskDrawer(NT.agr,null,true);else if(b==='settings')settingsDrawer();else closeDrawer()}
+function personDrawer(ctx){showD('person','להוספת אחראי',()=>_personDrawer(ctx))}
+function _personDrawer(ctx){
+  NT.pk='lawyer';NT.ctx=ctx||'|';
+  drawer('<div class="dh"><div class="top"><h2>הוספת אחראי</h2><button class="x" data-close aria-label="סגירה">×</button></div><div style="height:12px"></div></div><div class="db">'+
+   '<label class="field">שם מלא<input id="np-n" placeholder="שם פרטי ושם משפחה"></label>'+
+   '<div class="field">תפקיד<div class="seg" style="align-self:flex-start"><button type="button" data-pk="lawyer" aria-pressed="true">עורך דין</button><button type="button" data-pk="business" aria-pressed="false">גורם עסקי</button></div></div>'+
+   '<label class="field" id="np-dw" hidden>מחלקה<input id="np-d" placeholder="למשל: רכש"></label>'+
+   '<label class="field">כתובת מייל<input id="np-e" type="email" dir="ltr" placeholder="name@company.co.il"></label>'+
+   '<p class="muted" style="font-size:13.5px;margin:0">התזכורות על המשימות שלו יגיעו ליומן של המייל הזה. נשמר בתיקייה שלכם בלבד.</p>'+
+   '<div style="display:flex;gap:10px"><button class="btn primary" data-act="addperson">הוספה</button><button class="btn soft" data-back>ביטול</button></div></div>');
+}
+
+function newTaskDrawer(agr,topic,restore){showD('nt','למשימה החדשה',()=>_nt(agr,topic,restore))}
+function _nt(agr,topic,restore){
+  if(!restore)NT={agr:agr||'',owner:agr?owner(AG[agr]).lawyer:'',l:topic?'פתיחה מחדש של '+topic:'',d:'',x:''};const a=AG[NT.agr];
+  drawer('<div class="dh"><div class="top"><h2>משימה חדשה</h2><button class="x" data-close aria-label="סגירה">×</button></div><div style="height:12px"></div></div><div class="db">'+
+   '<label class="field">נושא המשימה<input id="nt-l" value="'+esc(NT.l||'')+'" placeholder="לדוגמה: קבלת אישור ביטוח מעודכן מהספק"></label>'+
+   '<div class="field">הסכם<button type="button" class="ddb" data-dd="ntagr" aria-haspopup="listbox" aria-expanded="false"><span class="nm">'+(a?esc(a.cp)+' <small>'+esc(a.title)+'</small>':'<span class="muted">בחירת הסכם</span>')+'</span></button></div>'+
+   '<div class="row2"><label class="field">תאריך יעד<input id="nt-d" type="date" lang="he" value="'+esc(NT.d||'')+'"></label>'+
+   '<div class="field">אחראי'+(NT.owner?ownerBtn('ntowner','',NT.owner):'<button type="button" class="ddb" data-dd="ntowner" aria-haspopup="listbox" aria-expanded="false"><span class="nm muted">בחירת אחראי</span></button>')+'</div></div>'+
+   '<label class="field"><span>תיאור <span class="muted" style="font-size:13px;font-weight:400">(רשות)</span></span><textarea id="nt-x" placeholder="פרטים נוספים, הפניה לסעיף, או למי לפנות">'+esc(NT.x||'')+'</textarea></label>'+
+   '<p class="muted" style="font-size:13.5px;margin:0">האחראי יקבל תזכורת ביומן לפי תאריך היעד.</p>'+
+   '<div><button class="btn primary" data-act="addtask">יצירת משימה</button></div></div>');
+}
+
+
+/* ---------- Render and events ---------- */
+function render(){
+  $('#co').textContent=D.meta.company;
+  $('#nav').innerHTML=navHtml();
+  $('#foot').innerHTML='<span>'+(D.meta.built?'עודכן '+fmt(D.meta.built)+' · ':'')+nn(D.meta.files||0,'קובץ אחד','קבצים')+'</span><span>'+(DB?'נשמר לכל הצוות':'נשמר בדפדפן הזה')+'</span>';
+  const V={overview:vOverview,agreements:vAgreements,nego:vNego,cps:vCps,tasks:vTasks,policy:vPolicy,approve:vApprove}[S.view]||vOverview;
+  $('#view').innerHTML=EMPTY?'<section class="hero" id="empty"><span class="eb">ניהול חוזים</span><h1>עוד אין הסכמים במאגר.</h1><p class="lead">כתבו בשיחה: ניהול חוזים</p></section>':V();
+}
+document.addEventListener('click',e=>{
+  const cpth=e.target.closest('[data-copypath]');if(cpth){const p=cpth.dataset.copypath;try{navigator.clipboard.writeText(p).then(()=>toast('הנתיב הועתק: '+p),()=>toast(p))}catch(x){toast(p)}return}
+  const pk=e.target.closest('[data-pick]');if(pk){pick(pk.dataset.pick);return}
+  const ap=e.target.closest('[data-addperson]');if(ap){closePop();const k=ap.dataset.addperson.split('|')[0];
+    if(k==='ntowner'){NT.l=($('#nt-l')||{}).value||'';NT.d=($('#nt-d')||{}).value||'';NT.x=($('#nt-x')||{}).value||''}
+    NT.back=k==='ntowner'?'nt':(k==='owner'?'close':(k[0]==='a'?'agr:'+ap.dataset.addperson.split('|')[1]:'settings'));personDrawer(ap.dataset.addperson);return}
+  if(e.target.closest('[data-back]')){goBack();return}
+  const dlb=e.target.closest('[data-dl]');if(dlb){const b64=(D.files||{})[dlb.dataset.dl];if(!b64){toast('הקובץ לא זמין');return}const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);save(dlb.dataset.fn,u,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');return}
+  const rd=e.target.closest('[data-read]');if(rd){closePop();readerDrawer(rd.dataset.read,rd.dataset.q||'');return}
+  if(e.target.closest('[data-jumphl]')){const h=$('#hl');h&&h.scrollIntoView({block:'center',behavior:'smooth'});return}
+  const pkb=e.target.closest('[data-pk]');if(pkb){NT.pk=pkb.dataset.pk;pkb.parentNode.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b===pkb));$('#np-dw').hidden=NT.pk!=='business';return}
+  const dd=e.target.closest('[data-dd]');if(dd){if(openPop.btn===dd){closePop()}else openPop(dd);return}
+  if($('#pop')&&!e.target.closest('#pop'))closePop();
+  const sg=e.target.closest('[data-seg]');if(sg){S.abucket=sg.dataset.seg;S.af='all';S.view='agreements';persist();render();scrollTo(0,0);return}
+  const ab=e.target.closest('[data-abucket]');if(ab){S.abucket='';persist();render();return}
+  const t=e.target.closest('[data-go],[data-aflag],[data-cp],[data-nego],[data-agr],[data-task],[data-af],[data-mine],[data-tv],[data-prule],[data-dec],[data-undo],[data-atab],[data-close],[data-act],[data-ics],[data-newtask]');if(!t)return;
+  const ds=t.dataset;
+  if('close' in ds){closeDrawer();return}
+  if(ds.go){S.view=ds.go;S.abucket='';persist();closeDrawer();render();scrollTo(0,0);return}
+  if(ds.newtask!==undefined){newTaskDrawer(ds.newtask,ds.topic);return}
+  if(ds.agr){agrDrawer(ds.agr);return}
+  if(ds.atab){agrDrawer(ds.id,ds.atab);return}
+  if(ds.task){S.view='tasks';S.tview='list';persist();render();const el=$('#t-'+ds.task);if(el){el.scrollIntoView({block:'center'});el.style.outline='2px solid var(--aurora)';setTimeout(()=>el.style.outline='',1600)}return}
+  if(ds.af){S.af=ds.af;render();return}
+  if(ds.aflag){S.aflag=S.aflag===ds.aflag?'':ds.aflag;render();return}
+  if(ds.cp){cpDrawer(ds.cp);return}
+  if(ds.nego){toast('העסקה נמצאת בלשונית משא ומתן');return}
+  if(ds.mine!==undefined){S.mine=ds.mine==='1';persist();render();return}
+  if(ds.tv){S.tview=ds.tv;persist();render();return}
+  if(ds.prule!==undefined){S.prule=ds.prule;render();return}
+  if(ds.dec){if(!S.who.trim()||S.who.trim().split(/\s+/).length<2){toast('כתבו קודם מי מאשר: שם מלא.');$('#who')&&$('#who').focus();return}mark('decided',ds.dec,ds.val);toast('נשמר');render();return}
+  if(ds.undo){delete S.decided[ds.undo];persist();if(DB){try{DB.collection('marks').doc('decided__'+ds.undo).delete()}catch(x){}}render();return}
+  if(ds.ics){const tk=allTasks().find(x=>x.id===ds.ics);save('areo-'+ds.ics+'.ics',ics([tk]),'text/calendar');return}
+  const act=ds.act;
+  if(act==='settings')settingsDrawer();
+  else if(act==='theme'){const r=document.documentElement,cur=r.dataset.theme||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');r.dataset.theme=cur==='light'?'dark':'light';try{localStorage.setItem('areo_theme',r.dataset.theme)}catch(x){}}
+  else if(act==='export'){const rows=[['צד שכנגד','הסכם','סוג','בתוקף עד','המועד הבא','אחראי']].concat(D.agreements.map(a=>{const n=nextTask(a);return [a.cp,a.title,ty(a.type).label,fmt(a.end),n?fmt(n.act_by||n.date)+' '+n.label:'',owner(a).lawyer]}));save('הסכמים.csv','﻿'+rows.map(r=>r.map(c=>'"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv')}
+  else if(act==='icsall'){const L=allTasks().filter(x=>x.date&&!closed(x)&&(!S.mine||taskOwner(x)===people()[0]));save('areo-מועדים.ics',ics(L),'text/calendar')}
+  else if(act==='newtask')newTaskDrawer('');
+  else if(act==='addtask'){const l=$('#nt-l').value.trim();if(!l){toast('חסר נושא למשימה.');$('#nt-l').focus();return}
+    if(!NT.agr){toast('חסר הסכם.');return}if(!NT.owner){toast('חסר אחראי.');return}const d=$('#nt-d').value;
+    const tk={id:'m-'+Date.now(),agr:NT.agr,label:l,date:d||null,act_by:d||null,action:$('#nt-x').value.trim(),manual:true,obligor:'us',critical:false};
+    S.manual=(S.manual||[]).concat([tk]);S.owner[tk.id]={value:NT.owner,by:S.who,at:new Date().toISOString()};persist();
+    if(DB){try{DB.collection('manual').doc(tk.id).set(Object.assign({by:S.who,at:new Date().toISOString()},tk))}catch(x){}}
+    closeDrawer();S.view='tasks';render();toast('המשימה נוצרה')}
+  else if(act==='addperson'){
+    const n=$('#np-n').value.trim().replace(/^עו"ד\s*/,''),em=$('#np-e').value.trim(),dep=($('#np-d')||{}).value||'';
+    if(n.split(/\s+/).length<2){toast('כתבו שם מלא, פרטי ומשפחה.');$('#np-n').focus();return}
+    if(em&&!okMail(em)){toast('המייל לא תקין.');$('#np-e').focus();return}
+    const full=NT.pk==='lawyer'?'עו"ד '+n:n+(dep.trim()?', '+dep.trim():'');
+    if(!people().includes(full))S.people=(S.people||[]).concat([full]);S.emails[full]=em;
+    const [k,id]=NT.ctx.split('|');
+    if(k==='owner'&&id)mark('owner',id,full);
+    else if(['tlaw','tbiz','tbak'].includes(k)){const f={tlaw:'lawyer',tbiz:'business',tbak:'backup'}[k];S.typeOwner[id]=Object.assign({},S.typeOwner[id]||{},{[f]:full})}
+    else if(['alaw','abiz','abak'].includes(k)){const f={alaw:'lawyer',abiz:'business',abak:'backup'}[k];S.aowner[id]=Object.assign({},S.aowner[id]||{},{[f]:full})}
+    else if(k==='ntowner')NT.owner=full;
+    saveTeam();toast(em?'נוסף':'נוסף, בלי מייל: לא יקבל תזכורות');
+    goBack();render()}
+  else if(act==='addagr'){drawer('<div class="dh"><div class="top"><h2>הוספת הסכם</h2><button class="x" data-close aria-label="סגירה">×</button></div><div style="height:12px"></div></div><div class="db">'+
+     '<p style="margin:0">הסכמים נכנסים ללוח מהתיקיות שלכם. כדי להוסיף הסכם, שמרו את הקובץ החתום באחת מהן:</p><div class="flagrow">'+D.meta.folders.map(f=>'<span class="pill n">'+esc(f)+'</span>').join('')+'</div>'+
+     '<p class="muted" style="font-size:14px;margin:0">אחר כך כתבו בשיחה: ניהול חוזים, לעדכן את המאגר. ההסכם ייקרא, יקבל משימות ויושווה לפלייבוק.</p>'+
+     '<div style="display:flex;gap:10px"><button class="btn soft" data-close>סגירה</button></div></div>')}
+  else if(act==='timeline'){S.view='tasks';S.tview='tl';persist();render()}
+  else if(act==='ready')toast('כתבו בשיחה: לבנות פלייבוק');
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+});
+document.addEventListener('input',e=>{
+  if(e.target.id==='q'){S.q=e.target.value;const pos=e.target.selectionStart;if(S.view==='overview')S.view='agreements';render();const i=$('#q');i.focus();i.setSelectionRange(pos,pos)}
+  if(e.target.id==='who'){S.who=e.target.value;persist()}
+  if(e.target.dataset&&e.target.dataset.docbase!==undefined){S.docBase=e.target.value.trim();clearTimeout(saveTeam.h);saveTeam.h=setTimeout(saveTeam,500)}
+  if(e.target.dataset&&e.target.dataset.email!==undefined){S.emails[e.target.dataset.email]=e.target.value.trim();clearTimeout(saveTeam.h);saveTeam.h=setTimeout(saveTeam,500)}
+});
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('path[role=button]')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));return}
+  const p=$('#pop');
+  if(p){const its=[...p.querySelectorAll('.it')],k=its.indexOf(document.activeElement);
+    if(e.key==='Escape'){const b=openPop.btn;closePop();b&&b.focus();e.preventDefault();return}
+    if(e.key==='ArrowDown'){(its[k+1]||its[0]).focus();e.preventDefault();return}
+    if(e.key==='ArrowUp'){(its[k-1]||its[its.length-1]).focus();e.preventDefault();return}
+    if(e.key==='Tab'){closePop();return}}
+  if(e.key==='Escape')closeDrawer()});
+window.addEventListener('scroll',e=>{const t=e.target;if(t&&t.closest&&t.closest('#pop'))return;closePop()},true);window.addEventListener('resize',()=>closePop());
+try{const th=localStorage.getItem('areo_theme');if(th)document.documentElement.dataset.theme=th}catch(e){}
+render();
+</script>
+</body></html>

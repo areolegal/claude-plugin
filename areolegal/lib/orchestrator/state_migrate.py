@@ -1,196 +1,88 @@
 # -*- coding: utf-8 -*-
-"""קובץ המצב: גרסת סכמה, המרה מגרסה קודמת, תיקיית היסטוריה וחותמות זמן ISO 8601 עם היסט
-(מימוש ייחוס, הערות הנושא ונותן 4.8, שינוי 78; 4.9, שינויים 83 ו-85).
-
-בסבב 2 (C2) ההמשך ממצב "ממתין לרכיב הפלייבוק" נקרא מקובץ שנכתב לפני 4.7, והומר בסקריפט אד-הוק:
-round_stage בטקסט חופשי, coverage_index עם decision ריק, מפתחות כפולים (file ו-file_name, received ו-received_at),
-ותאריכים בשני פורמטים. הקובץ הישן נשאר בתיקיית העסקה ליד הקובץ החי.
-
-4.9: round_stage שאינו opening, response או closing (למשל "awaiting_playbook_builder" או
-"response_produced_send_blocked") נגזר מחדש ממספר הסבב, וערך של המתנה לרכיב הפלייבוק עובר ל-build_state.
-שדות של שרשרת אישורים (approval, required_by, authority_table, approved_by, approved_by_user_in_chat) הופכים
-להכרעת המשתמש (user_decision) או נמחקים, ו-deliverables עובר ל-produced_documents.
-
-    from orchestrator.state_migrate import migrate_state, history_path, non_iso_timestamps
-"""
-import copy
-import datetime as _dt
-import os
-import re
-
-SCHEMA_VERSION = '4.9'
-REFS_VERSION = '4.9'
-ISO = re.compile(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d([+-]\d\d:\d\d|Z)$')
-TIME_KEYS = ('generated_at', 'last_updated', 'produced_at', 'received_at', 'sent_at', 'checked_at', 'recorded_at')
-LEGACY_STAGE = {r'awaiting_proposed_playbook|awaiting_playbook_builder|awaiting_builder|ממתין לרכיב הפלייבוק':
-                'awaiting_builder'}
-ROUND_STAGES = ('opening', 'response', 'closing')
-APPROVAL_KEYS = ('required_by', 'required_approver', 'approval_required', 'approved_by', 'approved_at',
-                 'approval_status', 'escalation_approver', 'awaiting_approval')
-
-
-def _stage_for_round(n):
-    n = int(n or 1)
-    return 'opening' if n <= 1 else ('response' if n == 2 else 'closing')
-
-
-def _user_decision_from(old, fallback_kind=None):
-    """approval ישן -> user_decision. "approved" עם שם בצ'אט, או approved_by_user_in_chat, הם תשובה מפורשת;
-    proposed הוא החלת המלצה בתשובה כללית (delegated)."""
-    if isinstance(old, dict):
-        status = old.get('status')
-        kind = 'explicit' if status in ('approved', 'changed', 'rejected') else 'delegated'
-        return {'answer_kind': fallback_kind or kind, 'answer': old.get('by') or '', 'recorded_at': old.get('at') or ''}
-    if old in ('approved', True):
-        return {'answer_kind': fallback_kind or 'explicit', 'answer': ''}
-    return {'answer_kind': fallback_kind or 'delegated', 'answer': ''}
-
-
-def _strip_approval_chain(st, log):
-    for cl in st.get('clauses', []) + st.get('exception_log', []):
-        if 'approval' in cl:
-            cl.setdefault('user_decision', _user_decision_from(cl.pop('approval')))
-            log.append('approval -> user_decision (%s)' % cl.get('clause_id', cl.get('id', '')))
-        if 'approved_by_user_in_chat' in cl:
-            v = cl.pop('approved_by_user_in_chat')
-            cl.setdefault('user_decision', {'answer_kind': 'explicit' if v else 'delegated', 'answer': ''})
-            log.append('approved_by_user_in_chat -> user_decision')
-    for w in st.get('deliberate_concessions', []):
-        if 'approval' in w or 'answer_kind' in w:
-            w.setdefault('user_decision', _user_decision_from(w.pop('approval', None), w.pop('answer_kind', None)))
-            log.append('ויתור: approval/answer_kind -> user_decision (%s)' % w.get('topic'))
-
-    def walk(o):
-        if isinstance(o, dict):
-            for k in list(o):
-                if k in APPROVAL_KEYS or k == 'authority_table' or k == 'approval_table':
-                    o.pop(k)
-                    log.append('נמחק שדה של שרשרת אישורים: %s' % k)
-                else:
-                    walk(o[k])
-        elif isinstance(o, list):
-            for x in o:
-                walk(x)
-    walk(st)
-    if 'deliverables' in st:
-        st.setdefault('produced_documents', []).extend(
-            d if isinstance(d, dict) else {'kind': '', 'path': d, 'sha256': ''} for d in st.pop('deliverables'))
-        log.append('deliverables -> produced_documents')
-
-
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+import copy,datetime as _dt,os,re
+SCHEMA_VERSION='4.9'
+REFS_VERSION='4.9'
+ISO=re.compile('^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d([+-]\\d\\d:\\d\\d|Z)$')
+TIME_KEYS='generated_at','last_updated','produced_at','received_at','sent_at','checked_at','recorded_at'
+LEGACY_STAGE={'awaiting_proposed_playbook|awaiting_playbook_builder|awaiting_builder|ממתין לרכיב הפלייבוק':'awaiting_builder'}
+ROUND_STAGES='opening','response','closing'
+APPROVAL_KEYS='required_by','required_approver','approval_required','approved_by','approved_at','approval_status','escalation_approver','awaiting_approval'
+def _stage_for_round(n):n=int(n or 1);return'opening'if n<=1 else'response'if n==2 else'closing'
+def _user_decision_from(old,fallback_kind=None):
+	B=fallback_kind;A=old
+	if isinstance(A,dict):C=A.get('status');D='explicit'if C in('approved','changed','rejected')else'delegated';return{'answer_kind':B or D,'answer':A.get('by')or'','recorded_at':A.get('at')or''}
+	if A in('approved',True):return{'answer_kind':B or'explicit','answer':''}
+	return{'answer_kind':B or'delegated','answer':''}
+def _strip_approval_chain(st,log):
+	D=log;B=st
+	for A in B.get('clauses',[])+B.get('exception_log',[]):
+		if'approval'in A:A.setdefault('user_decision',_user_decision_from(A.pop('approval')));D.append('approval -> user_decision (%s)'%A.get('clause_id',A.get('id','')))
+		if'approved_by_user_in_chat'in A:F=A.pop('approved_by_user_in_chat');A.setdefault('user_decision',{'answer_kind':'explicit'if F else'delegated','answer':''});D.append('approved_by_user_in_chat -> user_decision')
+	for C in B.get('deliberate_concessions',[]):
+		if'approval'in C or'answer_kind'in C:C.setdefault('user_decision',_user_decision_from(C.pop('approval',None),C.pop('answer_kind',None)));D.append('ויתור: approval/answer_kind -> user_decision (%s)'%C.get('topic'))
+	def E(o):
+		if isinstance(o,dict):
+			for A in list(o):
+				if A in APPROVAL_KEYS or A=='authority_table'or A=='approval_table':o.pop(A);D.append('נמחק שדה של שרשרת אישורים: %s'%A)
+				else:E(o[A])
+		elif isinstance(o,list):
+			for B in o:E(B)
+	E(B)
+	if'deliverables'in B:B.setdefault('produced_documents',[]).extend(A if isinstance(A,dict)else{'kind':'','path':A,'sha256':''}for A in B.pop('deliverables'));D.append('deliverables -> produced_documents')
 def _iso(value):
-    """ממיר "12.10.2026", "2026-10-12" או "2026-10-14T14:17:38" ל-ISO עם היסט מקומי."""
-    if not value or ISO.match(str(value)):
-        return value
-    s = str(value)
-    # כלל 3.6: D.M.YYYY (גם בלי אפס מוביל) בעברית, "3 April 2027" באנגלית; ב-JSON נכתב ISO
-    for fmt in ('%d.%m.%Y', '%Y-%m-%d', '%Y-%m-%dT%H:%M:%S', '%d.%m.%Y %H:%M', '%d %B %Y', '%B %d, %Y'):
-        try:
-            d = _dt.datetime.strptime(s, fmt)
-            return d.astimezone().isoformat(timespec='seconds')
-        except ValueError:
-            continue
-    return value
-
-
+	A=value
+	if not A or ISO.match(str(A)):return A
+	B=str(A)
+	for C in('%d.%m.%Y','%Y-%m-%d','%Y-%m-%dT%H:%M:%S','%d.%m.%Y %H:%M','%d %B %Y','%B %d, %Y'):
+		try:D=_dt.datetime.strptime(B,C);return D.astimezone().isoformat(timespec='seconds')
+		except ValueError:continue
+	return A
 def migrate_state(old):
-    """מחזיר (new_state, log). אינו משנה את הקלט. מכסה את ההמרות שהבדיקה של סבב 2 עשתה ביד."""
-    st = copy.deepcopy(old)
-    log = []
-    ver = str(st.get('meta', {}).get('schema_version') or 'legacy')
-    meta = st.setdefault('meta', {})
-    stage = str(meta.get('round_stage', ''))
-    pp = st.setdefault('positions_source', {}).setdefault('proposed_playbook', {})
-    for rx, val in LEGACY_STAGE.items():
-        if re.search(rx, stage) and not pp.get('build_state'):
-            pp['build_state'] = val
-            log.append('build_state=%s מתוך round_stage "%s"' % (val, stage))
-    if pp.get('build_state') == 'awaiting_builder':
-        for c in st.get('coverage_index', []):
-            if not c.get('decision'):
-                c['decision'] = 'awaiting_playbook'
-                log.append('coverage %s: awaiting_playbook' % c.get('element_id'))
-    if stage not in ROUND_STAGES:
-        meta['round_stage'] = _stage_for_round(meta.get('round_number', 1))
-        log.append('round_stage "%s" -> %s (לפי מספר הסבב)' % (stage, meta['round_stage']))
-    _strip_approval_chain(st, log)
-    # באג 4 (הרצה S1b): עוגני זמן ובדיקות שנרשמו ב-meta עוברים לשורש, המקום היחיד שנקרא
-    for k in ('time_anchors', 'post_checks_done', 'checks_reviewed'):
-        if k in meta:
-            moved = meta.pop(k) or []
-            have = st.setdefault(k, [])
-            have += [x for x in moved if x not in have]
-            log.append('%s: מ-meta לשורש' % k)
-    for doc in st.get('meta', {}).get('received_documents', []) + st.get('meta', {}).get('sent_documents', []):
-        if 'file' in doc and 'file_name' in doc:
-            if doc['file'] == doc['file_name'] or not doc['file_name']:
-                doc['file_name'] = doc.pop('file') or doc['file_name']
-            else:
-                doc.pop('file')
-            log.append('מפתח כפול file/file_name אוחד')
-        if 'received' in doc:
-            doc.setdefault('received_at', doc['received'])
-            doc.pop('received')
-            log.append('מפתח כפול received/received_at אוחד')
-
-    def walk(o):
-        if isinstance(o, dict):
-            for k, v in list(o.items()):
-                if k in TIME_KEYS and isinstance(v, str):
-                    nv = _iso(v)
-                    if nv != v:
-                        o[k] = nv
-                        log.append('%s -> ISO' % k)
-                else:
-                    walk(v)
-        elif isinstance(o, list):
-            for x in o:
-                walk(x)
-    walk(st)
-    # שדות meta שנכתבו בשורש (updated_by, last_updated): עוברים ל-meta, המקום שבו הסכמה מגדירה אותם
-    for k in ('last_updated', 'updated_by', 'date'):
-        if k in st:
-            v = st.pop(k)
-            if not meta.get(k) or (k == 'last_updated' and str(v) > str(meta.get(k))):
-                meta[k] = v
-            log.append('%s: מהשורש ל-meta' % k)
-    # בדיקה עצמאית S1c, H2: CLOSED בלי הסכמה של שני הצדדים (הצד השני עוד לא הגיב, או נקודה פתוחה לשיחה) הוא
-    # ACCEPTED_PENDING. decided_in_round נדרש להצמדה לפי clause_map בהשוואת הסבב הבא
-    from orchestrator import state_builder as _sb
-    for c in st.get('clauses', []):
-        c.setdefault('decided_in_round', int(meta.get('round_number') or 1))
-        # הכרעת דחייה שלנו (R1 עד R3) את הנוסח שלהם נרשמת בהיסטוריה (by: us). היא אינה דחייה של הצעה שלנו, ואינה
-        # נספרת ל-STUCK (state_builder.stuck_reason, S1d)
-        if str(c.get('decision_code') or '').startswith('R') and 'rejections' not in c:
-            c['rejections'] = [{'round': c['decided_in_round'], 'by': 'us'}]
-    _sb.normalize_statuses(st, log)
-    meta['schema_version'] = SCHEMA_VERSION
-    meta['refs_version'] = REFS_VERSION
-    meta['migrated_from'] = ver
-    return st, log
-
-
-def history_path(transaction_dir, old_state, when=None):
-    """הקובץ הישן נשמר בתיקיית history של העסקה, ולא ליד הקובץ החי."""
-    when = when or _dt.datetime.now().astimezone()
-    ver = str(old_state.get('meta', {}).get('schema_version') or 'legacy')
-    return os.path.join(transaction_dir, 'history',
-                        'negotiation_state.%s.v%s.json' % (when.strftime('%Y%m%dT%H%M%S'), ver))
-
-
+	A=copy.deepcopy(old);E=[];M=str(A.get('meta',{}).get('schema_version')or'legacy');B=A.setdefault('meta',{});G=str(B.get('round_stage',''));H=A.setdefault('positions_source',{}).setdefault('proposed_playbook',{})
+	for(N,J)in LEGACY_STAGE.items():
+		if re.search(N,G)and not H.get('build_state'):H['build_state']=J;E.append('build_state=%s מתוך round_stage "%s"'%(J,G))
+	if H.get('build_state')=='awaiting_builder':
+		for F in A.get('coverage_index',[]):
+			if not F.get('decision'):F['decision']='awaiting_playbook';E.append('coverage %s: awaiting_playbook'%F.get('element_id'))
+	if G not in ROUND_STAGES:B['round_stage']=_stage_for_round(B.get('round_number',1));E.append('round_stage "%s" -> %s (לפי מספר הסבב)'%(G,B['round_stage']))
+	_strip_approval_chain(A,E)
+	for D in('time_anchors','post_checks_done','checks_reviewed'):
+		if D in B:O=B.pop(D)or[];K=A.setdefault(D,[]);K+=[A for A in O if A not in K];E.append('%s: מ-meta לשורש'%D)
+	for C in A.get('meta',{}).get('received_documents',[])+A.get('meta',{}).get('sent_documents',[]):
+		if'file'in C and'file_name'in C:
+			if C['file']==C['file_name']or not C['file_name']:C['file_name']=C.pop('file')or C['file_name']
+			else:C.pop('file')
+			E.append('מפתח כפול file/file_name אוחד')
+		if'received'in C:C.setdefault('received_at',C['received']);C.pop('received');E.append('מפתח כפול received/received_at אוחד')
+	def I(o):
+		if isinstance(o,dict):
+			for(B,A)in list(o.items()):
+				if B in TIME_KEYS and isinstance(A,str):
+					C=_iso(A)
+					if C!=A:o[B]=C;E.append('%s -> ISO'%B)
+				else:I(A)
+		elif isinstance(o,list):
+			for D in o:I(D)
+	I(A)
+	for D in('last_updated','updated_by','date'):
+		if D in A:
+			L=A.pop(D)
+			if not B.get(D)or D=='last_updated'and str(L)>str(B.get(D)):B[D]=L
+			E.append('%s: מהשורש ל-meta'%D)
+	from orchestrator import state_builder as P
+	for F in A.get('clauses',[]):
+		F.setdefault('decided_in_round',int(B.get('round_number')or 1))
+		if str(F.get('decision_code')or'').startswith('R')and'rejections'not in F:F['rejections']=[{'round':F['decided_in_round'],'by':'us'}]
+	P.normalize_statuses(A,E);B['schema_version']=SCHEMA_VERSION;B['refs_version']=REFS_VERSION;B['migrated_from']=M;return A,E
+def history_path(transaction_dir,old_state,when=None):A=when;A=A or _dt.datetime.now().astimezone();B=str(old_state.get('meta',{}).get('schema_version')or'legacy');return os.path.join(transaction_dir,'history','negotiation_state.%s.v%s.json'%(A.strftime('%Y%m%dT%H%M%S'),B))
 def non_iso_timestamps(state):
-    """כל חותמת זמן שאינה ISO 8601 עם היסט: רשימה של (מפתח, ערך)."""
-    bad = []
-
-    def walk(o):
-        if isinstance(o, dict):
-            for k, v in o.items():
-                if k in TIME_KEYS and isinstance(v, str) and v and not ISO.match(v):
-                    bad.append((k, v))
-                else:
-                    walk(v)
-        elif isinstance(o, list):
-            for x in o:
-                walk(x)
-    walk(state)
-    return bad
+	C=[]
+	def B(o):
+		if isinstance(o,dict):
+			for(D,A)in o.items():
+				if D in TIME_KEYS and isinstance(A,str)and A and not ISO.match(A):C.append((D,A))
+				else:B(A)
+		elif isinstance(o,list):
+			for E in o:B(E)
+	B(state);return C

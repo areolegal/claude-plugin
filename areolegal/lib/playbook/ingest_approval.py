@@ -1,1646 +1,642 @@
 # -*- coding: utf-8 -*-
-"""playbook/ingest_approval.py: קליטת גיליון העמדות החתום, תא אחר תא, בלי אישור מתוך שתיקה.
-
-הבעיה: בעותק החתום נשארה הערת Areo "בחירה נדרשת", והקליטה רשמה 69 מתוך 69 תאים כמאושרים;
-חתימה בשם תפקיד; עמדה טעונת בדיקה משפטית אושרה לפני הבדיקה; אישור בסימולציה פתח את שער המדיניות.
-
-הבעיה:
-- הבחירות שהיועצת סימנה בשתי שאלות מכריעות וההנחה שאישרה לא נרשמו ברשומת האישור, ולכן Q-01 ו-Q-02
-  נשארו "פתוחות" במודל של פלייבוק "מאושר".
-- "נבדק בידי" נרשם בלי תאריך.
-- קליטה חוזרת של אותו קובץ: save_record נכשל ב-SameFileError; ואותו קובץ נקלט פעם כ"מדומה" ופעם
-  כ"מאושר" רק משום שהמחרוזת received_via שונתה.
-- כתיבה בנתיב שמעבר לגבול האחיד (common.paths.PATH_LIMIT) במקום סירוב.
-- טבלת "סמכויות והסלמה" יצאה מהגיליון. אין עוד תנאי
-  "מאשר הסלמה" לקליטת עמודת הצהוב. החתימה של היועץ המשפטי לפי עמודה נשארת.
-
-הכללים כאן:
-1. שורה שבה נשארה הערת Areo פתוחה, או שאלה בשורה שלא נבחרה בה אפשרות אחת בדיוק: כל תאי השורה
-   pending_choice, עם השורה והשאלה.
-2. תא עם הנחה שלא סומנה: pending_choice. הנחה שסומנה נרשמת בתא: assumptions_confirmed[].
-3. תא שטעון בדיקה משפטית: approved רק כשנרשמו שם ותאריך ("נבדק בידי:", "תאריך הבדיקה:").
-4. עמודה נקלטת רק כשסומנה "מאשר" ונרשם שם מלא של אדם (לא שם תפקיד).
-5. הבחירות נרשמות ברשומה: choices{question_id: {row, index, text, tag}}.
-6. ראיה: received_via (user_upload | chat_attachment) וגם upload_ref (נתיב הקובץ בתיקיית ההעלאות של
-   השיחה, שהגיבוב שלו זהה לקובץ שנקלט, או מזהה צרופה של המארח). בלעדיהם, או כשהקובץ זהה בייט
-   לבייט לגיליון שהופק, הרשומה simulated=True, וכל התאים policy_claim=False.
-7. נתיב ארוך: קריאה דרך long_path(); כתיבה רק בנתיב שעובר את common.paths.check_write_path.
-   העותק החתום נשמר בשם קצר: 12 תווי גיבוב. קליטה חוזרת של אותו קובץ עם אותה ראיה מחזירה את
-   הרשומה הקיימת; עם ראיה אחרת, רק עם supersedes ונימוק.
-8. גיליון באנגלית (manifest.lang = en) נקלט באותה דרך: הקידומות הקבועות ותוויות החתימה נקראות משני המילונים
-   של approval_sheet (HE ו-EN), והתאים, התגיות והמניפסט זהים בשתי השפות.
-9. תא שנשארו בו סוגריים של ערך שלא נקבע (approval_sheet.decision_slots, ו-decision_slots של התא במניפסט),
-   למשל "[מכפיל]" או "[number] hours": pending_choice, עם הסוגריים שנשארו. העמדה אינה שלמה עד שנקבע הערך
-   (דף "החלטות הנהלה"). סוגריים שמתארים פרט של עסקה ("[נקודת המסירה]") אינם חוסמים.
-
-אישור בצ'אט במנות: נמצא שגיליון של כ-7,000 מילים ו-58 עמדות לא ייחתם, ולכן
-לקוחות נשארו לעד עם "פלייבוק מוצע". תור האישור (החלק השני של הקובץ) מציג מנה של עד 8 עמדות בכל פעם, ורושם כל
-תשובה ברשומת אישור מאותו סוג (APR-NNNN, kind: chat), עם שם המאשר, התאריך והתשובה כלשונה. הגיליון נשאר אפשרות,
-ושתי הדרכים כותבות לאותם תאים, ולכן לאותו מעמד. merge_prior שומר בקליטת גיליון את מה שכבר אושר בצ'אט.
-"""
-import datetime as _dt
-import hashlib
-import io
-import json
-import os
-import re
-import shutil
-import zipfile
-
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+import datetime as _dt,hashlib,io,json,os,re,shutil,zipfile
 from lxml import etree
-
-try:
-    from playbook.approval_sheet import fingerprint, norm_text, decision_slots, AREO_AUTHOR, HE, EN
-    from playbook import approval_sheet as A
-    from playbook import status as S
-    from common import paths as P
-except ImportError:  # pragma: no cover
-    import sys
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from playbook.approval_sheet import fingerprint, norm_text, decision_slots, AREO_AUTHOR, HE, EN
-    from playbook import approval_sheet as A
-    from playbook import status as S
-    from common import paths as P
-
-W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
-W14 = 'http://schemas.microsoft.com/office/word/2010/wordml'
-W15 = 'http://schemas.microsoft.com/office/word/2012/wordml'
-DC = 'http://purl.org/dc/elements/1.1/'
-TRACKS = ('green', 'yellow', 'red')
-MAX_UNZIPPED = 60 * 1024 * 1024
-ROLE_WORDS = ('היועץ', 'היועצת', 'המשפטי', 'המשפטית', 'מנכ"ל', 'מנכ״ל', 'סמנכ"ל', 'הלשכה', 'המחלקה',
-              'general counsel', 'legal counsel', 'ceo')
-EVIDENCE_KINDS = ('user_upload', 'chat_attachment')
-_ATTACHMENT_ID = re.compile(r'^[A-Za-z0-9_\-:.]{6,128}$')
-_DATE = re.compile(r'\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{4}-\d{2}-\d{2}')
-
-
-class IngestRefused(ValueError):
-    """הקליטה סורבה: אותו קובץ חתום כבר נקלט עם ראיה אחרת, בלי supersedes ונימוק."""
-
-
-def q(tag, ns=W):
-    return '{%s}%s' % (ns, tag)
-
-
-def long_path(path):
-    """נתיב לקריאה של קובץ קיים, גם מעל 260 תווים ב-Windows. לכתיבה: check_write_path."""
-    return P.long_path(path)
-
-
-def _para_text(p):
-    return ''.join(t.text or '' for t in p.iter(q('t')))
-
-
+try:from playbook.approval_sheet import fingerprint,norm_text,decision_slots,AREO_AUTHOR,HE,EN;from playbook import approval_sheet as A;from playbook import status as S;from common import paths as P
+except ImportError:import sys;sys.path.insert(0,os.path.dirname(os.path.dirname(os.path.abspath(__file__))));from playbook.approval_sheet import fingerprint,norm_text,decision_slots,AREO_AUTHOR,HE,EN;from playbook import approval_sheet as A;from playbook import status as S;from common import paths as P
+W='http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+W14='http://schemas.microsoft.com/office/word/2010/wordml'
+W15='http://schemas.microsoft.com/office/word/2012/wordml'
+DC='http://purl.org/dc/elements/1.1/'
+TRACKS='green','yellow','red'
+MAX_UNZIPPED=62914560
+ROLE_WORDS='היועץ','היועצת','המשפטי','המשפטית','מנכ"ל','מנכ״ל','סמנכ"ל','הלשכה','המחלקה','general counsel','legal counsel','ceo'
+EVIDENCE_KINDS='user_upload','chat_attachment'
+_ATTACHMENT_ID=re.compile('^[A-Za-z0-9_\\-:.]{6,128}$')
+_DATE=re.compile('\\d{1,2}[./-]\\d{1,2}[./-]\\d{2,4}|\\d{4}-\\d{2}-\\d{2}')
+class IngestRefused(ValueError):0
+def q(tag,ns=W):return'{%s}%s'%(ns,tag)
+def long_path(path):return P.long_path(path)
+def _para_text(p):return''.join(A.text or''for A in p.iter(q('t')))
 def sha256_file(path):
-    with open(long_path(path), 'rb') as fh:
-        return hashlib.sha256(fh.read()).hexdigest()
-
-
+	with open(long_path(path),'rb')as A:return hashlib.sha256(A.read()).hexdigest()
 class SignedDoc:
-    PARSER = etree.XMLParser(resolve_entities=False, no_network=True, huge_tree=False)
-
-    def __init__(self, path):
-        with zipfile.ZipFile(long_path(path)) as z:
-            if sum(i.file_size for i in z.infolist()) > MAX_UNZIPPED:
-                raise ValueError('הקובץ גדול מדי לקליטה')
-            names = set(z.namelist())
-            self.parts = {n: z.read(n) for n in ('word/document.xml', 'word/comments.xml',
-                                                  'word/commentsExtended.xml', 'docProps/core.xml') if n in names}
-        self.doc = self._xml('word/document.xml')
-        if self.doc is None:
-            raise ValueError('זה אינו קובץ Word תקין')
-        self.comments = self._xml('word/comments.xml')
-        self.cext = self._xml('word/commentsExtended.xml')
-        self.core = self._xml('docProps/core.xml')
-
-    def _xml(self, name):
-        data = self.parts.get(name)
-        return etree.fromstring(data, self.PARSER) if data else None
-
-    def token(self):
-        if self.core is not None:
-            el = self.core.find(q('identifier', DC))
-            if el is not None and el.text:
-                return el.text.strip()
-        m = re.search(r'ISS-\d{4}\|[^|\s]+\|[0-9a-f]{12}', ''.join(self.doc.itertext()))
-        return m.group(0) if m else None
-
-    def checkboxes(self, root=None):
-        out = {}
-        for sdt in (root if root is not None else self.doc).iter(q('sdt')):
-            pr = sdt.find(q('sdtPr'))
-            tag = pr.find(q('tag')) if pr is not None else None
-            cb = pr.find(q('checkbox', W14)) if pr is not None else None
-            if tag is None or cb is None:
-                continue
-            chk = cb.find(q('checked', W14))
-            glyph = ''.join(t.text or '' for t in sdt.iter(q('t')))
-            out[tag.get(q('val'))] = bool((chk is not None and chk.get(q('val', W14)) in ('1', 'true')) or
-                                          '☒' in glyph)
-        return out
-
-    def open_areo_comment_ids(self):
-        """הערות Areo שעדיין קיימות ולא סומנו "נפתרה"."""
-        done = {}
-        if self.cext is not None:
-            for e in self.cext.iter(q('commentEx', W15)):
-                done[e.get(q('paraId', W15))] = e.get(q('done', W15)) in ('1', 'true')
-        out = set()
-        if self.comments is None:
-            return out
-        for c in self.comments.iter(q('comment')):
-            if (c.get(q('author')) or '') != AREO_AUTHOR:
-                continue
-            pids = [p.get(q('paraId', W14)) for p in c.iter(q('p'))]
-            if not any(done.get(pid) for pid in pids if pid):
-                out.add(c.get(q('id')))
-        return out
-
-    def tables(self):
-        return list(self.doc.iter(q('tbl')))
-
-
-def _rows_by_code(sd, manifest):
-    """שורה בטבלת העמדות לפי הקוד שבפסקה הראשונה של תא הנושא."""
-    out = {}
-    for tbl in sd.tables():
-        for tr in tbl.iter(q('tr')):
-            tcs = tr.findall(q('tc'))
-            if len(tcs) != 4:
-                continue
-            paras = list(tcs[0].iter(q('p')))
-            code = norm_text(_para_text(paras[0])) if paras else ''
-            if code in manifest['rows']:
-                out[code] = tcs
-    return out
-
-
+	PARSER=etree.XMLParser(resolve_entities=False,no_network=True,huge_tree=False)
+	def __init__(A,path):
+		with zipfile.ZipFile(long_path(path))as B:
+			if sum(A.file_size for A in B.infolist())>MAX_UNZIPPED:raise ValueError('הקובץ גדול מדי לקליטה')
+			C=set(B.namelist());A.parts={A:B.read(A)for A in('word/document.xml','word/comments.xml','word/commentsExtended.xml','docProps/core.xml')if A in C}
+		A.doc=A._xml('word/document.xml')
+		if A.doc is None:raise ValueError('זה אינו קובץ Word תקין')
+		A.comments=A._xml('word/comments.xml');A.cext=A._xml('word/commentsExtended.xml');A.core=A._xml('docProps/core.xml')
+	def _xml(A,name):B=A.parts.get(name);return etree.fromstring(B,A.PARSER)if B else None
+	def token(A):
+		if A.core is not None:
+			B=A.core.find(q('identifier',DC))
+			if B is not None and B.text:return B.text.strip()
+		C=re.search('ISS-\\d{4}\\|[^|\\s]+\\|[0-9a-f]{12}',''.join(A.doc.itertext()));return C.group(0)if C else None
+	def checkboxes(G,root=None):
+		B={}
+		for C in(root if root is not None else G.doc).iter(q('sdt')):
+			A=C.find(q('sdtPr'));D=A.find(q('tag'))if A is not None else None;E=A.find(q('checkbox',W14))if A is not None else None
+			if D is None or E is None:continue
+			F=E.find(q('checked',W14));H=''.join(A.text or''for A in C.iter(q('t')));B[D.get(q('val'))]=bool(F is not None and F.get(q('val',W14))in('1','true')or'☒'in H)
+		return B
+	def open_areo_comment_ids(A):
+		D={}
+		if A.cext is not None:
+			for E in A.cext.iter(q('commentEx',W15)):D[E.get(q('paraId',W15))]=E.get(q('done',W15))in('1','true')
+		B=set()
+		if A.comments is None:return B
+		for C in A.comments.iter(q('comment')):
+			if(C.get(q('author'))or'')!=AREO_AUTHOR:continue
+			F=[A.get(q('paraId',W14))for A in C.iter(q('p'))]
+			if not any(D.get(A)for A in F if A):B.add(C.get(q('id')))
+		return B
+	def tables(A):return list(A.doc.iter(q('tbl')))
+def _rows_by_code(sd,manifest):
+	B={}
+	for E in sd.tables():
+		for F in E.iter(q('tr')):
+			A=F.findall(q('tc'))
+			if len(A)!=4:continue
+			C=list(A[0].iter(q('p')));D=norm_text(_para_text(C[0]))if C else''
+			if D in manifest['rows']:B[D]=A
+	return B
 def _cell_parts(tc):
-    """(עמדה, נוסח, שורות השפעה, שם הבודק, תאריך הבדיקה) מתוך תא, לפי הקידומות הקבועות (עברית או אנגלית)."""
-    position, wording, effects, legal_by, legal_at = None, None, [], None, None
-    both = (HE, EN)
-    prefixes = [norm_text(T[k]) for T in both for k in ('wording', 'cure')]
-    no_wording = {norm_text(T['no_wording']) for T in both}
-    legal_lines = [norm_text(T['legal_line']) for T in both]
-    legal_dates = [norm_text(T['legal_date']) for T in both]
-    skip = tuple(norm_text(T[k]) for T in both for k in ('flags', 'assume'))
-    for p in tc.iter(q('p')):
-        s = norm_text(_para_text(p))
-        if not s:
-            continue
-        pre = next((x for x in prefixes if s.startswith(x)), None)
-        lline = next((x for x in legal_lines if s.startswith(x)), None)
-        ldate = next((x for x in legal_dates if s.startswith(x)), None)
-        if pre:
-            wording = s[len(pre):].strip()
-            if wording in no_wording:
-                wording = ''
-        elif s.startswith(('כשהחברה', 'מה זה מטיל', 'When the company', 'What this imposes')):
-            effects.append(s.split(':', 1)[1].strip() if ':' in s else s)
-        elif lline:
-            legal_by = s[len(lline):].strip(' _.') or None
-        elif ldate:
-            m = _DATE.search(s[len(ldate):])
-            legal_at = m.group(0) if m else None
-        elif s.startswith(skip) or '☐' in s or '☒' in s:
-            continue
-        elif position is None:
-            position = s
-    return position, wording, effects, legal_by, legal_at
-
-
+	D,C,E,F,G=None,None,[],None,None;B=HE,EN;L=[norm_text(A[B])for A in B for B in('wording','cure')];M={norm_text(A['no_wording'])for A in B};N=[norm_text(A['legal_line'])for A in B];O=[norm_text(A['legal_date'])for A in B];P=tuple(norm_text(A[B])for A in B for B in('flags','assume'))
+	for Q in tc.iter(q('p')):
+		A=norm_text(_para_text(Q))
+		if not A:continue
+		H=next((B for B in L if A.startswith(B)),None);I=next((B for B in N if A.startswith(B)),None);J=next((B for B in O if A.startswith(B)),None)
+		if H:
+			C=A[len(H):].strip()
+			if C in M:C=''
+		elif A.startswith(('כשהחברה','מה זה מטיל','When the company','What this imposes')):E.append(A.split(':',1)[1].strip()if':'in A else A)
+		elif I:F=A[len(I):].strip(' _.')or None
+		elif J:K=_DATE.search(A[len(J):]);G=K.group(0)if K else None
+		elif A.startswith(P)or'☐'in A or'☒'in A:continue
+		elif D is None:D=A
+	return D,C,E,F,G
 def _is_person_name(name):
-    n = norm_text(name)
-    if len(n.split()) < 2:
-        return False
-    low = n.lower()
-    return not any(w.lower() in low for w in ROLE_WORDS)
-
-
-def _signers(sd, boxes):
-    """{track: {'name','role','date'}} מטבלת החתימה (5 עמודות)."""
-    labels = {norm_text(v): k for T in (HE, EN) for k, v in T['track_label'].items()}
-    out = {}
-    for tbl in sd.tables():
-        for tr in tbl.iter(q('tr')):
-            tcs = tr.findall(q('tc'))
-            if len(tcs) != 5:
-                continue
-            track = labels.get(norm_text(''.join(_para_text(p) for p in tcs[0].iter(q('p')))))
-            if not track:
-                continue
-            vals = [norm_text(' '.join(_para_text(p) for p in tc.iter(q('p')))) for tc in tcs[2:5]]
-            out[track] = {'checked': bool(boxes.get('chk:sign:%s' % track)), 'name': vals[0], 'role': vals[1],
-                          'date': vals[2]}
-    return out
-
-
-def _row_has_comment(tcs, ids):
-    for tc in tcs:
-        for el in tc.iter(q('commentRangeStart'), q('commentReference')):
-            if el.get(q('id')) in ids:
-                return True
-    return False
-
-
-def _row_choices(manifest, row_meta, boxes):
-    """(בחירות שנעשו, סיבות חסימה) לשורה. בכל שאלה בדיוק אפשרות אחת."""
-    chosen, reasons = {}, []
-    for qid in row_meta.get('questions') or []:
-        qm = (manifest.get('questions') or {}).get(qid) or {}
-        ticked = [o for o in qm.get('options') or [] if boxes.get(o['tag'])]
-        if not ticked:
-            reasons.append('לא נבחרה אפשרות בשאלה %s' % qid)
-        elif len(ticked) > 1:
-            reasons.append('נבחרה יותר מאפשרות אחת בשאלה %s' % qid)
-        else:
-            o = ticked[0]
-            chosen[qid] = {'row': qm.get('row'), 'index': o['index'], 'text': o['text'], 'tag': o['tag'],
-                           'question': qm.get('question') or ''}
-    if not row_meta.get('questions') and row_meta.get('choices') and not any(
-            boxes.get(t) for t in row_meta['choices']):
-        reasons.append('לא נבחרה אפשרות')
-    return chosen, reasons
-
-
-def evidence_status(received_via, upload_ref, signed_sha, issued_sha=None):
-    """(simulated, warnings). ראיה = ערוץ מוכר + הפניה לאירוע ההעלאה, וקובץ ששונה מהגיליון שהופק."""
-    warnings = []
-    if received_via not in EVIDENCE_KINDS:
-        warnings.append('אין ראיה שהקובץ הגיע מהמשתמש (received_via: %s). הרשומה מסומנת simulated, ושער '
-                        'המדיניות לא יתיר "מדיניות" על סמכה.' % (received_via or 'חסר'))
-        return True, warnings
-    if not upload_ref:
-        warnings.append('חסרה הפניה לאירוע ההעלאה (upload_ref). הרשומה מסומנת simulated.')
-        return True, warnings
-    if os.path.exists(long_path(upload_ref)):
-        if sha256_file(upload_ref) != signed_sha:
-            warnings.append('הקובץ שב-upload_ref אינו הקובץ שנקלט. הרשומה מסומנת simulated.')
-            return True, warnings
-    elif not _ATTACHMENT_ID.match(str(upload_ref)):
-        warnings.append('upload_ref אינו נתיב קיים ואינו מזהה צרופה. הרשומה מסומנת simulated.')
-        return True, warnings
-    if issued_sha and issued_sha == signed_sha:
-        warnings.append('הקובץ זהה בייט לבייט לגיליון שהופק: אין בו חתימה. הרשומה מסומנת simulated.')
-        return True, warnings
-    return False, warnings
-
-
-def ingest(signed_path, manifest, received_via=None, upload_ref=None, today=None):
-    """קולט את העותק החתום מול המניפסט של אותה הפקה. מחזיר {'cells', 'record', 'warnings'}."""
-    today = today or _dt.date.today().isoformat()
-    sd = SignedDoc(signed_path)
-    if sd.token() != manifest['token']:
-        raise ValueError('המסמך שייך להפקה אחרת, ולא לגיליון הזה')
-    boxes = sd.checkboxes()
-    if not boxes.get('chk:final'):
-        return {'cells': {}, 'record': None, 'warnings': ['לא סומן "זו הגרסה הסופית לחתימה"']}
-    warnings = []
-    signers = _signers(sd, boxes)
-    signed = {}
-    for track, s in signers.items():
-        if not s['checked']:
-            continue
-        if not _is_person_name(s['name']):
-            warnings.append('עמודת %s: "%s" אינו שם מלא של אדם. העמודה לא נקלטה.' % (track, s['name']))
-            continue
-        signed[track] = s
-    sha = sha256_file(signed_path)
-    simulated, ev_warn = evidence_status(received_via, upload_ref, sha, manifest.get('issued_sha256'))
-    warnings += ev_warn
-    open_ids = sd.open_areo_comment_ids()
-    rows = _rows_by_code(sd, manifest)
-    choices, row_block = {}, {}
-    for code, row_meta in manifest['rows'].items():
-        tcs = rows.get(code)
-        reasons = []
-        if tcs is not None and _row_has_comment(tcs, open_ids):
-            reasons.append('הערת Areo פתוחה בשורה %s (%s)' % (code, ', '.join(
-                x for x in row_meta.get('questions') or [] if x) or 'בחירה נדרשת'))
-        chosen, why = _row_choices(manifest, row_meta, boxes)
-        reasons += ['%s בשורה %s' % (w, code) for w in why]
-        choices.update(chosen)
-        if reasons:
-            row_block[code] = reasons
-    cells = {}
-    for key, issued in manifest['cells'].items():
-        track = key.split('|')[2]
-        out = {'status': 'not_signed', 'policy_claim': False, 'reason': None, 'approved_text': None,
-               'simulated': simulated, 'legal_review_required': issued['legal_review'],
-               'legal_review_done_by': None, 'legal_review_done_at': None, 'approved_at': None,
-               'issued_fp': issued['fp'], 'assumptions_confirmed': []}
-        cells[key] = out
-        if track not in signed:
-            out['reason'] = 'העמודה לא נחתמה'
-            continue
-        tcs = rows.get(issued['row'])
-        if tcs is None:
-            out.update(status='open', reason='השורה %s לא נמצאה בקובץ' % issued['row'])
-            continue
-        reasons = list(row_block.get(issued['row']) or [])
-        cell_boxes = sd.checkboxes(tcs[issued['col']])
-        texts = {a['tag']: a['text'] for a in issued.get('assumption_texts') or []}
-        for tag in issued.get('assumptions') or []:
-            if cell_boxes.get(tag):
-                out['assumptions_confirmed'].append({'tag': tag, 'text': texts.get(tag, ''),
-                                                     'confirmed_by': signed[track]['name'], 'at': today})
-            else:
-                reasons.append('הנחה שלא אושרה בתא')
-        if reasons:
-            out.update(status='pending_choice', reason='; '.join(reasons))
-            continue
-        position, wording, effects, legal_by, legal_at = _cell_parts(tcs[issued['col']])
-        if not position:
-            out.update(status='open', reason='תוכן התא נמחק: לא מאשרים את המסלול, או דורשים נוסח אחר?')
-            continue
-        # סוגריים של ערך שלא נקבע ("[מכפיל]", "[number]") שנשארו בתא: העמדה אינה שלמה, ואינה נספרת כמאושרת
-        # סוגריים שמתארים פרט של עסקה נשארים מותרים
-        text = ' '.join([position, wording or ''] + effects)
-        left = decision_slots(text) + [s for s in issued.get('decision_slots') or []
-                                       if s in text and s not in decision_slots(text)]
-        if left:
-            out.update(status='pending_choice',
-                       reason='נשאר ערך שלא נקבע: %s. יש לכתוב את הערך במקום הסוגריים (דף "החלטות הנהלה"), '
-                              'ולחתום שוב' % ', '.join(left))
-            continue
-        fp = fingerprint([position, wording or ''] + effects)
-        status = 'approved' if fp == issued['fp'] else 'approved_modified'
-        out.update(approved_text={'position': position, 'wording': wording, 'effects': effects},
-                   approved_fp=fp, approved_at=today, signer=signed[track]['name'], role=signed[track]['role'])
-        if issued['legal_review'] and not (legal_by and legal_at):
-            out.update(status='pending_legal_review', legal_review_done_by=legal_by, legal_review_done_at=legal_at,
-                       reason='טעון בדיקה משפטית: לא נרשמו שם הבודק ותאריך הבדיקה ("נבדק בידי:", '
-                              '"תאריך הבדיקה:")')
-            continue
-        out.update(status=status, legal_review_done_by=legal_by, legal_review_done_at=legal_at,
-                   policy_claim=not simulated)
-    record = {'kind': 'signature', 'token': manifest['token'], 'signed_sha256': sha,
-              'signed_copy': sha[:12] + '.docx', 'received_at': today,
-              'evidence': {'received_via': received_via, 'upload_ref': upload_ref},
-              'simulated': simulated, 'signers': signed, 'choices': choices, 'warnings': warnings,
-              'counts': {s: sum(1 for c in cells.values() if c['status'] == s) for s in
-                         ('approved', 'approved_modified', 'pending_choice', 'pending_legal_review', 'open',
-                          'not_signed')}}
-    return {'cells': cells, 'record': record, 'warnings': warnings}
-
-
+	A=norm_text(name)
+	if len(A.split())<2:return False
+	B=A.lower();return not any(A.lower()in B for A in ROLE_WORDS)
+def _signers(sd,boxes):
+	E={norm_text(C):B for A in(HE,EN)for(B,C)in A['track_label'].items()};D={}
+	for F in sd.tables():
+		for G in F.iter(q('tr')):
+			A=G.findall(q('tc'))
+			if len(A)!=5:continue
+			B=E.get(norm_text(''.join(_para_text(A)for A in A[0].iter(q('p')))))
+			if not B:continue
+			C=[norm_text(' '.join(_para_text(A)for A in A.iter(q('p'))))for A in A[2:5]];D[B]={'checked':bool(boxes.get('chk:sign:%s'%B)),'name':C[0],'role':C[1],'date':C[2]}
+	return D
+def _row_has_comment(tcs,ids):
+	for A in tcs:
+		for B in A.iter(q('commentRangeStart'),q('commentReference')):
+			if B.get(q('id'))in ids:return True
+	return False
+def _row_choices(manifest,row_meta,boxes):
+	G=boxes;A=row_meta;H,B={},[]
+	for C in A.get('questions')or[]:
+		D=(manifest.get('questions')or{}).get(C)or{};E=[A for A in D.get('options')or[]if G.get(A['tag'])]
+		if not E:B.append('לא נבחרה אפשרות בשאלה %s'%C)
+		elif len(E)>1:B.append('נבחרה יותר מאפשרות אחת בשאלה %s'%C)
+		else:F=E[0];H[C]={'row':D.get('row'),'index':F['index'],'text':F['text'],'tag':F['tag'],'question':D.get('question')or''}
+	if not A.get('questions')and A.get('choices')and not any(G.get(A)for A in A['choices']):B.append('לא נבחרה אפשרות')
+	return H,B
+def evidence_status(received_via,upload_ref,signed_sha,issued_sha=None):
+	E=issued_sha;D=signed_sha;C=received_via;B=upload_ref;A=[]
+	if C not in EVIDENCE_KINDS:A.append('אין ראיה שהקובץ הגיע מהמשתמש (received_via: %s). הרשומה מסומנת simulated, ושער המדיניות לא יתיר "מדיניות" על סמכה.'%(C or'חסר'));return True,A
+	if not B:A.append('חסרה הפניה לאירוע ההעלאה (upload_ref). הרשומה מסומנת simulated.');return True,A
+	if os.path.exists(long_path(B)):
+		if sha256_file(B)!=D:A.append('הקובץ שב-upload_ref אינו הקובץ שנקלט. הרשומה מסומנת simulated.');return True,A
+	elif not _ATTACHMENT_ID.match(str(B)):A.append('upload_ref אינו נתיב קיים ואינו מזהה צרופה. הרשומה מסומנת simulated.');return True,A
+	if E and E==D:A.append('הקובץ זהה בייט לבייט לגיליון שהופק: אין בו חתימה. הרשומה מסומנת simulated.');return True,A
+	return False,A
+def ingest(signed_path,manifest,received_via=None,upload_ref=None,today=None):
+	Z=upload_ref;Y=received_via;X=signed_path;I=today;D=manifest;I=I or _dt.date.today().isoformat();F=SignedDoc(X)
+	if F.token()!=D['token']:raise ValueError('המסמך שייך להפקה אחרת, ולא לגיליון הזה')
+	N=F.checkboxes()
+	if not N.get('chk:final'):return{'cells':{},'record':None,'warnings':['לא סומן "זו הגרסה הסופית לחתימה"']}
+	J=[];h=_signers(F,N);G={}
+	for(E,K)in h.items():
+		if not K['checked']:continue
+		if not _is_person_name(K['name']):J.append('עמודת %s: "%s" אינו שם מלא של אדם. העמודה לא נקלטה.'%(E,K['name']));continue
+		G[E]=K
+	O=sha256_file(X);P,i=evidence_status(Y,Z,O,D.get('issued_sha256'));J+=i;j=F.open_areo_comment_ids();a=_rows_by_code(F,D);b,c={},{}
+	for(L,d)in D['rows'].items():
+		H=a.get(L);C=[]
+		if H is not None and _row_has_comment(H,j):C.append('הערת Areo פתוחה בשורה %s (%s)'%(L,', '.join(A for A in d.get('questions')or[]if A)or'בחירה נדרשת'))
+		k,l=_row_choices(D,d,N);C+=['%s בשורה %s'%(A,L)for A in l];b.update(k)
+		if C:c[L]=C
+	Q={}
+	for(e,A)in D['cells'].items():
+		E=e.split('|')[2];B={'status':'not_signed','policy_claim':False,'reason':None,'approved_text':None,'simulated':P,'legal_review_required':A['legal_review'],'legal_review_done_by':None,'legal_review_done_at':None,'approved_at':None,'issued_fp':A['fp'],'assumptions_confirmed':[]};Q[e]=B
+		if E not in G:B['reason']='העמודה לא נחתמה';continue
+		H=a.get(A['row'])
+		if H is None:B.update(status='open',reason='השורה %s לא נמצאה בקובץ'%A['row']);continue
+		C=list(c.get(A['row'])or[]);m=F.checkboxes(H[A['col']]);n={A['tag']:A['text']for A in A.get('assumption_texts')or[]}
+		for R in A.get('assumptions')or[]:
+			if m.get(R):B['assumptions_confirmed'].append({'tag':R,'text':n.get(R,''),'confirmed_by':G[E]['name'],'at':I})
+			else:C.append('הנחה שלא אושרה בתא')
+		if C:B.update(status='pending_choice',reason='; '.join(C));continue
+		M,S,T,U,V=_cell_parts(H[A['col']])
+		if not M:B.update(status='open',reason='תוכן התא נמחק: לא מאשרים את המסלול, או דורשים נוסח אחר?');continue
+		W=' '.join([M,S or'']+T);f=decision_slots(W)+[A for A in A.get('decision_slots')or[]if A in W and A not in decision_slots(W)]
+		if f:B.update(status='pending_choice',reason='נשאר ערך שלא נקבע: %s. יש לכתוב את הערך במקום הסוגריים (דף "החלטות הנהלה"), ולחתום שוב'%', '.join(f));continue
+		g=fingerprint([M,S or'']+T);o='approved'if g==A['fp']else'approved_modified';B.update(approved_text={'position':M,'wording':S,'effects':T},approved_fp=g,approved_at=I,signer=G[E]['name'],role=G[E]['role'])
+		if A['legal_review']and not(U and V):B.update(status='pending_legal_review',legal_review_done_by=U,legal_review_done_at=V,reason='טעון בדיקה משפטית: לא נרשמו שם הבודק ותאריך הבדיקה ("נבדק בידי:", "תאריך הבדיקה:")');continue
+		B.update(status=o,legal_review_done_by=U,legal_review_done_at=V,policy_claim=not P)
+	p={'kind':'signature','token':D['token'],'signed_sha256':O,'signed_copy':O[:12]+'.docx','received_at':I,'evidence':{'received_via':Y,'upload_ref':Z},'simulated':P,'signers':G,'choices':b,'warnings':J,'counts':{A:sum(1 for B in Q.values()if B['status']==A)for A in('approved','approved_modified','pending_choice','pending_legal_review','open','not_signed')}};return{'cells':Q,'record':p,'warnings':J}
 def _existing_records(records_dir):
-    out = []
-    d = long_path(records_dir)
-    if not os.path.isdir(d):
-        return out
-    for x in sorted(os.listdir(d)):
-        if re.match(r'APR-\d{4}\.json$', x):
-            with io.open(os.path.join(d, x), encoding='utf-8') as fh:
-                out.append((os.path.join(records_dir, x), json.load(fh)))
-    return out
-
-
-def save_record(records_dir, signed_path, result, supersedes=None, reason=None):
-    """שומר עותק של הקובץ החתום בשם קצר ואת הרשומה. מחזיר את נתיב הרשומה.
-
-    - העותק אינו מועתק כשהמקור הוא כבר העותק השמור, או כשקובץ באותו שם ובאותו גיבוב כבר קיים
-      (קליטה חוזרת: בלי SameFileError).
-    - אותו קובץ חתום, אותה ראיה: מוחזרת הרשומה הקיימת, ולא נוצרת רשומה כפולה.
-    - אותו קובץ חתום, ראיה אחרת: IngestRefused, אלא אם supersedes (מזהה הרשומה הקודמת) ונימוק.
-    - כל כתיבה עוברת את common.paths.check_write_path."""
-    rec = result['record']
-    prior = _existing_records(records_dir)
-    same = [(p, r) for p, r in prior if r.get('signed_sha256') == rec['signed_sha256']
-            and not r.get('superseded_by')]
-    # 1.2.0: העלאה חוזרת של הגיליון אחרי רשומה ישנה (בלי ראיה) מחליפה אותה, בלי supersedes ידני
-    legacy = [r for p, r in same if S.is_legacy_record(r)]
-    if legacy and not S.is_legacy_record(rec) and not supersedes and len(legacy) == len(same):
-        supersedes, reason = legacy[-1].get('record_id'), reason or 'העלאה חוזרת אחרי רשומה ישנה בלי ראיה'
-    for p, r in same:
-        if r.get('evidence') == rec.get('evidence') and r.get('simulated') == rec.get('simulated'):
-            return p
-    if same and not (supersedes and reason):
-        raise IngestRefused('הקובץ החתום הזה כבר נקלט (%s) עם ראיה אחרת. קליטה חוזרת רק עם supersedes '
-                            'ונימוק.' % ', '.join(r.get('record_id') or os.path.basename(p) for p, r in same))
-    copy_path = os.path.join(records_dir, rec['signed_copy'])
-    P.check_write_path(copy_path)
-    os.makedirs(records_dir, exist_ok=True)
-    src, dst = os.path.abspath(signed_path), os.path.abspath(copy_path)
-    if os.path.normcase(src) != os.path.normcase(dst):
-        if not (os.path.exists(dst) and sha256_file(dst) == rec['signed_sha256']):
-            shutil.copyfile(long_path(signed_path), dst)
-    n = 1 + len(prior)
-    path = os.path.join(records_dir, 'APR-%04d.json' % n)
-    P.check_write_path(path)
-    data = dict(rec, record_id='APR-%04d' % n, cells=result['cells'])
-    if supersedes:
-        data.update(supersedes=supersedes, supersede_reason=reason)
-        for p, r in prior:
-            if r.get('record_id') == supersedes:
-                r['superseded_by'] = data['record_id']
-                with io.open(p, 'w', encoding='utf-8') as fh:
-                    json.dump(r, fh, ensure_ascii=False, indent=1)
-    with io.open(path, 'w', encoding='utf-8') as fh:
-        json.dump(data, fh, ensure_ascii=False, indent=1)
-    return path
-
-
-def current_record(records_dir):
-    """(נתיב, רשומה) של הרשומה האחרונה שאינה superseded, או (None, None). מקור התאים לגזירת המעמד."""
-    live = [(p, r) for p, r in _existing_records(records_dir) if not r.get('superseded_by')]
-    return live[-1] if live else (None, None)
-
-
-def record_cells(record):
-    """התאים של רשומה כפי שהם נספרים: אותו כלל של status.effective_cells (רשומה ישנה: אף תא אינו מאושר)."""
-    return S.effective_cells(record)
-
-
+	D=records_dir;A=[];B=long_path(D)
+	if not os.path.isdir(B):return A
+	for C in sorted(os.listdir(B)):
+		if re.match('APR-\\d{4}\\.json$',C):
+			with io.open(os.path.join(B,C),encoding='utf-8')as E:A.append((os.path.join(D,C),json.load(E)))
+	return A
+def save_record(records_dir,signed_path,result,supersedes=None,reason=None):
+	O=result;N=signed_path;F=reason;E=records_dir;B=supersedes;A=O['record'];H=_existing_records(E);D=[(C,B)for(C,B)in H if B.get('signed_sha256')==A['signed_sha256']and not B.get('superseded_by')];I=[A for(B,A)in D if S.is_legacy_record(A)]
+	if I and not S.is_legacy_record(A)and not B and len(I)==len(D):B,F=I[-1].get('record_id'),F or'העלאה חוזרת אחרי רשומה ישנה בלי ראיה'
+	for(J,C)in D:
+		if C.get('evidence')==A.get('evidence')and C.get('simulated')==A.get('simulated'):return J
+	if D and not(B and F):raise IngestRefused('הקובץ החתום הזה כבר נקלט (%s) עם ראיה אחרת. קליטה חוזרת רק עם supersedes ונימוק.'%', '.join(B.get('record_id')or os.path.basename(A)for(A,B)in D))
+	Q=os.path.join(E,A['signed_copy']);P.check_write_path(Q);os.makedirs(E,exist_ok=True);T,G=os.path.abspath(N),os.path.abspath(Q)
+	if os.path.normcase(T)!=os.path.normcase(G):
+		if not(os.path.exists(G)and sha256_file(G)==A['signed_sha256']):shutil.copyfile(long_path(N),G)
+	R=1+len(H);K=os.path.join(E,'APR-%04d.json'%R);P.check_write_path(K);L=dict(A,record_id='APR-%04d'%R,cells=O['cells'])
+	if B:
+		L.update(supersedes=B,supersede_reason=F)
+		for(J,C)in H:
+			if C.get('record_id')==B:
+				C['superseded_by']=L['record_id']
+				with io.open(J,'w',encoding='utf-8')as M:json.dump(C,M,ensure_ascii=False,indent=1)
+	with io.open(K,'w',encoding='utf-8')as M:json.dump(L,M,ensure_ascii=False,indent=1)
+	return K
+def current_record(records_dir):A=[(B,A)for(B,A)in _existing_records(records_dir)if not A.get('superseded_by')];return A[-1]if A else(None,None)
+def record_cells(record):return S.effective_cells(record)
 def migrate_legacy_record(path):
-    """עזר ההמרה (גרסה 1.2.0): רשומת אישור ישנה (בלי received_via או upload_ref) מסומנת legacy: simulated=True,
-    וכל תא legacy, policy_claim=False ו-simulated=True; ההודעה למשתמש (status.REUPLOAD_NOTICE) נרשמת פעם אחת.
-    רשומה תקינה אינה משתנה. מחזיר (changed, notice או None). הכתיבה עוברת את common.paths.check_write_path."""
-    with io.open(long_path(path), encoding='utf-8') as fh:
-        rec = json.load(fh)
-    if not S.is_legacy_record(rec) or rec.get('reupload_notice'):
-        return False, None
-    rec['legacy'] = True
-    rec['simulated'] = True
-    rec['cells'] = S.effective_cells(rec)
-    rec['reupload_notice'] = S.REUPLOAD_NOTICE
-    rec.setdefault('evidence', {'received_via': rec.get('received_via'), 'upload_ref': rec.get('upload_ref')})
-    P.check_write_path(path)
-    tmp = path + '.tmp'
-    with io.open(tmp, 'w', encoding='utf-8') as fh:
-        json.dump(rec, fh, ensure_ascii=False, indent=1)
-    os.replace(tmp, path)
-    return True, S.REUPLOAD_NOTICE
-
-
-def merge_prior(result, prior_cells):
-    """קליטת גיליון אחרי אישור בצ'אט: תא שעמודתו לא נחתמה (not_signed), ושהיה נספר כמאושר ברשומה הקודמת על אותו
-    נוסח בדיוק (approved_fp שווה ל-fp שהגיליון הוציא), נשאר מאושר. בלי זה גיליון שנחתם בעמודה אחת מחק את מה שאושר
-    בצ'אט. מחזיר את מספר התאים שנשמרו, ומעדכן את counts ברשומה."""
-    n = 0
-    for key, c in (result.get('cells') or {}).items():
-        p = (prior_cells or {}).get(key)
-        if c.get('status') == 'not_signed' and p and S.cell_counts(p) and p.get('approved_fp') == c.get('issued_fp'):
-            result['cells'][key] = dict(p, carried_forward=True)
-            n += 1
-    if n and result.get('record'):
-        result['record']['counts'] = _counts(result['cells'])
-        result['record']['carried_forward'] = n
-    return n
-
-
-# ============================================================================ אישור בצ'אט במנות
-# התור נגזר בכל פעם מהמודל ומהתאים של הרשומה האחרונה, בארבעה שלבים, וכל קריאה מחזירה מנה אחת:
-# 1. batch: עמדות ירוקות שנשענות על מסמכי החברה (מאגר חתום או נוסחים שהחברה מציגה), בשני מסמכים לפחות, בלי
-#    בדיקה משפטית, בלי הנחה, בלי ערך שלא נקבע ובלי ממצא לא מאומת. מאושרות במנה אחת; מה שהוצא ("חוץ מ") עובר
-#    לבדיקה אחת אחת.
-# 2. decisions: החלטות הנהלה במספרים (approval_sheet.management_decisions), עם בעל החלטה. הערך נכתב בנוסח
-#    במקום הסוגריים, ונרשם ב-change_log. העמדה עצמה מאושרת אחר כך, בשלב 4.
-# 3. questions: שאלות מכריעות פתוחות שיש להן אפשרויות. שאלה בלי אפשרויות מוצגת כמידע בלבד.
-# 4. topics: כל השאר, נושא אחר נושא לפי החשיבות, עד 8 עמדות במנה: הצעת Areo, צהוב ואדום, ראיה חלשה, בדיקה משפטית.
-# ומצב חמישי, updates ("עדכון פלייבוק מעסקה"): הצעות עדכון מקובץ המצב של עסקה (deal_updates).
-# כל מנה נשמרת בקובץ התור (approval-queue-<family_id>.json) עם טביעת האצבע של כל תא, והתשובה נקלטת מול אותה מנה
-# בלבד. תשובה שאינה מובנת עוצרת את כל הקליטה (ReplyError): אין פירוש חלקי של תשובה של מאשר.
-
-CHAT_VIA = 'chat_reply'
-BATCH_MAX = 8
-STRONG_CORPUS = ('signed', 'company_forms')
-MIN_STRONG_DOCS = 2
-STAGES = ('batch', 'decisions', 'questions', 'topics')
-QUEUE_FILE = 'approval-queue-%s.json'
-TEXT_KINDS = ('text_edited', 'text_added', 'text_deleted', 'our_change_rejected')
-APPROVED_STATUSES = ('approved', 'approved_modified')
-_TRACK_WORDS = {'green': ('ירוק', 'green', 'נדרוש'), 'yellow': ('צהוב', 'yellow', 'נסכים'), 'red': ('אדום', 'red')}
-# גם צורות טבעיות ("אישור", "מאשרים", "accept"). המודל מנרמל תשובה חופשית ומאשר אותה עם המשתמש לפני ההרצה
-# (b6-approval.md); הצורות האלה רק חוסכות סבב כשהמשתמש כתב אחת מהן
-_APPROVE = ('לאשר', 'מאשרת', 'מאשר', 'מאושר', 'אישור', 'approve', 'approved', 'accept', 'accepted')
-_NEGATE = ('לא לאשר', 'לא מאשר', 'אל תאשר', 'לא אישור', 'not approve', "don't approve", 'do not approve', 'reject',
-           'not accept', "don't accept", 'do not accept')
-_REVIEWED = ('נבדק', 'נבדקה', 'reviewed')
-_SKIP = ('לדלג', 'דלג', 'skip')
-# "לעורך דין": דילוג שהמאשר ביקש במפורש שעורך דין יעבור עליו. נרשם כמו דילוג (שום תא אינו מאושר), עם הסיבה, כדי
-# שסביבת העבודה תציג "מחכה לעורך דין" ולא רק "לא אושר"
-_LAWYER_LATER = ('לעורך דין', 'לבדיקת עורך דין', 'for a lawyer', 'lawyer later')
-REASON_LAWYER_LATER = 'מחכה לבדיקה של עורך דין, לבקשת המאשר'
-_ALL = ('הכול', 'הכל', 'כל המנה', 'all')
-_EXCEPT = ('חוץ מ', 'למעט', 'except')
-_CHANGE = re.compile(r'^(?:לשנות|שינוי|change)\s*([^:]{0,20}):\s*(.+)$', re.S | re.I)
-_NUM = re.compile(r'^\s*(\d{1,2})\s*[.):\-]?\s+(.+)$', re.S)
-_SPLIT = re.compile(r'\s*[,;]\s*(?=\d{1,2}\s*[.):\-]?\s+\S)')
-
-Q = {
-    'he': {
-        'head': 'אישור המדיניות',
-        'batch': ('עמדות ירוקות שנשענות על המסמכים שלכם, כל אחת לפחות בשני מסמכים ({n} עמדות). ההמלצה: לאשר את '
-                  'כולן במנה אחת. הנוסח של כל עמדה הוא הנוסח שחוזר במסמכים שלכם, והוא מופיע במלואו בפלייבוק.'),
-        'batch_line': '{n}. {topic} (סעיף {num}) · {pos} · {docs} מסמכים',
-        'reply_batch': 'לתשובה: "לאשר הכול", "לאשר הכול חוץ מ-3, 7" (מה שהוצא עובר לבדיקה אחת אחת), או "לדלג על המנה".',
-        'decisions': ('מספרים שההנהלה צריכה לקבוע ({n}). אלה ערכים עסקיים, ולא נוסח משפטי, ולכל אחד מוצע מי מחליט. '
-                      'הערך נכתב בנוסח במקום הסוגריים, ואת העמדה עצמה מאשרים אחר כך עם שאר העמדות.'),
-        'proposal': '   מה המדיניות מציעה: {p}', 'owner': '   מי מחליט, לפי ההצעה: {o}',
-        'decision_head': '{n}. {q} (סעיף {num})',
-        'reply_decisions': 'לתשובה, שורה לכל ערך: "1 לשנות: <הערך>", "2 לאשר" (כשאין ערך לקבוע), או "3 לדלג".',
-        'questions': 'שאלות פתוחות שחוסמות את אישור הנושא שלהן ({n}).',
-        'option': '   {k}) {o}', 'rec': '   ההמלצה של Areo: {r}',
-        'reply_questions': 'לתשובה, שורה לכל שאלה: "1 אפשרות 2", או "1 לדלג".',
-        'topics': 'נושאים לבדיקה אחת אחת ({n} נושאים, {m} עמדות).',
-        'topic_head': '{n}. {topic} (סעיף {num}) · חשיבות: {imp}',
-        'tracks': {'green': 'מקובל עלינו (ירוק)', 'yellow': 'אפשר להתגמש (צהוב)', 'red': 'לא מסכימים (אדום)'},
-        'track': '   {label}: {pos}', 'wording': '   הנוסח שיוחל, מילה במילה: {w}',
-        'cure': '   הנוסח שנשיב, מילה במילה: {w}', 'flags': '   לתשומת לבכם: {f}',
-        'legal': '   כדאי שעורך דין יעבור על זה', 'assume': '   הנחה (אישור העמדה מאשר גם אותה): {a}',
-        'reply_topics': ('לתשובה, שורה לכל נושא: "1 לאשר", "2 לשנות צהוב: <הנוסח>", "3 לדלג", ובנושא שעורך דין '
-                         'צריך לעבור עליו, אחרי שעבר: "4 נבדק ולאשר". אפשר גם "לאשר הכול".'),
-        'updates': ('עדכונים למדיניות מהעסקאות ({n}): מה שעורך הדין שינה ביד לפני המשלוח, ומה שהוחלט מעבר '
-                    'למדיניות. עדכון שמאשרים נכנס למדיניות כעמדה מאושרת.'),
-        'update_head': '{n}. {topic} (סעיף {num}) · {label}',
-        'event': '   {deal}, {clause}: {what}', 'current': '   היום במדיניות: {w}', 'proposed': '   מוצע: {w}',
-        'no_proposed': '   אין נוסח מוצע מילה במילה: לעדכון כתבו "לשנות: <הנוסח>".',
-        'reply_updates': 'לתשובה, שורה לכל עדכון: "1 לאשר", "2 לשנות: <הנוסח>", או "3 לדלג".',
-        'waiting': '{n} עמדות מחכות למספר שההנהלה תקבע במקום הסוגריים.',
-        'info_q': 'שאלה פתוחה שנסגרת רק בעדכון המדיניות, ועד אז אי אפשר לאשר את המדיניות כולה: {q}',
-        'more': 'אחרי המנה הזו ממתינים עוד {n} פריטים.',
-        'empty': 'אין עמדות שממתינות לאישור.',
-        'ignored': 'לא הוצעו: {a} שינויים שאינם נוגעים בכלל של הפלייבוק, {b} שינויים בהערות לצד השני.',
-        'rec_company': 'לאשר: העמדה חוזרת ב-{k} מסמכים שלכם.',
-        'rec_areo': 'לאשר רק אם הנוסח משקף את מה שאתם מוכנים לתת: זו המלצה של Areo, ולא נוסח מהמסמכים שלכם.',
-        'rec_market': 'לאשר אם הנקודה בשוק מתאימה לכם: העמדה נגזרה ממקורות שוק ציבוריים.',
-        'rec_weak': 'לבדוק לפני אישור: יש מעט דוגמאות מההסכמים שלכם ({why}).',
-        'rec_statute': 'לאשר אחרי שמוודאים שהדרישה בדין חלה עליכם.',
-        'rec_legal': 'לאשר אחרי שעורך דין עבר על זה, בתשובה "נבדק ולאשר".',
-        'weak_docs': 'פחות משני מסמכים', 'weak_unverified': 'מקור שעוד לא אימתנו', 'weak_assume': 'נשענת על הנחה',
-        'weak_corpus': 'המסמכים אינם הסכמים חתומים של החברה',
-        'rec_update': 'חזר ב-{k} עסקאות, ולכן מועמד לעדכון. כדאי לכתוב נוסח כללי, בלי פרטי העסקה ("לשנות").',
-        'rec_update_skip': ('עסקה אחת היא נקודת מידע אחת, ולא מדיניות: מומלץ לדלג, ולחזור לזה אם יחזור בעסקה '
-                            'נוספת.'),
-        'rec_adapt': 'התאמה של הנוסח לעסקה הזו (דין, מטבע, כינויים), ולא שינוי מדיניות: מומלץ לדלג.',
-        'ev_text_edited': 'שונה ביד לפני המשלוח. הופק: {b}. נשלח: {a}',
-        'ev_text_added': 'נוסף ביד לפני המשלוח: {a}', 'ev_text_deleted': 'נמחק ביד לפני המשלוח: {b}',
-        'ev_our_change_rejected': 'השינוי שלנו בוטל ביד לפני המשלוח. הופק: {b}. נשלח: {a}',
-        'ev_accepted_red': 'התקבל נוסח שהפלייבוק מסווג כאדום: {a}',
-        'ev_decided_outside': 'הכרעה מפורשת בנושא שהפלייבוק לא הכריע בו: {a}',
-        'ev_red_line_exception': 'חריגה מקו אדום שאושרה בעסקה: {a}',
-        'ev_adaptation': 'התאמה של נוסח הפלייבוק לעסקה: {a}',
-    },
-    'en': {
-        'head': 'Policy approval',
-        'batch': ('Green positions that rest on your own documents, each in at least two documents ({n} positions). '
-                  'Recommendation: approve them all in one batch. The wording of each position is the wording that '
-                  'recurs in your documents, and it appears in full in the playbook.'),
-        'batch_line': '{n}. {topic} (clause {num}) · {pos} · {docs} documents',
-        'reply_batch': ('To answer: "approve all", "approve all except 3, 7" (what is excluded moves to one-by-one '
-                        'review), or "skip the batch".'),
-        'decisions': ('Numbers for management to set ({n}). These are business values, not legal wording, and each '
-                      'has a proposed owner. The value goes into the wording in place of the brackets, and you '
-                      'approve the position itself later with the other positions.'),
-        'proposal': '   What the policy proposes: {p}', 'owner': '   Who decides, as proposed: {o}',
-        'decision_head': '{n}. {q} (clause {num})',
-        'reply_decisions': ('To answer, one line per value: "1 change: <the value>", "2 approve" (when there is no '
-                            'value to set), or "3 skip".'),
-        'questions': 'Open questions that block approval of their topic ({n}).',
-        'option': '   {k}) {o}', 'rec': '   Areo recommendation: {r}',
-        'reply_questions': 'To answer, one line per question: "1 option 2", or "1 skip".',
-        'topics': 'Topics for one-by-one review ({n} topics, {m} positions).',
-        'topic_head': '{n}. {topic} (clause {num}) · Importance: {imp}',
-        'tracks': {'green': 'We accept (green)', 'yellow': 'We can flex (yellow)', 'red': "We don't agree (red)"},
-        'track': '   {label}: {pos}', 'wording': '   Wording to apply, verbatim: {w}',
-        'cure': '   Wording we answer with, verbatim: {w}', 'flags': '   Note: {f}',
-        'legal': '   A lawyer should review this', 'assume': '   Assumption (approving the position confirms it): {a}',
-        'reply_topics': ('To answer, one line per topic: "1 approve", "2 change yellow: <the wording>", "3 skip", and '
-                         'for a topic a lawyer needs to review, once they have: "4 reviewed and approve". "approve all" '
-                         'also works.'),
-        'updates': ('Policy updates from deals ({n}): what the lawyer changed by hand before sending, and what was '
-                    'decided beyond the policy. An update you approve enters the policy as an approved position.'),
-        'update_head': '{n}. {topic} (clause {num}) · {label}',
-        'event': '   {deal}, {clause}: {what}', 'current': '   In the policy today: {w}', 'proposed': '   Proposed: {w}',
-        'no_proposed': '   No verbatim wording proposed: to update, write "change: <the wording>".',
-        'reply_updates': 'To answer, one line per update: "1 approve", "2 change: <the wording>", or "3 skip".',
-        'waiting': '{n} positions are waiting for management to set the number in brackets.',
-        'info_q': ('An open question that closes only in a policy update, and until then the whole policy cannot be '
-                   'approved: {q}'),
-        'more': '{n} more items are waiting after this batch.',
-        'empty': 'No positions are waiting for approval.',
-        'ignored': 'Not proposed: {a} changes that touch no playbook rule, {b} changes to comments to the other side.',
-        'rec_company': 'Approve: the position recurs in {k} of your documents.',
-        'rec_areo': ('Approve only if the wording reflects what you are prepared to give: this is an Areo '
-                     'recommendation, not wording from your documents.'),
-        'rec_market': 'Approve if the market point suits you: the position was derived from public market sources.',
-        'rec_weak': 'Check before approving: there are few examples from your agreements ({why}).',
-        'rec_statute': 'Approve after confirming the legal requirement applies to you.',
-        'rec_legal': 'Approve once a lawyer has reviewed it, by answering "reviewed and approve".',
-        'weak_docs': 'fewer than two documents', 'weak_unverified': 'a source we have not verified yet',
-        'weak_assume': 'rests on an assumption', 'weak_corpus': "the documents are not the company's signed agreements",
-        'rec_update': ('Recurred in {k} deals, so it is a candidate for an update. Write general wording, without the '
-                       'deal details ("change").'),
-        'rec_update_skip': ('One deal is one data point, not a policy: skipping is recommended, and coming back to it if '
-                            'it recurs in another deal.'),
-        'rec_adapt': ('An adaptation of the wording to this deal (law, currency, defined terms), not a policy change: '
-                      'skipping is recommended.'),
-        'ev_text_edited': 'Edited by hand before sending. Produced: {b}. Sent: {a}',
-        'ev_text_added': 'Added by hand before sending: {a}', 'ev_text_deleted': 'Deleted by hand before sending: {b}',
-        'ev_our_change_rejected': 'Our change was undone by hand before sending. Produced: {b}. Sent: {a}',
-        'ev_accepted_red': 'Wording the playbook classifies as red was accepted: {a}',
-        'ev_decided_outside': 'An explicit decision on a topic the playbook did not decide: {a}',
-        'ev_red_line_exception': 'A red-line exception approved in the deal: {a}',
-        'ev_adaptation': 'An adaptation of the playbook wording to the deal: {a}',
-    },
-}
-
-
-class ReplyError(ValueError):
-    """תשובה שאינה מובנת, או שאינה מתאימה למנה. שום דבר אינו נקלט."""
-
-
-def _ql(lang):
-    return 'en' if str(lang or '').lower().startswith('en') else 'he'
-
-
-def _counts(cells):
-    return {s: sum(1 for c in cells.values() if c.get('status') == s) for s in
-            ('approved', 'approved_modified', 'pending_choice', 'pending_legal_review', 'open', 'not_signed',
-             'skipped')}
-
-
-def _rules(model):
-    return {r['rule_id']: r for r in model.get('rules') or [] if r.get('rule_id')}
-
-
-def _views(model, lang):
-    """{cell_key: view} לכל תא בפלייבוק (בלי סגמנטים: התור עובד על שלושת המסלולים של כל כלל)."""
-    roles = A.role_lines(model, lang)
-    index = A.unverified_index(model)
-    decisions = A.management_decisions(model, lang)
-    out = {}
-    for rule in model.get('rules') or []:
-        for t in S.TRACKS:
-            out[S.cell_key(rule['rule_id'], t)] = A.cell_view(model, rule, t, lang, index, roles, decisions)
-    return out
-
-
-def _cell_done(cell, view):
-    """התא נספר כמאושר, על הנוסח שבמודל עכשיו."""
-    return bool(S.cell_counts(cell) and cell.get('approved_fp') in (None, view['fp']))
-
-
-def _unverified(view):
-    return any(f.startswith(('ממצא לא מאומת', 'Unverified finding')) for f in view['flags'])
-
-
-def _weak_reasons(model, rule, track, view, lang):
-    T = Q[_ql(lang)]
-    t = (rule.get('traffic_light') or {}).get(track) or {}
-    why = []
-    if len(t.get('evidence') or []) < MIN_STRONG_DOCS:
-        why.append(T['weak_docs'])
-    if _unverified(view):
-        why.append(T['weak_unverified'])
-    if view['assumptions']:
-        why.append(T['weak_assume'])
-    if S.corpus_status(model) not in STRONG_CORPUS:
-        why.append(T['weak_corpus'])
-    return why
-
-
-def is_strong(model, rule, track, view, blocked_rules=()):
-    """עמדה שמאושרת במנה אחת: ירוק, basis של מסמך החברה, מאגר חתום או נוסחים שהחברה מציגה, שני מסמכים לפחות, בלי
-    בדיקה משפטית, הנחה, ערך שלא נקבע, ממצא לא מאומת או שאלה מכריעה פתוחה בכלל."""
-    t = (rule.get('traffic_light') or {}).get(track) or {}
-    basis = t.get('basis')
-    return bool(track == 'green' and basis and basis not in S.NON_COMPANY_BASES and basis != 'statute'
-                and S.corpus_status(model) in STRONG_CORPUS and len(t.get('evidence') or []) >= MIN_STRONG_DOCS
-                and not (view['legal'] or view['slots'] or view['assumptions'] or _unverified(view))
-                and rule['rule_id'] not in blocked_rules)
-
-
-def _recommendation(model, rule, track, view, lang):
-    T = Q[_ql(lang)]
-    t = (rule.get('traffic_light') or {}).get(track) or {}
-    basis = t.get('basis')
-    if view['legal']:
-        return 'legal', T['rec_legal']
-    why = _weak_reasons(model, rule, track, view, lang)
-    if basis == 'areo_proposal':
-        return 'review', T['rec_areo']
-    if basis == 'statute':
-        return 'review', T['rec_statute']
-    if basis == 'market_standard' and not _unverified(view):
-        return 'review', T['rec_market']
-    if why:
-        return 'review', T['rec_weak'].format(why=', '.join(why))
-    return 'approve', T['rec_company'].format(k=len(t.get('evidence') or []))
-
-
-def _decision_done(model, d, rules):
-    """החלטה שכבר נרשמה (change_log, field: management_decision), או שאין עוד בנוסח את הסוגריים שלה."""
-    if any(c.get('field') == 'management_decision' and c.get('rule_id') == d.get('rule_id')
-           for c in model.get('change_log') or []):
-        return True
-    if d.get('slots'):
-        text = json.dumps((rules.get(d.get('rule_id')) or {}).get('traffic_light') or {}, ensure_ascii=False)
-        return not any(s in text for s in d['slots'])
-    return False
-
-
-def queue_state(model, cells, lang='he', revisit=False, demoted=(), skipped=()):
-    """התור כולו: {batch, decisions, questions, topics, info, waiting, views}. מה שכבר נספר כמאושר על הנוסח הנוכחי
-    אינו בתור; תא שדולג (skipped) חוזר רק עם revisit, וכך גם החלטה או שאלה שדולגו (skipped: "decision:<rule_id>",
-    "question:<id>" מקובץ התור); תא שהוצא ממנת הירוקים (demoted) עובר לנושאים."""
-    lang = _ql(lang)
-    rules = _rules(model)
-    views = _views(model, lang)
-    oq = S.open_decisive(model)
-    blocked = {q.get('rule_id') for q in oq if q.get('rule_id') and q.get('rule_id') != 'GLOBAL'}
-    pending, waiting = [], 0
-    for key, view in views.items():
-        cell = (cells or {}).get(key) or {}
-        if _cell_done(cell, view):
-            continue
-        if cell.get('status') == 'skipped' and not revisit:
-            continue
-        if view['slots']:
-            waiting += 1
-            continue
-        pending.append(key)
-    batch, topics = [], {}
-    for key in pending:
-        rid, _, track = key.split('|')
-        if key not in demoted and is_strong(model, rules[rid], track, views[key], blocked):
-            batch.append(key)
-        else:
-            topics.setdefault(rid, []).append(key)
-    skip = set() if revisit else set(skipped or ())
-    decisions = [d for d in A.management_decisions(model, lang) if not _decision_done(model, d, rules)
-                 and 'decision:%s' % d.get('rule_id') not in skip]
-    questions = [q for q in oq if q.get('options') and 'question:%s' % (q.get('id') or q.get('queue_id')) not in skip]
-    info = [q for q in oq if not q.get('options')]
-    rank = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
-    order = {rid: i for i, rid in enumerate(rules)}
-    topic_list = sorted(topics.items(), key=lambda kv: (rank.get(str(rules[kv[0]].get('importance') or '').lower(), 4),
-                                                         order[kv[0]]))
-    return {'batch': batch, 'decisions': decisions, 'questions': questions, 'topics': topic_list, 'info': info,
-            'waiting': waiting, 'views': views}
-
-
-def _cell_item(model, key, view, lang):
-    rid, _, track = key.split('|')
-    rule = _rules(model)[rid]
-    code, rec = _recommendation(model, rule, track, view, lang)
-    return {'key': key, 'track': track, 'fp': view['fp'], 'position': view['position'], 'wording': view['wording'],
-            'effects': view['effects'], 'flags': view['flags'], 'legal': view['legal'],
-            'assumptions': view['assumptions'], 'rec_code': code, 'recommendation': rec}
-
-
-def make_batch(model, cells, lang='he', stage=None, revisit=False, demoted=(), skipped=()):
-    """המנה הבאה בתור: {stage, items[], waiting, info, more}. stage מכריח שלב; בלעדיו השלב הראשון שאינו ריק לפי
-    STAGES. None: התור ריק."""
-    qs = queue_state(model, cells, lang, revisit, demoted, skipped)
-    rules = _rules(model)
-    for st in ([stage] if stage else STAGES):
-        items, more = [], 0
-        if st == 'batch' and qs['batch']:
-            for n, key in enumerate(qs['batch'], 1):
-                rid = key.split('|')[0]
-                t = (rules[rid].get('traffic_light') or {}).get('green') or {}
-                items.append({'n': n, 'kind': 'cell', 'rule_id': rid, 'topic': rules[rid].get('topic_name') or '',
-                              'key': key, 'track': 'green', 'fp': qs['views'][key]['fp'],
-                              'position': qs['views'][key]['position'], 'docs': len(t.get('evidence') or [])})
-        elif st == 'decisions' and qs['decisions']:
-            for n, d in enumerate(qs['decisions'][:BATCH_MAX], 1):
-                items.append(dict(d, n=n, kind='decision'))
-            more = max(0, len(qs['decisions']) - BATCH_MAX)
-        elif st == 'questions' and qs['questions']:
-            for n, qi in enumerate(qs['questions'][:BATCH_MAX], 1):
-                items.append({'n': n, 'kind': 'question', 'qid': qi.get('id') or qi.get('queue_id'),
-                              'rule_id': qi.get('rule_id'), 'question': qi.get('question') or '',
-                              'options': list(qi.get('options') or []), 'recommendation': qi.get('recommendation') or ''})
-            more = max(0, len(qs['questions']) - BATCH_MAX)
-        elif st == 'topics' and qs['topics']:
-            used = 0
-            for rid, keys in qs['topics']:
-                if items and used + len(keys) > BATCH_MAX:
-                    break
-                rule = rules[rid]
-                cis = [_cell_item(model, k, qs['views'][k], lang) for k in keys]
-                items.append({'n': len(items) + 1, 'kind': 'topic', 'rule_id': rid,
-                              'topic': rule.get('topic_name') or '', 'importance': rule.get('importance') or '',
-                              'cells': cis})
-                used += len(keys)
-            more = len(qs['topics']) - len(items)
-        if items:
-            return {'stage': st, 'items': items, 'waiting': qs['waiting'], 'more': more,
-                    'info': [q.get('question') or '' for q in qs['info']]}
-    return None
-
-
-# ---------------------------------------------------------------------------- עדכון פלייבוק מעסקה
-def _event_key(tid, source, ev):
-    raw = '|'.join(str(x) for x in (tid, source, ev.get('clause_id'), ev.get('kind'), ev.get('round'),
-                                     ev.get('before'), ev.get('after')))
-    return hashlib.sha256(raw.encode('utf-8')).hexdigest()[:12]
-
-
-def deal_events(state, model):
-    """אירועים מקובץ המצב של עסקה שעשויים לעדכן את הפלייבוק: (events, ignored).
-    - lawyer_overrides מסוג שינוי נוסח (TEXT_KINDS) בכלל של הפלייבוק. שינוי בהערה לצד השני, או בלי כלל, אינו מוצע.
-    - exception_log: חריגה מקו אדום שאושרה, והתאמה של נוסח לעסקה (type: adaptation).
-    - סעיף שבו התקבל נוסח אדום (op: accept, track_match: red), או הכרעה מפורשת בנושא שהפלייבוק לא הכריע בו.
-    המסלול המוצע לעדכון: הנוסח שעורך הדין שינה הוא הנוסח שלנו (המסלול שהוחל, וירוק כשהנוסח שלהם היה אדום); מה
-    שהתקבל מעבר לפלייבוק הוא מועמד לצהוב."""
-    meta = state.get('meta') or {}
-    tid = meta.get('transaction_id') or ''
-    rules = _rules(model)
-    clauses = {c.get('clause_id'): c for c in state.get('clauses') or [] if isinstance(c, dict)}
-    events, ignored = [], {'no_rule': 0, 'comment': 0}
-
-    def add(source, kind, rid, track, cl_id, before, after, proposed, rnd=None, date=None):
-        ev = {'source': source, 'kind': kind, 'rule_id': rid, 'track': track, 'clause_id': cl_id,
-              'round': rnd, 'date': date, 'before': before or '', 'after': after or '',
-              'proposed': (proposed or '').strip() or None, 'transaction_id': tid}
-        ev['key'] = _event_key(tid, source, ev)
-        events.append(ev)
-
-    for o in state.get('lawyer_overrides') or []:
-        if not isinstance(o, dict):
-            continue
-        rids = [r for r in o.get('rule_ids') or [] if r in rules]
-        if not rids:
-            ignored['no_rule'] += 1
-            continue
-        if o.get('kind') not in TEXT_KINDS:
-            ignored['comment'] += 1
-            continue
-        tm = (clauses.get(o.get('clause_id')) or {}).get('track_match')
-        add('lawyer_override', o['kind'], rids[0], tm if tm in ('green', 'yellow') else 'green', o.get('clause_id'),
-            o.get('produced_text') or o.get('before'), o.get('sent_text') or o.get('after'),
-            o.get('sent_text') if o['kind'] != 'our_change_rejected' else None, o.get('round'), o.get('date'))
-    seen = set()
-    for e in state.get('exception_log') or []:
-        if not isinstance(e, dict):
-            continue
-        cl = clauses.get(e.get('clause_id')) or {}
-        rids = [r for r in (e.get('rule_ids') or cl.get('rule_ids') or []) if r in rules]
-        if not rids:
-            ignored['no_rule'] += 1
-            continue
-        kind = 'adaptation' if e.get('type') == 'adaptation' else 'red_line_exception'
-        add('exception_log', kind, rids[0], 'yellow', e.get('clause_id'), cl.get('playbook_default'),
-            e.get('what') or e.get('inserted') or '', cl.get('agreed_text') if kind != 'adaptation' else None,
-            None, e.get('date'))
-        seen.add(e.get('clause_id'))
-    for cid, cl in clauses.items():
-        rids = [r for r in cl.get('rule_ids') or [] if r in rules]
-        if not rids or cid in seen:
-            continue
-        ud = cl.get('user_decision') or {}
-        text = cl.get('agreed_text') or cl.get('current_text') or ''
-        if cl.get('op') == 'accept' and cl.get('track_match') == 'red':
-            add('clause', 'accepted_red', rids[0], 'yellow', cid, cl.get('playbook_default'), text, text,
-                cl.get('accepted_in_round') or cl.get('decided_in_round'))
-        elif ud.get('answer_kind') == 'explicit' and cl.get('track_match') not in ('green', 'yellow', 'red'):
-            add('clause', 'decided_outside', rids[0], 'yellow', cid, cl.get('playbook_default'), text, text,
-                cl.get('decided_in_round'), str(ud.get('recorded_at') or '')[:10] or None)
-    return events, ignored
-
-
-def deal_updates(states, model, lang='he'):
-    """המנה של "עדכון פלייבוק מעסקה": פריט לכל כלל ומסלול, עם כל האירועים מכל העסקאות שנמסרו. אירוע שכבר הוצג
-    (model.deal_feedback) אינו מוצע שוב, אבל נספר בהיסטוריה. ההמלצה: עדכון כשהאירוע חזר בשתי עסקאות או יותר
-    (כמו בסיכום של הנושא ונותן), ודילוג כשהוא בעסקה אחת או כשהוא התאמה לעסקה. עסקה של משפחה אחרת אינה נקראת.
-    מחזיר (batch או None, notes)."""
-    lang = _ql(lang)
-    T = Q[lang]
-    fid = model.get('family_id')
-    seen = {f.get('key') for f in model.get('deal_feedback') or []}
-    history = {}
-    for f in model.get('deal_feedback') or []:
-        history.setdefault((f.get('rule_id'), f.get('track')), set()).add(f.get('transaction_id'))
-    groups, notes, ign = {}, [], {'no_rule': 0, 'comment': 0}
-    for st in states:
-        fam = ((st.get('meta') or {}).get('position') or {}).get('playbook_family')
-        tid = (st.get('meta') or {}).get('transaction_id') or ''
-        if fam and fid and fam != fid:
-            notes.append('%s: %s' % (tid, fam))
-            continue
-        evs, ig = deal_events(st, model)
-        for k in ign:
-            ign[k] += ig[k]
-        for ev in evs:
-            history.setdefault((ev['rule_id'], ev['track']), set()).add(ev['transaction_id'])
-            if ev['key'] not in seen:
-                groups.setdefault((ev['rule_id'], ev['track']), []).append(ev)
-    rules = _rules(model)
-    order = {rid: i for i, rid in enumerate(rules)}
-    items = []
-    for (rid, track), evs in sorted(groups.items(), key=lambda kv: (order[kv[0][0]], S.TRACKS.index(kv[0][1]))):
-        t = (rules[rid].get('traffic_light') or {}).get(track) or {}
-        k = len({x for x in history.get((rid, track), ()) if x})
-        if all(e['kind'] == 'adaptation' for e in evs):
-            code, rec = 'skip', T['rec_adapt']
-        elif k >= 2:
-            code, rec = 'update', T['rec_update'].format(k=k)
-        else:
-            code, rec = 'skip', T['rec_update_skip']
-        proposed = next((e['proposed'] for e in reversed(evs) if e.get('proposed')), None)
-        items.append({'n': len(items) + 1, 'kind': 'update', 'rule_id': rid, 'track': track,
-                      'topic': rules[rid].get('topic_name') or '', 'events': evs, 'proposed': proposed,
-                      'current': A.track_wording(track, t, lang), 'deals': k, 'rec_code': code, 'recommendation': rec,
-                      'key': S.cell_key(rid, track)})
-    if ign['no_rule'] or ign['comment']:
-        notes.append(T['ignored'].format(a=ign['no_rule'], b=ign['comment']))
-    if not items:
-        return None, notes
-    return {'stage': 'updates', 'items': items[:BATCH_MAX], 'waiting': 0, 'info': [],
-            'more': max(0, len(items) - BATCH_MAX)}, notes
-
-
-# ---------------------------------------------------------------------------- קובץ התור
-def queue_path(records_dir, model):
-    return os.path.join(records_dir, QUEUE_FILE % (model.get('family_id') or 'family'))
-
-
-def load_queue(records_dir, model):
-    p = queue_path(records_dir, model)
-    if os.path.exists(long_path(p)):
-        with io.open(long_path(p), encoding='utf-8') as fh:
-            return json.load(fh)
-    return {'family_id': model.get('family_id'), 'batches': [], 'demoted': []}
-
-
-def save_queue(records_dir, model, data):
-    p = queue_path(records_dir, model)
-    P.check_write_path(p)
-    os.makedirs(records_dir, exist_ok=True)
-    with io.open(p, 'w', encoding='utf-8') as fh:
-        json.dump(data, fh, ensure_ascii=False, indent=1)
-    return p
-
-
-def open_batch(queue):
-    live = [b for b in queue.get('batches') or [] if b.get('status') == 'open']
-    return live[-1] if live else None
-
-
-def issue_batch(queue, batch, lang, today=None):
-    """רושם מנה חדשה בקובץ התור, ומחליף מנה פתוחה קודמת (status: replaced). מחזיר את המנה עם batch_id."""
-    for b in queue.get('batches') or []:
-        if b.get('status') == 'open':
-            b['status'] = 'replaced'
-    bid = 'Q-%04d' % (1 + len(queue.get('batches') or []))
-    batch = dict(batch, batch_id=bid, lang=_ql(lang), status='open',
-                 issued_at=today or _dt.date.today().isoformat())
-    queue.setdefault('batches', []).append(batch)
-    return batch
-
-
-# ---------------------------------------------------------------------------- הצגה
-# הסימונים של הגיליון (approval_sheet.flags_for) הם תוויות קבועות בתוך המסמך. בצ'אט הם נאמרים במילים של
-# areo-voice.md, בלי לשנות את התווית שבגיליון ואת הבדיקות שנשענות עליה (_unverified)
-_PLAIN_FLAGS = {'he': (('הצעת Areo', 'המלצה של Areo'), ('ממצא לא מאומת', 'מקור שעוד לא אימתנו')),
-                'en': (('Areo proposal', 'Areo recommendation'),
-                       ('Unverified finding', 'A source we have not verified yet'))}
-
-
-def _plain_flag(flag, lang):
-    for a, b in _PLAIN_FLAGS[_ql(lang)]:
-        flag = flag.replace(a, b)
-    return flag
-
-
-def _short(s, n=220):
-    s = norm_text(s)
-    return s if len(s) <= n else s[:n - 1].rstrip() + '…'
-
-
-def render_batch(batch, model=None, lang='he'):
-    """המנה כטקסט לצ'אט, בשפת הממשק. הנוסח שמאשרים מוצג במלואו; תיאור אירוע מעסקה מקוצר."""
-    lang = _ql(lang)
-    T, SH = Q[lang], A.SHEETS[lang]
-    roles = A.role_lines(model, lang) if model else []
-    st = batch['stage']
-    items = batch['items']
-    out = [T['head']]
-    num = lambda it: it.get('num') or (A.display_num(model, it.get('rule_id')) if model else '') or '-'
-    if st == 'batch':
-        out.append(T['batch'].format(n=len(items)))
-        for it in items:
-            out.append(T['batch_line'].format(n=it['n'], num=num(it), topic=it['topic'],
-                                              pos=it['position'], docs=it['docs']))
-        out.append(T['reply_batch'])
-    elif st == 'decisions':
-        out.append(T['decisions'].format(n=len(items)))
-        for it in items:
-            # השאלה כוללת את המשפט המלא שבו הסוגריים ואת היחידה (approval_sheet.decision_question)
-            out.append(T['decision_head'].format(n=it['n'], q=it['question'], num=num(it)))
-            if it.get('proposal'):
-                out.append(T['proposal'].format(p=' / '.join(it['proposal'].split('\n'))))
-            out.append(T['owner'].format(o=it.get('owner') or ''))
-        out.append(T['reply_decisions'])
-    elif st == 'questions':
-        out.append(T['questions'].format(n=len(items)))
-        for it in items:
-            out.append('%d. %s' % (it['n'], it['question']))
-            for k, o in enumerate(it['options'], 1):
-                out.append(T['option'].format(k=k, o=o))
-            if it.get('recommendation'):
-                out.append(T['rec'].format(r=it['recommendation']))
-        out.append(T['reply_questions'])
-    elif st == 'topics':
-        out.append(T['topics'].format(n=len(items), m=sum(len(it['cells']) for it in items)))
-        for it in items:
-            imp = SH['importance'].get(str(it.get('importance') or '').lower(), it.get('importance') or '')
-            out.append(T['topic_head'].format(n=it['n'], num=num(it), topic=it['topic'], imp=imp))
-            recs = []
-            for c in it['cells']:
-                out.append(T['track'].format(label=T['tracks'][c['track']], pos=c['position']))
-                out.append(T['cure' if c['track'] == 'red' else 'wording'].format(w=c['wording'] or SH['no_wording']))
-                for role, label in roles:
-                    if (c.get('effects') or {}).get(role):
-                        out.append('   ' + label + c['effects'][role])
-                if c.get('flags'):
-                    out.append(T['flags'].format(f=' · '.join(_plain_flag(f, lang) for f in c['flags'])))
-                if c.get('legal'):
-                    out.append(T['legal'])
-                for a in c.get('assumptions') or []:
-                    out.append(T['assume'].format(a=a))
-                if c['recommendation'] not in recs:
-                    recs.append(c['recommendation'])
-            out.append(T['rec'].format(r=' '.join(recs)))
-        out.append(T['reply_topics'])
-    elif st == 'updates':
-        out.append(T['updates'].format(n=len(items)))
-        for it in items:
-            out.append(T['update_head'].format(n=it['n'], num=num(it), topic=it['topic'],
-                                               label=T['tracks'][it['track']]))
-            for e in it['events']:
-                what = T['ev_' + e['kind']].format(b=_short(e.get('before')), a=_short(e.get('after')))
-                out.append(T['event'].format(deal=e.get('transaction_id') or '', clause=e.get('clause_id') or '',
-                                             what=what))
-            out.append(T['current'].format(w=it.get('current') or SH['no_wording']))
-            out.append(T['proposed'].format(w=it['proposed']) if it.get('proposed') else T['no_proposed'])
-            out.append(T['rec'].format(r=it['recommendation']))
-        out.append(T['reply_updates'])
-    if batch.get('more'):
-        out.append(T['more'].format(n=batch['more']))
-    if batch.get('waiting'):
-        out.append(T['waiting'].format(n=batch['waiting']))
-    for qtext in batch.get('info') or []:
-        out.append(T['info_q'].format(q=qtext))
-    return '\n'.join(out)
-
-
-# ---------------------------------------------------------------------------- פירוש התשובה
-def _track_of(s):
-    s = (s or '').lower()
-    hits = [t for t, words in _TRACK_WORDS.items() if any(w in s for w in words)]
-    return hits[0] if len(hits) == 1 else None
-
-
-def _has(s, words):
-    low = s.lower()
-    return any(w in low for w in words)
-
-
-def _classify(cmd, item, lang='he'):
-    """פקודה אחת לפריט אחד: {action: approve|change|skip|choose, ...}. ReplyError כשאינה מובנת."""
-    cmd = cmd.strip().strip('"״\'').strip()
-    m = _CHANGE.match(cmd)
-    if m:
-        text = m.group(2).strip().strip('"״').strip()
-        if not text:
-            raise ReplyError('"לשנות" בלי נוסח בפריט %d' % item['n'])
-        if item.get('kind') == 'decision' and '=' not in text:
-            # יחידה שונה מזו שבמשפט נעצרת כבר כאן, לפני ששומרים גרסה או כותבים דבר
-            for c in item.get('context') or ():
-                value_for_slot(text, c, lang)
-        return {'action': 'change', 'track': _track_of(m.group(1)), 'text': text}
-    if item['kind'] == 'question':
-        mm = re.match(r'^(?:אפשרות|option)?\s*(\d{1,2})$', cmd, re.I)
-        if mm:
-            k = int(mm.group(1))
-            if not 1 <= k <= len(item['options']):
-                raise ReplyError('אין אפשרות %d בשאלה %d' % (k, item['n']))
-            return {'action': 'choose', 'option': k}
-        for k, o in enumerate(item['options'], 1):
-            if norm_text(cmd) == norm_text(o):
-                return {'action': 'choose', 'option': k}
-    if _has(cmd, _NEGATE):
-        raise ReplyError('תשובה שלילית בפריט %d: כדי לא לאשר, "לשנות: <הנוסח>" או "לדלג"' % item['n'])
-    if _has(cmd, _LAWYER_LATER):
-        return {'action': 'skip', 'lawyer_later': True}
-    if _has(cmd, _SKIP):
-        return {'action': 'skip'}
-    if _has(cmd, _APPROVE):
-        return {'action': 'approve', 'reviewed': _has(cmd, _REVIEWED), 'track': _track_of(cmd)}
-    raise ReplyError('לא הבנתי את התשובה לפריט %d: "%s"' % (item['n'], _short(cmd, 60)))
-
-
-def parse_reply(reply, batch):
-    """{n: answer}. שורה לכל פריט ("2 לשנות צהוב: ..."), כמה פריטים בשורה מופרדים בפסיק ("1 לאשר, 3 לדלג"), או
-    תשובה לכל המנה ("לאשר הכול", "לאשר הכול חוץ מ-3, 7", "לדלג על המנה"). כל שגיאה: ReplyError, ושום דבר אינו
-    נקלט. פריט שלא נענה נשאר בתור. בתשובה לכל המנה, מה שהוצא ("חוץ מ") מסומן except."""
-    items = {it['n']: it for it in batch['items']}
-    lines = [ln.strip() for ln in (reply or '').splitlines() if ln.strip()]
-    if not lines:
-        raise ReplyError('תשובה ריקה')
-    if len(lines) == 1 and not _NUM.match(lines[0]):
-        cmd = norm_text(lines[0])
-        whole = _has(cmd, _ALL) or 'המנה' in cmd or 'batch' in cmd.lower()
-        if whole and not _CHANGE.match(cmd):
-            if _has(cmd, _NEGATE):
-                raise ReplyError('תשובה שלילית לכל המנה: "לדלג על המנה", או תשובה לכל פריט')
-            if _has(cmd, _SKIP):
-                return {n: {'action': 'skip'} for n in items}
-            if _has(cmd, _APPROVE):
-                excluded = set()
-                for w in _EXCEPT:
-                    i = cmd.lower().find(w)
-                    if i >= 0:
-                        excluded = {int(x) for x in re.findall(r'\d{1,2}', cmd[i:])}
-                bad = sorted(excluded - set(items))
-                if bad:
-                    raise ReplyError('אין במנה פריט %s' % ', '.join(map(str, bad)))
-                rev = _has(cmd, _REVIEWED)
-                return {n: ({'action': 'except'} if n in excluded else
-                            {'action': 'approve', 'reviewed': rev, 'track': None}) for n in items}
-        if len(items) == 1:
-            return {1: _classify(cmd, items[1], batch.get('lang') or 'he')}
-        raise ReplyError('לא ברור לאיזה פריט התשובה מתייחסת. כתבו את מספר הפריט בתחילת השורה, או "לאשר הכול"')
-    out = {}
-    for ln in lines:
-        segs, buf = [], None
-        for seg in _SPLIT.split(ln):
-            # מרגע שמתחילה פקודת "לשנות", שאר השורה הוא הנוסח שלה, גם כשיש בו פסיק ומספר
-            if buf is not None:
-                buf += ', ' + seg
-                continue
-            m = _NUM.match(seg)
-            if m and _CHANGE.match(m.group(2).strip()):
-                buf = seg
-            else:
-                segs.append(seg)
-        if buf is not None:
-            segs.append(buf)
-        for seg in segs:
-            m = _NUM.match(seg)
-            if not m:
-                raise ReplyError('שורה בלי מספר פריט: "%s"' % _short(seg, 60))
-            n = int(m.group(1))
-            if n not in items:
-                raise ReplyError('אין במנה פריט %d' % n)
-            if n in out:
-                raise ReplyError('שתי תשובות לפריט %d' % n)
-            out[n] = _classify(m.group(2), items[n], batch.get('lang') or 'he')
-    return out
-
-
-# ---------------------------------------------------------------------------- כתיבה למודל
-def set_track_wording(t, track, text, lang='he'):
-    """כותב נוסח למסלול, באותו שדה ש-approval_sheet.track_wording קורא ממנו. מחזיר (field, previous)."""
-    if track == 'yellow':
-        fw = t.get('fallback_wording')
-        if isinstance(fw, dict) and fw.get('text'):
-            prev = fw['text']
-            fw['text'] = text
-            return 'fallback_wording.text', prev
-        if isinstance(fw, str) and fw.strip():
-            t['fallback_wording'] = text
-            return 'fallback_wording', fw
-    pc = t.get('proposed_clause')
-    if isinstance(pc, dict):
-        prev = A.track_wording('green', {'proposed_clause': pc}, lang)
-        tl = 'he' if re.search('[֐-׿]', text) else 'en'
-        # הנוסח בשפה האחרת היה תרגום של הנוסח הקודם, ולכן אינו נשאר מאחור
-        t['proposed_clause'] = {'he': text if tl == 'he' else '', 'en': text if tl == 'en' else '',
-                                'source_language': tl}
-        return 'proposed_clause', prev
-    if not pc and t.get('preferred_wording'):
-        prev = t['preferred_wording']
-        t['preferred_wording'] = text
-        return 'preferred_wording', prev
-    t['proposed_clause'] = text
-    return 'proposed_clause', pc or ''
-
-
-def _replace_slots(obj, mapping):
-    """מחליף סוגריים בערך בכל מחרוזת בתוך obj (dict או list). מחזיר את מספר ההחלפות."""
-    n = 0
-    if isinstance(obj, dict):
-        pairs = list(obj.items())
-    elif isinstance(obj, list):
-        pairs = list(enumerate(obj))
-    else:
-        return 0
-    for k, v in pairs:
-        if isinstance(v, str):
-            new = v
-            for s, val in mapping.items():
-                new = new.replace(s, val)
-            if new != v:
-                obj[k] = new
-                n += 1
-        else:
-            n += _replace_slots(v, mapping)
-    return n
-
-
-_SLOT_TEXT_FIELDS = ('position', 'proposed_clause', 'fallback_wording', 'preferred_wording', 'company_effect',
-                     'role_effects')
-
-
-_VALUE = re.compile(r'^\s*([-+]?\d+(?:[.,]\d+)?)\s*(.*)$', re.S)
-_UNIT_CONFLICT = {
-    'he': 'הערך "{v}" ביחידה אחרת מהמשפט: "{s}". היחידה בו היא {u}. כתבו את המספר ב{u}, או שנו את הנוסח ("לשנות ירוק: <הנוסח>")',
-    'en': 'The value "{v}" uses a different unit from the sentence: "{s}". Its unit is {u}. Write the number in {u}, '
-          'or change the wording ("change green: <the wording>")'}
-
-
-def value_for_slot(value, ctx, lang='he'):
-    """הערך שנכתב במקום סוגריים אחד, לפי היחידה שלהם (approval_sheet.slot_context): כשהיחידה כתובה אחרי הסוגריים
-    ("[מספר] ימים") נכתב המספר בלבד, ויחידה זהה שהמשתמש הוסיף יורדת (בלי "72 ימים ימים"); כשהיחידה בתוך הסוגריים
-    ("[number of days]") היא נכתבת עם המספר; ויחידה אחרת מזו שבמשפט ("72 שעות" מול "[מספר] ימים") אינה נכתבת:
-    ReplyError, ושום דבר אינו נקלט. ערך במילים, או סוגריים בלי יחידה ידועה: כפי שנכתב."""
-    unit = (ctx or {}).get('unit')
-    m = _VALUE.match(value or '')
-    if not unit or not m:
-        return value
-    num, rest = m.group(1), m.group(2).strip()
-    given = A.unit_of(rest) if rest else None
-    if given and given != unit:
-        raise ReplyError(_UNIT_CONFLICT[_ql(lang)].format(v=value, s=ctx.get('sentence') or ctx.get('slot'),
-                                                          u=A.UNIT_NAMES[unit][_ql(lang)]))
-    if rest and not given:
-        return value
-    if ctx.get('unit_where') == 'after':
-        return num
-    if unit == 'percent':
-        return num + '%'
-    if unit == 'multiple':
-        return num
-    text = ctx.get('sentence') or ctx.get('slot') or ''
-    return '%s %s' % (num, A.UNIT_NAMES[unit]['he' if re.search('[֐-׿]', text) else 'en'])
-
-
-def apply_decision_value(rule, slots, value, context=None, lang='he'):
-    """כותב את הערך שנקבע במקום הסוגריים, בעמדה, בנוסח ובשורות ההשפעה של כל שלושת המסלולים. value: ערך אחד
-    כשיש סוגריים מסוג אחד או כשהערך מספר, או "[x]=v; [y]=w". context: המשפט והיחידה של כל סוגריים (מההחלטה,
-    approval_sheet.slot_context), והערך מותאם ליחידה (value_for_slot). מחזיר [(track, field, previous, new)].
-    ReplyError כשאינו חד-משמעי, או כשהיחידה שנכתבה שונה מזו שבמשפט."""
-    slots = list(dict.fromkeys(slots or []))
-    value = (value or '').strip()
-    if '=' in value:
-        mapping = {}
-        for part in re.split(r'\s*;\s*', value):
-            if '=' not in part:
-                continue
-            k, v = (x.strip() for x in part.split('=', 1))
-            k = k if k.startswith('[') else '[%s]' % k
-            if k not in slots or not v:
-                raise ReplyError('אין בהחלטה סוגריים %s' % k)
-            mapping[k] = v
-    elif len(slots) == 1 or not re.search(r'[^\W\d_]', value):
-        # ערך בלי אותיות ("2", "72", "1.5") נכון לכל הסוגריים, גם כשהם אותו ערך בעברית ובאנגלית ("[מכפיל]",
-        # "[multiple]"); ערך במילים נכתב לכל סוגריים בנפרד
-        mapping = {s: value for s in slots}
-    else:
-        raise ReplyError('בהחלטה כמה ערכים (%s): כתבו "לשנות: [x]=ערך; [y]=ערך"' % ', '.join(slots))
-    ctx = {c.get('slot'): c for c in context or () if isinstance(c, dict)}
-    mapping = {s: value_for_slot(v, ctx.get(s), lang) for s, v in mapping.items()}
-    changes = []
-    for track, t in (rule.get('traffic_light') or {}).items():
-        if not isinstance(t, dict):
-            continue
-        for f in _SLOT_TEXT_FIELDS + tuple(k for k in t if k.startswith('as_') and k.endswith('_effect')):
-            if f not in t:
-                continue
-            before = json.loads(json.dumps(t[f], ensure_ascii=False))
-            if isinstance(t[f], str):
-                new = t[f]
-                for s, v in mapping.items():
-                    new = new.replace(s, v)
-                if new != t[f]:
-                    t[f] = new
-                    changes.append((track, f, before, new))
-            elif _replace_slots(t[f], mapping):
-                changes.append((track, f, before, t[f]))
-    return changes
-
-
+	B=path
+	with io.open(long_path(B),encoding='utf-8')as C:A=json.load(C)
+	if not S.is_legacy_record(A)or A.get('reupload_notice'):return False,None
+	A['legacy']=True;A['simulated']=True;A['cells']=S.effective_cells(A);A['reupload_notice']=S.REUPLOAD_NOTICE;A.setdefault('evidence',{'received_via':A.get('received_via'),'upload_ref':A.get('upload_ref')});P.check_write_path(B);D=B+'.tmp'
+	with io.open(D,'w',encoding='utf-8')as C:json.dump(A,C,ensure_ascii=False,indent=1)
+	os.replace(D,B);return True,S.REUPLOAD_NOTICE
+def merge_prior(result,prior_cells):
+	A=result;B=0
+	for(D,E)in(A.get('cells')or{}).items():
+		C=(prior_cells or{}).get(D)
+		if E.get('status')=='not_signed'and C and S.cell_counts(C)and C.get('approved_fp')==E.get('issued_fp'):A['cells'][D]=dict(C,carried_forward=True);B+=1
+	if B and A.get('record'):A['record']['counts']=_counts(A['cells']);A['record']['carried_forward']=B
+	return B
+CHAT_VIA='chat_reply'
+BATCH_MAX=8
+STRONG_CORPUS='signed','company_forms'
+MIN_STRONG_DOCS=2
+STAGES='batch','decisions','questions','topics'
+QUEUE_FILE='approval-queue-%s.json'
+TEXT_KINDS='text_edited','text_added','text_deleted','our_change_rejected'
+APPROVED_STATUSES='approved','approved_modified'
+_TRACK_WORDS={'green':('ירוק','green','נדרוש'),'yellow':('צהוב','yellow','נסכים'),'red':('אדום','red')}
+_APPROVE='לאשר','מאשרת','מאשר','מאושר','אישור','approve','approved','accept','accepted'
+_NEGATE='לא לאשר','לא מאשר','אל תאשר','לא אישור','not approve',"don't approve",'do not approve','reject','not accept',"don't accept",'do not accept'
+_REVIEWED='נבדק','נבדקה','reviewed'
+_SKIP='לדלג','דלג','skip'
+_LAWYER_LATER='לעורך דין','לבדיקת עורך דין','for a lawyer','lawyer later'
+REASON_LAWYER_LATER='מחכה לבדיקה של עורך דין, לבקשת המאשר'
+_ALL='הכול','הכל','כל המנה','all'
+_EXCEPT='חוץ מ','למעט','except'
+_CHANGE=re.compile('^(?:לשנות|שינוי|change)\\s*([^:]{0,20}):\\s*(.+)$',re.S|re.I)
+_NUM=re.compile('^\\s*(\\d{1,2})\\s*[.):\\-]?\\s+(.+)$',re.S)
+_SPLIT=re.compile('\\s*[,;]\\s*(?=\\d{1,2}\\s*[.):\\-]?\\s+\\S)')
+Q={'he':{'head':'אישור המדיניות','batch':'עמדות ירוקות שנשענות על המסמכים שלכם, כל אחת לפחות בשני מסמכים ({n} עמדות). ההמלצה: לאשר את כולן במנה אחת. הנוסח של כל עמדה הוא הנוסח שחוזר במסמכים שלכם, והוא מופיע במלואו בפלייבוק.','batch_line':'{n}. {topic} (סעיף {num}) · {pos} · {docs} מסמכים','reply_batch':'לתשובה: "לאשר הכול", "לאשר הכול חוץ מ-3, 7" (מה שהוצא עובר לבדיקה אחת אחת), או "לדלג על המנה".','decisions':'מספרים שההנהלה צריכה לקבוע ({n}). אלה ערכים עסקיים, ולא נוסח משפטי, ולכל אחד מוצע מי מחליט. הערך נכתב בנוסח במקום הסוגריים, ואת העמדה עצמה מאשרים אחר כך עם שאר העמדות.','proposal':'   מה המדיניות מציעה: {p}','owner':'   מי מחליט, לפי ההצעה: {o}','decision_head':'{n}. {q} (סעיף {num})','reply_decisions':'לתשובה, שורה לכל ערך: "1 לשנות: <הערך>", "2 לאשר" (כשאין ערך לקבוע), או "3 לדלג".','questions':'שאלות פתוחות שחוסמות את אישור הנושא שלהן ({n}).','option':'   {k}) {o}','rec':'   ההמלצה של Areo: {r}','reply_questions':'לתשובה, שורה לכל שאלה: "1 אפשרות 2", או "1 לדלג".','topics':'נושאים לבדיקה אחת אחת ({n} נושאים, {m} עמדות).','topic_head':'{n}. {topic} (סעיף {num}) · חשיבות: {imp}','tracks':{'green':'מקובל עלינו (ירוק)','yellow':'אפשר להתגמש (צהוב)','red':'לא מסכימים (אדום)'},'track':'   {label}: {pos}','wording':'   הנוסח שיוחל, מילה במילה: {w}','cure':'   הנוסח שנשיב, מילה במילה: {w}','flags':'   לתשומת לבכם: {f}','legal':'   כדאי שעורך דין יעבור על זה','assume':'   הנחה (אישור העמדה מאשר גם אותה): {a}','reply_topics':'לתשובה, שורה לכל נושא: "1 לאשר", "2 לשנות צהוב: <הנוסח>", "3 לדלג", ובנושא שעורך דין צריך לעבור עליו, אחרי שעבר: "4 נבדק ולאשר". אפשר גם "לאשר הכול".','updates':'עדכונים למדיניות מהעסקאות ({n}): מה שעורך הדין שינה ביד לפני המשלוח, ומה שהוחלט מעבר למדיניות. עדכון שמאשרים נכנס למדיניות כעמדה מאושרת.','update_head':'{n}. {topic} (סעיף {num}) · {label}','event':'   {deal}, {clause}: {what}','current':'   היום במדיניות: {w}','proposed':'   מוצע: {w}','no_proposed':'   אין נוסח מוצע מילה במילה: לעדכון כתבו "לשנות: <הנוסח>".','reply_updates':'לתשובה, שורה לכל עדכון: "1 לאשר", "2 לשנות: <הנוסח>", או "3 לדלג".','waiting':'{n} עמדות מחכות למספר שההנהלה תקבע במקום הסוגריים.','info_q':'שאלה פתוחה שנסגרת רק בעדכון המדיניות, ועד אז אי אפשר לאשר את המדיניות כולה: {q}','more':'אחרי המנה הזו ממתינים עוד {n} פריטים.','empty':'אין עמדות שממתינות לאישור.','ignored':'לא הוצעו: {a} שינויים שאינם נוגעים בכלל של הפלייבוק, {b} שינויים בהערות לצד השני.','rec_company':'לאשר: העמדה חוזרת ב-{k} מסמכים שלכם.','rec_areo':'לאשר רק אם הנוסח משקף את מה שאתם מוכנים לתת: זו המלצה של Areo, ולא נוסח מהמסמכים שלכם.','rec_market':'לאשר אם הנקודה בשוק מתאימה לכם: העמדה נגזרה ממקורות שוק ציבוריים.','rec_weak':'לבדוק לפני אישור: יש מעט דוגמאות מההסכמים שלכם ({why}).','rec_statute':'לאשר אחרי שמוודאים שהדרישה בדין חלה עליכם.','rec_legal':'לאשר אחרי שעורך דין עבר על זה, בתשובה "נבדק ולאשר".','weak_docs':'פחות משני מסמכים','weak_unverified':'מקור שעוד לא אימתנו','weak_assume':'נשענת על הנחה','weak_corpus':'המסמכים אינם הסכמים חתומים של החברה','rec_update':'חזר ב-{k} עסקאות, ולכן מועמד לעדכון. כדאי לכתוב נוסח כללי, בלי פרטי העסקה ("לשנות").','rec_update_skip':'עסקה אחת היא נקודת מידע אחת, ולא מדיניות: מומלץ לדלג, ולחזור לזה אם יחזור בעסקה נוספת.','rec_adapt':'התאמה של הנוסח לעסקה הזו (דין, מטבע, כינויים), ולא שינוי מדיניות: מומלץ לדלג.','ev_text_edited':'שונה ביד לפני המשלוח. הופק: {b}. נשלח: {a}','ev_text_added':'נוסף ביד לפני המשלוח: {a}','ev_text_deleted':'נמחק ביד לפני המשלוח: {b}','ev_our_change_rejected':'השינוי שלנו בוטל ביד לפני המשלוח. הופק: {b}. נשלח: {a}','ev_accepted_red':'התקבל נוסח שהפלייבוק מסווג כאדום: {a}','ev_decided_outside':'הכרעה מפורשת בנושא שהפלייבוק לא הכריע בו: {a}','ev_red_line_exception':'חריגה מקו אדום שאושרה בעסקה: {a}','ev_adaptation':'התאמה של נוסח הפלייבוק לעסקה: {a}'},'en':{'head':'Policy approval','batch':'Green positions that rest on your own documents, each in at least two documents ({n} positions). Recommendation: approve them all in one batch. The wording of each position is the wording that recurs in your documents, and it appears in full in the playbook.','batch_line':'{n}. {topic} (clause {num}) · {pos} · {docs} documents','reply_batch':'To answer: "approve all", "approve all except 3, 7" (what is excluded moves to one-by-one review), or "skip the batch".','decisions':'Numbers for management to set ({n}). These are business values, not legal wording, and each has a proposed owner. The value goes into the wording in place of the brackets, and you approve the position itself later with the other positions.','proposal':'   What the policy proposes: {p}','owner':'   Who decides, as proposed: {o}','decision_head':'{n}. {q} (clause {num})','reply_decisions':'To answer, one line per value: "1 change: <the value>", "2 approve" (when there is no value to set), or "3 skip".','questions':'Open questions that block approval of their topic ({n}).','option':'   {k}) {o}','rec':'   Areo recommendation: {r}','reply_questions':'To answer, one line per question: "1 option 2", or "1 skip".','topics':'Topics for one-by-one review ({n} topics, {m} positions).','topic_head':'{n}. {topic} (clause {num}) · Importance: {imp}','tracks':{'green':'We accept (green)','yellow':'We can flex (yellow)','red':"We don't agree (red)"},'track':'   {label}: {pos}','wording':'   Wording to apply, verbatim: {w}','cure':'   Wording we answer with, verbatim: {w}','flags':'   Note: {f}','legal':'   A lawyer should review this','assume':'   Assumption (approving the position confirms it): {a}','reply_topics':'To answer, one line per topic: "1 approve", "2 change yellow: <the wording>", "3 skip", and for a topic a lawyer needs to review, once they have: "4 reviewed and approve". "approve all" also works.','updates':'Policy updates from deals ({n}): what the lawyer changed by hand before sending, and what was decided beyond the policy. An update you approve enters the policy as an approved position.','update_head':'{n}. {topic} (clause {num}) · {label}','event':'   {deal}, {clause}: {what}','current':'   In the policy today: {w}','proposed':'   Proposed: {w}','no_proposed':'   No verbatim wording proposed: to update, write "change: <the wording>".','reply_updates':'To answer, one line per update: "1 approve", "2 change: <the wording>", or "3 skip".','waiting':'{n} positions are waiting for management to set the number in brackets.','info_q':'An open question that closes only in a policy update, and until then the whole policy cannot be approved: {q}','more':'{n} more items are waiting after this batch.','empty':'No positions are waiting for approval.','ignored':'Not proposed: {a} changes that touch no playbook rule, {b} changes to comments to the other side.','rec_company':'Approve: the position recurs in {k} of your documents.','rec_areo':'Approve only if the wording reflects what you are prepared to give: this is an Areo recommendation, not wording from your documents.','rec_market':'Approve if the market point suits you: the position was derived from public market sources.','rec_weak':'Check before approving: there are few examples from your agreements ({why}).','rec_statute':'Approve after confirming the legal requirement applies to you.','rec_legal':'Approve once a lawyer has reviewed it, by answering "reviewed and approve".','weak_docs':'fewer than two documents','weak_unverified':'a source we have not verified yet','weak_assume':'rests on an assumption','weak_corpus':"the documents are not the company's signed agreements",'rec_update':'Recurred in {k} deals, so it is a candidate for an update. Write general wording, without the deal details ("change").','rec_update_skip':'One deal is one data point, not a policy: skipping is recommended, and coming back to it if it recurs in another deal.','rec_adapt':'An adaptation of the wording to this deal (law, currency, defined terms), not a policy change: skipping is recommended.','ev_text_edited':'Edited by hand before sending. Produced: {b}. Sent: {a}','ev_text_added':'Added by hand before sending: {a}','ev_text_deleted':'Deleted by hand before sending: {b}','ev_our_change_rejected':'Our change was undone by hand before sending. Produced: {b}. Sent: {a}','ev_accepted_red':'Wording the playbook classifies as red was accepted: {a}','ev_decided_outside':'An explicit decision on a topic the playbook did not decide: {a}','ev_red_line_exception':'A red-line exception approved in the deal: {a}','ev_adaptation':'An adaptation of the playbook wording to the deal: {a}'}}
+class ReplyError(ValueError):0
+def _ql(lang):return'en'if str(lang or'').lower().startswith('en')else'he'
+def _counts(cells):return{A:sum(1 for B in cells.values()if B.get('status')==A)for A in('approved','approved_modified','pending_choice','pending_legal_review','open','not_signed','skipped')}
+def _rules(model):return{A['rule_id']:A for A in model.get('rules')or[]if A.get('rule_id')}
+def _views(model,lang):
+	C=lang;B=model;G=A.role_lines(B,C);H=A.unverified_index(B);I=A.management_decisions(B,C);D={}
+	for E in B.get('rules')or[]:
+		for F in S.TRACKS:D[S.cell_key(E['rule_id'],F)]=A.cell_view(B,E,F,C,H,G,I)
+	return D
+def _cell_done(cell,view):return bool(S.cell_counts(cell)and cell.get('approved_fp')in(None,view['fp']))
+def _unverified(view):return any(A.startswith(('ממצא לא מאומת','Unverified finding'))for A in view['flags'])
+def _weak_reasons(model,rule,track,view,lang):
+	B=Q[_ql(lang)];C=(rule.get('traffic_light')or{}).get(track)or{};A=[]
+	if len(C.get('evidence')or[])<MIN_STRONG_DOCS:A.append(B['weak_docs'])
+	if _unverified(view):A.append(B['weak_unverified'])
+	if view['assumptions']:A.append(B['weak_assume'])
+	if S.corpus_status(model)not in STRONG_CORPUS:A.append(B['weak_corpus'])
+	return A
+def is_strong(model,rule,track,view,blocked_rules=()):C=track;A=view;D=(rule.get('traffic_light')or{}).get(C)or{};B=D.get('basis');return bool(C=='green'and B and B not in S.NON_COMPANY_BASES and B!='statute'and S.corpus_status(model)in STRONG_CORPUS and len(D.get('evidence')or[])>=MIN_STRONG_DOCS and not(A['legal']or A['slots']or A['assumptions']or _unverified(A))and rule['rule_id']not in blocked_rules)
+def _recommendation(model,rule,track,view,lang):
+	D=track;B=view;A=Q[_ql(lang)];E=(rule.get('traffic_light')or{}).get(D)or{};C=E.get('basis')
+	if B['legal']:return'legal',A['rec_legal']
+	F=_weak_reasons(model,rule,D,B,lang)
+	if C=='areo_proposal':return'review',A['rec_areo']
+	if C=='statute':return'review',A['rec_statute']
+	if C=='market_standard'and not _unverified(B):return'review',A['rec_market']
+	if F:return'review',A['rec_weak'].format(why=', '.join(F))
+	return'approve',A['rec_company'].format(k=len(E.get('evidence')or[]))
+def _decision_done(model,d,rules):
+	if any(A.get('field')=='management_decision'and A.get('rule_id')==d.get('rule_id')for A in model.get('change_log')or[]):return True
+	if d.get('slots'):A=json.dumps((rules.get(d.get('rule_id'))or{}).get('traffic_light')or{},ensure_ascii=False);return not any(B in A for B in d['slots'])
+	return False
+def queue_state(model,cells,lang='he',revisit=False,demoted=(),skipped=()):
+	H=revisit;D=lang;C=model;D=_ql(D);E=_rules(C);F=_views(C,D);G=S.open_decisive(C);Q={A.get('rule_id')for A in G if A.get('rule_id')and A.get('rule_id')!='GLOBAL'};I,J=[],0
+	for(B,K)in F.items():
+		L=(cells or{}).get(B)or{}
+		if _cell_done(L,K):continue
+		if L.get('status')=='skipped'and not H:continue
+		if K['slots']:J+=1;continue
+		I.append(B)
+	M,N=[],{}
+	for B in I:
+		O,Z,R=B.split('|')
+		if B not in demoted and is_strong(C,E[O],R,F[B],Q):M.append(B)
+		else:N.setdefault(O,[]).append(B)
+	P=set()if H else set(skipped or());T=[A for A in A.management_decisions(C,D)if not _decision_done(C,A,E)and'decision:%s'%A.get('rule_id')not in P];U=[A for A in G if A.get('options')and'question:%s'%(A.get('id')or A.get('queue_id'))not in P];V=[A for A in G if not A.get('options')];W={'critical':0,'high':1,'medium':2,'low':3};X={B:A for(A,B)in enumerate(E)};Y=sorted(N.items(),key=lambda kv:(W.get(str(E[kv[0]].get('importance')or'').lower(),4),X[kv[0]]));return{'batch':M,'decisions':T,'questions':U,'topics':Y,'info':V,'waiting':J,'views':F}
+def _cell_item(model,key,view,lang):B=model;A=view;D,H,C=key.split('|');E=_rules(B)[D];F,G=_recommendation(B,E,C,A,lang);return{'key':key,'track':C,'fp':A['fp'],'position':A['position'],'wording':A['wording'],'effects':A['effects'],'flags':A['flags'],'legal':A['legal'],'assumptions':A['assumptions'],'rec_code':F,'recommendation':G}
+def make_batch(model,cells,lang='he',stage=None,revisit=False,demoted=(),skipped=()):
+	L=stage;I=model;A=queue_state(I,cells,lang,revisit,demoted,skipped);J=_rules(I)
+	for E in[L]if L else STAGES:
+		B,G=[],0
+		if E=='batch'and A['batch']:
+			for(F,H)in enumerate(A['batch'],1):C=H.split('|')[0];O=(J[C].get('traffic_light')or{}).get('green')or{};B.append({'n':F,'kind':'cell','rule_id':C,'topic':J[C].get('topic_name')or'','key':H,'track':'green','fp':A['views'][H]['fp'],'position':A['views'][H]['position'],'docs':len(O.get('evidence')or[])})
+		elif E=='decisions'and A['decisions']:
+			for(F,P)in enumerate(A['decisions'][:BATCH_MAX],1):B.append(dict(P,n=F,kind='decision'))
+			G=max(0,len(A['decisions'])-BATCH_MAX)
+		elif E=='questions'and A['questions']:
+			for(F,D)in enumerate(A['questions'][:BATCH_MAX],1):B.append({'n':F,'kind':'question','qid':D.get('id')or D.get('queue_id'),'rule_id':D.get('rule_id'),'question':D.get('question')or'','options':list(D.get('options')or[]),'recommendation':D.get('recommendation')or''})
+			G=max(0,len(A['questions'])-BATCH_MAX)
+		elif E=='topics'and A['topics']:
+			M=0
+			for(C,K)in A['topics']:
+				if B and M+len(K)>BATCH_MAX:break
+				N=J[C];Q=[_cell_item(I,B,A['views'][B],lang)for B in K];B.append({'n':len(B)+1,'kind':'topic','rule_id':C,'topic':N.get('topic_name')or'','importance':N.get('importance')or'','cells':Q});M+=len(K)
+			G=len(A['topics'])-len(B)
+		if B:return{'stage':E,'items':B,'waiting':A['waiting'],'more':G,'info':[A.get('question')or''for A in A['info']]}
+def _event_key(tid,source,ev):A=ev;B='|'.join(str(A)for A in(tid,source,A.get('clause_id'),A.get('kind'),A.get('round'),A.get('before'),A.get('after')));return hashlib.sha256(B.encode('utf-8')).hexdigest()[:12]
+def deal_events(state,model):
+	E=state;R=E.get('meta')or{};L=R.get('transaction_id')or'';I=_rules(model);J={A.get('clause_id'):A for A in E.get('clauses')or[]if isinstance(A,dict)};M,F=[],{'no_rule':0,'comment':0}
+	def G(source,kind,rid,track,cl_id,before,after,proposed,rnd=None,date=None):B=source;A={'source':B,'kind':kind,'rule_id':rid,'track':track,'clause_id':cl_id,'round':rnd,'date':date,'before':before or'','after':after or'','proposed':(proposed or'').strip()or None,'transaction_id':L};A['key']=_event_key(L,B,A);M.append(A)
+	for B in E.get('lawyer_overrides')or[]:
+		if not isinstance(B,dict):continue
+		C=[A for A in B.get('rule_ids')or[]if A in I]
+		if not C:F['no_rule']+=1;continue
+		if B.get('kind')not in TEXT_KINDS:F['comment']+=1;continue
+		N=(J.get(B.get('clause_id'))or{}).get('track_match');G('lawyer_override',B['kind'],C[0],N if N in('green','yellow')else'green',B.get('clause_id'),B.get('produced_text')or B.get('before'),B.get('sent_text')or B.get('after'),B.get('sent_text')if B['kind']!='our_change_rejected'else None,B.get('round'),B.get('date'))
+	O=set()
+	for D in E.get('exception_log')or[]:
+		if not isinstance(D,dict):continue
+		A=J.get(D.get('clause_id'))or{};C=[A for A in D.get('rule_ids')or A.get('rule_ids')or[]if A in I]
+		if not C:F['no_rule']+=1;continue
+		P='adaptation'if D.get('type')=='adaptation'else'red_line_exception';G('exception_log',P,C[0],'yellow',D.get('clause_id'),A.get('playbook_default'),D.get('what')or D.get('inserted')or'',A.get('agreed_text')if P!='adaptation'else None,None,D.get('date'));O.add(D.get('clause_id'))
+	for(K,A)in J.items():
+		C=[A for A in A.get('rule_ids')or[]if A in I]
+		if not C or K in O:continue
+		Q=A.get('user_decision')or{};H=A.get('agreed_text')or A.get('current_text')or''
+		if A.get('op')=='accept'and A.get('track_match')=='red':G('clause','accepted_red',C[0],'yellow',K,A.get('playbook_default'),H,H,A.get('accepted_in_round')or A.get('decided_in_round'))
+		elif Q.get('answer_kind')=='explicit'and A.get('track_match')not in('green','yellow','red'):G('clause','decided_outside',C[0],'yellow',K,A.get('playbook_default'),H,H,A.get('decided_in_round'),str(Q.get('recorded_at')or'')[:10]or None)
+	return M,F
+def deal_updates(states,model,lang='he'):
+	J=lang;E=model;J=_ql(J);K=Q[J];V=E.get('family_id');X={A.get('key')for A in E.get('deal_feedback')or[]};M={}
+	for N in E.get('deal_feedback')or[]:M.setdefault((N.get('rule_id'),N.get('track')),set()).add(N.get('transaction_id'))
+	W,L,C={},[],{'no_rule':0,'comment':0}
+	for O in states:
+		P=((O.get('meta')or{}).get('position')or{}).get('playbook_family');Y=(O.get('meta')or{}).get('transaction_id')or''
+		if P and V and P!=V:L.append('%s: %s'%(Y,P));continue
+		F,Z=deal_events(O,E)
+		for D in C:C[D]+=Z[D]
+		for B in F:
+			M.setdefault((B['rule_id'],B['track']),set()).add(B['transaction_id'])
+			if B['key']not in X:W.setdefault((B['rule_id'],B['track']),[]).append(B)
+	R=_rules(E);a={B:A for(A,B)in enumerate(R)};G=[]
+	for((H,I),F)in sorted(W.items(),key=lambda kv:(a[kv[0][0]],S.TRACKS.index(kv[0][1]))):
+		b=(R[H].get('traffic_light')or{}).get(I)or{};D=len({A for A in M.get((H,I),())if A})
+		if all(A['kind']=='adaptation'for A in F):T,U='skip',K['rec_adapt']
+		elif D>=2:T,U='update',K['rec_update'].format(k=D)
+		else:T,U='skip',K['rec_update_skip']
+		c=next((A['proposed']for A in reversed(F)if A.get('proposed')),None);G.append({'n':len(G)+1,'kind':'update','rule_id':H,'track':I,'topic':R[H].get('topic_name')or'','events':F,'proposed':c,'current':A.track_wording(I,b,J),'deals':D,'rec_code':T,'recommendation':U,'key':S.cell_key(H,I)})
+	if C['no_rule']or C['comment']:L.append(K['ignored'].format(a=C['no_rule'],b=C['comment']))
+	if not G:return None,L
+	return{'stage':'updates','items':G[:BATCH_MAX],'waiting':0,'info':[],'more':max(0,len(G)-BATCH_MAX)},L
+def queue_path(records_dir,model):return os.path.join(records_dir,QUEUE_FILE%(model.get('family_id')or'family'))
+def load_queue(records_dir,model):
+	A=model;B=queue_path(records_dir,A)
+	if os.path.exists(long_path(B)):
+		with io.open(long_path(B),encoding='utf-8')as C:return json.load(C)
+	return{'family_id':A.get('family_id'),'batches':[],'demoted':[]}
+def save_queue(records_dir,model,data):
+	B=records_dir;A=queue_path(B,model);P.check_write_path(A);os.makedirs(B,exist_ok=True)
+	with io.open(A,'w',encoding='utf-8')as C:json.dump(data,C,ensure_ascii=False,indent=1)
+	return A
+def open_batch(queue):A=[A for A in queue.get('batches')or[]if A.get('status')=='open'];return A[-1]if A else None
+def issue_batch(queue,batch,lang,today=None):
+	B=queue;A=batch
+	for C in B.get('batches')or[]:
+		if C.get('status')=='open':C['status']='replaced'
+	D='Q-%04d'%(1+len(B.get('batches')or[]));A=dict(A,batch_id=D,lang=_ql(lang),status='open',issued_at=today or _dt.date.today().isoformat());B.setdefault('batches',[]).append(A);return A
+_PLAIN_FLAGS={'he':(('הצעת Areo','המלצה של Areo'),('ממצא לא מאומת','מקור שעוד לא אימתנו')),'en':(('Areo proposal','Areo recommendation'),('Unverified finding','A source we have not verified yet'))}
+def _plain_flag(flag,lang):
+	A=flag
+	for(B,C)in _PLAIN_FLAGS[_ql(lang)]:A=A.replace(B,C)
+	return A
+def _short(s,n=220):s=norm_text(s);return s if len(s)<=n else s[:n-1].rstrip()+'…'
+def render_batch(batch,model=None,lang='he'):
+	K=model;H=lang;G=batch;H=_ql(H);B,M=Q[H],A.SHEETS[H];P=A.role_lines(K,H)if K else[];I=G['stage'];F=G['items'];D=[B['head']];L=lambda it:it.get('num')or(A.display_num(K,it.get('rule_id'))if K else'')or'-'
+	if I=='batch':
+		D.append(B['batch'].format(n=len(F)))
+		for C in F:D.append(B['batch_line'].format(n=C['n'],num=L(C),topic=C['topic'],pos=C['position'],docs=C['docs']))
+		D.append(B['reply_batch'])
+	elif I=='decisions':
+		D.append(B['decisions'].format(n=len(F)))
+		for C in F:
+			D.append(B['decision_head'].format(n=C['n'],q=C['question'],num=L(C)))
+			if C.get('proposal'):D.append(B['proposal'].format(p=' / '.join(C['proposal'].split('\n'))))
+			D.append(B['owner'].format(o=C.get('owner')or''))
+		D.append(B['reply_decisions'])
+	elif I=='questions':
+		D.append(B['questions'].format(n=len(F)))
+		for C in F:
+			D.append('%d. %s'%(C['n'],C['question']))
+			for(R,S)in enumerate(C['options'],1):D.append(B['option'].format(k=R,o=S))
+			if C.get('recommendation'):D.append(B['rec'].format(r=C['recommendation']))
+		D.append(B['reply_questions'])
+	elif I=='topics':
+		D.append(B['topics'].format(n=len(F),m=sum(len(A['cells'])for A in F)))
+		for C in F:
+			T=M['importance'].get(str(C.get('importance')or'').lower(),C.get('importance')or'');D.append(B['topic_head'].format(n=C['n'],num=L(C),topic=C['topic'],imp=T));N=[]
+			for E in C['cells']:
+				D.append(B['track'].format(label=B['tracks'][E['track']],pos=E['position']));D.append(B['cure'if E['track']=='red'else'wording'].format(w=E['wording']or M['no_wording']))
+				for(O,U)in P:
+					if(E.get('effects')or{}).get(O):D.append('   '+U+E['effects'][O])
+				if E.get('flags'):D.append(B['flags'].format(f=' · '.join(_plain_flag(A,H)for A in E['flags'])))
+				if E.get('legal'):D.append(B['legal'])
+				for V in E.get('assumptions')or[]:D.append(B['assume'].format(a=V))
+				if E['recommendation']not in N:N.append(E['recommendation'])
+			D.append(B['rec'].format(r=' '.join(N)))
+		D.append(B['reply_topics'])
+	elif I=='updates':
+		D.append(B['updates'].format(n=len(F)))
+		for C in F:
+			D.append(B['update_head'].format(n=C['n'],num=L(C),topic=C['topic'],label=B['tracks'][C['track']]))
+			for J in C['events']:W=B['ev_'+J['kind']].format(b=_short(J.get('before')),a=_short(J.get('after')));D.append(B['event'].format(deal=J.get('transaction_id')or'',clause=J.get('clause_id')or'',what=W))
+			D.append(B['current'].format(w=C.get('current')or M['no_wording']));D.append(B['proposed'].format(w=C['proposed'])if C.get('proposed')else B['no_proposed']);D.append(B['rec'].format(r=C['recommendation']))
+		D.append(B['reply_updates'])
+	if G.get('more'):D.append(B['more'].format(n=G['more']))
+	if G.get('waiting'):D.append(B['waiting'].format(n=G['waiting']))
+	for X in G.get('info')or[]:D.append(B['info_q'].format(q=X))
+	return'\n'.join(D)
+def _track_of(s):s=(s or'').lower();A=[A for(A,B)in _TRACK_WORDS.items()if any(A in s for A in B)];return A[0]if len(A)==1 else None
+def _has(s,words):A=s.lower();return any(B in A for B in words)
+def _classify(cmd,item,lang='he'):
+	B=item;A=cmd;A=A.strip().strip('"״\'').strip();E=_CHANGE.match(A)
+	if E:
+		D=E.group(2).strip().strip('"״').strip()
+		if not D:raise ReplyError('"לשנות" בלי נוסח בפריט %d'%B['n'])
+		if B.get('kind')=='decision'and'='not in D:
+			for G in B.get('context')or():value_for_slot(D,G,lang)
+		return{'action':'change','track':_track_of(E.group(1)),'text':D}
+	if B['kind']=='question':
+		F=re.match('^(?:אפשרות|option)?\\s*(\\d{1,2})$',A,re.I)
+		if F:
+			C=int(F.group(1))
+			if not 1<=C<=len(B['options']):raise ReplyError('אין אפשרות %d בשאלה %d'%(C,B['n']))
+			return{'action':'choose','option':C}
+		for(C,H)in enumerate(B['options'],1):
+			if norm_text(A)==norm_text(H):return{'action':'choose','option':C}
+	if _has(A,_NEGATE):raise ReplyError('תשובה שלילית בפריט %d: כדי לא לאשר, "לשנות: <הנוסח>" או "לדלג"'%B['n'])
+	if _has(A,_LAWYER_LATER):return{'action':'skip','lawyer_later':True}
+	if _has(A,_SKIP):return{'action':'skip'}
+	if _has(A,_APPROVE):return{'action':'approve','reviewed':_has(A,_REVIEWED),'track':_track_of(A)}
+	raise ReplyError('לא הבנתי את התשובה לפריט %d: "%s"'%(B['n'],_short(A,60)))
+def parse_reply(reply,batch):
+	H=batch;B={A['n']:A for A in H['items']};F=[A.strip()for A in(reply or'').splitlines()if A.strip()]
+	if not F:raise ReplyError('תשובה ריקה')
+	if len(F)==1 and not _NUM.match(F[0]):
+		A=norm_text(F[0]);N=_has(A,_ALL)or'המנה'in A or'batch'in A.lower()
+		if N and not _CHANGE.match(A):
+			if _has(A,_NEGATE):raise ReplyError('תשובה שלילית לכל המנה: "לדלג על המנה", או תשובה לכל פריט')
+			if _has(A,_SKIP):return{A:{'action':'skip'}for A in B}
+			if _has(A,_APPROVE):
+				I=set()
+				for O in _EXCEPT:
+					L=A.lower().find(O)
+					if L>=0:I={int(A)for A in re.findall('\\d{1,2}',A[L:])}
+				M=sorted(I-set(B))
+				if M:raise ReplyError('אין במנה פריט %s'%', '.join(map(str,M)))
+				P=_has(A,_REVIEWED);return{A:{'action':'except'}if A in I else{'action':'approve','reviewed':P,'track':None}for A in B}
+		if len(B)==1:return{1:_classify(A,B[1],H.get('lang')or'he')}
+		raise ReplyError('לא ברור לאיזה פריט התשובה מתייחסת. כתבו את מספר הפריט בתחילת השורה, או "לאשר הכול"')
+	J={}
+	for Q in F:
+		K,G=[],None
+		for C in _SPLIT.split(Q):
+			if G is not None:G+=', '+C;continue
+			D=_NUM.match(C)
+			if D and _CHANGE.match(D.group(2).strip()):G=C
+			else:K.append(C)
+		if G is not None:K.append(G)
+		for C in K:
+			D=_NUM.match(C)
+			if not D:raise ReplyError('שורה בלי מספר פריט: "%s"'%_short(C,60))
+			E=int(D.group(1))
+			if E not in B:raise ReplyError('אין במנה פריט %d'%E)
+			if E in J:raise ReplyError('שתי תשובות לפריט %d'%E)
+			J[E]=_classify(D.group(2),B[E],H.get('lang')or'he')
+	return J
+def set_track_wording(t,track,text,lang='he'):
+	B=text
+	if track=='yellow':
+		C=t.get('fallback_wording')
+		if isinstance(C,dict)and C.get('text'):D=C['text'];C['text']=B;return'fallback_wording.text',D
+		if isinstance(C,str)and C.strip():t['fallback_wording']=B;return'fallback_wording',C
+	E=t.get('proposed_clause')
+	if isinstance(E,dict):D=A.track_wording('green',{'proposed_clause':E},lang);F='he'if re.search('[\u0590-\u05ff]',B)else'en';t['proposed_clause']={'he':B if F=='he'else'','en':B if F=='en'else'','source_language':F};return'proposed_clause',D
+	if not E and t.get('preferred_wording'):D=t['preferred_wording'];t['preferred_wording']=B;return'preferred_wording',D
+	t['proposed_clause']=B;return'proposed_clause',E or''
+def _fill_slots(text,mapping,units=None):
+	B=text
+	for(C,G)in mapping.items():
+		H=(units or{}).get(C);I=_VALUE.match(G or'')if H else None
+		if not I or C not in B:B=B.replace(C,G);continue
+		D,E=[],0
+		while True:
+			F=B.find(C,E)
+			if F<0:D.append(B[E:]);break
+			D.append(B[E:F]);J=B[F+len(C):];D.append(I.group(1)if J[:1].isspace()and A.unit_of(J[:24])==H else G);E=F+len(C)
+		B=''.join(D)
+	return B
+def _replace_slots(obj,mapping,units=None):
+	E=units;D=mapping;A=obj;C=0
+	if isinstance(A,dict):F=list(A.items())
+	elif isinstance(A,list):F=list(enumerate(A))
+	else:return 0
+	for(H,B)in F:
+		if isinstance(B,str):
+			G=_fill_slots(B,D,E)
+			if G!=B:A[H]=G;C+=1
+		else:C+=_replace_slots(B,D,E)
+	return C
+_SLOT_TEXT_FIELDS='position','proposed_clause','fallback_wording','fallback_steps','preferred_wording','company_effect','role_effects'
+_VALUE=re.compile('^\\s*([-+]?\\d+(?:[.,]\\d+)?)\\s*(.*)$',re.S)
+_UNIT_CONFLICT={'he':'הערך "{v}" ביחידה אחרת מהמשפט: "{s}". היחידה בו היא {u}. כתבו את המספר ב{u}, או שנו את הנוסח ("לשנות ירוק: <הנוסח>")','en':'The value "{v}" uses a different unit from the sentence: "{s}". Its unit is {u}. Write the number in {u}, or change the wording ("change green: <the wording>")'}
+def value_for_slot(value,ctx,lang='he'):
+	D=value;B=ctx;C=(B or{}).get('unit');F=_VALUE.match(D or'')
+	if not C or not F:return D
+	E,G=F.group(1),F.group(2).strip();H=A.unit_of(G)if G else None
+	if H and H!=C:raise ReplyError(_UNIT_CONFLICT[_ql(lang)].format(v=D,s=B.get('sentence')or B.get('slot'),u=A.UNIT_NAMES[C][_ql(lang)]))
+	if G and not H:return D
+	if B.get('unit_where')=='after':return E
+	if C=='percent':return E+'%'
+	if C=='multiple':return E
+	I=B.get('sentence')or B.get('slot')or'';return'%s %s'%(E,A.UNIT_NAMES[C]['he'if re.search('[\u0590-\u05ff]',I)else'en'])
+def apply_decision_value(rule,slots,value,context=None,lang='he'):
+	F=value;E=slots;E=list(dict.fromkeys(E or[]));F=(F or'').strip()
+	if'='in F:
+		C={}
+		for I in re.split('\\s*;\\s*',F):
+			if'='not in I:continue
+			D,J=(A.strip()for A in I.split('=',1));D=D if D.startswith('[')else'[%s]'%D
+			if D not in E or not J:raise ReplyError('אין בהחלטה סוגריים %s'%D)
+			C[D]=J
+	elif len(E)==1 or not re.search('[^\\W\\d_]',F):C={A:F for A in E}
+	else:raise ReplyError('בהחלטה כמה ערכים (%s): כתבו "לשנות: [x]=ערך; [y]=ערך"'%', '.join(E))
+	K={A.get('slot'):A for A in context or()if isinstance(A,dict)};C={A:value_for_slot(B,K.get(A),lang)for(A,B)in C.items()};L={A:(K.get(A)or{}).get('unit')for A in C};G=[]
+	for(M,A)in(rule.get('traffic_light')or{}).items():
+		if not isinstance(A,dict):continue
+		for B in _SLOT_TEXT_FIELDS+tuple(A for A in A if A.startswith('as_')and A.endswith('_effect')):
+			if B not in A:continue
+			N=json.loads(json.dumps(A[B],ensure_ascii=False))
+			if isinstance(A[B],str):
+				H=_fill_slots(A[B],C,L)
+				if H!=A[B]:A[B]=H;G.append((M,B,N,H))
+			elif _replace_slots(A[B],C,L):G.append((M,B,N,A[B]))
+	return G
 def _bump(version):
-    try:
-        major, minor = str(version or '1.0').split('.')[:2]
-        return '%d.%d' % (int(major), int(minor) + 1)
-    except ValueError:
-        return str(version or '1.0') + '.1'
-
-
-def _approved_cell(view, roles, name, role, today, reviewed, modified, answer):
-    effects = [view['effects'][r] for r, _ in roles]
-    out = {'status': 'approved_modified' if modified else 'approved', 'policy_claim': True, 'reason': None,
-           'approved_text': {'position': view['position'], 'wording': view['wording'], 'effects': effects},
-           'approved_fp': view['fp'], 'issued_fp': view['fp'], 'approved_at': today, 'signer': name, 'role': role,
-           'simulated': False, 'legal_review_required': view['legal'],
-           'legal_review_done_by': name if (view['legal'] and reviewed) else None,
-           'legal_review_done_at': today if (view['legal'] and reviewed) else None,
-           'assumptions_confirmed': [{'tag': 'chat', 'text': a, 'confirmed_by': name, 'at': today}
-                                     for a in view['assumptions']],
-           'via': 'chat', 'answer': answer}
-    if view['slots']:
-        out.update(status='pending_choice', policy_claim=False,
-                   reason='נשאר ערך שלא נקבע: %s (החלטות הנהלה)' % ', '.join(view['slots']))
-    elif view['legal'] and not reviewed:
-        out.update(status='pending_legal_review', policy_claim=False,
-                   reason='טעון בדיקה משפטית: התשובה לא אמרה "נבדק"')
-    return out
-
-
-def apply_answers(model, batch, answers, approver, role=None, reply='', today=None, prior_cells=None, lang='he'):
-    """מחיל את התשובות על המודל ועל התאים. מחזיר {cells, record, warnings, wording_changed, summary, changes}.
-    כותב למודל: נוסח שהשתנה (לשנות, ערך של החלטת הנהלה, עדכון מעסקה) עם שורה ב-change_log; deal_feedback;
-    שם ותאריך הבדיקה ב-legal_review_required. תא שאושר קודם ושהנוסח שלו השתנה עכשיו חוזר להיות פתוח.
-    ReplyError לפני כל כתיבה כשהמאשר אינו שם מלא של אדם."""
-    today = today or _dt.date.today().isoformat()
-    if not _is_person_name(approver or ''):
-        raise ReplyError('"%s" אינו שם מלא של אדם. כל תשובה נרשמת בשם המאשר' % (approver or ''))
-    lang = _ql(lang)
-    rules = _rules(model)
-    roles = A.role_lines(model, lang)
-    before_views = _views(model, lang)
-    cells = {k: dict(v) for k, v in (prior_cells or {}).items()}
-    touched, warnings, choices, decisions, updates, skipped, changes = set(), [], {}, [], [], [], []
-    vfrom = str(model.get('version') or '1.0')
-    vto = _bump(vfrom)
-    summary = {'approved': 0, 'changed': 0, 'skipped': 0, 'pending': 0, 'decided': 0, 'chosen': 0}
-
-    def log(rid, track, field, prev, new, reason, trigger, refs=()):
-        changes.append({'change_id': 'CH-%s-%d' % (batch.get('batch_id') or 'Q', len(changes) + 1), 'date': today,
-                        'version_from': vfrom, 'version_to': vto, 'rule_id': rid, 'segment_id': None,
-                        'track': track, 'field': field, 'previous': prev, 'new': new, 'evidence_refs': list(refs),
-                        'reason': reason, 'trigger': trigger, 'decided_by': approver, 'decided_role': role,
-                        'via': batch.get('batch_id')})
-
-    def stale(item_fp, key):
-        if before_views[key]['fp'] != item_fp:
-            warnings.append('%s: הנוסח השתנה מאז שהמנה הוצגה, ולכן התשובה לא נקלטה. הנושא יוצג שוב.' % key)
-            return True
-        return False
-
-    def approve_key(key, reviewed, modified, ans):
-        view = _views(model, lang)[key]
-        cells[key] = _approved_cell(view, roles, approver, role, today, reviewed, modified, ans)
-        touched.add(key)
-        if cells[key]['status'] in APPROVED_STATUSES:
-            summary['approved'] += 1
-            if view['legal'] and reviewed:
-                rid, _, track = key.split('|')
-                for lr in rules[rid].get('legal_review_required') or []:
-                    if isinstance(lr, dict) and (lr.get('track') == track or track in (lr.get('tracks') or [])):
-                        lr.update(checked_by=approver, checked_at=today)
-        else:
-            summary['pending'] += 1
-
-    def skip_key(key, ans, lawyer_later=False):
-        if not S.cell_counts(cells.get(key) or {}):
-            cells[key] = {'status': 'skipped', 'policy_claim': False, 'simulated': False, 'skipped_by': approver,
-                          'skipped_at': today, 'via': 'chat', 'answer': ans,
-                          'reason': REASON_LAWYER_LATER if lawyer_later else 'דולג בתור האישור'}
-            if lawyer_later:
-                cells[key]['lawyer_later'] = True
-            touched.add(key)
-        skipped.append(key)
-        summary['skipped'] += 1
-
-    for n, it in sorted(((it['n'], it) for it in batch['items']), key=lambda x: x[0]):
-        ans = answers.get(n)
-        if not ans or ans['action'] == 'except':
-            continue
-        act = ans['action']
-        verbatim = ans.get('text') or act
-        if it['kind'] == 'cell':
-            if stale(it['fp'], it['key']):
-                continue
-            if act == 'approve':
-                approve_key(it['key'], False, False, verbatim)
-            elif act == 'skip':
-                skip_key(it['key'], verbatim)
-            else:
-                raise ReplyError('במנת הירוקים: "לאשר הכול", "חוץ מ" או "לדלג". שינוי נוסח נעשה בבדיקה אחת אחת')
-        elif it['kind'] == 'topic':
-            keys = [c['key'] for c in it['cells']]
-            if any(stale(c['fp'], c['key']) for c in it['cells']):
-                continue
-            if act == 'skip':
-                for k in keys:
-                    skip_key(k, verbatim, ans.get('lawyer_later'))
-                continue
-            if act == 'approve':
-                sel = [k for k in keys if not ans.get('track') or k.endswith('|' + ans['track'])]
-                if not sel:
-                    raise ReplyError('בפריט %d אין מסלול %s' % (n, ans['track']))
-                for k in sel:
-                    approve_key(k, ans.get('reviewed'), False, verbatim)
-                continue
-            if act != 'change':
-                raise ReplyError('תשובה שאינה מתאימה לנושא בפריט %d' % n)
-            track = ans.get('track') or (it['cells'][0]['track'] if len(keys) == 1 else None)
-            key = S.cell_key(it['rule_id'], track) if track else None
-            if key not in keys:
-                raise ReplyError('בפריט %d כמה מסלולים: כתבו "לשנות ירוק:", "לשנות צהוב:" או "לשנות אדום:"' % n)
-            t = rules[it['rule_id']]['traffic_light'][track]
-            field, prev = set_track_wording(t, track, ans['text'], lang)
-            log(it['rule_id'], track, field, prev, ans['text'], 'שינוי נוסח בתור האישור', 'client_request')
-            approve_key(key, True, True, ans['text'])
-            summary['changed'] += 1
-        elif it['kind'] == 'decision':
-            rule = rules.get(it.get('rule_id'))
-            if act == 'skip':
-                skipped.append('decision:%s' % it.get('rule_id'))
-                summary['skipped'] += 1
-                continue
-            if act == 'approve':
-                if it.get('slots'):
-                    raise ReplyError('בהחלטה %d יש ערך לקבוע (%s): "לשנות: <הערך>"' % (n, ', '.join(it['slots'])))
-                value = None
-            elif act == 'change':
-                value = ans['text']
-            else:
-                raise ReplyError('תשובה שאינה מתאימה להחלטה %d' % n)
-            if rule is None:
-                raise ReplyError('ההחלטה %d אינה שייכת לכלל בפלייבוק' % n)
-            if value is not None and not it.get('slots'):
-                # החלטה על מספר שכבר כתוב בעמדה: יחידה אחרת מזו שבמשפט נדחית, גם כשאין סוגריים להחליף
-                for c in it.get('context') or ():
-                    if isinstance(c, dict):
-                        value_for_slot(value, c, lang)
-            if value is not None and it.get('slots'):
-                for track, f, prev, new in apply_decision_value(rule, it['slots'], value, it.get('context'), lang):
-                    log(rule['rule_id'], track, f, prev, new, 'החלטת הנהלה: %s' % it['question'], 'client_request')
-            log(rule['rule_id'], None, 'management_decision', it.get('proposal') or '',
-                value if value is not None else 'אושר כפי שהוצע', it['question'], 'client_request')
-            changes[-1].update(question=it['question'], owner=it.get('owner'))
-            decisions.append({'rule_id': rule['rule_id'], 'question': it['question'], 'value': value,
-                              'owner': it.get('owner'), 'decided_by': approver, 'role': role, 'at': today})
-            summary['decided'] += 1
-        elif it['kind'] == 'question':
-            if act == 'skip':
-                skipped.append('question:%s' % it['qid'])
-                summary['skipped'] += 1
-                continue
-            if act != 'choose':
-                raise ReplyError('בשאלה %d בוחרים אפשרות: "%d אפשרות 1"' % (n, n))
-            k = ans['option']
-            choices[it['qid']] = {'row': it.get('rule_id'), 'index': k - 1, 'text': it['options'][k - 1],
-                                  'tag': 'chat:%s' % batch.get('batch_id'), 'question': it['question']}
-            summary['chosen'] += 1
-        elif it['kind'] == 'update':
-            rid, track = it['rule_id'], ans.get('track') or it['track']
-            refs = ['%s:%s' % (e.get('transaction_id'), e.get('clause_id')) for e in it['events']]
-            decision = 'skipped'
-            if act == 'approve' and not it.get('proposed'):
-                raise ReplyError('בעדכון %d אין נוסח מוצע מילה במילה: "%d לשנות: <הנוסח>"' % (n, n))
-            if act in ('approve', 'change'):
-                text = it['proposed'] if act == 'approve' else ans['text']
-                t = rules[rid]['traffic_light'][track]
-                field, prev = set_track_wording(t, track, text, lang)
-                t.setdefault('deal_refs', []).extend(
-                    {'transaction_id': e.get('transaction_id'), 'clause_id': e.get('clause_id'),
-                     'kind': e.get('kind'), 'round': e.get('round')} for e in it['events'])
-                log(rid, track, field, prev, text, 'עדכון פלייבוק מעסקה: %s' % ', '.join(
-                    sorted({e['kind'] for e in it['events']})), 'negotiation_beyond_playbook', refs)
-                approve_key(S.cell_key(rid, track), True, True, text)
-                decision = 'approved' if act == 'approve' else 'changed'
-                summary['changed'] += 1
-            elif act == 'skip':
-                summary['skipped'] += 1
-            else:
-                raise ReplyError('תשובה שאינה מתאימה לעדכון %d' % n)
-            fb = model.setdefault('deal_feedback', [])
-            for e in it['events']:
-                fb.append({'key': e['key'], 'transaction_id': e.get('transaction_id'), 'clause_id': e.get('clause_id'),
-                           'kind': e.get('kind'), 'rule_id': rid, 'track': track, 'decision': decision,
-                           'by': approver, 'role': role, 'at': today, 'via': batch.get('batch_id')})
-            updates.append({'rule_id': rid, 'track': track, 'decision': decision,
-                            'events': [e['key'] for e in it['events']]})
-    # תא שנספר כמאושר ושהנוסח שלו השתנה במנה הזו (החלטת הנהלה, עדכון) אינו נשאר מאושר על נוסח שאינו קיים עוד
-    after_views = _views(model, lang)
-    for key, v in after_views.items():
-        c = cells.get(key)
-        if key not in touched and c and S.cell_counts(c) and before_views[key]['fp'] != v['fp']:
-            cells[key] = dict(c, status='open', policy_claim=False,
-                              reason='הנוסח השתנה אחרי האישור (%s). יש לאשר מחדש' % batch.get('batch_id'))
-    if changes:
-        model.setdefault('change_log', []).extend(changes)
-        model['version'] = vto
-        model['last_updated'] = today
-    rsha = hashlib.sha256((reply or '').encode('utf-8')).hexdigest()
-    record = {'kind': 'chat', 'batch_id': batch.get('batch_id'), 'stage': batch.get('stage'),
-              'token': 'CHAT|%s|%s' % (model.get('family_id') or '', batch.get('batch_id')), 'signed_sha256': None,
-              'reply_verbatim': reply, 'reply_sha256': rsha, 'received_at': today,
-              'evidence': {'received_via': CHAT_VIA, 'upload_ref': 'chat:%s:%s' % (batch.get('batch_id'), rsha[:12])},
-              'simulated': False, 'signers': {'chat': {'name': approver, 'role': role, 'date': today}},
-              'choices': choices, 'decisions': decisions, 'updates': updates, 'skipped': skipped,
-              'warnings': warnings, 'counts': _counts(cells)}
-    return {'cells': cells, 'record': record, 'warnings': warnings, 'summary': summary, 'changes': changes,
-            'wording_changed': any(c['field'] != 'management_decision' for c in changes)}
-
-
-def save_chat_record(records_dir, result, supersedes=None):
-    """שומר את רשומת המנה (APR-NNNN.json, kind: chat) עם כל התאים: הקודמים, ועליהם התשובות של המנה. הרשומה
-    הקודמת מסומנת superseded_by. מחזיר את הנתיב. כל כתיבה עוברת את common.paths.check_write_path."""
-    prior = _existing_records(records_dir)
-    n = 1 + len(prior)
-    path = os.path.join(records_dir, 'APR-%04d.json' % n)
-    P.check_write_path(path)
-    os.makedirs(records_dir, exist_ok=True)
-    data = dict(result['record'], record_id='APR-%04d' % n, cells=result['cells'])
-    if supersedes:
-        data.update(supersedes=supersedes, supersede_reason=(
-            'קובץ ההערות מאשף ההערות; התאים הקודמים נמזגו' if result['record'].get('kind') == 'wizard'
-            else 'מנה %s בתור האישור; התאים הקודמים נמזגו' % result['record'].get('batch_id')))
-        result['record']['supersedes'] = supersedes
-        for p, r in prior:
-            if r.get('record_id') == supersedes and not r.get('superseded_by'):
-                r['superseded_by'] = data['record_id']
-                with io.open(p, 'w', encoding='utf-8') as fh:
-                    json.dump(r, fh, ensure_ascii=False, indent=1)
-    with io.open(path, 'w', encoding='utf-8') as fh:
-        json.dump(data, fh, ensure_ascii=False, indent=1)
-    return path
-
-
-# ---------------------------------------------------------------------------- שורת הסיכום אחרי תשובה
-_SUMMARY = {
-    'he': ('נקלט: {a} אושרו, {c} שונו ואושרו, {s} דולגו, {d} מספרים נקבעו, {q} שאלות נענו. {p} עמדות מחכות לעורך '
-           'דין או לערך בסוגריים.'),
-    'en': ('Recorded: {a} approved, {c} changed and approved, {s} skipped, {d} numbers set, {q} questions answered. '
-           '{p} positions are waiting for a lawyer or for a value in brackets.')}
-
-
-def summary_line(sm, lang='he'):
-    """שורת הסיכום אחרי תשובה למנה, בשפת הממשק ובלי מונחים פנימיים (areo-voice.md). הסקריפט מדפיס אותה."""
-    return _SUMMARY[_ql(lang)].format(a=sm['approved'] - sm['changed'], c=sm['changed'], s=sm['skipped'],
-                                      d=sm['decided'], q=sm['chosen'], p=sm['pending'])
-
-
-# ============================================================================ אישור מאשף ההערות
-# אישור באשף ההערות ("אישור הסעיף") נקלט ב-apply_decisions.py, אחרי שהמשתמש אישר בצ'אט את סיכום הקובץ. קודם
-# הוא נכתב רק ל-rules[].decision, ולכן סביבת העבודה, תור האישור ו"שאלו את המדיניות" אמרו "0 מתוך N" אחרי
-# חמישה אישורים. עכשיו הוא נרשם כאן, באותם תאים, באותו _approved_cell ובאותה רשומת APR כמו אישור בצ'אט, ולכן
-# אותו מעמד בכל השכבות: עמדה עם ערך פתוח בסוגריים נשארת pending_choice, עמדה שעורך דין צריך לעבור עליה נשארת
-# pending_legal_review (האשף אינו רושם בדיקה משפטית), ושם שאינו שם מלא של אדם אינו נספר.
-WIZARD_VIA = 'wizard_file'
-
-
-def wizard_approvals(model, approvals, by_rule, source, source_sha=None, at_rule=None, today=None,
-                     prior_cells=None, lang='he'):
-    """approvals: {rule_id: [tracks]}, רק מסלולים שהנוסח שלהם נבדק מול המודל (טביעת האצבע של האשף). by_rule: {rule_id:
-    השם שבאשף}. at_rule: {rule_id: זמן הרשומה באשף}, לתאריך האישור. מחזיר {cells, record, warnings, summary}
-    באותו מבנה של apply_answers, כדי ש-save_chat_record ו-after_ingest.apply_ingest יחולו כמו שהם."""
-    today = today or _dt.date.today().isoformat()
-    lang = _ql(lang)
-    roles = A.role_lines(model, lang)
-    views = _views(model, lang)
-    cells = {k: dict(v) for k, v in (prior_cells or {}).items()}
-    warnings, names = [], []
-    summary = {'approved': 0, 'already': 0, 'pending_value': 0, 'pending_legal': 0, 'not_person': 0}
-    by_status = {'pending_value': [], 'pending_legal': [], 'not_person': []}
-    for rid in sorted(approvals):
-        who = norm_text((by_rule or {}).get(rid) or '')
-        if not _is_person_name(who):
-            summary['not_person'] += 1
-            by_status['not_person'].append(rid)
-            continue
-        if who not in names:
-            names.append(who)
-        when = str((at_rule or {}).get(rid) or today)[:10]
-        for track in approvals[rid]:
-            key = S.cell_key(rid, track)
-            view = views.get(key)
-            if view is None:
-                continue
-            if _cell_done(cells.get(key) or {}, view):
-                summary['already'] += 1
-                continue
-            cell = _approved_cell(view, roles, who, None, when, False, False, 'wizard:%s' % source)
-            cell['via'] = 'wizard'
-            cells[key] = cell
-            if cell['status'] in APPROVED_STATUSES:
-                summary['approved'] += 1
-            elif cell['status'] == 'pending_choice':
-                summary['pending_value'] += 1
-                if rid not in by_status['pending_value']:
-                    by_status['pending_value'].append(rid)
-            else:
-                summary['pending_legal'] += 1
-                if rid not in by_status['pending_legal']:
-                    by_status['pending_legal'].append(rid)
-    sha = source_sha or hashlib.sha256(str(source).encode('utf-8')).hexdigest()
-    record = {'kind': 'wizard', 'token': 'WIZARD|%s|%s' % (model.get('family_id') or '', sha[:12]),
-              'signed_sha256': None, 'source_file': source, 'source_sha256': sha, 'received_at': today,
-              'evidence': {'received_via': WIZARD_VIA, 'upload_ref': 'wizard:%s:%s' % (source, sha[:12])},
-              'simulated': False,
-              'signers': {'wizard': {'name': ', '.join(names), 'role': None, 'date': today}} if names else {},
-              'choices': {}, 'decisions': [], 'updates': [], 'skipped': [], 'warnings': warnings,
-              'counts': _counts(cells)}
-    return {'cells': cells, 'record': record, 'warnings': warnings, 'summary': summary, 'rules': by_status,
-            'changes': [], 'wording_changed': False}
+	A=version
+	try:B,C=str(A or'1.0').split('.')[:2];return'%d.%d'%(int(B),int(C)+1)
+	except ValueError:return str(A or'1.0')+'.1'
+def _approved_cell(view,roles,name,role,today,reviewed,modified,answer):
+	D=reviewed;C=today;B=name;A=view;F=[A['effects'][B]for(B,C)in roles];E={'status':'approved_modified'if modified else'approved','policy_claim':True,'reason':None,'approved_text':{'position':A['position'],'wording':A['wording'],'effects':F},'approved_fp':A['fp'],'issued_fp':A['fp'],'approved_at':C,'signer':B,'role':role,'simulated':False,'legal_review_required':A['legal'],'legal_review_done_by':B if A['legal']and D else None,'legal_review_done_at':C if A['legal']and D else None,'assumptions_confirmed':[{'tag':'chat','text':A,'confirmed_by':B,'at':C}for A in A['assumptions']],'via':'chat','answer':answer}
+	if A['slots']:E.update(status='pending_choice',policy_claim=False,reason='נשאר ערך שלא נקבע: %s (החלטות הנהלה)'%', '.join(A['slots']))
+	elif A['legal']and not D:E.update(status='pending_legal_review',policy_claim=False,reason='טעון בדיקה משפטית: התשובה לא אמרה "נבדק"')
+	return E
+def apply_answers(model,batch,answers,approver,role=None,reply='',today=None,prior_cells=None,lang='he'):
+	k=reply;T=role;L=approver;K=lang;J=batch;H=today;G=model;H=H or _dt.date.today().isoformat()
+	if not _is_person_name(L or''):raise ReplyError('"%s" אינו שם מלא של אדם. כל תשובה נרשמת בשם המאשר'%(L or''))
+	K=_ql(K);X=_rules(G);v=A.role_lines(G,K);l=_views(G,K);M={A:dict(B)for(A,B)in(prior_cells or{}).items()};f,g,m,n,o,Y,O=set(),[],{},[],[],[],[];p=str(G.get('version')or'1.0');q=_bump(p);I={'approved':0,'changed':0,'skipped':0,'pending':0,'decided':0,'chosen':0}
+	def Z(rid,track,field,prev,new,reason,trigger,refs=()):O.append({'change_id':'CH-%s-%d'%(J.get('batch_id')or'Q',len(O)+1),'date':H,'version_from':p,'version_to':q,'rule_id':rid,'segment_id':None,'track':track,'field':field,'previous':prev,'new':new,'evidence_refs':list(refs),'reason':reason,'trigger':trigger,'decided_by':L,'decided_role':T,'via':J.get('batch_id')})
+	def r(item_fp,key):
+		if l[key]['fp']!=item_fp:g.append('%s: הנוסח השתנה מאז שהמנה הוצגה, ולכן התשובה לא נקלטה. הנושא יוצג שוב.'%key);return True
+		return False
+	def a(key,reviewed,modified,ans):
+		C=reviewed;A=key;D=_views(G,K)[A];M[A]=_approved_cell(D,v,L,T,H,C,modified,ans);f.add(A)
+		if M[A]['status']in APPROVED_STATUSES:
+			I['approved']+=1
+			if D['legal']and C:
+				F,J,E=A.split('|')
+				for B in X[F].get('legal_review_required')or[]:
+					if isinstance(B,dict)and(B.get('track')==E or E in(B.get('tracks')or[])):B.update(checked_by=L,checked_at=H)
+		else:I['pending']+=1
+	def s(key,ans,lawyer_later=False):
+		B=lawyer_later;A=key
+		if not S.cell_counts(M.get(A)or{}):
+			M[A]={'status':'skipped','policy_claim':False,'simulated':False,'skipped_by':L,'skipped_at':H,'via':'chat','answer':ans,'reason':REASON_LAWYER_LATER if B else'דולג בתור האישור'}
+			if B:M[A]['lawyer_later']=True
+			f.add(A)
+		Y.append(A);I['skipped']+=1
+	for(F,B)in sorted(((A['n'],A)for A in J['items']),key=lambda x:x[0]):
+		C=answers.get(F)
+		if not C or C['action']=='except':continue
+		D=C['action'];b=C.get('text')or D
+		if B['kind']=='cell':
+			if r(B['fp'],B['key']):continue
+			if D=='approve':a(B['key'],False,False,b)
+			elif D=='skip':s(B['key'],b)
+			else:raise ReplyError('במנת הירוקים: "לאשר הכול", "חוץ מ" או "לדלג". שינוי נוסח נעשה בבדיקה אחת אחת')
+		elif B['kind']=='topic':
+			c=[A['key']for A in B['cells']]
+			if any(r(A['fp'],A['key'])for A in B['cells']):continue
+			if D=='skip':
+				for Q in c:s(Q,b,C.get('lawyer_later'))
+				continue
+			if D=='approve':
+				t=[A for A in c if not C.get('track')or A.endswith('|'+C['track'])]
+				if not t:raise ReplyError('בפריט %d אין מסלול %s'%(F,C['track']))
+				for Q in t:a(Q,C.get('reviewed'),False,b)
+				continue
+			if D!='change':raise ReplyError('תשובה שאינה מתאימה לנושא בפריט %d'%F)
+			E=C.get('track')or(B['cells'][0]['track']if len(c)==1 else None);P=S.cell_key(B['rule_id'],E)if E else None
+			if P not in c:raise ReplyError('בפריט %d כמה מסלולים: כתבו "לשנות ירוק:", "לשנות צהוב:" או "לשנות אדום:"'%F)
+			d=X[B['rule_id']]['traffic_light'][E];h,U=set_track_wording(d,E,C['text'],K);Z(B['rule_id'],E,h,U,C['text'],'שינוי נוסח בתור האישור','client_request');a(P,True,True,C['text']);I['changed']+=1
+		elif B['kind']=='decision':
+			V=X.get(B.get('rule_id'))
+			if D=='skip':Y.append('decision:%s'%B.get('rule_id'));I['skipped']+=1;continue
+			if D=='approve':
+				if B.get('slots'):raise ReplyError('בהחלטה %d יש ערך לקבוע (%s): "לשנות: <הערך>"'%(F,', '.join(B['slots'])))
+				N=None
+			elif D=='change':N=C['text']
+			else:raise ReplyError('תשובה שאינה מתאימה להחלטה %d'%F)
+			if V is None:raise ReplyError('ההחלטה %d אינה שייכת לכלל בפלייבוק'%F)
+			if N is not None and not B.get('slots'):
+				for R in B.get('context')or():
+					if isinstance(R,dict):value_for_slot(N,R,K)
+			if N is not None and B.get('slots'):
+				for(E,w,U,x)in apply_decision_value(V,B['slots'],N,B.get('context'),K):Z(V['rule_id'],E,w,U,x,'החלטת הנהלה: %s'%B['question'],'client_request')
+			Z(V['rule_id'],None,'management_decision',B.get('proposal')or'',N if N is not None else'אושר כפי שהוצע',B['question'],'client_request');O[-1].update(question=B['question'],owner=B.get('owner'));n.append({'rule_id':V['rule_id'],'question':B['question'],'value':N,'owner':B.get('owner'),'decided_by':L,'role':T,'at':H});I['decided']+=1
+		elif B['kind']=='question':
+			if D=='skip':Y.append('question:%s'%B['qid']);I['skipped']+=1;continue
+			if D!='choose':raise ReplyError('בשאלה %d בוחרים אפשרות: "%d אפשרות 1"'%(F,F))
+			Q=C['option'];m[B['qid']]={'row':B.get('rule_id'),'index':Q-1,'text':B['options'][Q-1],'tag':'chat:%s'%J.get('batch_id'),'question':B['question']};I['chosen']+=1
+		elif B['kind']=='update':
+			W,E=B['rule_id'],C.get('track')or B['track'];y=['%s:%s'%(A.get('transaction_id'),A.get('clause_id'))for A in B['events']];i='skipped'
+			if D=='approve'and not B.get('proposed'):raise ReplyError('בעדכון %d אין נוסח מוצע מילה במילה: "%d לשנות: <הנוסח>"'%(F,F))
+			if D in('approve','change'):j=B['proposed']if D=='approve'else C['text'];d=X[W]['traffic_light'][E];h,U=set_track_wording(d,E,j,K);d.setdefault('deal_refs',[]).extend({'transaction_id':A.get('transaction_id'),'clause_id':A.get('clause_id'),'kind':A.get('kind'),'round':A.get('round')}for A in B['events']);Z(W,E,h,U,j,'עדכון פלייבוק מעסקה: %s'%', '.join(sorted({A['kind']for A in B['events']})),'negotiation_beyond_playbook',y);a(S.cell_key(W,E),True,True,j);i='approved'if D=='approve'else'changed';I['changed']+=1
+			elif D=='skip':I['skipped']+=1
+			else:raise ReplyError('תשובה שאינה מתאימה לעדכון %d'%F)
+			z=G.setdefault('deal_feedback',[])
+			for e in B['events']:z.append({'key':e['key'],'transaction_id':e.get('transaction_id'),'clause_id':e.get('clause_id'),'kind':e.get('kind'),'rule_id':W,'track':E,'decision':i,'by':L,'role':T,'at':H,'via':J.get('batch_id')})
+			o.append({'rule_id':W,'track':E,'decision':i,'events':[A['key']for A in B['events']]})
+	A0=_views(G,K)
+	for(P,A1)in A0.items():
+		R=M.get(P)
+		if P not in f and R and S.cell_counts(R)and l[P]['fp']!=A1['fp']:M[P]=dict(R,status='open',policy_claim=False,reason='הנוסח השתנה אחרי האישור (%s). יש לאשר מחדש'%J.get('batch_id'))
+	if O:G.setdefault('change_log',[]).extend(O);G['version']=q;G['last_updated']=H
+	u=hashlib.sha256((k or'').encode('utf-8')).hexdigest();A2={'kind':'chat','batch_id':J.get('batch_id'),'stage':J.get('stage'),'token':'CHAT|%s|%s'%(G.get('family_id')or'',J.get('batch_id')),'signed_sha256':None,'reply_verbatim':k,'reply_sha256':u,'received_at':H,'evidence':{'received_via':CHAT_VIA,'upload_ref':'chat:%s:%s'%(J.get('batch_id'),u[:12])},'simulated':False,'signers':{'chat':{'name':L,'role':T,'date':H}},'choices':m,'decisions':n,'updates':o,'skipped':Y,'warnings':g,'counts':_counts(M)};return{'cells':M,'record':A2,'warnings':g,'summary':I,'changes':O,'wording_changed':any(A['field']!='management_decision'for A in O)}
+def save_chat_record(records_dir,result,supersedes=None):
+	D=records_dir;B=supersedes;A=result;H=_existing_records(D);I=1+len(H);E=os.path.join(D,'APR-%04d.json'%I);P.check_write_path(E);os.makedirs(D,exist_ok=True);F=dict(A['record'],record_id='APR-%04d'%I,cells=A['cells'])
+	if B:
+		F.update(supersedes=B,supersede_reason='קובץ ההערות מאשף ההערות; התאים הקודמים נמזגו'if A['record'].get('kind')=='wizard'else'מנה %s בתור האישור; התאים הקודמים נמזגו'%A['record'].get('batch_id'));A['record']['supersedes']=B
+		for(J,C)in H:
+			if C.get('record_id')==B and not C.get('superseded_by'):
+				C['superseded_by']=F['record_id']
+				with io.open(J,'w',encoding='utf-8')as G:json.dump(C,G,ensure_ascii=False,indent=1)
+	with io.open(E,'w',encoding='utf-8')as G:json.dump(F,G,ensure_ascii=False,indent=1)
+	return E
+_SUMMARY={'he':'נקלט: {a} אושרו, {c} שונו ואושרו, {s} דולגו, {d} מספרים נקבעו, {q} שאלות נענו. {p} עמדות מחכות לעורך דין או לערך בסוגריים.','en':'Recorded: {a} approved, {c} changed and approved, {s} skipped, {d} numbers set, {q} questions answered. {p} positions are waiting for a lawyer or for a value in brackets.'}
+def summary_line(sm,lang='he'):A=sm;return _SUMMARY[_ql(lang)].format(a=A['approved']-A['changed'],c=A['changed'],s=A['skipped'],d=A['decided'],q=A['chosen'],p=A['pending'])
+WIZARD_VIA='wizard_file'
+def wizard_approvals(model,approvals,by_rule,source,source_sha=None,at_rule=None,today=None,prior_cells=None,lang='he'):
+	P=approvals;L=model;G=lang;F=source;E=today;E=E or _dt.date.today().isoformat();G=_ql(G);R=A.role_lines(L,G);T=_views(L,G);H={A:dict(B)for(A,B)in(prior_cells or{}).items()};Q,I=[],[];C={'approved':0,'already':0,'pending_value':0,'pending_legal':0,'not_person':0};D={'pending_value':[],'pending_legal':[],'not_person':[]}
+	for B in sorted(P):
+		J=norm_text((by_rule or{}).get(B)or'')
+		if not _is_person_name(J):C['not_person']+=1;D['not_person'].append(B);continue
+		if J not in I:I.append(J)
+		U=str((at_rule or{}).get(B)or E)[:10]
+		for V in P[B]:
+			M=S.cell_key(B,V);N=T.get(M)
+			if N is None:continue
+			if _cell_done(H.get(M)or{},N):C['already']+=1;continue
+			K=_approved_cell(N,R,J,None,U,False,False,'wizard:%s'%F);K['via']='wizard';H[M]=K
+			if K['status']in APPROVED_STATUSES:C['approved']+=1
+			elif K['status']=='pending_choice':
+				C['pending_value']+=1
+				if B not in D['pending_value']:D['pending_value'].append(B)
+			else:
+				C['pending_legal']+=1
+				if B not in D['pending_legal']:D['pending_legal'].append(B)
+	O=source_sha or hashlib.sha256(str(F).encode('utf-8')).hexdigest();W={'kind':'wizard','token':'WIZARD|%s|%s'%(L.get('family_id')or'',O[:12]),'signed_sha256':None,'source_file':F,'source_sha256':O,'received_at':E,'evidence':{'received_via':WIZARD_VIA,'upload_ref':'wizard:%s:%s'%(F,O[:12])},'simulated':False,'signers':{'wizard':{'name':', '.join(I),'role':None,'date':E}}if I else{},'choices':{},'decisions':[],'updates':[],'skipped':[],'warnings':Q,'counts':_counts(H)};return{'cells':H,'record':W,'warnings':Q,'summary':C,'rules':D,'changes':[],'wording_changed':False}

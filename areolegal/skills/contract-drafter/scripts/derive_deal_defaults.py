@@ -1,358 +1,80 @@
 # -*- coding: utf-8 -*-
-"""
-גוזר את ברירות המחדל המסחריות של הלקוח מתוך ההסכמים שלו עצמו.
-
-התכלית היא לא לשאול את מה שאפשר לדעת. במקום לשאול "מהם תנאי התשלום",
-הרכיב אומר: "בניירות שלך שוטף פלוס 45 מופיע בשישה מתוך תשעה הסכמים, לאשר או לשנות".
-שאלה שאפשר להשיב עליה מהתיקייה היא שאלה מיותרת, והיא שוחקת את סבלנות המשתמש
-לפני שהגיעו לשאלות שבאמת חשובות.
-
-שיטת החילוץ: לכל פרמטר יש עוגן נושאי, והערך נחפש רק בחלון שסביב העוגן.
-בלי עוגן, "12 חודשים" בסעיף אי תחרות נספר כתקופת ההסכם, וזאת טעות שמייצרת
-ברירת מחדל שגויה במסמך משפטי.
-
-כל ערך נגזר בספירה, נרשם עם מספר ההסכמים התומכים ועם ציטוט מקור,
-ואינו הופך לברירת מחדל בלי אישור המשתמש.
-
-הרצה:
-  python3 derive_deal_defaults.py --registry <template-registry.json> --out <deal-defaults.json>
-      [--family "<משפחה>"] [--role <company_role_code>]
-
-הספירה נעשית בנפרד לכל צירוף של משפחה ותפקיד החברה (family ו-company_role במרשם): תקרת אחריות
-של צד אחד, תנאי תשלום של צד אחר והודעה מוקדמת בהסכם אחר אינם אותו פרמטר. --family ו---role מסננים לצירוף של
-העסקה. בלי סינון ועם יותר מצירוף אחד, parameters ריק, וכל צירוף נמצא ב-groups.
-"""
-import argparse
-import io
-import json
-import os
-import re
-import sys
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+import argparse,io,json,os,re,sys
 from collections import Counter
 from datetime import date
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_template_registry import (docx_text, docx_paragraphs, guard_out,  # noqa: E402
-                                     family_matches, normalize_role)
-
-try:                                   # פלט עברי במסוף של Windows
-    sys.stdout.reconfigure(encoding="utf-8")
-except (AttributeError, ValueError):   # pragma: no cover
-    pass
-
-WINDOW = 420   # תווים סביב העוגן
-
-
-def R(*parts):
-    return re.compile("|".join(parts), re.I)
-
-
-# מטבע: סימן, קוד ISO 4217 או שם, לפני הסכום או אחריו (₪ 250,000, £250,000, 100,000 USD, 5,000 אירו).
-# בלי קבוצה לוכדת: הערך הוא הקבוצה הראשונה שאינה ריקה. check_draft_integrity משתמש באותו ביטוי.
-ISO_CODES = ("ILS", "NIS", "USD", "EUR", "GBP", "CHF", "JPY", "CNY", "CAD", "AUD", "NZD", "SGD", "HKD", "INR", "AED",
-             "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "RON", "TRY", "BRL", "MXN", "ZAR", "KRW")
-CUR = (r"(?:₪|ש\"ח|ש״ח|שקלים|שקל|\$|€|£|¥|(?<![A-Za-z])(?-i:%s)(?![A-Za-z])|דולר|אירו|יורו|ליש\"ט|ליש״ט|"
-       r"פאונד|לירות\s+שטרלינג|(?i:dollars?|euros?|pounds?(?:\s+sterling)?))" % "|".join(ISO_CODES))
-CUR_RX = re.compile(CUR)
-CUR_CODE = {"₪": "ILS", "ש\"ח": "ILS", "ש״ח": "ILS", "שקלים": "ILS", "שקל": "ILS", "NIS": "ILS", "€": "EUR",
-            "אירו": "EUR", "יורו": "EUR", "euro": "EUR", "euros": "EUR", "£": "GBP", "ליש\"ט": "GBP",
-            "ליש״ט": "GBP", "פאונד": "GBP", "pound": "GBP", "pounds": "GBP", "dollar": "$", "dollars": "$",
-            "דולר": "$"}
-
-
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+from build_template_registry import docx_text,docx_paragraphs,guard_out,family_matches,normalize_role
+try:sys.stdout.reconfigure(encoding='utf-8')
+except(AttributeError,ValueError):pass
+WINDOW=420
+def R(*A):return re.compile('|'.join(A),re.I)
+ISO_CODES='ILS','NIS','USD','EUR','GBP','CHF','JPY','CNY','CAD','AUD','NZD','SGD','HKD','INR','AED','SEK','NOK','DKK','PLN','CZK','HUF','RON','TRY','BRL','MXN','ZAR','KRW'
+CUR='(?:₪|ש\\"ח|ש״ח|שקלים|שקל|\\$|€|£|¥|(?<![A-Za-z])(?-i:%s)(?![A-Za-z])|דולר|אירו|יורו|ליש\\"ט|ליש״ט|פאונד|לירות\\s+שטרלינג|(?i:dollars?|euros?|pounds?(?:\\s+sterling)?))'%'|'.join(ISO_CODES)
+CUR_RX=re.compile(CUR)
+CUR_CODE={'₪':'ILS','ש"ח':'ILS','ש״ח':'ILS','שקלים':'ILS','שקל':'ILS','NIS':'ILS','€':'EUR','אירו':'EUR','יורו':'EUR','euro':'EUR','euros':'EUR','£':'GBP','ליש"ט':'GBP','ליש״ט':'GBP','פאונד':'GBP','pound':'GBP','pounds':'GBP','dollar':'$','dollars':'$','דולר':'$'}
 def currency_of(s):
-    """המטבע שבקטע: קוד ISO 4217, או "$" כשהסימן אינו מכריע (דולר אמריקאי, קנדי, אוסטרלי...)."""
-    m = CUR_RX.search(s or "")
-    if not m:
-        return None
-    k = re.sub(r"\s+", " ", m.group(0))
-    if k in ISO_CODES:
-        return "ILS" if k == "NIS" else k
-    if k.startswith("לירות") or k.lower().endswith("sterling"):
-        return "GBP"
-    return CUR_CODE.get(k.lower(), k)
-
-
-SPELLED = re.compile(r"[A-Za-z\u0590-\u05FF]+[\s\-]*\(\s*(\d{1,4})\s*\)")
-
-
-def normalize(t):
-    """מנרמל את הכתיב המשפטי של מספרים.
-
-    נייר משפטי באנגלית כותב "within thirty (30) days", ובעברית "תוך שלושים (30) יום".
-    ביטוי שמחפש ספרה מיד אחרי המילה מחמיץ את כל אלה, וזו הסיבה שגזירה מקורפוס
-    אנגלי החזירה כמעט כלום. כאן המילה נמחקת והספרה שבסוגריים נשארת.
-    """
-    return SPELLED.sub(r"\1", t)
-
-
-# (שם, עוגן נושאי, ביטוי הערך, יחידה, מה זה אומר למשתמש)
-PARAMS = [
-    ("תנאי תשלום",
-     R(r"תנאי\s+ה?תשלום", r"שוטף\s*\+", r"מועד\s+ה?תשלום", r"חשבונית",
-       r"payment\s+terms", r"\bnet\s+\d",
-       r"payment\s+terms", r"\bnet\s+\d", r"invoice", r"due\s+and\s+payable"),
-     R(r"שוטף\s*\+?\s*(\d{1,3})", r"(?:תוך|בתוך|בטרם|לא\s+יאוחר\s+מ)\s*(\d{1,3})\s+ימים?",
-       r"\bnet\s+(\d{1,3})\b",
-       r"\bnet\s+(\d{1,3})\b", r"within\s+(\d{1,3})\s+days", r"(\d{1,3})\s+days\s+of\s+(?:the\s+)?invoice"),
-     "ימים", "כמה ימים מקבלת החשבונית ועד התשלום"),
-
-    ("הודעה מוקדמת לסיום",
-     R(r"סיום\s+ה?הסכם", r"לסיים\s+את\s+ה?הסכם", r"אי[\s\-־]?חידוש", r"ביטול\s+ה?הסכם",
-       r"הודעה\s+מוקדמת", r"termination\s+for\s+convenience",
-       r"terminat", r"non[\s\-]?renewal", r"for\s+convenience", r"prior\s+written\s+notice"),
-     R(r"(\d{1,3})\s+ימים?\s+מראש", r"של\s+(\d{1,3})\s+ימים?",
-       r"לפחות\s+(\d{1,3})\s+ימים?", r"(\d{1,2})\s+חודשים?\s+מראש",
-       r"(\d{1,3})\s+days['’]?\s+(?:prior\s+)?written\s+notice", r"(?:at\s+least\s+)?(\d{1,3})\s+days['’]?\s+notice", r"(\d{1,2})\s+months['’]?\s+(?:prior\s+)?notice"),
-     "ימים", "כמה ימי הודעה מראש נדרשים לסיום ההתקשרות"),
-
-    ("תקופת ריפוי הפרה",
-     R(r"הפרה\s+יסודית", r"לא\s+תוקנה", r"תוקנה\s+ה?הפרה", r"תקופת\s+ריפוי",
-       r"cure\s+period",
-       r"material\s+breach", r"cure\s+period", r"fails?\s+to\s+cure", r"remed(?:y|ied)"),
-     R(r"(?:בתוך|תוך)\s+(\d{1,3})\s+ימים?", r"(\d{1,3})\s+ימים?\s+ממועד\s+ה?הודעה",
-       r"within\s+(\d{1,3})\s+days",
-       r"within\s+(\d{1,3})\s+days", r"(\d{1,3})[\s\-]day\s+cure"),
-     "ימים", "כמה ימים לתיקון הפרה לפני שהיא מזכה בביטול"),
-
-    ("תקופת ההתקשרות הראשונה",
-     R(r"תקופת\s+ה?(?:הסכם|התקשרות|שירות|ההתקשרות)",
-       r"ההסכם\s+יעמוד\s+בתוקפו", r"initial\s+term",
-       r"initial\s+term", r"this\s+agreement\s+shall\s+(?:commence|be\s+effective)",
-       r"continue\s+in\s+(?:full\s+force|effect)", r"shall\s+remain\s+in\s+effect",
-       r"term\s+of\s+this\s+agreement"),
-     R(r"(?:של|למשך|בת)\s+(\d{1,3})\s+חודשים?", r"(?:של|למשך|בת)\s+(\d{1,2})\s+שנים?",
-       r"(\d{1,3})\s+חודשים?", r"(\d{1,2})\s+שנים?",
-       r"(?:period|term)\s+of\s+(\d{1,3})\s+(?:months?|years?)",
-       r"(?:for|of)\s+(\d{1,3})\s+months?", r"(?:for|of)\s+(\d{1,2})\s+years?",
-       r"(\d{1,2})\s+years?\s+from", r"(\d{1,3})\s+months?\s+from"),
-     "חודשים או שנים", "אורך התקופה הראשונה של ההתקשרות"),
-
-    ("הארכה אוטומטית",
-     R(r"תוארך\s+אוטומטית", r"חידוש\s+אוטומטי", r"יתחדש\s+מאליו",
-       r"automatically\s+renew", r"אלא\s+אם\s+הודיע",
-       r"automatically\s+renew", r"successive", r"unless\s+either\s+party", r"renewal\s+term"),
-     R(r"(?:נוספ(?:ת|ות)\s+)?(?:בת|של)\s+(\d{1,3})\s+(?:חודשים?|שנים?)",
-       r"(\d{1,3})\s+חודשים?", r"(\d{1,2})\s+שנים?",
-       r"(?:successive|additional|further)\s+(?:periods?|terms?)\s+of\s+(\d{1,3})\s+(?:months?|years?)", r"(\d{1,2})[\s\-]year\s+(?:renewal|period)", r"(\d{1,3})[\s\-]month\s+(?:renewal|period)"),
-     "חודשים או שנים", "אורך תקופת ההארכה האוטומטית"),
-
-    ("תקרת אחריות",
-     R(r"הגבלת\s+אחריות", r"גבולות\s+אחריות", r"תקרת\s+ה?אחריות",
-       r"אחריות(?:ו|ה|ם)?\s+ה?כוללת", r"אחריות(?:ו|ה|ם)?\s+ה?מצטברת",
-       r"limitation\s+of\s+liability", r"aggregate\s+liability",
-       r"limitation\s+of\s+liability", r"aggregate\s+liability", r"total\s+liability", r"limited\s+liability", r"in\s+no\s+event"),
-     R(r"ששולמ(?:ו|ה)\s+ב[\-]?(\d{1,2})\s+ה?חודשים",
-       r"(\d{1,2})\s+ה?חודשים\s+שקדמו",
-       r"לא\s+תעלה\s+על\s+(?:סך\s+)?(?:של\s+)?([\d,]{3,})",
-       r"פי\s+(\d{1,2})\s+מ", r"מוגבלת\s+ל(?:סך\s+)?([\d,]{3,})",
-       r"(\d{1,2})\s+חודשי\s+תמורה",
-       r"(נזק\s+עקיף)",
-       r"(?:fees|amounts)\s+paid[^.]{0,60}?(\d{1,2})\s+months", r"(\d{1,2})\s+months\s+(?:preceding|prior)",
-       r"exceed[^.]{0,40}?" + CUR + r"\s?([\d,]{4,})", r"exceed[^.]{0,40}?([\d,]{4,})\s?" + CUR,
-       r"(indirect,?\s+consequential)"),
-     "סכום או מכפיל", "כיצד מוגבלת האחריות בניירות שלך"),
-
-    ("גבול אחריות ביטוחי",
-     R(r"אישור\s+קיום\s+ביטוח", r"גבול\s+אחריות", r"סכום\s+ביטוח", r"פוליס",
-       r"ביטוח\s+אחריות", r"insurance",
-       r"insurance", r"policy\s+limits?", r"commercial\s+general\s+liability"),
-     R(r"([\d,]{4,})\s*" + CUR, r"בגבול\s+אחריות\s+של\s+([\d,]{4,})",
-       r"סכום\s+ביטוח\s+של\s+([\d,]{4,})", CUR + r"\s?([\d,]{4,})"),
-     "סכום ומטבע", "גבול האחריות הביטוחי הנדרש"),
-
-    ("ריבית פיגורים",
-     R(r"ריבית\s+פיגורים", r"פיגור\s+בתשלום", r"איחור\s+בתשלום", r"late\s+payment",
-       r"late\s+payment", r"overdue", r"interest\s+on"),
-     R(r"(\d{1,2}(?:\.\d+)?)\s*%", r"בשיעור\s+של\s+(\d{1,2}(?:\.\d+)?)",
-       r"(\d{1,2}(?:\.\d+)?)\s*%\s*per\s+(?:month|annum)", r"(\d{1,2}(?:\.\d+)?)\s*%"),
-     "אחוז", "שיעור ריבית הפיגורים הנהוג"),
-
-    ("תמלוגים או עמלה",
-     R(r"תמלוגים", r"עמלה", r"royalt", r"commission",
-       r"royalt", r"commission", r"discount", r"margin", r"reseller\s+price"),
-     R(r"בשיעור\s+(?:של\s+)?(\d{1,2}(?:\.\d+)?)\s*%", r"(\d{1,2}(?:\.\d+)?)\s*%",
-       r"(\d{1,2}(?:\.\d+)?)\s*%"),
-     "אחוז", "שיעור התמלוגים או העמלה"),
-
-    ("שרידות חובת הסודיות",
-     R(r"סודיות", r"מידע\s+סודי", r"confidentialit",
-       r"confidential", r"survive"),
-     R(r"(\d{1,2})\s+שנים?\s+מ(?:מועד\s+)?(?:ה?סיום|תום)",
-       r"למשך\s+(\d{1,2})\s+שנים?", r"(\d{1,2})\s+years?\s+(?:after|following)",
-       r"(\d{1,2})\s+years?\s+(?:after|following|from)", r"period\s+of\s+(\d{1,2})\s+years?"),
-     "שנים", "כמה זמן שורדת חובת הסודיות אחרי הסיום"),
-
-    ("אי תחרות",
-     R(r"אי[\s\-־]?תחרות", r"לא\s+יתחרה", r"הגבלת\s+עיסוק", r"non[\s\-]?compet",
-       r"non[\s\-]?compet", r"shall\s+not\s+compete", r"no\s+solicitation"),
-     R(r"(\d{1,2})\s+חודשים?", r"(\d{1,2})\s+שנים?",
-       r"(\d{1,2})\s+(?:months?|years?)"),
-     "חודשים או שנים", "משך הגבלת אי התחרות"),
-
-    ("מקדמה או פיקדון",
-     R(r"פיקדון", r"מקדמה", r"ערבות\s+בנקאית", r"בטוחה", r"security\s+deposit",
-       r"deposit", r"advance\s+payment", r"prepayment", r"bank\s+guarantee"),
-     R(r"([\d,]{4,})\s*" + CUR, r"בסך\s+(?:של\s+)?([\d,]{4,})",
-       r"(\d{1,2})\s+חודשי\s+(?:תשלום|דמי)",
-       CUR + r"\s?([\d,]{4,})"),
-     "סכום", "גובה הפיקדון או הערבות הנהוג"),
-]
-
-
+	B=CUR_RX.search(s or'')
+	if not B:return
+	A=re.sub('\\s+',' ',B.group(0))
+	if A in ISO_CODES:return'ILS'if A=='NIS'else A
+	if A.startswith('לירות')or A.lower().endswith('sterling'):return'GBP'
+	return CUR_CODE.get(A.lower(),A)
+SPELLED=re.compile('[A-Za-z\\u0590-\\u05FF]+[\\s\\-]*\\(\\s*(\\d{1,4})\\s*\\)')
+def normalize(t):return SPELLED.sub('\\1',t)
+PARAMS=[('תנאי תשלום',R('תנאי\\s+ה?תשלום','שוטף\\s*\\+','מועד\\s+ה?תשלום','חשבונית','payment\\s+terms','\\bnet\\s+\\d','payment\\s+terms','\\bnet\\s+\\d','invoice','due\\s+and\\s+payable'),R('שוטף\\s*\\+?\\s*(\\d{1,3})','(?:תוך|בתוך|בטרם|לא\\s+יאוחר\\s+מ)\\s*(\\d{1,3})\\s+ימים?','\\bnet\\s+(\\d{1,3})\\b','\\bnet\\s+(\\d{1,3})\\b','within\\s+(\\d{1,3})\\s+days','(\\d{1,3})\\s+days\\s+of\\s+(?:the\\s+)?invoice'),'ימים','כמה ימים מקבלת החשבונית ועד התשלום'),('הודעה מוקדמת לסיום',R('סיום\\s+ה?הסכם','לסיים\\s+את\\s+ה?הסכם','אי[\\s\\-־]?חידוש','ביטול\\s+ה?הסכם','הודעה\\s+מוקדמת','termination\\s+for\\s+convenience','terminat','non[\\s\\-]?renewal','for\\s+convenience','prior\\s+written\\s+notice'),R('(\\d{1,3})\\s+ימים?\\s+מראש','של\\s+(\\d{1,3})\\s+ימים?','לפחות\\s+(\\d{1,3})\\s+ימים?','(\\d{1,2})\\s+חודשים?\\s+מראש',"(\\d{1,3})\\s+days['’]?\\s+(?:prior\\s+)?written\\s+notice","(?:at\\s+least\\s+)?(\\d{1,3})\\s+days['’]?\\s+notice","(\\d{1,2})\\s+months['’]?\\s+(?:prior\\s+)?notice"),'ימים','כמה ימי הודעה מראש נדרשים לסיום ההתקשרות'),('תקופת ריפוי הפרה',R('הפרה\\s+יסודית','לא\\s+תוקנה','תוקנה\\s+ה?הפרה','תקופת\\s+ריפוי','cure\\s+period','material\\s+breach','cure\\s+period','fails?\\s+to\\s+cure','remed(?:y|ied)'),R('(?:בתוך|תוך)\\s+(\\d{1,3})\\s+ימים?','(\\d{1,3})\\s+ימים?\\s+ממועד\\s+ה?הודעה','within\\s+(\\d{1,3})\\s+days','within\\s+(\\d{1,3})\\s+days','(\\d{1,3})[\\s\\-]day\\s+cure'),'ימים','כמה ימים לתיקון הפרה לפני שהיא מזכה בביטול'),('תקופת ההתקשרות הראשונה',R('תקופת\\s+ה?(?:הסכם|התקשרות|שירות|ההתקשרות)','ההסכם\\s+יעמוד\\s+בתוקפו','initial\\s+term','initial\\s+term','this\\s+agreement\\s+shall\\s+(?:commence|be\\s+effective)','continue\\s+in\\s+(?:full\\s+force|effect)','shall\\s+remain\\s+in\\s+effect','term\\s+of\\s+this\\s+agreement'),R('(?:של|למשך|בת)\\s+(\\d{1,3})\\s+חודשים?','(?:של|למשך|בת)\\s+(\\d{1,2})\\s+שנים?','(\\d{1,3})\\s+חודשים?','(\\d{1,2})\\s+שנים?','(?:period|term)\\s+of\\s+(\\d{1,3})\\s+(?:months?|years?)','(?:for|of)\\s+(\\d{1,3})\\s+months?','(?:for|of)\\s+(\\d{1,2})\\s+years?','(\\d{1,2})\\s+years?\\s+from','(\\d{1,3})\\s+months?\\s+from'),'חודשים או שנים','אורך התקופה הראשונה של ההתקשרות'),('הארכה אוטומטית',R('תוארך\\s+אוטומטית','חידוש\\s+אוטומטי','יתחדש\\s+מאליו','automatically\\s+renew','אלא\\s+אם\\s+הודיע','automatically\\s+renew','successive','unless\\s+either\\s+party','renewal\\s+term'),R('(?:נוספ(?:ת|ות)\\s+)?(?:בת|של)\\s+(\\d{1,3})\\s+(?:חודשים?|שנים?)','(\\d{1,3})\\s+חודשים?','(\\d{1,2})\\s+שנים?','(?:successive|additional|further)\\s+(?:periods?|terms?)\\s+of\\s+(\\d{1,3})\\s+(?:months?|years?)','(\\d{1,2})[\\s\\-]year\\s+(?:renewal|period)','(\\d{1,3})[\\s\\-]month\\s+(?:renewal|period)'),'חודשים או שנים','אורך תקופת ההארכה האוטומטית'),('תקרת אחריות',R('הגבלת\\s+אחריות','גבולות\\s+אחריות','תקרת\\s+ה?אחריות','אחריות(?:ו|ה|ם)?\\s+ה?כוללת','אחריות(?:ו|ה|ם)?\\s+ה?מצטברת','limitation\\s+of\\s+liability','aggregate\\s+liability','limitation\\s+of\\s+liability','aggregate\\s+liability','total\\s+liability','limited\\s+liability','in\\s+no\\s+event'),R('ששולמ(?:ו|ה)\\s+ב[\\-]?(\\d{1,2})\\s+ה?חודשים','(\\d{1,2})\\s+ה?חודשים\\s+שקדמו','לא\\s+תעלה\\s+על\\s+(?:סך\\s+)?(?:של\\s+)?([\\d,]{3,})','פי\\s+(\\d{1,2})\\s+מ','מוגבלת\\s+ל(?:סך\\s+)?([\\d,]{3,})','(\\d{1,2})\\s+חודשי\\s+תמורה','(נזק\\s+עקיף)','(?:fees|amounts)\\s+paid[^.]{0,60}?(\\d{1,2})\\s+months','(\\d{1,2})\\s+months\\s+(?:preceding|prior)','exceed[^.]{0,40}?'+CUR+'\\s?([\\d,]{4,})','exceed[^.]{0,40}?([\\d,]{4,})\\s?'+CUR,'(indirect,?\\s+consequential)'),'סכום או מכפיל','כיצד מוגבלת האחריות בניירות שלך'),('גבול אחריות ביטוחי',R('אישור\\s+קיום\\s+ביטוח','גבול\\s+אחריות','סכום\\s+ביטוח','פוליס','ביטוח\\s+אחריות','insurance','insurance','policy\\s+limits?','commercial\\s+general\\s+liability'),R('([\\d,]{4,})\\s*'+CUR,'בגבול\\s+אחריות\\s+של\\s+([\\d,]{4,})','סכום\\s+ביטוח\\s+של\\s+([\\d,]{4,})',CUR+'\\s?([\\d,]{4,})'),'סכום ומטבע','גבול האחריות הביטוחי הנדרש'),('ריבית פיגורים',R('ריבית\\s+פיגורים','פיגור\\s+בתשלום','איחור\\s+בתשלום','late\\s+payment','late\\s+payment','overdue','interest\\s+on'),R('(\\d{1,2}(?:\\.\\d+)?)\\s*%','בשיעור\\s+של\\s+(\\d{1,2}(?:\\.\\d+)?)','(\\d{1,2}(?:\\.\\d+)?)\\s*%\\s*per\\s+(?:month|annum)','(\\d{1,2}(?:\\.\\d+)?)\\s*%'),'אחוז','שיעור ריבית הפיגורים הנהוג'),('תמלוגים או עמלה',R('תמלוגים','עמלה','royalt','commission','royalt','commission','discount','margin','reseller\\s+price'),R('בשיעור\\s+(?:של\\s+)?(\\d{1,2}(?:\\.\\d+)?)\\s*%','(\\d{1,2}(?:\\.\\d+)?)\\s*%','(\\d{1,2}(?:\\.\\d+)?)\\s*%'),'אחוז','שיעור התמלוגים או העמלה'),('שרידות חובת הסודיות',R('סודיות','מידע\\s+סודי','confidentialit','confidential','survive'),R('(\\d{1,2})\\s+שנים?\\s+מ(?:מועד\\s+)?(?:ה?סיום|תום)','למשך\\s+(\\d{1,2})\\s+שנים?','(\\d{1,2})\\s+years?\\s+(?:after|following)','(\\d{1,2})\\s+years?\\s+(?:after|following|from)','period\\s+of\\s+(\\d{1,2})\\s+years?'),'שנים','כמה זמן שורדת חובת הסודיות אחרי הסיום'),('אי תחרות',R('אי[\\s\\-־]?תחרות','לא\\s+יתחרה','הגבלת\\s+עיסוק','non[\\s\\-]?compet','non[\\s\\-]?compet','shall\\s+not\\s+compete','no\\s+solicitation'),R('(\\d{1,2})\\s+חודשים?','(\\d{1,2})\\s+שנים?','(\\d{1,2})\\s+(?:months?|years?)'),'חודשים או שנים','משך הגבלת אי התחרות'),('מקדמה או פיקדון',R('פיקדון','מקדמה','ערבות\\s+בנקאית','בטוחה','security\\s+deposit','deposit','advance\\s+payment','prepayment','bank\\s+guarantee'),R('([\\d,]{4,})\\s*'+CUR,'בסך\\s+(?:של\\s+)?([\\d,]{4,})','(\\d{1,2})\\s+חודשי\\s+(?:תשלום|דמי)',CUR+'\\s?([\\d,]{4,})'),'סכום','גובה הפיקדון או הערבות הנהוג')]
 def derive(texts):
-    """הספירה לכל פרמטר על קבוצת מסמכים אחת: [(שם הקובץ, משפחה, טקסט, תפקיד)]."""
-    results = []
-    for name, anchor, value_rx, unit, explain in PARAMS:
-        votes, evidence, per_doc = Counter(), {}, {}
-        for fname, family, t, _role in texts:
-            found = set()
-            for am in anchor.finditer(t):
-                win_start = max(0, am.start() - WINDOW // 3)
-                window = t[win_start:am.start() + WINDOW]
-                for m in value_rx.finditer(window):
-                    val = next((g for g in m.groups() if g), None)
-                    if not val:
-                        continue
-                    val = val.replace(",", "")
-                    # 250000 GBP ו-250000 ILS אינם אותו ערך; המטבע לפני הסכום או מיד אחריו
-                    cur = currency_of(window[m.start():m.end() + 12]) if len(val) >= 4 else None
-                    if cur:
-                        val = "%s %s" % (val, cur)
-                    found.add(val)
-                    evidence.setdefault(val, {
-                        "source_file": fname, "family": family,
-                        "quote": re.sub(r"\s+", " ", window[
-                            max(0, m.start() - 90):m.start() + 130]).strip()})
-            if found:
-                per_doc[fname] = sorted(found)
-            for v in found:
-                votes[v] += 1
-        if not votes:
-            results.append({"parameter": name, "unit": unit, "question": explain,
-                            "value": None, "status": "לא נגזר",
-                            "note": "לא אותר בניירות של הלקוח, יש לשאול את המשתמש"})
-            continue
-        ranked = votes.most_common()
-        top_val, top_n = ranked[0]
-        if len(ranked) > 1 and ranked[1][1] == top_n:
-            status = "שנוי, יותר מערך שכיח אחד"
-        elif top_n >= 2:
-            status = "מבוסס"
-        else:
-            status = "מופע יחיד, טעון אישור"
-        ev = evidence.get(top_val, {})
-        results.append({
-            "parameter": name, "unit": unit, "question": explain,
-            "value": top_val, "status": status,
-            "support": "%d מתוך %d מסמכים" % (top_n, len(texts)),
-            "distribution": [{"value": v, "documents": n} for v, n in ranked[:6]],
-            "per_document": per_doc,
-            "source_file": ev.get("source_file"),
-            "source_family": ev.get("family"),
-            "quote": ev.get("quote"),
-        })
-    return results
-
-
-def doc_role(d):
-    """התפקיד של החברה במסמך, כפי שהמרשם קבע אותו (company_role, ואחריו המועמד הראשון)."""
-    return d.get("company_role") or (d.get("company_role_candidates") or [None])[0]
-
-
+	K=texts;E=[]
+	for(L,V,W,M,N)in PARAMS:
+		F,O,P=Counter(),{},{}
+		for(Q,X,R,a)in K:
+			C=set()
+			for S in V.finditer(R):
+				Y=max(0,S.start()-WINDOW//3);G=R[Y:S.start()+WINDOW]
+				for B in W.finditer(G):
+					A=next((A for A in B.groups()if A),None)
+					if not A:continue
+					A=A.replace(',','');T=currency_of(G[B.start():B.end()+12])if len(A)>=4 else None
+					if T:A='%s %s'%(A,T)
+					C.add(A);O.setdefault(A,{'source_file':Q,'family':X,'quote':re.sub('\\s+',' ',G[max(0,B.start()-90):B.start()+130]).strip()})
+			if C:P[Q]=sorted(C)
+			for Z in C:F[Z]+=1
+		if not F:E.append({'parameter':L,'unit':M,'question':N,'value':None,'status':'לא נגזר','note':'לא אותר בניירות של הלקוח, יש לשאול את המשתמש'});continue
+		D=F.most_common();U,H=D[0]
+		if len(D)>1 and D[1][1]==H:I='שנוי, יותר מערך שכיח אחד'
+		elif H>=2:I='מבוסס'
+		else:I='מופע יחיד, טעון אישור'
+		J=O.get(U,{});E.append({'parameter':L,'unit':M,'question':N,'value':U,'status':I,'support':'%d מתוך %d מסמכים'%(H,len(K)),'distribution':[{'value':A,'documents':B}for(A,B)in D[:6]],'per_document':P,'source_file':J.get('source_file'),'source_family':J.get('family'),'quote':J.get('quote')})
+	return E
+def doc_role(d):return d.get('company_role')or(d.get('company_role_candidates')or[None])[0]
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--registry", required=True)
-    ap.add_argument("--out", required=True)
-    ap.add_argument("--all-documents", action="store_true",
-                    help="לגזור מכל המסמכים החוזיים ולא רק מהתבניות המאושרות")
-    ap.add_argument("--family", help="משפחת ההסכם של העסקה (family במרשם, או שם או כינוי שלה)")
-    ap.add_argument("--role", help="התפקיד של החברה בעסקה: company_role_code (<תפקיד החברה>) "
-                                   "או תווית המרשם")
-    args = ap.parse_args()
-    guard_out(args.out, [args.registry])
-
-    reg = json.load(io.open(args.registry, encoding="utf-8"))
-    docs = reg.get("documents", [])
-    if not args.all_documents:
-        docs = [d for d in docs if d.get("approved_current")]
-    n_before = len(docs)
-    if args.family:
-        docs = [d for d in docs if family_matches(d.get("family"), [args.family])]
-    want_role = normalize_role(args.role) if args.role else None
-    if want_role:
-        docs = [d for d in docs if doc_role(d) == want_role]
-    if n_before and not docs:
-        print("אין במרשם מסמכים של המשפחה והתפקיד שנמסרו (--family, --role). ערכים לא נגזרו, ויש לשאול את המשתמש.")
-        sys.exit(2)
-    if not docs:
-        print("אין מסמכים לגזירה. יש להריץ תחילה את build_template_registry.py.")
-        sys.exit(2)
-
-    texts = []
-    for d in docs:
-        p = os.path.join(d.get("folder", ""), d["file"])
-        if p.lower().endswith(".docx"):
-            # ב-redline הטקסט הגולמי משרג ישן וחדש; קוראים את הנוסח המתאים
-            mode = "base" if d.get("approved_current_basis") == "redline_base" else "final"
-            t = " ".join(docx_paragraphs(p, limit=20000, mode=mode))
-        else:
-            t = io.open(p, encoding="utf-8", errors="ignore").read()
-        if t:
-            texts.append((d["file"], d.get("family"), normalize(t), doc_role(d)))
-
-    keys = []
-    for x in texts:
-        if (x[1], x[3]) not in keys:
-            keys.append((x[1], x[3]))
-    groups = []
-    for fam, role in keys:
-        sub = [x for x in texts if (x[1], x[3]) == (fam, role)]
-        groups.append({"family": fam, "company_role": role, "documents_scanned": len(sub),
-                       "parameters": derive(sub)})
-    results = groups[0]["parameters"] if len(groups) == 1 else []
-
-    out = {
-        "generated_at": date.today().isoformat(),   # ISO ב-JSON (כלל 3.6)
-        "documents_scanned": len(texts),
-        "family": args.family or (groups[0]["family"] if len(groups) == 1 else None),
-        "company_role": want_role or (groups[0]["company_role"] if len(groups) == 1 else None),
-        "groups": groups,
-        "scope": "כל המסמכים החוזיים" if args.all_documents else "תבניות מאושרות בלבד",
-        "source": "נגזר מהניירות של הלקוח, אינו ברירת מחדל כללית",
-        "method": ("לכל פרמטר עוגן נושאי, והערך נחפש רק בחלון שסביבו. "
-                   "ערך שאותר מחוץ להקשרו אינו נספר."),
-        "parameters": results,
-        "mixed_groups_note": (None if len(groups) <= 1 else
-                              "ההסכמים שייכים ליותר ממשפחה אחת או מתפקיד אחד של החברה, ולכן אין ערך אחד לכל "
-                              "פרמטר. הרץ שוב עם --family ו---role של העסקה, או קרא את הצירוף המתאים ב-groups."),
-        "usage_rule": ("ערך נגזר מוצג למשתמש לאישור או לשינוי, ואינו נכנס לטיוטה בלי אישור. "
-                       "ערך שסטטוסו שנוי או מופע יחיד מוצג כשאלה ולא כברירת מחדל. "
-                       "כשקיים פלייבוק, עמדת הפלייבוק גוברת על הערך הנגזר. "
-                       "הפיזור בין ההסכמים חשוב לא פחות מהערך השכיח: פיזור רחב "
-                       "מעיד שאין לחברה עמדה אחידה, וזה עצמו ממצא."),
-    }
-    dd = os.path.dirname(os.path.abspath(args.out))
-    if dd and not os.path.isdir(dd):
-        os.makedirs(dd)
-    io.open(args.out, "w", encoding="utf-8").write(
-        json.dumps(out, ensure_ascii=False, indent=2))
-
-    print("נגזרו ברירות מחדל מ-%d מסמכים" % len(texts))
-    if len(groups) > 1:
-        print("  שים לב: %d צירופים של משפחה ותפקיד. הרץ עם --family ו---role של העסקה:" % len(groups))
-        for g in groups:
-            print("    %s / %s: %d מסמכים" % (g["family"] or "לא זוהתה", g["company_role"] or "לא צוין",
-                                            g["documents_scanned"]))
-    for r in results:
-        dist = ""
-        if r.get("distribution") and len(r["distribution"]) > 1:
-            dist = "  פיזור: " + ", ".join(
-                "%s (%d)" % (x["value"], x["documents"]) for x in r["distribution"][:4])
-        print("  %-26s %-8s %-22s%s" % (
-            r["parameter"], (r["value"] or "לא נגזר"),
-            r.get("support", ""), dist))
-
-
-if __name__ == "__main__":
-    main()
+	D=argparse.ArgumentParser();D.add_argument('--registry',required=True);D.add_argument('--out',required=True);D.add_argument('--all-documents',action='store_true',help='לגזור מכל המסמכים החוזיים ולא רק מהתבניות המאושרות');D.add_argument('--family',help='משפחת ההסכם של העסקה (family במרשם, או שם או כינוי שלה)');D.add_argument('--role',help='התפקיד של החברה בעסקה: company_role_code (<תפקיד החברה>) או תווית המרשם');A=D.parse_args();guard_out(A.out,[A.registry]);T=json.load(io.open(A.registry,encoding='utf-8'));C=T.get('documents',[])
+	if not A.all_documents:C=[A for A in C if A.get('approved_current')]
+	U=len(C)
+	if A.family:C=[B for B in C if family_matches(B.get('family'),[A.family])]
+	I=normalize_role(A.role)if A.role else None
+	if I:C=[A for A in C if doc_role(A)==I]
+	if U and not C:print('אין במרשם מסמכים של המשפחה והתפקיד שנמסרו (--family, --role). ערכים לא נגזרו, ויש לשאול את המשתמש.');sys.exit(2)
+	if not C:print('אין מסמכים לגזירה. יש להריץ תחילה את build_template_registry.py.');sys.exit(2)
+	G=[]
+	for E in C:
+		J=os.path.join(E.get('folder',''),E['file'])
+		if J.lower().endswith('.docx'):V='base'if E.get('approved_current_basis')=='redline_base'else'final';K=' '.join(docx_paragraphs(J,limit=20000,mode=V))
+		else:K=io.open(J,encoding='utf-8',errors='ignore').read()
+		if K:G.append((E['file'],E.get('family'),normalize(K),doc_role(E)))
+	L=[]
+	for H in G:
+		if(H[1],H[3])not in L:L.append((H[1],H[3]))
+	B=[]
+	for(O,P)in L:Q=[A for A in G if(A[1],A[3])==(O,P)];B.append({'family':O,'company_role':P,'documents_scanned':len(Q),'parameters':derive(Q)})
+	R=B[0]['parameters']if len(B)==1 else[];W={'generated_at':date.today().isoformat(),'documents_scanned':len(G),'family':A.family or(B[0]['family']if len(B)==1 else None),'company_role':I or(B[0]['company_role']if len(B)==1 else None),'groups':B,'scope':'כל המסמכים החוזיים'if A.all_documents else'תבניות מאושרות בלבד','source':'נגזר מהניירות של הלקוח, אינו ברירת מחדל כללית','method':'לכל פרמטר עוגן נושאי, והערך נחפש רק בחלון שסביבו. ערך שאותר מחוץ להקשרו אינו נספר.','parameters':R,'mixed_groups_note':None if len(B)<=1 else'ההסכמים שייכים ליותר ממשפחה אחת או מתפקיד אחד של החברה, ולכן אין ערך אחד לכל פרמטר. הרץ שוב עם --family ו---role של העסקה, או קרא את הצירוף המתאים ב-groups.','usage_rule':'ערך נגזר מוצג למשתמש לאישור או לשינוי, ואינו נכנס לטיוטה בלי אישור. ערך שסטטוסו שנוי או מופע יחיד מוצג כשאלה ולא כברירת מחדל. כשקיים פלייבוק, עמדת הפלייבוק גוברת על הערך הנגזר. הפיזור בין ההסכמים חשוב לא פחות מהערך השכיח: פיזור רחב מעיד שאין לחברה עמדה אחידה, וזה עצמו ממצא.'};M=os.path.dirname(os.path.abspath(A.out))
+	if M and not os.path.isdir(M):os.makedirs(M)
+	io.open(A.out,'w',encoding='utf-8').write(json.dumps(W,ensure_ascii=False,indent=2));print('נגזרו ברירות מחדל מ-%d מסמכים'%len(G))
+	if len(B)>1:
+		print('  שים לב: %d צירופים של משפחה ותפקיד. הרץ עם --family ו---role של העסקה:'%len(B))
+		for N in B:print('    %s / %s: %d מסמכים'%(N['family']or'לא זוהתה',N['company_role']or'לא צוין',N['documents_scanned']))
+	for F in R:
+		S=''
+		if F.get('distribution')and len(F['distribution'])>1:S='  פיזור: '+', '.join('%s (%d)'%(A['value'],A['documents'])for A in F['distribution'][:4])
+		print('  %-26s %-8s %-22s%s'%(F['parameter'],F['value']or'לא נגזר',F.get('support',''),S))
+if __name__=='__main__':main()

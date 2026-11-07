@@ -1,46 +1,78 @@
-# AreoLegal — סוויטה משפטית ל-Claude
+<p align="center">
+  <img src="assets/areo-contracts.png" alt="Areo Contracts" width="420">
+</p>
 
-חבילת סקילים מקצועית לעורכי דין מסחריים: פלייבוק חוזי, ניהול משא ומתן על הסכמים, פרופיל ארגוני ומסמכי Word בעברית (RTL). השימוש מחייב מנוי פעיל.
+<div dir="rtl">
 
-## התקנה (פעם אחת, כ-2 דקות, בלי שורת פקודה)
+# Areo Contracts
 
-באפליקציית Claude Desktop:
+**מערכת לניהול חוזים בעברית, שעובדת בתוך Claude. מבית Areo.**
 
-1. פתחו את תפריט **Customize** (בסרגל הצד) ובחרו **Plugins**.
-2. באזור **Personal plugins** לחצו על **"+"** ובחרו **Add marketplace**.
+Areo Contracts בונה פלייבוק חוזי מההסכמים של החברה, מנהלת משא ומתן על טיוטות שחזרו מהצד שכנגד בעקוב אחר שינויים, מעריכה את הסיכונים שהסכם יוצר, מנסחת הסכמים ומסמכים נלווים על הנייר של החברה, מתרגמת חוזים בין עברית לאנגלית תוך שמירה על התוקף המשפטי, ומציעה תוסף לניהול מחזור חיי החוזה (מועדים, חידושים והתחייבויות). הכול קורה בתוך Claude, והמסמכים שלכם נשארים בסביבה שלכם.
+
+## התקנה
+
+לפני שמתחילים ודאו שיש לכם: אפליקציית Claude Desktop (בחשבון Claude בתשלום), מפתח רישיון Areo Contracts מהרכישה, וחיבור לאינטרנט. אין צורך בשום התקנה טכנית נוספת.
+
+בתוך Claude התוסף מופיע בשם **AreoLegal**. זה אותו מוצר, Areo Contracts.
+
+### שלב 1 - התקנת התוסף
+
+1. פתחו את אפליקציית Claude ובסרגל הצד בחרו **Customize** ואז **Plugins**.
+2. באזור **Personal plugins** לחצו **"+"** ובחרו **Add marketplace**.
 3. הדביקו: `areolegal/claude-plugin` ואשרו.
 4. מצאו את **AreoLegal** ברשימה ולחצו **Install**.
-5. סגרו את האפליקציה לגמרי (⌘Q / יציאה מלאה) ופתחו מחדש.
 
-פתחו את טאב **Code**, התחילו שיחה חדשה וכתבו: **"הפעל את AreoLegal"** — תתבקשו להזין את מפתח הרישיון שקיבלתם ברכישה (`AREO-...`), והמערכת תופעל. העבודה השוטפת מתבצעת גם היא בטאב Code.
+### שלב 2 - חיבור המנוי (Connector)
 
-> הערה: סשני **Cowork** אינם נתמכים כרגע עקב מגבלת רשת בפלטפורמה של Claude (הסנדבוקס חוסם גישה לשירותים חיצוניים). ברגע ש-Anthropic תסיר את המגבלה, AreoLegal יעבוד גם שם ללא כל שינוי מצדכם.
+1. בהגדרות בחרו **Connectors** ואז **Add custom connector**.
+2. שם: `AreoLegal`, וכתובת: `https://areo.co.il/mcp`
+3. לחצו **Connect**. ייפתח דף AreoLegal בדפדפן. הזינו את מפתח הרישיון שלכם (`AREO-...`) ולחצו חיבור.
 
-דרך חלופית למשתמשי Claude Code: הריצו בטאב Code את `‎/plugin marketplace add areolegal/claude-plugin` ואז `‎/plugin install areolegal@areolegal`.
+### שלב 3 - הפעלה ראשונה
 
-## מה מקבלים
+1. סגרו את האפליקציה לגמרי ופתחו מחדש.
+2. פתחו שיחה חדשה וכתבו: **"הפעל את AreoLegal"**.
+3. עקבו אחרי ההנחיות, כולל בניית הפרופיל הארגוני שלכם (פעם אחת).
 
-| סקיל | מה הוא עושה |
-| --- | --- |
-| בונה פלייבוק חוזי | מדיניות ירוק/צהוב/אדום מתיקיית הסכמים, עם דשבורד אינטראקטיבי |
-| מנהל משא ומתן | תגובה להערות ספק ב-Track Changes עם נימוקים משפטיים, DOCX RTL |
-| פרופיל ארגוני | מחקר חברה, רגולטורים, לוגו וצבעי מותג לשימוש בתוצרים |
-| אכיפת RTL | כל מסמך Word בעברית יוצא תקין, מיושר לימין |
-
-## דרישות
-
-- אפליקציית Claude Desktop עדכנית (מנוי Claude בתשלום)
-- מנוי AreoLegal פעיל וחיבור לאינטרנט
-
-זהו. אין צורך בשום התקנה טכנית נוספת — הכול רץ בסביבה המנוהלת של Claude, גם ב-Mac וגם ב-Windows.
-
-## פרטיות וסודיות — ההסכמים שלכם נשארים אצלכם
-
-המסמכים, ההסכמים והטיוטות שלכם **לעולם אינם נשלחים לשרתי AreoLegal**. כל העיבוד מתבצע מקומית במחשב שלכם, בתוך Claude. התקשורת היחידה מול שירות AreoLegal היא: (1) אימות מפתח הרישיון, (2) משיכת חומרי המתודולוגיה המקצועיים (טקסונומיות, תבניות, מתודולוגיות) אל המחשב שלכם. כיוון הנתונים הוא תמיד מהשירות אליכם — אף תוכן מהמסמכים שלכם אינו עולה לשירות.
+מדריך ההתקנה המלא ופתרון תקלות: [areo.co.il/legal](https://areo.co.il/legal)
 
 ## תמיכה
 
-חידוש מנוי, מפתח אבד, או כל שאלה: פנו אלינו דרך אתר AreoLegal.
+- אתר: [areo.co.il/legal](https://areo.co.il/legal)
+- דוא"ל: [support@areo.co.il](mailto:support@areo.co.il)
+
+השימוש כפוף למנוי פעיל ול[תנאי השימוש](https://areo.co.il/legal/terms). ראו [LICENSE](LICENSE).
+
+© Areo. כל הזכויות שמורות.
+
+</div>
 
 ---
-© AreoLegal. התוכן המקצועי הנמסר דרך השירות מורשה לשימוש המנוי בלבד; אין להעתיק, להפיץ או ליצור ממנו יצירות נגזרות.
+
+## English
+
+**Areo Contracts** is a contract management suite for Hebrew-speaking legal teams that works inside Claude. It builds a contract playbook from your company's own agreements, negotiates counterparty drafts with tracked changes, assesses the risks an agreement creates, drafts agreements and related documents on your company's paper, translates contracts between Hebrew and English while preserving their legal effect, and offers a contract lifecycle management add-on for key dates, renewals and obligations. Everything runs inside Claude, and your documents stay in your environment.
+
+### Installation
+
+You need the Claude Desktop app (on a paid Claude plan), an Areo Contracts licence key from your purchase, and an internet connection. Inside Claude the plugin is listed as **AreoLegal**; it is the same product.
+
+1. **Install the plugin.** In Claude open **Customize > Plugins**. Under **Personal plugins** click **"+"**, choose **Add marketplace**, paste `areolegal/claude-plugin` and confirm. Find **AreoLegal** in the list and click **Install**.
+2. **Connect your subscription.** In settings open **Connectors > Add custom connector**. Name: `AreoLegal`, URL: `https://areo.co.il/mcp`. Click **Connect**, enter your licence key (`AREO-...`) on the page that opens, and confirm.
+3. **First run.** Quit Claude completely and reopen it. Start a new chat and type **"הפעל את AreoLegal"** (activate AreoLegal), then follow the prompts, including a one-time setup of your organisation profile.
+
+In Claude Code, step 1 is one command:
+
+```
+/plugin install areolegal --marketplace areolegal/claude-plugin
+```
+
+### Support
+
+- Website: [areo.co.il/legal](https://areo.co.il/legal)
+- Email: [support@areo.co.il](mailto:support@areo.co.il)
+
+Use requires an active Areo subscription and is subject to the [terms of use](https://areo.co.il/legal/terms). See [LICENSE](LICENSE).
+
+© Areo. All rights reserved.

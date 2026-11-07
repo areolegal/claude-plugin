@@ -1,186 +1,61 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""בודק שסביבת העבודה שנבנתה היא אפליקציה עובדת ולא קליפה.
-
-למה הקובץ הזה קיים: התוצר הוא HTML של מאות קילובייטים, ואי אפשר לראות בעין אם
-ההזרקה הצליחה. כשלים שקטים אפשריים: הנתונים לא הוזרקו והמסכים ריקים, ספריית
-הגרפים לא הוטמעה והלוחות לא נטענים, או שהתוצר נבנה מתבנית ישנה.
-
-הבדיקה היא על המחרוזות שבתוצר, ולכן היא זולה ורצה בכל בנייה. היא אינה מחליפה
-את רתמות ה-jsdom, שמריצות את הדף בפועל (`qa_artifact.js`, `qa_basis.js`,
-`qa_shared_decisions.js`, `qa_imposed.js`).
-
-**מה נבדק גם בשלילה:** בדף אין אישור מדיניות. אין בו כפתורי הכרעה, אין טקסט
-שאומר שעמדה אושרה או נכנסה למדיניות, אין ייצוא ל-Office ואין חבילת סוכן
-(`dashboard_spec.md`, "מה אסור"). פעולה כזאת שחוזרת לתבנית נתפסת כאן.
-
-    python3 validate_playbook_html.py <קובץ.html> [--lang he|en] [--artifact]
-"""
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
 from __future__ import annotations
-
-import argparse
-import io
-import json
-import re
-import sys
-
-for _s in (sys.stdout, sys.stderr):  # עברית בקונסולה שאינה UTF-8 (cp1252): בלי UnicodeEncodeError
-    try:
-        _s.reconfigure(encoding="utf-8", errors="replace")
-    except (AttributeError, ValueError):   # לא TextIOWrapper (לכידה בבדיקות, pythonw)
-        pass
-
-# סמני הזרקה שחייבים להיעלם בבנייה. אם נשארו, הסקריפט לא רץ או רץ חלקית.
-MUST_BE_REPLACED = ["/*__DATA__*/null", "/*__CHARTJS__*/", "__ENTITY__", "__FAMILIES__"]
-
-# המסכים. כל אחד הוא פונקציית תצוגה בתבנית; היעדר אחד פירושו מסך חסר.
-VIEWS = ["vOverview", "vRules", "vSegPolicy", "vCompare", "vCommercial", "vFindings",
-         "vAdditions", "vPrecedents", "vDecisions", "vSources", "vExport"]
-
-# האינטראקציות שבלעדיהן זו תצוגה ולא סביבת עבודה.
-# הערות, אישורים והצעות נוסח נכתבים רק באשף, והקישור אליו מכל סעיף הוא wizLink
-INTERACTIONS = ["save", "tune", "globalSearch", "openRule", "wizLink",
-                "localStorage", "basisText", "covPanel", "imposedLayers"]
-
-# שלד העמוד.
-STRUCTURE = ['id="nav"', 'id="wrap"', 'id="rlist"', 'id="drawer"', 'id="pbbar"',
-             "normalizeRules", "boot"]
-
-# מה שאסור להיות בדף. שם פונקציה ומחרוזת תצוגה גם יחד.
-FORBIDDEN = [
-    ("function decide(", "כפתור הכרעה: הדף אינו מאשר מדיניות"),
-    ("approveAll", "כפתור אישור כל הפלייבוק"),
-    ("אישור כל הפלייבוק", "טקסט אישור כל הפלייבוק"),
-    ("נכנס למדיניות", "טקסט שאומר שעמדה נכנסה למדיניות"),
-    ("function agentPack", "חבילת סוכן"),
-    ("function officeBlob", "ייצוא למסמכי Office"),
-    ("function decisionsPack", "יומן החלטות כ-JSON"),
-    ("ההחלטה שלך", "פס הכרעה בסעיף"),
-    ("טרם הוכרע", "תווית מצב הכרעה"),
-    ("נערך ידנית", "תווית עריכה של מדיניות"),
-    ('id="editChip"', "מצב עריכה בדף: הערות והצעות נכתבות באשף"),
-    ('class="noteta"', "תיבת הערה בסעיף: הערות נכתבות באשף"),
-    ("onclick=\"dlComments()\"", "כפתור הורדת ההערות: קובץ שאף רכיב אינו קולט"),
-    ("confirm(", "חלון confirm של הדפדפן: אינו מוצג בעמוד משותף"),
-]
-# המפרט אוסר במפורש כפתור או טקסט "מאשר", "אושר" או "נכנס למדיניות".
-# הבדיקה היא על המילה עצמה בתוך טקסט שהמשתמש רואה, ולא על כל הופעה של
-# האותיות, כדי שלא תיפול על "אישור ביטוחי" או "מאושרת" בתוך ציטוט מהסכם.
-APPROVAL_WORDS = re.compile(
-    r">\s*(?:מאשר|מאשרת|לא מאשר|אושר|אושרו|מאושר)\s*<"
-    r"|>[^<]{0,40}(?:אישור כל הפלייבוק|נכנס למדיניות|אושר עם שינוי)")
-
-# תוויות חובה שהמפרט קובע מילה במילה
-REQUIRED_HE = [
-    ("הצעה, לא מדיניות", "התווית שמבדילה הצעה ממדיניות"),
-    ("נימוקים מלאים", "מונה הנימוקים, במקום מונה האישורים"),
-    ("שאלות פתוחות", "שם המסך שהחליף את מסך ההחלטות"),
-]
-
-MIN_BYTES = 150_000          # פחות מזה: הגרפים או הנתונים לא נכנסו
-
-# בלוק הנתונים שהוזרק לדף: `const D = {...}` בדף, ו-`id="wzData"` באשף.
-DATA_START = re.compile(r'const D\s*=\s*(?=[{\[])|<script[^>]*id="wzData"[^>]*>\s*(?=[{\[])')
-
-
+import argparse,io,json,re,sys
+for _s in(sys.stdout,sys.stderr):
+	try:_s.reconfigure(encoding='utf-8',errors='replace')
+	except(AttributeError,ValueError):pass
+MUST_BE_REPLACED=['/*__DATA__*/null','/*__CHARTJS__*/','__ENTITY__','__FAMILIES__']
+VIEWS=['vOverview','vRules','vSegPolicy','vCompare','vCommercial','vFindings','vAdditions','vPrecedents','vDecisions','vSources','vExport']
+INTERACTIONS=['save','tune','globalSearch','openRule','wizLink','localStorage','basisText','covPanel','imposedLayers']
+STRUCTURE=['id="nav"','id="wrap"','id="rlist"','id="drawer"','id="pbbar"','normalizeRules','boot']
+FORBIDDEN=[('function decide(','כפתור הכרעה: הדף אינו מאשר מדיניות'),('approveAll','כפתור אישור כל הפלייבוק'),('אישור כל הפלייבוק','טקסט אישור כל הפלייבוק'),('נכנס למדיניות','טקסט שאומר שעמדה נכנסה למדיניות'),('function agentPack','חבילת סוכן'),('function officeBlob','ייצוא למסמכי Office'),('function decisionsPack','יומן החלטות כ-JSON'),('ההחלטה שלך','פס הכרעה בסעיף'),('טרם הוכרע','תווית מצב הכרעה'),('נערך ידנית','תווית עריכה של מדיניות'),('id="editChip"','מצב עריכה בדף: הערות והצעות נכתבות באשף'),('class="noteta"','תיבת הערה בסעיף: הערות נכתבות באשף'),('onclick="dlComments()"','כפתור הורדת ההערות: קובץ שאף רכיב אינו קולט'),('confirm(','חלון confirm של הדפדפן: אינו מוצג בעמוד משותף')]
+APPROVAL_WORDS=re.compile('>\\s*(?:מאשר|מאשרת|לא מאשר|אושר|אושרו|מאושר)\\s*<|>[^<]{0,40}(?:אישור כל הפלייבוק|נכנס למדיניות|אושר עם שינוי)')
+REQUIRED_HE=[('הצעה, לא מדיניות','התווית שמבדילה הצעה ממדיניות'),('נימוקים מלאים','מונה הנימוקים, במקום מונה האישורים'),('שאלות פתוחות','שם המסך שהחליף את מסך ההחלטות')]
+MIN_BYTES=150000
+DATA_START=re.compile('const D\\s*=\\s*(?=[{\\[])|<script[^>]*id="wzData"[^>]*>\\s*(?=[{\\[])')
 def page_chrome(html):
-    """הדף בלי בלוק הנתונים שהוזרק, לבדיקות האיסור.
-
-    האיסור הוא על פעולה או טקסט של הדף עצמו (כפתור, תווית, הודעה), ולא על
-    מה שהלקוח כתב בהסכמים שלו. ציטוט ממסמך כמו "כל שינוי נכנס
-    למדיניות אבטחת המידע" הוא ראיה, ובדיקה על הקובץ כולו הכשילה בגללו סביבת
-    עבודה תקינה. בלוק שלא ניתן לפענח נשאר בבדיקה, כדי שלא יוסתר דבר בטעות."""
-    out, pos = [], 0
-    dec = json.JSONDecoder()
-    for m in DATA_START.finditer(html):
-        if m.start() < pos:
-            continue
-        try:
-            _, end = dec.raw_decode(html, m.end())
-        except ValueError:
-            continue
-        out.append(html[pos:m.end()])
-        out.append("null")
-        pos = end
-    out.append(html[pos:])
-    return "".join(out)
-
-
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("path")
-    ap.add_argument("--lang", default="he", choices=("he", "en"))
-    ap.add_argument("--artifact", action="store_true",
-                    help="תוצר לעמוד משותף: בלי doctype, ובלי מסלולי הורדה")
-    a = ap.parse_args()
-
-    try:
-        html = io.open(a.path, encoding="utf-8").read()
-    except OSError as e:
-        print("לא ניתן לקרוא את הקובץ: %s" % e)
-        return 1
-
-    bad = []
-    for m in MUST_BE_REPLACED:
-        if m in html:
-            bad.append("סמן הזרקה לא הוחלף: %s, ההזרקה לא הושלמה" % m)
-    for m in VIEWS:
-        if m not in html:
-            bad.append("מסך חסר: %s" % m)
-    for m in INTERACTIONS:
-        if m not in html:
-            bad.append("אינטראקציה חסרה: %s" % m)
-    for m in STRUCTURE:
-        if m not in html:
-            bad.append("רכיב מבנה חסר: %s" % m)
-    # האיסורים נבדקים על הדף עצמו, בלי נתוני ההסכמים שהוזרקו (page_chrome)
-    chrome = page_chrome(html)
-    for m, why in FORBIDDEN:
-        if m in chrome:
-            bad.append("אסור בדף, %s (%s)" % (why, m))
-    for m in APPROVAL_WORDS.findall(chrome)[:4]:
-        bad.append("אסור בדף, שפת אישור בטקסט שהמשתמש רואה: %s" % str(m)[:60])
-    if a.lang == "he":
-        for m, why in REQUIRED_HE:
-            if m not in html:
-                bad.append("תווית חובה חסרה, %s (%s)" % (why, m))
-    if len(html.encode("utf-8")) < MIN_BYTES:
-        bad.append("התוצר קטן מ-%d בתים; הנתונים או ספריית הגרפים כנראה לא נכנסו"
-                   % MIN_BYTES)
-    if a.lang == "he":
-        # בתוצר המקומי הכיווניות על התגית; בעמוד משותף אין <html> שלנו,
-        # והיא נקבעת בסקריפט קצר בראש התוכן
-        rtl = ('dir="rtl"' in html
-               or 'setAttribute("dir","rtl")' in html.replace(" ", ""))
-        if not rtl:
-            bad.append("חסרה כיווניות rtl, ותוצר עברי חייב אותה")
-        if "—" in html or "–" in html:
-            bad.append("נמצא מקף ארוך; אסור בכל תוצר")
-
-    # הדף אינו פונה לשרת חיצוני: לא גופנים, לא ספריות ולא קישור שאינו https
-    for m in re.findall(r'(?:src|href)="(http://[^"]{0,120})"', html):
-        bad.append("פנייה לא מאובטחת מהדף: %s" % m[:80])
-    for m in re.findall(r'<(?:script|link)[^>]+(?:src|href)="(https://[^"]{0,120})"', html):
-        bad.append("הדף טוען מהרשת, ואסור לו: %s" % m[:80])
-
-    if a.artifact:
-        # רק בראש הקובץ: המחרוזת מופיעה גם בתוך קוד הדף, בקובץ השיתוף
-        if html.lstrip()[:200].upper().startswith("<!DOCTYPE"):
-            bad.append("תוצר לעמוד משותף אינו נושא doctype")
-        if 'publishTarget": "artifact"' not in html and "publishTarget':'artifact'" not in html:
-            bad.append("בתוצר המשותף publishTarget אינו artifact")
-
-    if bad:
-        print("נכשל, %d ממצאים:" % len(bad))
-        for b in bad:
-            print("  - %s" % b)
-        print("אין למסור את התוצר. בנה מחדש מהתבנית שנמשכה מהשירות.")
-        return 1
-    print("עבר: התוצר הוא סביבת עבודה מלאה (%d מסכים, %d אינטראקציות, %d KB), "
-          "ואין בו פעולת אישור" % (len(VIEWS), len(INTERACTIONS),
-                                   len(html.encode("utf-8")) // 1024))
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+	A=html;B,C=[],0;E=json.JSONDecoder()
+	for D in DATA_START.finditer(A):
+		if D.start()<C:continue
+		try:G,F=E.raw_decode(A,D.end())
+		except ValueError:continue
+		B.append(A[C:D.end()]);B.append('null');C=F
+	B.append(A[C:]);return''.join(B)
+def main():
+	D=argparse.ArgumentParser();D.add_argument('path');D.add_argument('--lang',default='he',choices=('he','en'));D.add_argument('--artifact',action='store_true',help='תוצר לעמוד משותף: בלי doctype, ובלי מסלולי הורדה');E=D.parse_args()
+	try:B=io.open(E.path,encoding='utf-8').read()
+	except OSError as H:print('לא ניתן לקרוא את הקובץ: %s'%H);return 1
+	C=[]
+	for A in MUST_BE_REPLACED:
+		if A in B:C.append('סמן הזרקה לא הוחלף: %s, ההזרקה לא הושלמה'%A)
+	for A in VIEWS:
+		if A not in B:C.append('מסך חסר: %s'%A)
+	for A in INTERACTIONS:
+		if A not in B:C.append('אינטראקציה חסרה: %s'%A)
+	for A in STRUCTURE:
+		if A not in B:C.append('רכיב מבנה חסר: %s'%A)
+	G=page_chrome(B)
+	for(A,F)in FORBIDDEN:
+		if A in G:C.append('אסור בדף, %s (%s)'%(F,A))
+	for A in APPROVAL_WORDS.findall(G)[:4]:C.append('אסור בדף, שפת אישור בטקסט שהמשתמש רואה: %s'%str(A)[:60])
+	if E.lang=='he':
+		for(A,F)in REQUIRED_HE:
+			if A not in B:C.append('תווית חובה חסרה, %s (%s)'%(F,A))
+	if len(B.encode('utf-8'))<MIN_BYTES:C.append('התוצר קטן מ-%d בתים; הנתונים או ספריית הגרפים כנראה לא נכנסו'%MIN_BYTES)
+	if E.lang=='he':
+		I='dir="rtl"'in B or'setAttribute("dir","rtl")'in B.replace(' ','')
+		if not I:C.append('חסרה כיווניות rtl, ותוצר עברי חייב אותה')
+		if'—'in B or'–'in B:C.append('נמצא מקף ארוך; אסור בכל תוצר')
+	for A in re.findall('(?:src|href)="(http://[^"]{0,120})"',B):C.append('פנייה לא מאובטחת מהדף: %s'%A[:80])
+	for A in re.findall('<(?:script|link)[^>]+(?:src|href)="(https://[^"]{0,120})"',B):C.append('הדף טוען מהרשת, ואסור לו: %s'%A[:80])
+	if E.artifact:
+		if B.lstrip()[:200].upper().startswith('<!DOCTYPE'):C.append('תוצר לעמוד משותף אינו נושא doctype')
+		if'publishTarget": "artifact"'not in B and"publishTarget':'artifact'"not in B:C.append('בתוצר המשותף publishTarget אינו artifact')
+	if C:
+		print('נכשל, %d ממצאים:'%len(C))
+		for J in C:print('  - %s'%J)
+		print('אין למסור את התוצר. בנה מחדש מהתבנית שנמשכה מהשירות.');return 1
+	print('עבר: התוצר הוא סביבת עבודה מלאה (%d מסכים, %d אינטראקציות, %d KB), ואין בו פעולת אישור'%(len(VIEWS),len(INTERACTIONS),len(B.encode('utf-8'))//1024));return 0
+if __name__=='__main__':raise SystemExit(main())

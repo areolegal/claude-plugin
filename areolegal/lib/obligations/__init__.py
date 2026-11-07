@@ -1,7 +1,2 @@
 # -*- coding: utf-8 -*-
-"""מרשם ההתחייבויות (contract-obligations-register): מנוע מועדים, סכמה, ושמירת המרשם.
-
-dates.py   חישוב מועד מלשון ההסכם, עם שורת חישוב שמוצגת ללקוח.
-model.py   הטקסונומיה, בדיקת הטיוטה שהמודל כתב, והנוסחים בעברית ובאנגלית.
-store.py   כתיבת obligations.json לכל הסכם ו-register.json לישות, עם היסטוריה ושימור מעמד.
-"""
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms

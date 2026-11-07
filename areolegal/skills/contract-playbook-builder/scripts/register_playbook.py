@@ -1,278 +1,95 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""שמירת הפלייבוק בתיקייה שלו, ורישומו באינדקס.
-
-`playbook-schema.md`, "מיקום": פלייבוק אחד לכל סוג הסכם ולכל פוזיציה,
-ב-`Areo-נתונים/playbooks/<family_id>/`, עם רשומה ב-
-`Areo-נתונים/playbooks/index.json`. **פלייבוק לעולם אינו נכתב על פלייבוק
-של סוג אחר או של פוזיציה אחרת, ואינו דוחק אותו.** לפני עדכון או בנייה
-מחדש, הגרסה הקודמת של אותו פלייבוק נשמרת ב-`versions/` שבתיקיית הסוג.
-
-`playbook-qa.md`, בדיקה 3, היא בדיוק שלושת הדברים האלה: הפלייבוק נשמר
-בתיקייה שלו, הרשומה באינדקס עודכנה, **ולא השתנתה שום רשומה של סוג אחר
-או של פוזיציה אחרת**. הסקריפט משווה את האינדקס לפני ואחרי, ומסרב כשנגע
-ברשומה שאינה שלו.
-
-`canonical-storage.md`, "Every playbook is in the index": פלייבוק במבנה
-הישן שיושב בשורש `Areo-נתונים` נרשם גם הוא, **בלי להזיז אותו**, עם
-`legacy: true`. בלי הרישום הזה הוא אינו נמצא באיתור.
-
-הרשומה נכתבת בשמות שהאיתור קורא (`orchestrator/resolve_playbook`):
-`core_path`, `family_code`, `company_role_code`, `family_aliases[]`,
-`language`, `last_updated`, ואיתם `corpus_origin`, `playbook_status`,
-`status_label` ו-`produced_with`, כדי שרכיב שמחפש פלייבוק יראה את מעמדו
-בלי לפתוח את המודל.
-
-    python3 scripts/register_playbook.py --data Areo-נתונים \\
-        --model <playbook-model.json> --core <playbook-core.json>
-
-קוד יציאה: **0** נרשם, **3** סירוב (רשומה של פלייבוק אחר הייתה משתנה,
-או שחסר במודל מה שהרשומה דורשת), **2** קלט חסר.
-"""
-import copy
-import datetime as _dt
-import json
-import os
-import shutil
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # גם ב-python -I, שאינו מוסיף את תיקיית הסקריפט
-import areo_lib  # noqa: F401  מוסיף את areolegal/lib לנתיב הייבוא
-
-from common.cli import OutputRefused, guard_out, no_bytecode, parser  # noqa: E402
-from playbook import status as S  # noqa: E402
-
-# השדות שהאיתור משתמש בהם, ולכן רשומה בלעדיהם אינה נמצאת
-KEY_FIELDS = ("core_path", "family_code", "company_role_code")
-CARRIED = ("corpus_origin", "playbook_status", "status_label", "produced_with")
-
-
-def load(path, what):
-    if not os.path.exists(path):
-        print("%s אינו קיים: %s" % (what, path))
-        raise SystemExit(2)
-    with open(path, encoding="utf-8") as fh:
-        return json.load(fh)
-
-
-def entry_identity(e):
-    """מה מזהה רשומה: הסוג והפוזיציה. שתיהן יחד, כי סוג אחד מופיע בשני צדדים."""
-    return (e.get("family_id") or e.get("family_code"),
-            e.get("company_role_code"), bool(e.get("legacy")))
-
-
-def model_entry(model, core, core_rel, legacy=False, model_path=None):
-    # התווית של שער המדיניות (status.gate_status), ולא גזירה נפרדת: האינדקס, הגרעין ו-policy_gate אומרים אותו דבר
-    st = S.gate_status(model, model_path)
-    e = {"core_path": core_rel,
-         "family_id": model.get("family_id"),
-         "family_code": (model.get("family_code") or (core or {}).get("family_code")),
-         "company_role_code": (model.get("company_role_code")
-                               or (core or {}).get("company_role_code")),
-         "family_aliases": list(((model.get("meta") or {}).get("build_request") or {})
-                                .get("family_aliases") or []),
-         "family_name": ((model.get("meta") or {}).get("build_request") or {}).get("family_label")
-                        or model.get("family_label"),
-         "language": (model.get("output_language")
-                      or ((model.get("meta") or {}).get("build_request") or {}).get("language")),
-         "last_updated": _dt.date.today().isoformat(),
-         "playbook_status": st["playbook_status"],
-         "status_label": st["label"],
-         "corpus_origin": (model.get("scope_summary") or {}).get("corpus_origin"),
-         "produced_with": model.get("produced_with"),
-         # תוצאת הבדיקות הזולות (playbook/validity): רכיב שמחפש פלייבוק רואה שהוא אינו עובר את הבדיקות שלו
-         "validity": validity_of(model, core)}
-    if legacy:
-        e["legacy"] = True
-    return {k: v for k, v in e.items() if v not in (None, "")}
-
-
-def validity_of(model, core):
-    """playbook/validity.validity_summary, או None כשהספרייה אינה זמינה (אז השדה אינו נכתב)."""
-    try:
-        from playbook import validity as VY
-    except ImportError:
-        return None
-    return VY.validity_summary(model, core)
-
-
-def build_identity(model):
-    """מה מזהה בנייה: build_id כשנכתב, ואחרת הגרסה ותאריך הבנייה. ריצת עדכון מעלה את הגרסה, ובנייה מחדש
-    מאפס מעלה את הראשי (playbook-schema.md, version), ולכן שתי בניות שונות אינן חולקות זהות."""
-    return (model.get("build_id") or "", str(model.get("version") or ""), str(model.get("generated_at") or ""))
-
-
-def previous_build(folder, model, src_model):
-    """True רק כשבתיקייה יושב פלייבוק שנבנה בהרצה קודמת. לא בכל קריאה: בבנייה אחת הבונה מריץ את הרישום
-    כמה פעמים, אחרי כל תיקון במודל, ובהרצה חיה נוצרו כך שישה קבצים ב-versions/ בבנייה אחת."""
-    dst = os.path.join(folder, "playbook-model.json")
-    if not os.path.exists(dst) or os.path.abspath(dst) == os.path.abspath(src_model):
-        return False        # אין פלייבוק קודם, או שהמודל נכתב כבר במקומו: זו אותה בנייה
-    try:
-        with open(dst, encoding="utf-8") as fh:
-            old = json.load(fh)
-    except ValueError:
-        return True         # קובץ פגום נשמר, כדי שלא יאבד
-    return build_identity(old) != build_identity(model)
-
-
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+'שמירת הפלייבוק בתיקייה שלו, ורישומו באינדקס.'
+import copy,datetime as _dt,json,os,shutil,sys
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+import areo_lib
+from common.cli import OutputRefused,guard_out,no_bytecode,parser
+from playbook import status as S
+KEY_FIELDS='core_path','family_code','company_role_code'
+CARRIED='corpus_origin','playbook_status','status_label','produced_with'
+def load(path,what):
+	A=path
+	if not os.path.exists(A):print('%s אינו קיים: %s'%(what,A));raise SystemExit(2)
+	with open(A,encoding='utf-8')as B:return json.load(B)
+def entry_identity(e):return e.get('family_id')or e.get('family_code'),e.get('company_role_code'),bool(e.get('legacy'))
+def model_entry(model,core,core_rel,legacy=False,model_path=None):
+	B=core;A=model;C=S.gate_status(A,model_path);D={'core_path':core_rel,'family_id':A.get('family_id'),'family_code':A.get('family_code')or(B or{}).get('family_code'),'company_role_code':A.get('company_role_code')or(B or{}).get('company_role_code'),'family_aliases':list(((A.get('meta')or{}).get('build_request')or{}).get('family_aliases')or[]),'family_name':((A.get('meta')or{}).get('build_request')or{}).get('family_label')or A.get('family_label'),'language':A.get('output_language')or((A.get('meta')or{}).get('build_request')or{}).get('language'),'last_updated':_dt.date.today().isoformat(),'playbook_status':C['playbook_status'],'status_label':C['label'],'corpus_origin':(A.get('scope_summary')or{}).get('corpus_origin'),'produced_with':A.get('produced_with'),'validity':validity_of(A,B)}
+	if legacy:D['legacy']=True
+	return{B:A for(B,A)in D.items()if A not in(None,'')}
+def validity_of(model,core):
+	try:from playbook import validity as A
+	except ImportError:return
+	return A.validity_summary(model,core)
+def build_identity(model):A=model;return A.get('build_id')or'',str(A.get('version')or''),str(A.get('generated_at')or'')
+def previous_build(folder,model,src_model):
+	A=os.path.join(folder,'playbook-model.json')
+	if not os.path.exists(A)or os.path.abspath(A)==os.path.abspath(src_model):return False
+	try:
+		with open(A,encoding='utf-8')as B:C=json.load(B)
+	except ValueError:return True
+	return build_identity(C)!=build_identity(model)
 def keep_previous(folder):
-    """הגרסה הקודמת של אותו פלייבוק נשמרת ב-versions/, ולא נדרסת."""
-    kept = []
-    versions = os.path.join(folder, "versions")
-    stamp = _dt.datetime.now().strftime("%Y-%m-%d-%H%M%S")
-    for name in ("playbook-model.json", "playbook-core.json"):
-        src = os.path.join(folder, name)
-        if not os.path.exists(src):
-            continue
-        os.makedirs(versions, exist_ok=True)
-        dst = os.path.join(versions, "%s-%s" % (stamp, name))
-        shutil.copy2(src, dst)
-        kept.append(dst)
-    return kept
-
-
+	A=folder;B=[];C=os.path.join(A,'versions');G=_dt.datetime.now().strftime('%Y-%m-%d-%H%M%S')
+	for D in('playbook-model.json','playbook-core.json'):
+		E=os.path.join(A,D)
+		if not os.path.exists(E):continue
+		os.makedirs(C,exist_ok=True);F=os.path.join(C,'%s-%s'%(G,D));shutil.copy2(E,F);B.append(F)
+	return B
 def main(argv=None):
-    no_bytecode()
-    ap = parser(__doc__.split("\n")[0], out_required=False,
-                out_help="דוח הרישום (JSON). האינדקס מתעדכן בכל מקרה")
-    ap.add_argument("--data", required=True, help="תיקיית Areo-נתונים של הלקוח")
-    ap.add_argument("--model", required=True, help="playbook-model.json שנבנה")
-    ap.add_argument("--core", required=True, help="playbook-core.json שנבנה")
-    ap.add_argument("--dry-run", action="store_true",
-                    help="מראה מה היה נכתב, בלי לכתוב דבר")
-    a = ap.parse_args(argv)
-
-    if not os.path.isdir(a.data):
-        print("תיקיית הנתונים אינה קיימת: %s" % a.data)
-        return 2
-    model = load(a.model, "המודל")
-    core = load(a.core, "הגרעין")
-
-    family_id = model.get("family_id")
-    if not family_id:
-        print("אין במודל family_id, ולכן אין תיקייה לשמור בה ואין רשומה לרשום. "
-              "זהו מזהה קבוע לסוג ההסכם ולפוזיציה (fam_<סוג>_<קוד-פוזיציה>).")
-        return 3
-
-    folder = os.path.join(a.data, "playbooks", family_id)
-    index_path = os.path.join(a.data, "playbooks", "index.json")
-    core_rel = os.path.join("playbooks", family_id, "playbook-core.json").replace("\\", "/")
-    entry = model_entry(model, core, core_rel, model_path=a.model)
-    missing = [f for f in KEY_FIELDS if not entry.get(f)]
-    if missing:
-        print("הרשומה לא תימצא באיתור בלי %s. השדות נגזרים מהמודל ומהגרעין."
-              % ", ".join(missing))
-        return 3
-
-    index = {"playbooks": []}
-    if os.path.exists(index_path):
-        index = load(index_path, "האינדקס")
-        if not isinstance(index, dict) or not isinstance(index.get("playbooks"), list):
-            print("האינדקס אינו במבנה {\"playbooks\": [...]}: %s" % index_path)
-            return 3
-    before = copy.deepcopy(index["playbooks"])
-
-    mine = entry_identity(entry)
-    others_before = [e for e in before if entry_identity(e) != mine]
-    kept = [e for e in index["playbooks"] if entry_identity(e) != mine]
-    updated = kept + [entry]
-
-    # פלייבוק במבנה הישן בשורש: נרשם, ולא מוזז
-    legacy_core = os.path.join(a.data, "playbook-core.json")
-    legacy_entry = None
-    if os.path.exists(legacy_core) and os.path.abspath(legacy_core) != os.path.abspath(a.core):
-        legacy_model_path = os.path.join(a.data, "playbook-model.json")
-        legacy_model = {}
-        if os.path.exists(legacy_model_path):
-            try:
-                with open(legacy_model_path, encoding="utf-8") as fh:
-                    legacy_model = json.load(fh)
-            except ValueError:
-                legacy_model = {}
-        with open(legacy_core, encoding="utf-8") as fh:
-            lc = json.load(fh)
-        legacy_entry = {"core_path": "playbook-core.json", "legacy": True}
-        for key, value in (("family_id", legacy_model.get("family_id") or lc.get("family_id")),
-                           ("family_code", legacy_model.get("family_code") or lc.get("family_code")),
-                           ("company_role_code", legacy_model.get("company_role_code")
-                            or lc.get("company_role_code")),
-                           ("family_aliases", list(legacy_model.get("family_aliases") or []))):
-            if value:
-                legacy_entry[key] = value
-        lid = entry_identity(legacy_entry)
-        if lid != mine and not any(entry_identity(e) == lid for e in updated):
-            updated.append(legacy_entry)
-        else:
-            legacy_entry = None
-
-    # בדיקה 3 של playbook-qa: לא השתנתה שום רשומה אחרת
-    others_after = [e for e in updated
-                    if entry_identity(e) != mine
-                    and (legacy_entry is None or entry_identity(e) != entry_identity(legacy_entry))]
-    if others_after != others_before:
-        print("סירוב: רשומה של סוג אחר או של פוזיציה אחרת הייתה משתנה. "
-              "פלייבוק אינו דוחק פלייבוק אחר.")
-        for e in others_before:
-            if e not in others_after:
-                print("  הייתה נעלמת: %s" % json.dumps(e, ensure_ascii=False)[:120])
-        return 3
-
-    if a.dry_run:
-        print("ריצה יבשה. היה נכתב:")
-        print("  תיקייה : %s" % folder)
-        print("  רשומה  : %s" % json.dumps(entry, ensure_ascii=False, indent=1))
-        if legacy_entry:
-            print("  ועוד רשומה לפלייבוק במבנה הישן, בלי להזיז אותו")
-        print("  גרסה קודמת ב-versions/: %s" % ("תישמר (בתיקייה פלייבוק מבנייה קודמת)"
-                                              if previous_build(folder, model, a.model) else "אין מה לשמור"))
-        return 0
-
-    os.makedirs(folder, exist_ok=True)
-    kept_versions = keep_previous(folder) if previous_build(folder, model, a.model) else []
-    for src, name in ((a.model, "playbook-model.json"), (a.core, "playbook-core.json")):
-        dst = os.path.join(folder, name)
-        if os.path.abspath(src) != os.path.abspath(dst):
-            shutil.copy2(src, dst)
-
-    index["playbooks"] = updated
-    os.makedirs(os.path.dirname(index_path), exist_ok=True)
-    with open(index_path, "w", encoding="utf-8") as fh:
-        json.dump(index, fh, ensure_ascii=False, indent=1)
-
-    print("תיקייה: %s" % folder)
-    print("אינדקס: %s (%d רשומות)" % (index_path, len(updated)))
-    print("רשומה : %s / %s   מעמד: %s"
-          % (entry.get("family_code"), entry.get("company_role_code"),
-             entry.get("playbook_status")))
-    if kept_versions:
-        print("הגרסה הקודמת נשמרה: %s" % ", ".join(os.path.basename(p) for p in kept_versions))
-    if legacy_entry:
-        print("נרשם גם פלייבוק במבנה הישן שבשורש, בלי להזיז אותו.")
-    print("רשומות שלא נגעתי בהן: %d" % len(others_before))
-    if (entry.get("validity") or {}).get("status") == "invalid":
-        # נרשם, ואינו נמסר בשקט: השורות ללקוח נכנסות להודעה המסכמת (wf2-opinion-research-finalize.md, שלב 12)
-        from playbook import validity as VY
-        print("הפלייבוק אינו עובר את הבדיקות של עצמו: %s" % ", ".join(
-            "%s x%d" % (k, v) for k, v in entry["validity"]["codes"].items()))
-        for line in VY.playbook_warnings(model, core, lang=model.get("output_language") or "he"):
-            print("ללקוח: %s" % line)
-
-    if a.out:
-        try:
-            path = guard_out(a.out, inputs=[a.model, a.core, index_path])
-        except OutputRefused as exc:
-            print("הדוח לא נכתב. סירוב: %s" % exc)
-        else:
-            with open(path, "w", encoding="utf-8") as fh:
-                json.dump({"folder": folder, "index": index_path, "entry": entry,
-                           "kept_versions": kept_versions,
-                           "legacy_registered": bool(legacy_entry),
-                           "untouched_entries": len(others_before)},
-                          fh, ensure_ascii=False, indent=2)
-            print("נכתב %s" % path)
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+	no_bytecode();J=parser(__doc__.split('\n')[0],out_required=False,out_help='דוח הרישום (JSON). האינדקס מתעדכן בכל מקרה');J.add_argument('--data',required=True,help='תיקיית Areo-נתונים של הלקוח');J.add_argument('--model',required=True,help='playbook-model.json שנבנה');J.add_argument('--core',required=True,help='playbook-core.json שנבנה');J.add_argument('--dry-run',action='store_true',help='מראה מה היה נכתב, בלי לכתוב דבר');A=J.parse_args(argv)
+	if not os.path.isdir(A.data):print('תיקיית הנתונים אינה קיימת: %s'%A.data);return 2
+	H=load(A.model,'המודל');R=load(A.core,'הגרעין');N=H.get('family_id')
+	if not N:print('אין במודל family_id, ולכן אין תיקייה לשמור בה ואין רשומה לרשום. זהו מזהה קבוע לסוג ההסכם ולפוזיציה (fam_<סוג>_<קוד-פוזיציה>).');return 3
+	D=os.path.join(A.data,'playbooks',N);E=os.path.join(A.data,'playbooks','index.json');b=os.path.join('playbooks',N,'playbook-core.json').replace('\\','/');B=model_entry(H,R,b,model_path=A.model);S=[A for A in KEY_FIELDS if not B.get(A)]
+	if S:print('הרשומה לא תימצא באיתור בלי %s. השדות נגזרים מהמודל ומהגרעין.'%', '.join(S));return 3
+	F={'playbooks':[]}
+	if os.path.exists(E):
+		F=load(E,'האינדקס')
+		if not isinstance(F,dict)or not isinstance(F.get('playbooks'),list):print('האינדקס אינו במבנה {"playbooks": [...]}: %s'%E);return 3
+	c=copy.deepcopy(F['playbooks']);L=entry_identity(B);M=[A for A in c if entry_identity(A)!=L];d=[A for A in F['playbooks']if entry_identity(A)!=L];K=d+[B];O=os.path.join(A.data,'playbook-core.json');C=None
+	if os.path.exists(O)and os.path.abspath(O)!=os.path.abspath(A.core):
+		T=os.path.join(A.data,'playbook-model.json');I={}
+		if os.path.exists(T):
+			try:
+				with open(T,encoding='utf-8')as G:I=json.load(G)
+			except ValueError:I={}
+		with open(O,encoding='utf-8')as G:P=json.load(G)
+		C={'core_path':'playbook-core.json','legacy':True}
+		for(e,U)in(('family_id',I.get('family_id')or P.get('family_id')),('family_code',I.get('family_code')or P.get('family_code')),('company_role_code',I.get('company_role_code')or P.get('company_role_code')),('family_aliases',list(I.get('family_aliases')or[]))):
+			if U:C[e]=U
+		V=entry_identity(C)
+		if V!=L and not any(entry_identity(A)==V for A in K):K.append(C)
+		else:C=None
+	W=[A for A in K if entry_identity(A)!=L and(C is None or entry_identity(A)!=entry_identity(C))]
+	if W!=M:
+		print('סירוב: רשומה של סוג אחר או של פוזיציה אחרת הייתה משתנה. פלייבוק אינו דוחק פלייבוק אחר.')
+		for X in M:
+			if X not in W:print('  הייתה נעלמת: %s'%json.dumps(X,ensure_ascii=False)[:120])
+		return 3
+	if A.dry_run:
+		print('ריצה יבשה. היה נכתב:');print('  תיקייה : %s'%D);print('  רשומה  : %s'%json.dumps(B,ensure_ascii=False,indent=1))
+		if C:print('  ועוד רשומה לפלייבוק במבנה הישן, בלי להזיז אותו')
+		print('  גרסה קודמת ב-versions/: %s'%('תישמר (בתיקייה פלייבוק מבנייה קודמת)'if previous_build(D,H,A.model)else'אין מה לשמור'));return 0
+	os.makedirs(D,exist_ok=True);Q=keep_previous(D)if previous_build(D,H,A.model)else[]
+	for(Y,f)in((A.model,'playbook-model.json'),(A.core,'playbook-core.json')):
+		Z=os.path.join(D,f)
+		if os.path.abspath(Y)!=os.path.abspath(Z):shutil.copy2(Y,Z)
+	F['playbooks']=K;os.makedirs(os.path.dirname(E),exist_ok=True)
+	with open(E,'w',encoding='utf-8')as G:json.dump(F,G,ensure_ascii=False,indent=1)
+	print('תיקייה: %s'%D);print('אינדקס: %s (%d רשומות)'%(E,len(K)));print('רשומה : %s / %s   מעמד: %s'%(B.get('family_code'),B.get('company_role_code'),B.get('playbook_status')))
+	if Q:print('הגרסה הקודמת נשמרה: %s'%', '.join(os.path.basename(A)for A in Q))
+	if C:print('נרשם גם פלייבוק במבנה הישן שבשורש, בלי להזיז אותו.')
+	print('רשומות שלא נגעתי בהן: %d'%len(M))
+	if(B.get('validity')or{}).get('status')=='invalid':
+		from playbook import validity as g;print('הפלייבוק אינו עובר את הבדיקות של עצמו: %s'%', '.join('%s x%d'%(A,B)for(A,B)in B['validity']['codes'].items()))
+		for h in g.playbook_warnings(H,R,lang=H.get('output_language')or'he'):print('ללקוח: %s'%h)
+	if A.out:
+		try:a=guard_out(A.out,inputs=[A.model,A.core,E])
+		except OutputRefused as i:print('הדוח לא נכתב. סירוב: %s'%i)
+		else:
+			with open(a,'w',encoding='utf-8')as G:json.dump({'folder':D,'index':E,'entry':B,'kept_versions':Q,'legacy_registered':bool(C),'untouched_entries':len(M)},G,ensure_ascii=False,indent=2)
+			print('נכתב %s'%a)
+	return 0
+if __name__=='__main__':sys.exit(main())

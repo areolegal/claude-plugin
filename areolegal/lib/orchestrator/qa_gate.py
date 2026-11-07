@@ -1,62 +1,7 @@
 # -*- coding: utf-8 -*-
-"""שער האיכות של הנושא ונותן, במצב עבודה ובמצב משלוח.
-
-כל כשל מקבל קוד קבוע (code), כך שאפשר לבדוק אותו ב-pytest ולהציג אותו בשורה אחת ללקוחה. הקודים זהים בעברית
-ובאנגלית: נייר באנגלית נבדק באותן מחלקות, עם אוצר ביטויים באנגלית (lang).
-קבוצות הבדיקה:
-  PKG_*  החבילה: trackRevisions, מרחבי שמות, תאריכים, מחבר, צבע, מאפיינים, סדר סכמה, אורך נתיב (paths.PATH_LIMIT).
-  RT_*   "דחה הכול" שווה לטיוטה שהתקבלה, ו"קבל הכול" שווה לנוסחי היעד. בסבב 2 ואילך הטיוטה שהתקבלה היא המקור כמו
-         שהיא, כולל הסימונים הפתוחים שלנו מסבבים קודמים (docx_tracked.prior_revisions), ו"דחה הכול" דוחה רק את
-         הסימונים של הסבב הזה. כך גם כל בדיקה אחרת של "השינויים שלנו". RT_DUPLICATE: הוספה שלנו מהסבב הזה שמכפילה
-         בפסקה נוסח שכבר בה (docx_tracked.duplicated_insertions).
-  BUB_*  הבועות החיצוניות: מונחים אסורים, פסיקה, מקף ארוך, אורך, מספר שאינו בגוף, פתיח שחוזר; ולמה:
-         BUB_WHY_MISSING (רכיב שמרע או מזיז את עמדת הצד שכנגד בלי משפט נימוק שקשור אליו) ו-BUB_CLAIM_FALSE
-         (טענה בבועה שאינה נכונה מול הנוסח).
-  COV_*  כל שינוי שהצד שכנגד רואה נמצא בבועה חיצונית של אותה פסקה (COV_CHANGE_WITHOUT_BUBBLE), וכל רכיב מהותי
-         בשינוי נקרא בה בשמו (COV_UNCOVERED_CHANGE). גם שינוי טכני (כותרת, בלוק החתימה) מקבל בועה קצרה. מחיקה של
-         טקסט מוסתר עם הבועה הניטרלית (kind: hidden_text_removal בהכרעה) היא שינוי מכוסה; הסימון על טווח שאינו
-         מוסתר בטיוטה שהתקבלה הוא COV_HIDDEN_KIND_INVALID.
-  CON_*  בועות שסותרות זו את זו, או את הנוסח.
-  PH_*   מצייני מקום: שלנו חוסמים משלוח, שלהם מדווחים, ושדה ריק לחתימה (בעברית או באנגלית) אינו חוסם כשהמשתמש
-         ענה "נשלים לפני החתימה".
-  ID_*   מספר תאגיד שנכשל בבדיקה אינו נכנס לנוסח כאילו הוא תקין.
-  GAP_*  פערים שהתגובה יוצרת בעצמה, מהמודול המשותף common/gap_checks.py, בעברית ובאנגלית.
-         הסייג "או המועד המרבי שבדין, לפי המוקדם" מותר רק בנוסח מהפלייבוק כלשונו (playbook_verbatim_texts).
-  SAFE_*  נוסח בטוח שהרכיב אישר לעצמו. אין LEGAL_REVIEW_OPEN (כלל יסוד 6: עורך דין מאשר את הפלייבוק בלבד):
-         סעיף "טעון בדיקה משפטית" הוא NO_APPROVED_SOURCE, פריט גלוי שאינו חוסם. STATE_NO_CLAUSES: במצב משלוח, קובץ מצב
-         חסר או בלי סעיפים הוא כשל.
-  STATE_* קובץ המצב (state_builder.validate_state), כשהוא נמסר במבנה המלא.
-  STRUCT_* פסקה ריקה שהוספנו, ומספר מוקלד כפול בפרק.
-  LANG_*, ROUND_*  בדיקה עצמאית S1c (28.10.2026): LANG_HEBREW_IN_EN, אות עברית בנוסח שהכנסנו או בבועה בהסכם באנגלית
-          (כשל, חוץ מציטוט של נוסח קיים); BUB_LENGTH לפי שלב הסבב (מטריצת הסבבים, question_batch.ROUND_MATRIX:
-          אזהרה מעל max_words או max_sentences, כשל מעל פי 1.5) ו-BUB_PASSIVE_VOICE; BUB_TEXT_MISMATCH,
-          בועה שאומרת שמשהו הוסר כשהוא נשאר בנוסח; וכללי הסבבים על שדות קובץ המצב (check_round_rules):
-          ROUND_REOPEN_CLOSED, ROUND_CONCESSION_WITHDRAWN, ROUND_RESTORE_NO_BUBBLE (כשלים), ROUND_LAST_FALLBACK_EARLY,
-          BUB_REPEATS_REJECTED ו-BUB_REPEATS_REJECTED_ARGUMENT (אזהרות). תיקון עקבי (conforming, conforms_to) אינו
-          פתיחה מחדש.
-  SILENT_CHANGE_UNDECIDED  שינוי שקט של הסבב (silent_changes, state_builder.unresolved_silent_changes) בלי הכרעה
-          מסומנת, או שההכרעה ב-decision_ref אינה בקובץ ההכרעות או לא סומנה בפועל: כשל במצב משלוח, אזהרה במצב עבודה.
-          ארבעת קודי הסטטוס של validate_state (STATE_PREMATURE_CLOSED, STATE_CLOSED_OPEN_POINT,
-          STATE_REOPEN_WITHOUT_INSTRUCTION, STATE_CLAUSE_STATUS) הם כשל במצב משלוח, כמו כל STATE_*.
-  DEC_*   כל הכרעה שאינה accept בקובץ ההכרעות סומנה בקובץ בפועל (DEC_NOT_APPLIED), ובמצב משלוח קובץ ההכרעות
-          חובה (DEC_FILE_MISSING). נוסחי היעד (expected_accept) נגזרים ממה שהוחל, ולכן אינם מגלים הכרעה שנשמטה.
-
-אין בשער בדיקת אישורים ואין "מאשר" (החלטת מוצר 1, 14.10.2026). השער אינו קורא את המרשם של מעריך הסיכונים, ושום
-ממצא שלו אינו חוסם משלוח; הפרמטר register נשאר בחתימה לתאימות, ואינו בשימוש.
-
-    from orchestrator.qa_gate import run_gate, build_send_copy
-    res = run_gate(work_path, received_path, mode='work', profile=profile, state=state, expected_accept=exp)
-    res['passed'], res['failures']  # [{'code': ..., 'message': ..., 'where': ...}]
-
-Python 3, lxml. בלי פנייה לרשת.
-"""
-import datetime as _dt
-import json
-import os
-import re
-
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+import datetime as _dt,json,os,re
 from lxml import etree
-
 from common import docx_tracked as dt
 from common import gap_checks
 from common import ids
@@ -65,1651 +10,619 @@ from common.case_law import case_law_mentions
 from common.terms import terms_re
 from orchestrator import pre_send
 from orchestrator import state_builder as SB
-from orchestrator.question_batch import ROUND_MATRIX, REPLACES_SENT, _sentences as qb_sentences
-
-W = dt.W
-LONG_DASH = re.compile('[\u2013\u2014]')
-# פסיקה בבועה: המודול המשותף common/case_law.py (הבודק היחיד; חוק, כמו U.S.C., אינו פסיקה)
-def case_law_in_text(text):
-    """אזכורי פסיקה בטקסט שיוצא לצד שכנגד (רשימה, ריקה כשאין)."""
-    return case_law_mentions(text or '')
-
-
-# 1.2.0: מונחים אסורים נמצאים רק כמילה שלמה, עם אותיות שימוש בעברית (common/terms.py): "ירוק" אינו נמצא
-# בתוך "ירוקנו" או "פירוק". קודים וכתובות נבדקים כביטוי.
-FORBIDDEN_TERMS = ('פלייבוק', 'playbook', 'קו אדום', 'red line', 'fallback', 'עמדת נסיגה', 'נסיגה', 'רזרבה',
-                   'פלייבוק מוצע', 'מחקר שוק', 'industry standard', 'ירוק', 'צהוב', 'נדרשת הכרעתך', 'לאישורך',
-                   'לא מוסכם', 'כלל קבוע', 'בכל ההתקשרויות שלנו')
-FORBIDDEN_TERM_RE = terms_re(FORBIDDEN_TERMS, regex_terms=(r'market (practice|standard)',))
-FORBIDDEN_CODES = re.compile(r'\b(R|V|Q|SEG|DS|LG|PB|OS|EMP)-?\d+\b|\b[AR][123]\b|\bN1\b|https?://|APR-|'
-                             r'קטגוריה\s*\d', re.I)
-
-
+from orchestrator.question_batch import ROUND_MATRIX,REPLACES_SENT,_sentences as qb_sentences
+W=dt.W
+LONG_DASH=re.compile('[–—]')
+def case_law_in_text(text):return case_law_mentions(text or'')
+FORBIDDEN_TERMS='פלייבוק','playbook','קו אדום','red line','fallback','עמדת נסיגה','נסיגה','רזרבה','פלייבוק מוצע','מחקר שוק','industry standard','ירוק','צהוב','נדרשת הכרעתך','לאישורך','לא מוסכם','כלל קבוע','בכל ההתקשרויות שלנו'
+FORBIDDEN_TERM_RE=terms_re(FORBIDDEN_TERMS,regex_terms=('market (practice|standard)',))
+FORBIDDEN_CODES=re.compile('\\b(R|V|Q|SEG|DS|LG|PB|OS|EMP)-?\\d+\\b|\\b[AR][123]\\b|\\bN1\\b|https?://|APR-|קטגוריה\\s*\\d',re.I)
 class _Either:
-    # search() על שני ביטויים: המונחים (גבולות מילה) והקודים
-
-    def __init__(self, *rxs):
-        self.rxs = rxs
-
-    def search(self, text):
-        hits = [m for m in (rx.search(text) for rx in self.rxs) if m]
-        return min(hits, key=lambda m: m.start()) if hits else None
-
-
-FORBIDDEN_ALWAYS = _Either(FORBIDDEN_TERM_RE, FORBIDDEN_CODES)
-FORBIDDEN_UNLESS_CLAIM = terms_re(('מדיניות', 'policy'))
-# "policy" אסור במובן "מדיניות החברה" (טענת מדיניות בלי אישור). פוליסת ביטוח ("insurance policy", "the policy and the
-# premium receipt") היא מונח של הסעיף, ומותרת: במשפט שיש בו הקשר ביטוחי, או בצירוף "policy of insurance" (S1d-R2)
-INSURANCE_CONTEXT = re.compile(r'insur|\bpremiums?\b|underwrit|policyholder', re.I)
-INSURANCE_POLICY = re.compile(r'\b(insurance|insurer\W?s?|liability|indemnity|cyber|E&O|D&O)\s+polic(y|ies)\b|'
-                              r'\bpolic(y|ies)\s+(of|for)\s+insurance\b', re.I)
-
-
+	def __init__(A,*B):A.rxs=B
+	def search(B,text):A=[A for A in(A.search(text)for A in B.rxs)if A];return min(A,key=lambda m:m.start())if A else None
+FORBIDDEN_ALWAYS=_Either(FORBIDDEN_TERM_RE,FORBIDDEN_CODES)
+FORBIDDEN_UNLESS_CLAIM=terms_re(('מדיניות','policy'))
+INSURANCE_CONTEXT=re.compile('insur|\\bpremiums?\\b|underwrit|policyholder',re.I)
+INSURANCE_POLICY=re.compile('\\b(insurance|insurer\\W?s?|liability|indemnity|cyber|E&O|D&O)\\s+polic(y|ies)\\b|\\bpolic(y|ies)\\s+(of|for)\\s+insurance\\b',re.I)
 def policy_claim_term(text):
-    """המונח "מדיניות" או "policy" במובן מדיניות החברה, או None. "policy" שהוא פוליסת ביטוח אינו נספר."""
-    for m in FORBIDDEN_UNLESS_CLAIM.finditer(text or ''):
-        if m.group(0).lower().startswith('polic'):
-            s0 = max(text.rfind('.', 0, m.start()), text.rfind(';', 0, m.start())) + 1
-            e0 = min([x for x in (text.find('.', m.end()), text.find(';', m.end())) if x >= 0] or [len(text)])
-            if INSURANCE_POLICY.search(text[s0:e0]) or INSURANCE_CONTEXT.search(text[s0:e0]):
-                continue
-        return m
-    return None
-PRACTICE_OPENING = {'he': re.compile(r'^\s*(אנחנו נוהגים|אנו נוהגים|כמקובל|בהתאם לנוהג|כנהוג)'),
-                    'en': re.compile(r'^\s*(As is customary|In line with (our|market) practice|As standard|'
-                                     r'We (normally|usually|always) )', re.I)}
-# מציין המקום של השם הרשום באנגלית (S1d, 28.10.2026): כשהכרעה צריכה את שם החברה בהסכם באנגלית ואין בפרופיל
-# organization_name_en, apply_redlines.py כותב אותו במקום השם העברי, ו-PH_OURS ו-ENTITY_NAME_EN_MISSING חוסמים משלוח
-ENTITY_NAME_EN_PLACEHOLDER = '[Company registered English name]'
-# מציין המקום האחיד (כלל 3.5): "[להשלים]", ובאנגלית "[to complete]". הצורה הישנה "[to be completed]" עדיין נתפסת
-OUR_PH = re.compile(r'\[להשלים\]|\[to complete\]|\[to be completed\]|\[●\]|\[\s*\d[\d,.\s]*\]|\[[^\]\n]{1,40}\]')
-UNDERSCORES = re.compile(r'_{3,}')
-THEIR_PH = re.compile(r'_{3,}|\[[^\]\n]{0,40}\]')
-COMPANY_NO = {'he': re.compile(r'(ח\.?\s?פ\.?|ע\.?\s?מ\.?|מספר (?:חברה|תאגיד))\s*:?\s*\[?\s*(?P<num>\d[\d\s\-]{5,12}\d)\s*\]?'),
-              'en': re.compile(r'(company (?:number|no\.?)|registration (?:number|no\.?)|reg\. no\.)\s*:?\s*\[?\s*'
-                               r'(?P<num>\d[\d\s\-]{5,12}\d)\s*\]?', re.I)}
-SENT_END = re.compile(r'[.?!](\s|$)')
-_REF_NUM = r'\d{1,3}(?:\.\d{1,3})*[א-ת]?(?:\s?\([a-zA-Z0-9א-ת]{1,4}\))*'
-CLAUSE_REF = re.compile(r'(?:(?<![א-ת])[ובלמהש]{0,2}(?:סעיפים|סעיף|ס\'|תת-סעיף|נספחים|נספח|פרקים|פרק|תקנה|פסקה)|'
-                        r'\b(?:[Cc]lauses?|[Ss]ections?|[Pp]aragraphs?|[Pp]aras?\.?|[Aa]nnex(?:es)?|[Ss]chedules?|'
-                        r'[Aa]ppendi(?:x|ces)|[Aa]rticles?|[Ee]xhibits?))\s*' + _REF_NUM +
-                        r'(?:\s*(?:,|ו-?|and|or|או|to|עד|-)\s*' + _REF_NUM + r')*')
-
-# ------------------------------------------------------------------------------------------------ תפקידי סעיף
-# טקסונומיה כללית של תפקידי סעיף, שחלה בכל סוג הסכם. היא משמשת רק את מנגנון הבועות: מה נקרא בשמו בבועה, ומה דורש משפט נימוק. אין בה שיקול
-# משפטי של סוג הסכם מסוים, ואין בה עובדה של לקוחה.
-# שם: (טריגר בעברית, שם בבועה בעברית, טריגר באנגלית, שם בבועה באנגלית, האם שינוי בו מרע או מזיז את עמדת הצד שכנגד)
-# "own" אחרי כינוי שייכות (its own, their own, the Supplier's own) הוא "עצמי", ולא בעלות
-OWN_NOT_POSSESSIVE = (r"(?<!\bits )(?<!\btheir )(?<!\bour )(?<!\byour )(?<!\bhis )(?<!\bher )(?<!\bmy )(?<!'s )"
-                      r"(?<!’s )(?<!\bone's )\bowns?\b")
-# מתחרה בשלילה ("שאינו מתחרה", "not a competitor"): תנאי כשירות של מבקר או של צד שלישי, ולא הגבלת תחרות
-NOT_COMPETITOR_HE = r'(?<!אינו )(?<!אינה )(?<!אינם )(?<!אין )(?<!ולא )(?<! לא )'
-NOT_COMPETITOR_EN = r'(?<!not a )(?<!not an )(?<!nor a )(?<!\bno )(?<!non-)'
-# "בלעדי" שאינו בלעדיות: "האחראי הבלעדי", "שיקול דעתו הבלעדי", "סמכות שיפוט בלעדית", "הבעלים הבלעדי", "הסעד הבלעדי";
-# ובאנגלית exclusive jurisdiction, sole and exclusive remedy, exclusive property or owner. רק בלעדיות מסחרית נספרת
-_NOT_EXCL = ('לא', 'אחראי', 'אחראית', 'האחראי', 'האחראית', 'דעתו', 'דעתה', 'דעתם', 'דעתנו', 'הדעת', 'שיפוט', 'השיפוט',
-             'בעלים', 'הבעלים', 'סעד', 'הסעד', 'תרופה', 'התרופה', 'רכושו', 'רכושה', 'רכוש')
-EXCLUSIVE_HE = r'בלעדיות|' + ''.join(r'(?<!%s )(?<!%s ה)' % (w, w) for w in _NOT_EXCL) + r'(?<![א-ת])ה?בלעדי(?:ת|ים|ות)?(?![א-ת])'
-EXCLUSIVE_EN = (r'\bexclusivity\b|(?<!non-)\bexclusive\b(?!\s+(?:and\s+\w+\s+)?(?:jurisdiction|remed(?:y|ies)|property|'
-                r'owner(?:ship)?|venue|forum|courts?))')
-FUNCTIONS = {
-    'מחיר ותמורה': (r'תמורה|מחיר|דמי (רישיון|שימוש|תחזוקה|ניהול)|תעריף|הוצאות',
-                    r'תמור|מחיר|דמי|תעריפ|תעריף|הוצא|עלות|תשלום|ישול|תשלמו',
-                    r'\bfees?\b|\bprice|\brent\b|\bcharges?\b|consideration|expenses',
-                    r'fee|price|rent|charge|consideration|expens|cost', True),
-    # "שוטף" הוא מועד תשלום רק כ"שוטף + 30" או אחרי מילת תשלום, ולא "באופן שוטף" או "דיווח שוטף"
-    'מועד התשלום': (r'(ישולם|ישולמו|תשולם|משולמת|ישלם|לשלם)[^.\n]{0,60}\d+\s*(יום|ימים|ימי עסקים)|'
-                    r'שוטף\s*(\+|פלוס)|(תשלום|ישולם|ישולמו|תשולם|ישלם|לשלם|בתנאי)[:\s]{1,3}שוטף(?![\u05d0-\u05ea])',
-                    r'\d+\s*(יום|ימים)|ימי עסקים|ימים|שוטף',
-                    r'(payable|paid|pay)[^.\n]{0,60}\d+\s*(calendar |business )?days|net\s*\d+',
-                    r'\d+\s*(calendar |business )?days|\bdays\b|\bnet\b', True),
-    'ריבית והצמדה': (r'ריבית|פיגורים|הצמדה', r'ריבית|פיגור|הצמד',
-                     r'interest|late (payment )?(fee|charge)|indexation', r'interest|late|index', True),
-    'קיזוז ועיכבון': (r'לקזז|קיזוז|עיכבון|לעכב', r'קיז|לקזז|עיכבון|לעכב|עיכוב',
-                      r'set[- ]?off|withhold|\blien\b', r'set[- ]?off|withhold|lien', True),
-    'מס': (r'מע"מ|מס ערך מוסף|ניכוי מס', r'מע"מ|מס', r'\bVAT\b|\btax', r'VAT|tax', True),
-    'הגבלת אחריות': (r'תקרה|מוגבלת לסכום|לא תעלה על|נזק עקיף|תוצאתי|לא יישא באחריות',
-                     r'תקר|הגבל|מוגבל|לא תעלה|עקיף|תוצאתי|אחריות|פטור',
-                     r'liabilit[^.\n]{0,60}(limited|exceed|cap)|indirect|consequential|not be liable',
-                     r'cap|limit|liab|indirect|consequential', True),
-    'שיפוי וערבות': (r'ישפה|שיפוי|ערבות|ערובה|דרישה ראשונה|בטוחה|פיקדון',
-                     r'שיפוי|ישפה|לשפות|ערבות|ערובה|דרישה|בטוחה|פיקדון',
-                     r'indemnif|guarantee|security deposit|first demand|letter of credit',
-                     r'indemn|guarant|deposit|demand|security', True),
-    'ביטוח': (r'ביטוח|פוליסה', r'ביטוח|פוליס', r'insurance|policy of insurance', r'insur', True),
-    'קניין רוחני': (r'קניין רוחני|זכויות יוצרים|בעלות|מרגע היווצרם|ימחה',
-                    r'קניין|זכויות|בעלות|שייכ|המח|שלו|שלכם',
-                    # "own" כשם תואר ("its own costs", "at its own expense") אינו בעלות (S1d-R2)
-                    r'intellectual property|ownership|' + OWN_NOT_POSSESSIVE + r'|assigns? all',
-                    r'intellectual|own|assign', True),
-    'היקף הרישיון': (r'להעברה|רישיונות משנה|רישיון משנה|בלתי חוזר|לצמיתות|כלל-עולמי',
-                     r'להעביר|העבר|רישיונות משנה|רישיון משנה|בלתי חוזר|לצמיתות|כלל-עולמי',
-                     r'transferable|sublicens|irrevocable|perpetual|worldwide',
-                     r'transfer|sublicens|irrevocab|perpetual|worldwide', True),
-    'סודיות': (r'ישמור בסוד|חובת (ה)?סודיות|ישמור על סודיות|לא יגלה', r'סוד',
-               r'in confidence|confidentiality obligations|shall not disclose|keep[^.\n]{0,30}confidential', r'confiden',
-               False),
-    'מידע אישי ואבטחת מידע': (r'מידע אישי|פרטיות|אבטחת (ה)?מידע|מחוץ ל(מדינה|ישראל)|לחו"ל',
-                              r'מידע אישי|פרטיות|אבטח|עיבוד|מחוץ ל|חו"ל|העבר',
-                              r'personal data|privacy|data processing|security incident|de-identif|outside the country',
-                              r'personal|privacy|data|security|de-identif|transfer|abroad|outside', False),
-    'מחיקה והחזרה': (r'ימחק|ישמיד|מחיקת|השמדת|יחזיר', r'מחק|מחיק|השמד|יושמד|יוחזר|החזר',
-                     r'\bdelete|\bdestroy|\breturn (or|all)', r'delet|destroy|return', True),
-    # "מבקר שאינו מתחרה" (not a competitor) הוא תנאי כשירות של מבקר, ולא הגבלת תחרות (S1d-R2)
-    'הגבלת תחרות ובלעדיות': (NOT_COMPETITOR_HE + r'מתחרה|תחרות|' + EXCLUSIVE_HE, r'מתחר|תחרות|בלעדי|ניגוד עניינים',
-                             r'\bcompet(e|es|ing|ition)\b|' + NOT_COMPETITOR_EN + r'\bcompetitors?\b|' + EXCLUSIVE_EN,
-                             r'compet|exclusiv|conflict', True),
-    'איסור שידול': (r'ישדל|שידול', r'שידול|ישדל|לגייס', r'solicit', r'solicit', True),
-    'הסבה וקבלני משנה': (r'להסב|הסבה|להמחות|המחאה|קבלני? משנה', r'הסב|המח|קבלנ',
-                         r'\bassign|subcontract', r'assign|subcontract', True),
-    'סיום ותקופה': (r'רשאי לסיים|לבטל את ההסכם|בתוקפו|הארכ|חידוש|הודעה מוקדמת',
-                    r'סיום|לסיים|לבטל|ביטול|תקופ|הארכ|חידוש|הודעה',
-                    r'terminat|renew|term of this|notice period|prior notice', r'terminat|renew|term|notice', True),
-    'דין ושיפוט': (r'יחול (ה)?דין|סמכות (ה)?שיפוט|בוררות|סעד (זמני|דחוף)|צו מניעה',
-                   r'דין|שיפוט|בורר|סעד|בית משפט|בתי המשפט',
-                   r'governed by|jurisdiction|venue|arbitrat|injunctive|interim relief',
-                   r'law|jurisdiction|venue|court|arbitrat|relief', True),
-    'שפה גוברת': (r'הנוסח (העברי|האנגלי)', r'נוסח|שפה|גובר', r'prevail|translation', r'prevail|translat', False),
-    'טיב ורמת שירות': (r'אחריות ל(טיב|תקינות)|רמת (ה)?שירות|פיצוי מוסכם|קנס|כמות שהוא|במיומנות',
-                       r'טיב|תקינות|רמת|פיצוי|קנס|כמות שהוא|מיומנות|מקצועיות',
-                       r'warrant|"as is"|service level|liquidated damages|penalt',
-                       r'warrant|as is|service level|liquidated|penalt', True),
-    'שימוש במידע וכלים': (r'בינה מלאכותית|לאימון', r'בינה מלאכותית|אימון|כלי',
-                          r'artificial intelligence|\bAI\b|\btrain', r'artificial|(?-i:\bAI\b)|\btrain|\btool', True),
-    'ביקורת ופיקוח': (r'ישתף פעולה|זכות ביקורת|לערוך ביקורת|לבקר את', r'מבקר|ביקורת|רשו|פיקוח|שיתוף פעולה|תשתפו',
-                      r'right to (audit|inspect)|shall cooperate|audit rights', r'audit|inspect|regulat|cooperat', True),
-}
-CONCEPTS_HE = {k: (v[0], v[1], v[4]) for k, v in FUNCTIONS.items()}
-CONCEPTS_EN = {k: (v[2], v[3], v[4]) for k, v in FUNCTIONS.items()}
-CONCEPTS = CONCEPTS_HE  # תאימות לאחור
-# תפקיד שהשינוי בו יכול להיות מספר בלבד (30 שהפך ל-60): הטריגר נבדק גם במשפט שהשתנה, ולא רק בטקסט שהוכנס
-NUMERIC_FUNCTIONS = ('מועד התשלום',)
-# S1d-R2 (28.10.2026): "so the", "given", "as" ומקבילותיהן בעברית הם נימוק. "so" לבדו רק כמילת קישור (אחרי פסיק או
-# נקודה-פסיק, או לפני נושא של משפט), ולא "do so", "if so", "or so", "so far" או "so long as" (תנאי)
-REASON = {'he': re.compile(r'(?<![\u05d0-\u05ea])ו?(כדי|כי|שכן|לכן|בשל|בגלל|נועד\w*|לפיכך|עקב|לאור|לנוכח|נוכח|'
-                           r'בהינתן|שהרי|היות|לצורך|במטרה|מחמת|מטעמי)(?![\u05d0-\u05ea])|'
-                           r'מאחר ש|מאחר ו|משום ש|מפני ש|הואיל ו|על כן|כך ש|כדי ש|מכיוון ש|מכיוון ו|על מנת|'
-                           r'משום כך|בשל כך|מטעם זה|בשים לב ל|בהתחשב ב'),
-          'en': re.compile(r'\b(because|so that|since|in order to|to ensure|to avoid|so as to|given that|otherwise|'
-                           r'therefore|hence|thus|as a result|for this reason|due to|owing to|in light of|in view of|'
-                           r'which means|this means)\b|'
-                           r'\bas (the|this|it|we|you|our|your|these|those|a|an|they|its|their|there|each|both)\b|'
-                           r'\bgiven (the|its|their|our|this|these|those|how)\b|'
-                           r'(?:[,;]\s*|^\s*)so\b(?!\s+(?:far|long as|much|many)\b)|'
-                           r'(?<!\bdo )(?<!\bif )(?<!\bor )(?<!\bdone )(?<!\bdoing )\bso (the|that|it|we|you|they|each|'
-                           r'both|any|its|their|our|your|neither|no|this|these|those|a|an)\b', re.I)}
-REASON_LEAD = {'he': re.compile(r'^\s*(זאת\s+)?(כדי|כי|מאחר|משום|מפני|הואיל|שכן|לכן|הסיבה|היות|מכיוון|לאור|נוכח|'
-                                r'לנוכח|בהינתן|לפיכך|על מנת)'),
-               'en': re.compile(r'^\s*(This is |That is |This )?(because|so that|since|in order|to ensure|the reason|'
-                                r'given|as a result|for this reason|therefore|hence|this means|otherwise)', re.I)}
-RIGHT_WORDS = {'he': r'רשאי|זכאי|תהיה זכות', 'en': r'\bmay\b|entitled|right to'}
-DELETION_CLAIM = {'he': re.compile(r'^\s*(מחקנו|הסרנו)'), 'en': re.compile(r'^\s*We (have )?(deleted|removed)', re.I)}
-KNOWN_CLAIM = {'he': re.compile(r'ידוע(ה|ים|ות)? מראש|סכום קבוע מראש'),
-               'en': re.compile(r'known in advance|fixed in advance|known up front|a fixed amount', re.I)}
-# תקרה שבסיסה "התמורה הכוללת" או "המחיר המוסכם" בלי סכום: טענה שהבסיס "ידוע מראש" אינה נכונה מול הנוסח
-CAP_RX = {'he': (r'אחריות', r'מוגבלת|תקרה|לא תעלה|לא יעלה',
-                 r'(ה)?(תמורה|מחיר|דמי \S+) (ה)?(כוללת|כולל|מוסכמת|מוסכם)',
-                 r'\d[\d,]*\s*(ש"ח|₪|שקלים|אלף|דולר|אירו)|(הנקוב|הנקובה|הקבוע|הקבועה)[^.\n]{0,15}בסעיף'),
-          'en': (r'liabilit', r'limited to|shall not exceed|capped at',
-                 r'(total|agreed|aggregate) (fees|consideration|contract value|price|rent|charges)',
-                 r'(\$|USD|NIS|ILS|EUR|€|£)\s?\d|\d[\d,]*\s*(USD|NIS|ILS|EUR)|(set out|stated|specified) in (Section|Clause)')}
-
-
-# מחבר הבועות הפנימיות: בעברית, ובהסכם באנגלית גם השם האנגלי (כשהספרייה המשותפת מגדירה אותו)
-INTERNAL_AUTHORS = tuple(x for x in (dt.INTERNAL_AUTHOR, getattr(dt, 'INTERNAL_AUTHOR_EN', None),
-                                     'Internal, delete before sending') if x)
-
-
-def _f(code, message, where=None):
-    return {'code': code, 'message': message, 'where': where}
-
-
-def _sentences(text):
-    return [s.strip() for s in re.split(r'(?<=[.?!;])\s+', text) if s.strip()]
-
-
-def _parse_local(s):
-    return _dt.datetime.strptime(s, dt.DATE_FMT_LOCAL if not s.endswith('Z') else dt.DATE_FMT)
-
-
-def concepts_for(lang):
-    return CONCEPTS_EN if lang == 'en' else CONCEPTS_HE
-
-
-def check_entity_name_en(profile, lang, mode, accept_text=''):
-    """ENTITY_NAME_EN_MISSING: בהסכם באנגלית, בלי שם רשום באנגלית לחברה בפרופיל, קובץ העבודה מופק תמיד. השם החסר
-    חוסם משלוח רק כשהנוסח צריך אותו בפועל (מציין המקום בנוסח המתקבל או בבועות); כשהסימון אינו משתמש בשם החברה, הוא
-    אזהרה בלבד. השם העברי אינו מתועתק ואינו מתורגם."""
-    if lang != 'en' or not profile.get('organization_name') or profile.get('organization_name_en'):
-        return [], []
-    ph = ENTITY_NAME_EN_PLACEHOLDER in (accept_text or '')
-    tail = ('העותק למשלוח אינו מופק עד שהשם נמסר ונשמר בפרופיל אצל סוכן ההקמה, וקובץ העבודה מופק מחדש מאותן הכרעות'
-            if ph else 'הנוסח שלנו אינו משתמש בשם, ולכן העותק למשלוח מופק; כדאי לשמור את השם בפרופיל לסבב הבא')
-    f = _f('ENTITY_NAME_EN_MISSING', 'הסכם באנגלית, ובפרופיל אין שם רשום באנגלית לחברה (organization_name_en)%s. %s. '
-           'השם העברי אינו מתועתק ואינו מתורגם' % ('; בנוסח יש מציין מקום %s' % ENTITY_NAME_EN_PLACEHOLDER if ph else '',
-                                                    tail))
-    return ([f], []) if mode == 'send' and ph else ([], [f])
-
-
-# תוכן פנימי שאסור שיגיע לצד השני, בעברית ובאנגלית: נספח או פרק פנימי, הוראה למחוק לפני המשלוח, ואזכור של
-# הפלייבוק או של מדיניות פנימית. נבדק בגוף, בכותרות העליונות והתחתונות ובכל הבועות של העותק למשלוח
-INTERNAL_MARK = re.compile(
-    r"sources annex|נספח (?:ה)?מקורות|remove before sending|delete before sending|למחיקה לפני (?:ה)?משלוח|"
-    r"(?<![א-ת])לא למשלוח|not for sending|internal only|for internal use|לשימוש פנימי בלבד|טיוטת עבודה פנימית|"
-    r"internal work(?:ing)? draft|^\s*(?:internal|פנימי)\s*[.:]?\s*$|:\s*internal\s*\.", re.I | re.M)
-PLAYBOOK_MENTION = re.compile(r"(?<![א-ת])[ובלמהש]{0,2}פלייבוק|\bplaybooks?\b|מדיניות(?: ה)?(?:חוזית|פנימית)|"
-                              r"\bour (?:internal |contracting )?polic(?:y|ies)\b|\binternal polic(?:y|ies)\b", re.I)
-
-
-def check_internal_leak(parts, root, comments, mode, ext_ids=()):
-    """INTERNAL_LEAK: תוכן פנימי בעותק שהצד השני רואה. במצב משלוח: הגוף, הכותרות והבועות כולן, כשל. במצב עבודה
-    (שבו השכבה הפנימית מותרת): רק הגוף והבועות החיצוניות, אזהרה, כדי שהבעיה תיראה כבר בבדיקה הראשונה."""
-    F, W_ = [], []
-    texts = [('גוף', i, dt.para_text(p)) for i, p in enumerate(dt.body_paragraphs(root))]
-    if mode == 'send':
-        for name in parts:
-            if re.match(r'word/(header|footer)\d*\.xml$', name):
-                try:
-                    hx = etree.fromstring(parts[name])
-                except etree.XMLSyntaxError:
-                    continue
-                texts.append(('כותרת', name, ''.join(t.text or '' for t in hx.iter(W + 't'))))
-    for c in comments:
-        if mode == 'send' or c['id'] in set(ext_ids):
-            texts.append(('בועה', c['id'], c['text']))
-    for where, ref, t in texts:
-        m = INTERNAL_MARK.search(t or '') or PLAYBOOK_MENTION.search(t or '')
-        if m:
-            (F if mode == 'send' else W_).append(_f('INTERNAL_LEAK', 'תוכן פנימי ב%s שהצד השני רואה: "%s"' % (
-                where, m.group(0).strip()[:60]), ref))
-    return F, W_
-
-
-def check_lawyer_name_en(profile, lang, mode):
-    """LAWYER_NAME_EN_MISSING: הסכם באנגלית, ובפרופיל אין שם באנגלית לעורך הדין. קובץ העבודה מופק בשם מהפרופיל,
-    והעותק למשלוח חסום עד שהשם נשמר (build_profile.py של רכיב ההקמה, --set branding.lawyer_name_en)."""
-    name = profile.get('lawyer_name') or ''
-    if lang != 'en' or profile.get('lawyer_name_en') or not re.search('[֐-׿]', name):
-        return [], []
-    f = _f('LAWYER_NAME_EN_MISSING', 'הסכם באנגלית, ובפרופיל אין שם באנגלית לעורך הדין (lawyer_name_en): הבועות '
-           'חתומות בשם העברי. העותק למשלוח אינו מופק עד שהשם נשמר אצל סוכן ההקמה')
-    return ([f], []) if mode == 'send' else ([], [f])
-
-
-def author_for(profile, lang):
-    """מחבר הסימונים והבועות. בנייר באנגלית, lawyer_name_en מהפרופיל כשיש (צש3-14)."""
-    if lang == 'en' and profile.get('lawyer_name_en'):
-        return profile['lawyer_name_en']
-    return profile['lawyer_name']
-
-
-def initials_for(profile, lang='he'):
-    """ראשי התיבות של הבועות: lawyer_initials מהפרופיל, ואחרת האות הראשונה של כל מילה בשם המחבר (סנ1-4)."""
-    if profile.get('lawyer_initials'):
-        return profile['lawyer_initials']
-    words = [w for w in author_for(profile, lang).replace('"', ' ').split() if w and w[0].isalpha()]
-    return ''.join(w[0] for w in words[:3]).upper() or 'X'
-
-
-# --------------------------------------------------------------------------------------- חבילה
-def check_package(parts, root, profile, received_comment_ids, window, work_path=None, author=None, received_authors=()):
-    F, info = [], {}
-    author = author or profile['lawyer_name']
-    st = etree.fromstring(parts['word/settings.xml'])
-    if st.find(W + 'trackRevisions') is None:
-        F.append(_f('PKG_TRACK_REVISIONS', 'w:trackRevisions חסר ב-settings.xml'))
-    if st.find(W + 'trackChanges') is not None:
-        F.append(_f('PKG_TRACK_CHANGES_INVALID', 'w:trackChanges אינו רכיב בסכמה'))
-    for name, data in parts.items():
-        if not name.endswith('.xml') or not name.startswith('word/'):
-            continue
-        try:
-            r = etree.fromstring(data)
-        except etree.XMLSyntaxError as e:
-            F.append(_f('PKG_XML', 'XML פגום: %s' % e, name))
-            continue
-        ign = (r.get(dt.MC_IGNORABLE) or '').split()
-        missing = [p for p in ign if p not in r.nsmap]
-        if missing:
-            F.append(_f('PKG_NAMESPACE_UNDECLARED', 'קידומות ב-mc:Ignorable שאינן מוצהרות: %s' % missing, name))
-    revs = [e for e in root.iter(W + 'ins', W + 'del')]
-    ours = [e for e in revs if e.get(W + 'author') == author]
-    # השינויים הפתוחים של הצד שכנגד מגיעים עם הטיוטה, ונשארים בקובץ שלנו כמו שהם. מחבר אחר הוא תקלה רק כשאינו
-    # בטיוטה שהתקבלה. לפני כן כל טיוטה עם שינויים פתוחים נכשלה כאן (20.10.2026)
-    others = {e.get(W + 'author') for e in revs} - {author} - set(received_authors or ())
-    if others:
-        F.append(_f('PKG_AUTHOR', 'סימוני מעקב במחבר אחר: %s' % sorted(x for x in others if x)))
-    lo, hi = window
-    tz_off = None
-    for e in ours:
-        d, u = e.get(W + 'date'), e.get(dt.DATE_UTC_ATTR)
-        if not d or not re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d', d):
-            F.append(_f('PKG_DATE_FORMAT', 'w:date בתבנית לא נכונה (שעה מקומית בלי Z): %r' % d))
-            break
-        if not u or not re.fullmatch(r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ', u):
-            F.append(_f('PKG_DATE_UTC', 'w16du:dateUtc חסר או לא תקין: %r' % u))
-            break
-        loc = _parse_local(d)
-        if not lo <= loc <= hi:
-            F.append(_f('PKG_DATE_RANGE', 'תאריך שאינו של ההרצה: %s' % d))
-            break
-        off = loc - _parse_local(u)
-        if tz_off is None:
-            tz_off = off
-        expected = _dt.datetime.now().astimezone().utcoffset()
-        if abs((off - expected).total_seconds()) > 60 or off != tz_off:
-            F.append(_f('PKG_DATE_UTC', 'הפרש בין w:date ל-dateUtc אינו הפרש השעון המקומי: %s / %s' % (d, u)))
-            break
-    info['revisions'] = len(ours)
-    info['distinct_dates'] = len({e.get(W + 'date') for e in ours})
-    # סעיף AREO: המירקור הצהוב בקובץ העבודה, בטווח של הבועה הפנימית עם התווית, הוא מכוון. בעותק למשלוח הבועה הוסרה,
-    # ולכן כל מירקור שנשאר הוא כשל
-    cx = etree.fromstring(parts[dt.COMMENTS_PART]) if dt.COMMENTS_PART in parts else None
-    areo_ps = dt.areo_paragraphs(root, dt._areo_comment_ids(cx))
-    # הזיהוי לפי הנתיב של הפסקה בעץ, ולא לפי id() של אובייקט lxml: אובייקט כזה נוצר מחדש בכל מעבר, ו-id() שלו
-    # אינו יציב, כך שמירקור מכוון של סעיף AREO נספר לפעמים כצבע בטקסט שהוכנס
-    tree = root.getroottree()
-    areo_paths = {tree.getpath(p) for p in areo_ps}
-
-    def _in_areo(h):
-        p = next(h.iterancestors(W + 'p'), None)
-        return p is not None and tree.getpath(p) in areo_paths and h.get(W + 'val') == dt.AREO_HIGHLIGHT
-    hl_ins = [h for e in ours if local_tag(e) == 'ins' for h in e.iter(W + 'highlight') if not _in_areo(h)]
-    if hl_ins:
-        F.append(_f('PKG_HIGHLIGHT', 'צבע בטקסט שהוכנס: %d' % len(hl_ins)))
-    core = parts.get('docProps/core.xml', b'').decode('utf-8')
-    app = parts.get('docProps/app.xml', b'').decode('utf-8')
-    if 'python-docx' in core + app:
-        F.append(_f('PKG_METADATA', '"python-docx" במאפייני הקובץ'))
-    if dt.esc(author) not in core and author not in core:
-        F.append(_f('PKG_METADATA', 'המחבר במאפייני הקובץ אינו עורך הדין מהפרופיל'))
-    for m in re.finditer(r'<dcterms:(created|modified)[^>]*>([^<]+)<', core):
-        try:
-            when = _dt.datetime.strptime(m.group(2)[:19], '%Y-%m-%dT%H:%M:%S')
-            if when < lo - _dt.timedelta(days=1):
-                F.append(_f('PKG_METADATA', 'תאריך %s במאפיינים קודם להרצה: %s' % (m.group(1), m.group(2))))
-        except ValueError:
-            pass
-    if dt.audit_schema_order(root):
-        F.append(_f('PKG_SCHEMA_ORDER', 'סדר סכמה שגוי ב-%d מכלים' % dt.audit_schema_order(root)))
-    if work_path and len(os.path.abspath(work_path)) > paths.PATH_LIMIT:
-        F.append(_f('PKG_PATH_LENGTH', 'נתיב של %d תווים (הגבול %d)' % (len(os.path.abspath(work_path)),
-                                                                       paths.PATH_LIMIT)))
-    comments = dt.read_comments(parts)
-    for c in comments:
-        if c['id'] in received_comment_ids:
-            continue
-        if c['author'] != author and c['author'] not in INTERNAL_AUTHORS:
-            F.append(_f('BUB_UNKNOWN_AUTHOR', 'בועה במחבר לא מוכר: %s' % c['author'], c['id']))
-        if c['author'] == author and profile.get('lawyer_initials') and c['initials'] != profile['lawyer_initials']:
-            F.append(_f('BUB_INITIALS', 'ראשי תיבות שאינם מהפרופיל: %s' % c['initials'], c['id']))
-    return F, info
-
-
-def local_tag(e):
-    return dt.local(e.tag)
-
-
-# --------------------------------------------------------------------------------------- בועות
-def check_bubbles(ext, accept_text, state, reject_text='', lang='he'):
-    F = []
-    body_text = accept_text + '\n' + reject_text
-    claim = bool((state or {}).get('policy_claim_allowed'))
-    facts = list((state or {}).get('deal_context', {}).get('facts', [])) if state else []
-    facts += list(((state or {}).get('meta') or {}).get('deal_context', {}).get('facts', [])) if state else []
-    hidden = [str(f.get('fact')) for f in facts if f.get('disclosure') in ('drafting_only', 'internal_only')]
-    openers = {}
-    for c in ext:
-        t = c['text']
-        m = FORBIDDEN_ALWAYS.search(t)
-        if m:
-            F.append(_f('BUB_FORBIDDEN', 'מונח פנימי בבועה: "%s"' % m.group(0), c['id']))
-        m = None if claim else policy_claim_term(t)
-        if m:
-            F.append(_f('BUB_FORBIDDEN', '"%s" בבועה בלי טענת מדיניות מאושרת' % m.group(0), c['id']))
-        cl = case_law_in_text(t)
-        if cl:
-            # פסיקה לעולם אינה בבועה לצד שכנגד, גם כשהגיעה ממחבר פסיקה סגור: היא בשכבה הפנימית בלבד
-            F.append(_f('BUB_CASE_LAW', 'הפניה לפסיקה בבועה: %s' % '; '.join(cl[:3]), c['id']))
-        if LONG_DASH.search(t):
-            F.append(_f('BUB_LONG_DASH', 'מקף ארוך בבועה', c['id']))
-        if len(SENT_END.findall(t + ' ')) > 5:
-            F.append(_f('BUB_SENTENCES', 'יותר מחמישה משפטים', c['id']))
-        if PRACTICE_OPENING[lang].search(t) or PRACTICE_OPENING['he'].search(t):
-            F.append(_f('BUB_PRACTICE_OPENING', 'בועה שנפתחת במשפט נוהג', c['id']))
-        # הפניה לסעיף, לנספח או לפרק ("סעיף 13א", "clauses 5.3 and 5.6") אינה סכום: במספור אוטומטי המספר אינו בטקסט
-        for num in re.findall(r'\d[\d,]*', CLAUSE_REF.sub(' ', t)):
-            if num.strip(',') not in body_text:
-                F.append(_f('BUB_NUMBER_NOT_IN_BODY', 'המספר %s אינו בנוסח' % num, c['id']))
-        for h in hidden:
-            if h and h in t:
-                F.append(_f('BUB_DISCLOSURE', 'עובדה שסווגה לנוסח בלבד או פנימית מופיעה בבועה', c['id']))
-        # בקול פעיל ("We have replaced", "We have deleted") הפתיח הוא הפועל שאחרי "We have", ולא "We have" עצמו
-        words = t.split()
-        k = ' '.join(words[:3] if words[:1] and words[0].lower() in ('we', 'אנו', 'אנחנו') else words[:2])
-        openers[k] = openers.get(k, 0) + 1
-    limit = max(2, len(ext) // 3)
-    rep = {k: v for k, v in openers.items() if v > limit}
-    if rep:
-        F.append(_f('BUB_REPEATED_OPENER', 'פתיח זהה ביותר משליש מהבועות: %s' % rep))
-    return F
-
-
-def _para_accept(p):
-    return ''.join(dt._node_text(n) for n, anc in dt._text_nodes(p) if dt.local(n.tag) != 'delText' and 'del' not in anc)
-
-
-def _tied_reason(sents, idx, lang):
-    if REASON[lang].search(sents[idx]):
-        return True
-    return idx + 1 < len(sents) and bool(REASON_LEAD[lang].search(sents[idx + 1]))
-
-
-def _changed_sentences(p, author):
-    """המשפטים בהטלת "קבל הכול" שיש בהם קטע שהכנסנו (גם כשהקטע הוא רק מספר, למשל 30 שהפך ל-60)."""
-    pieces = []
-    for el in p.iter(W + 'ins'):
-        if el.getparent() is not None and dt.local(el.getparent().tag) == 'rPr' or el.get(W + 'author') != author:
-            continue
-        txt = ''.join(n.text or '' for n in el.iter(W + 't')).strip()
-        if len(txt) >= 2:
-            pieces.append(txt)
-            # הוספה אחת שחוצה גבול משפט (סימון רציף מ-docx_tracked) נבדקת לפי כל משפט שבה, אחרת המשפט שבו רק
-            # המספר השתנה (30 שהפך ל-45) אינו נחשב "משפט שהשתנה", ובדיקת הכיסוי והנימוק מחמיצה אותו
-            pieces.extend(x.strip() for x in _sentences(txt) if len(x.strip()) >= 2 and x.strip() != txt)
-    acc = _para_accept(p)
-    return '\n'.join(s for s in _sentences(acc) if any(x in s for x in pieces))
-
-
-def changed_paragraphs(root, author):
-    """(אינדקס, פסקה, טקסט שהוכנס, טקסט שנמחק, המשפטים שהשתנו) לכל פסקה שיש בה שינוי שלנו. טריגר של רכיב שמרע נבדק
-    בנוסח שהוכנס, בנוסח שנמחק, ובמשפטים שהשתנו, כך שגם שינוי של מספר בלבד (30 ימים שהפכו ל-60) נתפס."""
-    out = []
-    for i, p in enumerate(dt.body_paragraphs(root)):
-        ins, dele = dt.revision_text(p, 'ins', author), dt.revision_text(p, 'del', author)
-        if ins.strip() or dele.strip():
-            if _is_heading(p):
-                ins, dele = '', ''  # כותרת: שינוי טכני. הבועה הקצרה נבדקת, ולא תפקידי סעיף
-            out.append((i, p, ins, dele, _changed_sentences(p, author)))
-    return out
-
-
-def _is_heading(p):
-    """פסקה שהוספנו כולה, קצרה ובלי סימן פיסוק של משפט: כותרת פרק (structural)."""
-    acc = _para_accept(p).strip()
-    return dt._mark(p) == 'ins' and 0 < len(acc) < 60 and not re.search(r'[.;:]', acc)
-
-
-def _strip_removed(dele, texts):
-    """הנוסח שמחקנו בפסקה, בלי טקסט מוסתר שהוסר (kind: hidden_text_removal): הוא אינו תנאי בין הצדדים, והבועה
-    הניטרלית אינה קוראת בשמם מושגים שבו."""
-    for t in texts or ():
-        for x in (t, t.strip()):
-            if x and x in dele:
-                dele = dele.replace(x, ' ')
-                break
-    return dele
-
-
-def check_coverage(root, ext_by_para, author, lang='he', removed=None):
-    """(1) כל שינוי שהצד שכנגד רואה נמצא בבועה חיצונית של אותה פסקה, גם שינוי טכני (החלטת מוצר 2).
-    (2) כל רכיב מהותי שהוכנס או נמחק בפסקה נקרא בבועה בשמו. removed: {פסקה: [טקסט מוסתר שהוסר]}: מחיקה כזו, עם
-    הבועה הניטרלית, היא שינוי מכוסה, ומה שכתוב בטקסט המוסתר אינו נדרש בבועה (check_hidden_removals)."""
-    F = []
-    conc = concepts_for(lang)
-    for i, p, ins, dele, ctx in changed_paragraphs(root, author):
-        dele = _strip_removed(dele, (removed or {}).get(i))
-        bubble = ' '.join(ext_by_para.get(i, []))
-        hit = [name for name, (trig, _, worse) in conc.items()
-               if re.search(trig, ins) or re.search(trig, dele) or (name in NUMERIC_FUNCTIONS and re.search(trig, ctx))]
-        if not bubble:
-            what = ', '.join(hit) if hit else 'שינוי טכני (%s)' % (_para_accept(p) or dele)[:40]
-            F.append(_f('COV_CHANGE_WITHOUT_BUBBLE', 'שינוי בלי בועה חיצונית: %s' % what, i))
-            continue
-        missing = [name for name in hit if not re.search(conc[name][1], bubble, re.I if lang == 'en' else 0)]
-        if missing:
-            F.append(_f('COV_UNCOVERED_CHANGE', 'הבועה אינה מתארת: %s' % ', '.join(missing), i))
-    return F
-
-
-def check_bubble_why(root, ext_by_para, author, accept_text, lang='he', context=None, removed=None):
-    """החלטת מוצר 2 (14.10.2026): כל בועה חיצונית מסבירה למה, ולא רק מה.
-    - BUB_WHY_MISSING: רכיב שמרע או מזיז את עמדת הצד שכנגד נקרא בבועה, ואין משפט נימוק שקשור אליו (מחבר נימוק
-      באותו משפט, או משפט הבא שנפתח בנימוק). כך גם זכות שלהם שמחקנו.
-    - BUB_CLAIM_FALSE: טענה בבועה שאינה נכונה מול הנוסח: "ידוע מראש" על בסיס תקרה שאינו סכום; "מחקנו" כשלא נמחק
-      דבר. הבדיקה כללית לכל סוג הסכם: היא משווה את הטענה לנוסח, ואינה שוקלת את התוכן המשפטי."""
-    F = []
-    conc = concepts_for(lang)
-    I = re.I if lang == 'en' else 0
-    for i, p, ins, dele, ctx in changed_paragraphs(root, author):
-        bubbles = ext_by_para.get(i, [])
-        if not bubbles:
-            continue
-        sents = [s for b in bubbles for s in _sentences(b)]
-        trig_dele = _strip_removed(dele, (removed or {}).get(i))
-        hit = [name for name, (trig, _, worse) in conc.items()
-               if worse and (re.search(trig, ins) or re.search(trig, trig_dele) or
-                             (name in NUMERIC_FUNCTIONS and re.search(trig, ctx)))]
-        if dt._mark(p) in ('del', 'both') and re.search(RIGHT_WORDS[lang], trig_dele, I):
-            hit.append('__deleted_right__')
-        for name in hit:
-            rx = (r'מחקנו|הסרנו|נמחק|deleted|removed|struck') if name == '__deleted_right__' else conc[name][1]
-            idx = [k for k, s in enumerate(sents) if re.search(rx, s, I)]
-            if not idx:
-                continue  # לא נקרא בשמו: COV_UNCOVERED_CHANGE
-            if not any(_tied_reason(sents, k, lang) for k in idx):
-                label = 'זכות שלהם שנמחקה' if name == '__deleted_right__' else name
-                F.append(_f('BUB_WHY_MISSING', 'אין משפט נימוק ל: %s' % label, i))
-        acc = _para_accept(p)
-        L, M, B, R = CAP_RX[lang]
-        for s in sents:
-            if KNOWN_CLAIM[lang].search(s) and re.search(r'תקר|cap|limit', s, I):
-                cap_sents = [x for x, _, _ in gap_checks.sentences(acc) if re.search(L, x, I) and re.search(M, x, I)]
-                if any(re.search(B, x, I) and not re.search(R, x, I) for x in cap_sents):
-                    F.append(_f('BUB_CLAIM_FALSE', 'הבועה אומרת שבסיס התקרה ידוע מראש, והנוסח קובע רק תקרה ולא סכום', i))
-            if DELETION_CLAIM[lang].search(s) and not dele.strip():
-                F.append(_f('BUB_CLAIM_FALSE', 'הבועה אומרת שמחקנו, ובפסקה לא נמחק דבר', i))
-    return F
-
-
-# --------------------------------------------------------------------------------------- שפה, אורך וקול (S1c)
-HEB_RUN = re.compile('[֐-׿](?:[֐-׿"\'׳״\\-. ]*[֐-׿])?')
-
-
-def check_language(root, ext, author, lang, received_text):
-    """H1 (בדיקה עצמאית S1c, 28.10.2026): בהסכם באנגלית אין אות עברית בנוסח שהכנסנו (w:ins שלנו) ובבועה החיצונית.
-    החריג היחיד: ציטוט של נוסח קיים, כלומר קטע עברי שמופיע כלשונו בטיוטה שהתקבלה. כשל בשני המצבים."""
-    F = []
-    if lang != 'en':
-        return F
-    seen = (received_text or '').translate(dt.QUOTE_FOLD)
-
-    def leaks(text):
-        return [m.group(0) for m in HEB_RUN.finditer(text or '') if m.group(0).translate(dt.QUOTE_FOLD) not in seen]
-
-    for i, p in enumerate(dt.body_paragraphs(root)):
-        bad = leaks(dt.revision_text(p, 'ins', author))
-        if bad:
-            F.append(_f('LANG_HEBREW_IN_EN', 'אותיות עבריות בנוסח שהכנסנו להסכם באנגלית: "%s". בהסכם באנגלית הישות '
-                        'נכתבת בשם הרשום באנגלית (organization_name_en בפרופיל)' % bad[0][:40], i))
-    for c in ext:
-        bad = leaks(c['text'])
-        if bad:
-            F.append(_f('LANG_HEBREW_IN_EN', 'אותיות עבריות בבועה בהסכם באנגלית: "%s"' % bad[0][:40], c['id']))
-    return F
-
-
-# תקרת האורך של בועה חיצונית לפי שלב הסבב. המקור האחד הוא מטריצת הסבבים (question_batch.ROUND_MATRIX: max_words,
-# max_sentences): אזהרה מעל התקרה של השלב, וכשל מעל פי 1.5 ממנה (BUBBLE_FAIL_FACTOR). (אזהרה מעל, כשל מעל)
-BUBBLE_FAIL_FACTOR = 1.5
-BUBBLE_WORDS = {s: (r['max_words'], int(r['max_words'] * BUBBLE_FAIL_FACTOR)) for s, r in ROUND_MATRIX.items()}
-BUBBLE_SENTENCES = {s: (r['max_sentences'], int(r['max_sentences'] * BUBBLE_FAIL_FACTOR))
-                    for s, r in ROUND_MATRIX.items()}
-PASSIVE = {'en': re.compile(r'\b(?:is|are|was|were|has been|have been)\s+(?:now\s+)?(?:replaced|deleted|removed|amended|'
-                            r'added|inserted|changed|limited|extended|reduced|qualified|completed|incorporated)\b|'
-                            r'\bthe (?:revised |amended )?(?:clause|section|provision|paragraph|item|schedule|agreement) '
-                            r'now (?:provides|states|covers|requires|says|includes)\b|\bunder the revised (?:clause|section)\b|'
-                            r'\bnow replaces?\b', re.I),
-           'he': re.compile(r'(?<![א-ת])(?:הוחלפ(?:ה|ו)?|הוחלף|נמחק(?:ה|ו)?|תוקנ(?:ה|ו)|תוקן|הוסף|הוספה|הושלמ(?:ה|ו)|'
-                            r'הושלם)(?![א-ת])|הסעיף (?:קובע|כולל|מחייב) כעת')}
-ACTIVE = {'en': re.compile(r'\b[Ww]e\b'),
-          'he': re.compile(r'(?<![א-ת])ו?(?:שינינו|הוספנו|מחקנו|השארנו|החלפנו|ביקשנו|צמצמנו|הרחבנו|קיבלנו|'
-                           r'תיקנו|השלמנו|הסרנו|אנו|אנחנו|נבקש|נשמח|נציע)(?![א-ת])')}
-
-
-def _round_of(state, decisions=None):
-    """מספר הסבב שנבדק: round בקובץ ההכרעות של הסבב, ובלעדיו meta.round_number בקובץ המצב."""
-    rnd = (decisions or {}).get('round') if isinstance(decisions, dict) else None
-    rnd = rnd or ((state or {}).get('meta') or {}).get('round_number')
-    try:
-        return int(rnd) if rnd is not None else None
-    except (TypeError, ValueError):
-        return None
-
-
-def round_stage(state, decisions=None):
-    """שלב הסבב, מאותו מקור ש-state_builder כותב אותו: stage_for_round על מספר הסבב (round בקובץ ההכרעות, או
-    meta.round_number), ובלעדיו meta.round_stage. meta.stage ו-stage בשורש נשארים רק כגיבוי לקובץ ישן."""
-    st = state or {}
-    meta = st.get('meta') or {}
-    rnd = _round_of(st, decisions)
-    if rnd:
-        return SB.stage_for_round(rnd)
-    stage = meta.get('round_stage') or meta.get('stage') or st.get('stage')
-    return stage if stage in BUBBLE_WORDS else 'opening'
-
-
-def check_bubble_style(ext, lang, stage):
-    """M1 (בדיקה עצמאית S1c): בועה ארוכה מהתקרה של שלב הסבב (BUB_LENGTH: אזהרה מעל max_words או max_sentences של
-    השלב במטריצת הסבבים, כשל מעל פי 1.5), ובועה בגוף שלישי סביל ("is replaced with", "the clause now provides")
-    בלי "We" (BUB_PASSIVE_VOICE, אזהרה). המשפטים נספרים כמו ב-round_violations. מחזיר (כשלים, אזהרות)."""
-    F, W_ = [], []
-    stage = stage if stage in BUBBLE_WORDS else 'opening'
-    soft, hard = BUBBLE_WORDS[stage]
-    s_soft, s_hard = BUBBLE_SENTENCES[stage]
-    for c in ext:
-        t = c['text'] or ''
-        # "This replaces our earlier proposal." (ובעברית "זה מחליף את ההצעה הקודמת שלנו.") אינו נספר באורך, כמו ב-round_violations
-        body = re.sub(REPLACES_SENT, ' ', t, flags=re.I).strip() or t
-        n, s = len(body.split()), qb_sentences(body)
-        if n > hard or s > s_hard:
-            F.append(_f('BUB_LENGTH', 'בועה של %d מילים ו-%d משפטים (הגבול בשלב %s: %d מילים, %d משפטים). לקצר: מה '
-                        'שינינו, למה, ומה נשאר' % (n, s, stage, hard, s_hard), c['id']))
-        elif n > soft or s > s_soft:
-            W_.append(_f('BUB_LENGTH', 'בועה של %d מילים ו-%d משפטים (התקרה בשלב %s: %d מילים, %d משפטים)'
-                         % (n, s, stage, soft, s_soft), c['id']))
-        bl = 'en' if len(re.findall('[A-Za-z]', t)) > len(re.findall('[א-ת]', t)) else 'he'
-        m = PASSIVE[bl].search(t)
-        if m and not ACTIVE[bl].search(t):
-            W_.append(_f('BUB_PASSIVE_VOICE', 'בועה בגוף שלישי סביל ("%s"). קול פעיל: "We have replaced..." / '
-                         '"החלפנו..."' % m.group(0), c['id']))
-    return F, W_
-
-
-# M3: בועה שאומרת שמשהו כבר אינו נדרש או הוסר, והביטוי שהיא מתארת נשאר בנוסח אחרי "קבל הכול"
-GONE_CLAIM = {'en': [re.compile(r'(?:^|[.;]\s*)(?P<x>[^.;]{3,140}?)\s+(?:is|are)\s+no longer\s+(?:required|needed|necessary|'
-                                r'applicable|a condition)', re.I),
-                     re.compile(r'\bno longer requires?\s+(?P<x>[^.;,]{3,100})', re.I),
-                     re.compile(r'\b(?:removed|deleted|struck out|struck)\s+(?:the (?:words?|phrase|reference to|'
-                                r'requirement (?:for|of|that))\s+)?(?P<x>"[^"]{3,100}"|“[^”]{3,100}”)', re.I),
-                     re.compile(r'(?P<x>"[^"]{3,100}"|“[^”]{3,100}”)\s+(?:has|have) been (?:removed|deleted)',
-                                re.I)],
-              'he': [re.compile(r'(?P<x>[^.;]{3,100}?)\s+(?:אינה|אינו|אינם|אינן)\s+נדרש(?:ת|ים|ות)?\s+עוד'),
-                     re.compile(r'(?:מחקנו|הסרנו)\s+את\s+(?:הדרישה ל|המילים\s+)?(?P<x>"[^"]{3,100}"|״[^״]{3,100}״|'
-                                r'[^.;,]{3,60})')]}
-# שם הצד נפתח באות גדולה (בלי re.I, כדי ש-"<Party> to" לא ייתפס כשם), ומילות ההסכמה בכל רישיות
-APPROVAL = {'en': re.compile(r'(?i:consent|approval|authori[sz]ation|agreement)\s+of\s+(?:the\s+)?'
-                             r'(?P<p>[A-Z][\w-]+(?: [A-Z][\w-]+)?)|'
-                             r'(?P<q>[A-Z][\w-]+)\'s\s+(?i:prior\s+)?(?i:written\s+)?(?i:consent|approval)'),
-            'he': re.compile(r'(?:הסכמת|אישור|הסכמתה של|אישורו של)\s+(?:ה)?(?P<p>[א-ת]{2,})')}
-LIST_LABEL = re.compile(r'^\s*(\(?[ivx]{1,4}\)|\(?[a-z]{1,2}\)|\(?\d{1,2}\)|\(?[א-י]\))\s', re.I)
-
-
-def _approval_rx(party, lang):
-    P = re.escape(party)
-    if lang == 'he':
-        return re.compile(r'(?:הסכמת|אישור|לפי שיקול דעת|כפי שי?קבע|כפי שתקבע|להנחת דעת)\s+(?:של\s+)?ה?' + P)
-    return re.compile(r'(?:consent|approval|authori[sz]ation)\s+of\s+(?:the\s+)?' + P + r'|' + P +
-                      r'\'s\s+(?:prior\s+)?(?:written\s+)?(?:consent|approval)|(?:as\s+)?determined\s+by\s+(?:the\s+)?' + P +
-                      r'|(?:sole\s+)?discretion\s+of\s+(?:the\s+)?' + P + r'|approved\s+by\s+(?:the\s+)?' + P +
-                      r'|to\s+the\s+satisfaction\s+of\s+(?:the\s+)?' + P, re.I)
-
-
-def _scope(acc, first, last):
-    """הפסקאות שהבועה מתארת: הטווח שלה, ואחרי פסקת פתיחה שמסתיימת בנקודתיים, הפריטים שאחריה עד שתווית חוזרת."""
-    out = list(range(first, last + 1))
-    if acc[last].rstrip().endswith(':'):
-        seen = set()
-        for j in range(last + 1, min(len(acc), last + 16)):
-            m = LIST_LABEL.match(acc[j])
-            if not m or m.group(1).strip('()').lower() in seen:
-                break
-            seen.add(m.group(1).strip('()').lower())
-            out.append(j)
-    return out
-
-
-def check_bubble_text_match(root, ext, spans, lang):
-    """M3 (בדיקה עצמאית S1c, בועה 143): בועה שאומרת ש-X "is no longer required" או שהוסר, כשהביטוי X נשאר בנוסח
-    אחרי "קבל הכול" בפסקאות שהבועה מתארת; ובהסכמה או אישור של צד, גם כשנשאר ניסוח שקול ("as determined by the
-    <Party>"). אזהרה (BUB_TEXT_MISMATCH): הבדיקה מכנית, ועורך הדין מכריע אם הבועה או הנוסח מתוקנים."""
-    W_ = []
-    acc = [_para_accept(p) for p in dt.body_paragraphs(root)]
-    fold = lambda s: _norm_ws(s).translate(dt.QUOTE_FOLD).lower()
-    for c in ext:
-        if c['id'] not in spans:
-            continue
-        first, last = spans[c['id']]
-        scope = fold(' '.join(acc[j] for j in _scope(acc, first, last)))
-        raw = ' '.join(acc[j] for j in _scope(acc, first, last))
-        bl = 'en' if len(re.findall('[A-Za-z]', c['text'])) > len(re.findall('[א-ת]', c['text'])) else 'he'
-        for rx in GONE_CLAIM[bl]:
-            hit = None
-            for m in rx.finditer(c['text']):
-                x = m.group('x').strip().strip('"“”״')
-                x = re.sub(r'^(?:the requirement (?:for|of|that)|the reference to|הדרישה ל)\s*', '', x, flags=re.I)
-                if len(x) >= 3 and fold(x) in scope:
-                    hit = 'הביטוי "%s" נשאר בנוסח' % x[:60]
-                else:
-                    a = APPROVAL[bl].search(x)
-                    party = a and (a.group('p') or (a.groupdict().get('q')))
-                    if party:
-                        k = _approval_rx(party.strip(), bl).search(raw)
-                        if k:
-                            hit = 'הבועה אומרת ש-"%s" כבר אינו נדרש, ובנוסח נשאר "%s"' % (x[:50], k.group(0))
-                if hit:
-                    break
-            if hit:
-                W_.append(_f('BUB_TEXT_MISMATCH', 'הבועה מתארת תוצאה שהנוסח אינו נותן: %s. לתקן את הנוסח או את הבועה'
-                             % hit, c['id']))
-                break
-    return W_
-
-
-# --------------------------------------------------------------------------------------- כללי הסבבים בקוד (H3)
-MODIFYING_OPS = ('replace', 'replace_span', 'delete_paragraph', 'insert_paragraph')
-REOPEN_KINDS = ('reopen', 'reopened', 'reopen_instruction', 'withdraw', 'withdraw_concession')
-REOPEN_WHAT = 'פתיחה מחדש בהוראת עורך הדין'   # state_builder.record_reopen, ברשומה ב-concession_history
-LAST_OFFERED = ('last_fallback', 'fallback_2', 'reserve', 'last')
-NO_TEXT = re.compile(r'^\s*(?:אין|none|n/?a)\b', re.I)
-
-
-def _is_reopen(h):
-    return bool(h.get('reopen') or any(h.get(k) in REOPEN_KINDS for k in ('kind', 'type', 'action'))
-                or str(h.get('what') or '').startswith(REOPEN_WHAT))
-
-
-def _instructed(cl, d, st, cid, since=None):
-    """הוראה רשומה של עורך הדין לפתוח מחדש סעיף מוסכם, קבלה שנשלחה או ויתור שנמסר (state_builder.record_reopen,
-    "negotiation_state.py reopen"): רשומה ב-reopen_log של הסעיף עם recorded_at, מסבב since ואילך, או התשובה
-    שהיא רושמת ב-user_decisions (reopen-<clause_id>-<סבב>, applies_to). reopen_instruction, רשומה ב-concession_history
-    מסוג reopen, ו-user_decisions עם reopen או kind, נשארים כגיבוי לקובץ ישן."""
-    since = since or 0
-    for r in (cl or {}).get('reopen_log') or ():
-        if isinstance(r, dict) and r.get('recorded_at') and int(r.get('round') or 0) >= since:
-            return True
-    if (cl or {}).get('reopen_instruction') or (d or {}).get('reopen_instruction'):
-        return True
-    for h in (cl or {}).get('concession_history') or ():
-        if isinstance(h, dict) and _is_reopen(h) and int(h.get('round') or 0) >= since:
-            return True
-    for q in (st or {}).get('user_decisions') or ():
-        if cid not in (q.get('applies_to') or ()) or q.get('answer_kind') != 'explicit':
-            continue
-        if str(q.get('id') or '').startswith('reopen-%s-' % cid) or q.get('reopen') or q.get('kind') in REOPEN_KINDS \
-                or q.get('situation') in REOPEN_KINDS:
-            return True
-    return False
-
-
-def _agreed(st, cl):
-    """סעיף מוסכם באמת (CLOSED אמיתי): closed_in_round ו-closed_basis (counterparty_unchanged או
-    counterparty_accepted), וכשהוא עדיין CLOSED, גם מסמך שנשלח לפני סבב הסגירה (state_builder.premature_closed).
-    הכרעה מאוחרת שמשנה אותו הופכת את הסטטוס ל-MOVING (negotiation_state.merge_clauses), והשדות נשארים."""
-    if not isinstance(cl.get('closed_in_round'), int) or cl.get('closed_basis') not in SB.CLOSED_BASES:
-        return False
-    return not SB.premature_closed(st, cl)
-
-
-def _delivered_concessions(st, clauses, rnd):
-    """{clause_id: הסבב שבו נמסר} לוויתור שנמסר לצד השני לפני הסבב הזה: ויתור מכוון עם delivered_in_round
-    (negotiation_state.record_sent), קבלה (accepted_in_round) בסבב שיש לו רשומה ב-sent_documents, ורשומה
-    ב-concession_history (who: us) בסבב כזה. ויתור שעוד לא נשלח ניתן לשינוי."""
-    out = {}
-
-    def add(cid, r):
-        if cid and isinstance(r, int) and r < rnd:
-            out[cid] = min(out.get(cid, r), r)
-
-    for w in st.get('deliberate_concessions') or ():
-        if isinstance(w, dict) and w.get('clause_ref') and not w.get('reopened_in_round'):
-            add(w['clause_ref'], w.get('delivered_in_round'))
-    for cid, cl in clauses.items():
-        acc = cl.get('accepted_in_round')
-        if isinstance(acc, int) and SB.delivered(st, acc) and not _agreed(st, cl):
-            add(cid, acc)
-        for h in cl.get('concession_history') or ():
-            if isinstance(h, dict) and h.get('who') == 'us' and not _is_reopen(h) and isinstance(h.get('round'), int) \
-                    and SB.delivered(st, h['round']):
-                add(cid, h['round'])
-    return out
-
-
-def _sent_norm(s):
-    return re.sub(r'\s+', ' ', (s or '').translate(dt.QUOTE_FOLD)).strip().lower()
-
-
-def check_round_rules(state, decisions, rroot, root, authors, spans, our_ids, prev_bubbles=(), mode='work'):
-    """H3 ופער 9 (בדיקה עצמאית S1c): כללי הסבבים נאכפים בקוד, על השדות ש-state_builder ו-negotiation_state.py
-    כותבים בפועל: closed_in_round, closed_basis ו-agreed_text (CLOSED אמיתי), accepted_in_round ו-sent_documents
-    (קבלה שנשלחה), delivered_in_round בוויתור המכוון, concession_history (who: us), reopen_log,
-    user_decisions.applies_to, last_round_changes ו-meta.deal_context.stance.value; ומקובץ ההכרעות: round,
-    offered_now, at_last_fallback, fallback_1, fallback_2 ו-reserve (בסעיף שבקובץ המצב, כגיבוי):
-    - ROUND_REOPEN_CLOSED (כשל): הכרעה שמשנה נוסח בסעיף מוסכם (CLOSED אמיתי), בלי הוראה רשומה (reopen_log).
-    - ROUND_CONCESSION_WITHDRAWN (כשל): הכרעה שמשנה נוסח בסעיף שוויתרנו עליו, כשהוויתור נמסר בסבב קודם, בלי הוראה.
-    - ROUND_LAST_FALLBACK_EARLY (אזהרה): נוסח הנסיגה האחרון כבר בסבב 1, בגישת playbook או stricter.
-    - BUB_REPEATS_REJECTED (אזהרה): בועה שחוזרת מילה במילה על משפט מבועה שלנו מסבב קודם, בסעיף שבו ההצעה נדחתה.
-    - ROUND_RESTORE_NO_BUBBLE (כשל): מחיקה של הצד שכנגד בתוך הוספה שלנו, שהחזרנו, בלי בועה שלנו על הפסקה.
-    - תיקון עקבי (conforming: true עם conforms_to: <הכרעה או סעיף פתוח>) אינו נספר כפתיחה מחדש או כלקיחה בחזרה.
-    - BUB_REPEATS_REJECTED_ARGUMENT ו-ROUND_REJECTED_COMPONENT_REOFFERED (אזהרות): רכיב שהצד השני דחה במפורש
-      (their_rejected) חוזר בבועה או בנוסח (question_batch.rejected_argument_findings).
-    authors: השמות שלנו, המחבר הנוכחי ראשון ואחריו הכינויים מהפרופיל. our_ids: מזהי הבועות החיצוניות שלנו בקובץ.
-    prev_bubbles: הבועות שלנו מסבבים קודמים (בשמנו בטיוטה שחזרה). מחזיר (כשלים, אזהרות)."""
-    F, W_ = [], []
-    st = state or {}
-    meta = st.get('meta') or {}
-    items = decisions.get('decisions', []) if isinstance(decisions, dict) else (decisions or [])
-    rnd = _round_of(st, decisions) or 1
-    clauses = {c.get('clause_id'): c for c in st.get('clauses') or () if isinstance(c, dict)}
-    conceded = _delivered_concessions(st, clauses, rnd)
-    names = {a for a in authors or () if a}
-    rparas = dt.body_paragraphs(rroot) if rroot is not None else []
-
-    def their_now(d, cl, cid):
-        # הצד שכנגד שינה את הסעיף בסבב הזה (שינוי שקט, שינוי מסומן שלהם בפסקה, דחייה, או פתיחה של סעיף מוסכם):
-        # הכרעה שעונה לשינוי, למשל החזרה לנוסח שנשלח או לנוסח המוסכם, אינה פתיחה מחדש ואינה לקיחה בחזרה
-        j = d.get('para')
-        if any(isinstance(x, dict) and int(x.get('round') or 0) == rnd and (x.get('clause_id') == cid or (
-                isinstance(j, int) and x.get('received_para') == j)) for x in st.get('silent_changes') or ()):
-            return True
-        if (cl.get('reopened_by_counterparty') or {}).get('round') == rnd or any(
-                isinstance(r, dict) and r.get('by') == 'them' and r.get('round') == rnd for r in cl.get('rejections') or ()):
-            return True
-        return isinstance(j, int) and 0 <= j < len(rparas) and any(
-            e.get(W + 'author') not in names for e in rparas[j].iter(W + 'ins', W + 'del'))
-
-    stance = (meta.get('deal_context') or {}).get('stance')
-    stance = (stance.get('value') if isinstance(stance, dict) else stance) or 'playbook'
-    by_id = {d.get('id'): d for d in items}
-
-    def conforming_ok(d):
-        # תיקון עקבי (conforming, conforms_to) בעקבות הכרעה בנושא פתוח, כדי שההסכם לא יסתור את עצמו: אינו פתיחה
-        # מחדש ואינו לקיחה בחזרה (S1d-R2). conforms_to הוא הכרעה בקובץ הזה שמשנה נוסח או משיבה בבועה, או סעיף פתוח
-        if not (d.get('conforming') and d.get('conforms_to')):
-            return False
-        ref = d['conforms_to']
-        main = by_id.get(ref)
-        if main is not None and main is not d:
-            return main.get('op') in MODIFYING_OPS + ('comment_only',)
-        ref_cl = clauses.get(ref)
-        return bool(ref_cl) and ref_cl.get('status') not in ('CLOSED',) and not _agreed(st, ref_cl)
-
-    for d in items:
-        cid = d.get('clause_id') or d.get('id')
-        cl = clauses.get(cid) or {}
-        changes = d.get('op') in MODIFYING_OPS and not their_now(d, cl, cid) and not conforming_ok(d)
-        closed = cl.get('closed_in_round')
-        if changes and _agreed(st, cl) and closed <= rnd and not _instructed(cl, d, st, cid, closed):
-            F.append(_f('ROUND_REOPEN_CLOSED', 'ההכרעה משנה נוסח בסעיף שהוסכם בסבב %d, בלי הוראה רשומה לפתוח אותו מחדש. '
-                        'פתיחה מחדש רק בהוראת עורך הדין: negotiation_state.py reopen --clause %s --instruction '
-                        '"<ההוראה>" --reason "<הסיבה>" (reopen_log, עם התאריך)' % (closed, cid), d.get('id')))
-        elif changes and cid in conceded and not _instructed(cl, d, st, cid, conceded[cid]):
-            F.append(_f('ROUND_CONCESSION_WITHDRAWN', 'ההכרעה משנה נוסח בסעיף שוויתרנו עליו, והוויתור נמסר לצד השני בסבב '
-                        '%d: ויתור שנמסר אינו נלקח בחזרה בלי הוראה רשומה של עורך הדין (negotiation_state.py reopen)'
-                        % conceded[cid], d.get('id')))
-        if rnd == 1 and stance in ('playbook', 'stricter'):
-            opts = []
-            for o in (d, cl):
-                opts = [x for x in [o.get('fallback_1'), o.get('fallback_2')] + list(o.get('reserve') or ())
-                        if isinstance(x, str) and x.strip() and not NO_TEXT.match(x)]
-                if opts:
-                    break
-            last = opts[-1] if opts else None
-            new = _sent_norm(' '.join(str(d.get(k) or '') for k in ('new', 'new_text', 'text')))
-            on = d.get('offered_now') or cl.get('offered_now')
-            if d.get('at_last_fallback') or on in LAST_OFFERED or (last and len(last) >= 20 and _sent_norm(last) in new):
-                W_.append(_f('ROUND_LAST_FALLBACK_EARLY', 'נוסח הנסיגה האחרון מוצע כבר בסבב 1, בגישת %s: לא נשאר '
-                             'מרווח לסבבים הבאים' % stance, d.get('id')))
-    # בועות שלנו מסבבים קודמים: הבועות בשמנו בטיוטה שחזרה (המקור בפועל). אין כותב לשדות ההיסטוריה בקובץ המצב
-    # (external_comment_history, previous_external_comments), והם נקראים רק כגיבוי לקובץ שנכתב ביד
-    prev = list(prev_bubbles or ())
-    for cl in clauses.values():
-        for k in ('external_comment_history', 'previous_external_comments'):
-            prev += [x if isinstance(x, str) else (x or {}).get('text', '') for x in cl.get(k) or ()]
-    old_sents = {_sent_norm(s) for t in prev for s in _sentences(t or '') if len(s.split()) >= 8}
-    if rnd > 1:
-        # רכיב שהצד השני דחה במפורש (their_rejected): הבועה אינה חוזרת על הטיעון בו, והנוסח אינו מציע אותו שוב
-        # (S1d-R2). מול הבועות שלנו מסבבים קודמים בטיוטה שחזרה; round_tools.py round-rules בודק מול השרשור עצמו
-        from orchestrator.question_batch import rejected_argument_findings
-        for d in items:
-            for x in rejected_argument_findings(d, previous=prev):
-                W_.append(_f('BUB_REPEATS_REJECTED_ARGUMENT' if x['code'] == 'ROUND_REPEATS_REJECTED_ARGUMENT'
-                             else x['code'], x['message'], d.get('id')))
-    if old_sents and rnd > 1:
-        for d in items:
-            bub = d.get('external_comment') or ''
-            rep = [s for s in _sentences(bub) if len(s.split()) >= 8 and _sent_norm(s) in old_sents]
-            if rep:
-                cl = clauses.get(d.get('clause_id') or d.get('id')) or {}
-                why = ' (ההצעה נדחתה בסבב הקודם)' if any(k in SB.THEIR_REJECTION for k in cl.get('last_round_changes')
-                                                            or ()) else ''
-                W_.append(_f('BUB_REPEATS_REJECTED', 'הבועה חוזרת מילה במילה על נימוק מסבב קודם%s: "%s". נימוק שנדחה '
-                             'אינו חוזר בלי חידוש: עונים לנימוק שלהם, או מוסיפים נימוק חדש' % (why, rep[0][:80]),
-                             d.get('id')))
-    # פער 9: מחיקה של הצד שכנגד בתוך הוספה שלנו מסבב קודם, שהחזרנו (דחינו את המחיקה), בלי בועה
-    if rroot is not None:
-        work = _received_groups(root, authors[0]) if authors else []
-        wpos = {id(p): k for k, p in enumerate(dt.body_paragraphs(root))}
-        covered = {k for cid, (a, b) in spans.items() if cid in our_ids for k in range(a, b + 1)}
-        by_para = {d.get('para'): d for d in items if isinstance(d.get('para'), int)}
-        for j, p in enumerate(rparas):
-            gone = []
-            for e in p.iter(W + 'del'):
-                if e.get(W + 'author') in names or e.getparent().tag == W + 'rPr':
-                    continue
-                if any(a.tag == W + 'ins' and a.get(W + 'author') in names for a in e.iterancestors()):
-                    gone.append(''.join(t.text or '' for t in e.iter(W + 'delText')))
-            gone = [g for g in gone if g.strip()]
-            if not gone or j >= len(work):
-                continue
-            wp = work[j]
-            acc = _para_accept(wp)
-            their_del = ''.join(t.text or '' for e in wp.iter(W + 'del') if e.get(W + 'author') not in names
-                                for t in e.iter(W + 'delText'))
-            restored = [g for g in gone if g in acc and g not in their_del]
-            if not restored:
-                continue
-            d = by_para.get(j) or {}
-            if wpos.get(id(wp)) in covered or d.get('external_comment'):
-                continue
-            F.append(_f('ROUND_RESTORE_NO_BUBBLE', 'החזרנו נוסח שלנו שהצד שכנגד מחק ("%s") בלי בועה: דחייה ב-Word אינה '
-                        'משאירה סימון, ולכן הבועה אומרת מה מחקו, מה החזרנו ולמה' % restored[0].strip()[:60], j))
-    return F, W_
-
-
-def check_contradictions(ext, accept_text, lang='he'):
-    F = []
-    all_b = '\n'.join(c['text'] for c in ext)
-    if (re.search(r'(טעות|שגיאה)[^.\n]{0,20}תרגום|תרגום (שגוי|לקוי|מכונה)|תורגם בטעות', all_b)
-            and re.search(r'הנוסח העברי[^.\n]{0,80}(המחייב|גובר)', accept_text + '\n' + all_b)):
-        F.append(_f('CON_CONTRADICTION', 'בועה טוענת לתרגום שגוי, ובאותו סבב הנוסח העברי נקבע מחייב או גובר'))
-    if (re.search(r'mistranslat|translation error|incorrectly translated', all_b, re.I)
-            and re.search(r'prevails over any[^.\n]{0,60}translation', accept_text, re.I)):
-        F.append(_f('CON_CONTRADICTION', 'בועה טוענת לתרגום שגוי, והנוסח החתום גובר על כל תרגום'))
-    if (re.search(r'מוגן ב(תנאי התשלום|הסכם)', all_b)
-            and re.search(r'(שלילת|ישלול)[^.\n]{0,10}עיכבון|לא יעכב[^.\n]{0,80}מחלוקת', accept_text)
-            and not re.search(r'רשאי להשהות|זכות (ה)?השהי', accept_text)):
-        F.append(_f('CON_CONTRADICTION', 'בועה נשענת על הגנת תשלום שהתגובה עצמה הסירה'))
-    if (re.search(r'protected by the payment terms', all_b, re.I) and re.search(r'shall not (withhold|suspend)', accept_text, re.I)
-            and not re.search(r'may suspend|right to suspend', accept_text, re.I)):
-        F.append(_f('CON_CONTRADICTION', 'בועה נשענת על הגנת תשלום שהתגובה עצמה הסירה'))
-    return F
-
-
+	A=text
+	for B in FORBIDDEN_UNLESS_CLAIM.finditer(A or''):
+		if B.group(0).lower().startswith('polic'):
+			C=max(A.rfind('.',0,B.start()),A.rfind(';',0,B.start()))+1;D=min([A for A in(A.find('.',B.end()),A.find(';',B.end()))if A>=0]or[len(A)])
+			if INSURANCE_POLICY.search(A[C:D])or INSURANCE_CONTEXT.search(A[C:D]):continue
+		return B
+PRACTICE_OPENING={'he':re.compile('^\\s*(אנחנו נוהגים|אנו נוהגים|כמקובל|בהתאם לנוהג|כנהוג)'),'en':re.compile('^\\s*(As is customary|In line with (our|market) practice|As standard|We (normally|usually|always) )',re.I)}
+ENTITY_NAME_EN_PLACEHOLDER='[Company registered English name]'
+OUR_PH=re.compile('\\[להשלים\\]|\\[to complete\\]|\\[to be completed\\]|\\[●\\]|\\[\\s*\\d[\\d,.\\s]*\\]|\\[[^\\]\\n]{1,40}\\]')
+UNDERSCORES=re.compile('_{3,}')
+THEIR_PH=re.compile('_{3,}|\\[[^\\]\\n]{0,40}\\]')
+COMPANY_NO={'he':re.compile('(ח\\.?\\s?פ\\.?|ע\\.?\\s?מ\\.?|מספר (?:חברה|תאגיד))\\s*:?\\s*\\[?\\s*(?P<num>\\d[\\d\\s\\-]{5,12}\\d)\\s*\\]?'),'en':re.compile('(company (?:number|no\\.?)|registration (?:number|no\\.?)|reg\\. no\\.)\\s*:?\\s*\\[?\\s*(?P<num>\\d[\\d\\s\\-]{5,12}\\d)\\s*\\]?',re.I)}
+SENT_END=re.compile('[.?!](\\s|$)')
+_REF_NUM='\\d{1,3}(?:\\.\\d{1,3})*[א-ת]?(?:\\s?\\([a-zA-Z0-9א-ת]{1,4}\\))*'
+CLAUSE_REF=re.compile("(?:(?<![א-ת])[ובלמהש]{0,2}(?:סעיפים|סעיף|ס\\'|תת-סעיף|נספחים|נספח|פרקים|פרק|תקנה|פסקה)|\\b(?:[Cc]lauses?|[Ss]ections?|[Pp]aragraphs?|[Pp]aras?\\.?|[Aa]nnex(?:es)?|[Ss]chedules?|[Aa]ppendi(?:x|ces)|[Aa]rticles?|[Ee]xhibits?))\\s*"+_REF_NUM+'(?:\\s*(?:,|ו-?|and|or|או|to|עד|-)\\s*'+_REF_NUM+')*')
+OWN_NOT_POSSESSIVE="(?<!\\bits )(?<!\\btheir )(?<!\\bour )(?<!\\byour )(?<!\\bhis )(?<!\\bher )(?<!\\bmy )(?<!'s )(?<!’s )(?<!\\bone's )\\bowns?\\b"
+NOT_COMPETITOR_HE='(?<!אינו )(?<!אינה )(?<!אינם )(?<!אין )(?<!ולא )(?<! לא )'
+NOT_COMPETITOR_EN='(?<!not a )(?<!not an )(?<!nor a )(?<!\\bno )(?<!non-)'
+_NOT_EXCL='לא','אחראי','אחראית','האחראי','האחראית','דעתו','דעתה','דעתם','דעתנו','הדעת','שיפוט','השיפוט','בעלים','הבעלים','סעד','הסעד','תרופה','התרופה','רכושו','רכושה','רכוש'
+EXCLUSIVE_HE='בלעדיות|'+''.join('(?<!%s )(?<!%s ה)'%(A,A)for A in _NOT_EXCL)+'(?<![א-ת])ה?בלעדי(?:ת|ים|ות)?(?![א-ת])'
+EXCLUSIVE_EN='\\bexclusivity\\b|(?<!non-)\\bexclusive\\b(?!\\s+(?:and\\s+\\w+\\s+)?(?:jurisdiction|remed(?:y|ies)|property|owner(?:ship)?|venue|forum|courts?))'
+FUNCTIONS={'מחיר ותמורה':('תמורה|מחיר|דמי (רישיון|שימוש|תחזוקה|ניהול)|תעריף|הוצאות','תמור|מחיר|דמי|תעריפ|תעריף|הוצא|עלות|תשלום|ישול|תשלמו','\\bfees?\\b|\\bprice|\\brent\\b|\\bcharges?\\b|consideration|expenses','fee|price|rent|charge|consideration|expens|cost',True),'מועד התשלום':('(ישולם|ישולמו|תשולם|משולמת|ישלם|לשלם)[^.\\n]{0,60}\\d+\\s*(יום|ימים|ימי עסקים)|שוטף\\s*(\\+|פלוס)|(תשלום|ישולם|ישולמו|תשולם|ישלם|לשלם|בתנאי)[:\\s]{1,3}שוטף(?![\\u05d0-\\u05ea])','\\d+\\s*(יום|ימים)|ימי עסקים|ימים|שוטף','(payable|paid|pay)[^.\\n]{0,60}\\d+\\s*(calendar |business )?days|net\\s*\\d+','\\d+\\s*(calendar |business )?days|\\bdays\\b|\\bnet\\b',True),'ריבית והצמדה':('ריבית|פיגורים|הצמדה','ריבית|פיגור|הצמד','interest|late (payment )?(fee|charge)|indexation','interest|late|index',True),'קיזוז ועיכבון':('לקזז|קיזוז|עיכבון|לעכב','קיז|לקזז|עיכבון|לעכב|עיכוב','set[- ]?off|withhold|\\blien\\b','set[- ]?off|withhold|lien',True),'מס':('מע"מ|מס ערך מוסף|ניכוי מס','מע"מ|מס','\\bVAT\\b|\\btax','VAT|tax',True),'הגבלת אחריות':('תקרה|מוגבלת לסכום|לא תעלה על|נזק עקיף|תוצאתי|לא יישא באחריות','תקר|הגבל|מוגבל|לא תעלה|עקיף|תוצאתי|אחריות|פטור','liabilit[^.\\n]{0,60}(limited|exceed|cap)|indirect|consequential|not be liable','cap|limit|liab|indirect|consequential',True),'שיפוי וערבות':('ישפה|שיפוי|ערבות|ערובה|דרישה ראשונה|בטוחה|פיקדון','שיפוי|ישפה|לשפות|ערבות|ערובה|דרישה|בטוחה|פיקדון','indemnif|guarantee|security deposit|first demand|letter of credit','indemn|guarant|deposit|demand|security',True),'ביטוח':('ביטוח|פוליסה','ביטוח|פוליס','insurance|policy of insurance','insur',True),'קניין רוחני':('קניין רוחני|זכויות יוצרים|בעלות|מרגע היווצרם|ימחה','קניין|זכויות|בעלות|שייכ|המח|שלו|שלכם','intellectual property|ownership|'+OWN_NOT_POSSESSIVE+'|assigns? all','intellectual|own|assign',True),'היקף הרישיון':('להעברה|רישיונות משנה|רישיון משנה|בלתי חוזר|לצמיתות|כלל-עולמי','להעביר|העבר|רישיונות משנה|רישיון משנה|בלתי חוזר|לצמיתות|כלל-עולמי','transferable|sublicens|irrevocable|perpetual|worldwide','transfer|sublicens|irrevocab|perpetual|worldwide',True),'סודיות':('ישמור בסוד|חובת (ה)?סודיות|ישמור על סודיות|לא יגלה','סוד','in confidence|confidentiality obligations|shall not disclose|keep[^.\\n]{0,30}confidential','confiden',False),'מידע אישי ואבטחת מידע':('מידע אישי|פרטיות|אבטחת (ה)?מידע|מחוץ ל(מדינה|ישראל)|לחו"ל','מידע אישי|פרטיות|אבטח|עיבוד|מחוץ ל|חו"ל|העבר','personal data|privacy|data processing|security incident|de-identif|outside the country','personal|privacy|data|security|de-identif|transfer|abroad|outside',False),'מחיקה והחזרה':('ימחק|ישמיד|מחיקת|השמדת|יחזיר','מחק|מחיק|השמד|יושמד|יוחזר|החזר','\\bdelete|\\bdestroy|\\breturn (or|all)','delet|destroy|return',True),'הגבלת תחרות ובלעדיות':(NOT_COMPETITOR_HE+'מתחרה|תחרות|'+EXCLUSIVE_HE,'מתחר|תחרות|בלעדי|ניגוד עניינים','\\bcompet(e|es|ing|ition)\\b|'+NOT_COMPETITOR_EN+'\\bcompetitors?\\b|'+EXCLUSIVE_EN,'compet|exclusiv|conflict',True),'איסור שידול':('ישדל|שידול','שידול|ישדל|לגייס','solicit','solicit',True),'הסבה וקבלני משנה':('להסב|הסבה|להמחות|המחאה|קבלני? משנה','הסב|המח|קבלנ','\\bassign|subcontract','assign|subcontract',True),'סיום ותקופה':('רשאי לסיים|לבטל את ההסכם|בתוקפו|הארכ|חידוש|הודעה מוקדמת','סיום|לסיים|לבטל|ביטול|תקופ|הארכ|חידוש|הודעה','terminat|renew|term of this|notice period|prior notice','terminat|renew|term|notice',True),'דין ושיפוט':('יחול (ה)?דין|סמכות (ה)?שיפוט|בוררות|סעד (זמני|דחוף)|צו מניעה','דין|שיפוט|בורר|סעד|בית משפט|בתי המשפט','governed by|jurisdiction|venue|arbitrat|injunctive|interim relief','law|jurisdiction|venue|court|arbitrat|relief',True),'שפה גוברת':('הנוסח (העברי|האנגלי)','נוסח|שפה|גובר','prevail|translation','prevail|translat',False),'טיב ורמת שירות':('אחריות ל(טיב|תקינות)|רמת (ה)?שירות|פיצוי מוסכם|קנס|כמות שהוא|במיומנות','טיב|תקינות|רמת|פיצוי|קנס|כמות שהוא|מיומנות|מקצועיות','warrant|"as is"|service level|liquidated damages|penalt','warrant|as is|service level|liquidated|penalt',True),'שימוש במידע וכלים':('בינה מלאכותית|לאימון','בינה מלאכותית|אימון|כלי','artificial intelligence|\\bAI\\b|\\btrain','artificial|(?-i:\\bAI\\b)|\\btrain|\\btool',True),'ביקורת ופיקוח':('ישתף פעולה|זכות ביקורת|לערוך ביקורת|לבקר את','מבקר|ביקורת|רשו|פיקוח|שיתוף פעולה|תשתפו','right to (audit|inspect)|shall cooperate|audit rights','audit|inspect|regulat|cooperat',True)}
+CONCEPTS_HE={B:(A[0],A[1],A[4])for(B,A)in FUNCTIONS.items()}
+CONCEPTS_EN={B:(A[2],A[3],A[4])for(B,A)in FUNCTIONS.items()}
+CONCEPTS=CONCEPTS_HE
+NUMERIC_FUNCTIONS='מועד התשלום',
+REASON={'he':re.compile('(?<![\\u05d0-\\u05ea])ו?(כדי|כי|שכן|לכן|בשל|בגלל|נועד\\w*|לפיכך|עקב|לאור|לנוכח|נוכח|בהינתן|שהרי|היות|לצורך|במטרה|מחמת|מטעמי)(?![\\u05d0-\\u05ea])|מאחר ש|מאחר ו|משום ש|מפני ש|הואיל ו|על כן|כך ש|כדי ש|מכיוון ש|מכיוון ו|על מנת|משום כך|בשל כך|מטעם זה|בשים לב ל|בהתחשב ב'),'en':re.compile('\\b(because|so that|since|in order to|to ensure|to avoid|so as to|given that|otherwise|therefore|hence|thus|as a result|for this reason|due to|owing to|in light of|in view of|which means|this means)\\b|\\bas (the|this|it|we|you|our|your|these|those|a|an|they|its|their|there|each|both)\\b|\\bgiven (the|its|their|our|this|these|those|how)\\b|(?:[,;]\\s*|^\\s*)so\\b(?!\\s+(?:far|long as|much|many)\\b)|(?<!\\bdo )(?<!\\bif )(?<!\\bor )(?<!\\bdone )(?<!\\bdoing )\\bso (the|that|it|we|you|they|each|both|any|its|their|our|your|neither|no|this|these|those|a|an)\\b',re.I)}
+REASON_LEAD={'he':re.compile('^\\s*(זאת\\s+)?(כדי|כי|מאחר|משום|מפני|הואיל|שכן|לכן|הסיבה|היות|מכיוון|לאור|נוכח|לנוכח|בהינתן|לפיכך|על מנת)'),'en':re.compile('^\\s*(This is |That is |This )?(because|so that|since|in order|to ensure|the reason|given|as a result|for this reason|therefore|hence|this means|otherwise)',re.I)}
+RIGHT_WORDS={'he':'רשאי|זכאי|תהיה זכות','en':'\\bmay\\b|entitled|right to'}
+DELETION_CLAIM={'he':re.compile('^\\s*(מחקנו|הסרנו)'),'en':re.compile('^\\s*We (have )?(deleted|removed)',re.I)}
+KNOWN_CLAIM={'he':re.compile('ידוע(ה|ים|ות)? מראש|סכום קבוע מראש'),'en':re.compile('known in advance|fixed in advance|known up front|a fixed amount',re.I)}
+CAP_RX={'he':('אחריות','מוגבלת|תקרה|לא תעלה|לא יעלה','(ה)?(תמורה|מחיר|דמי \\S+) (ה)?(כוללת|כולל|מוסכמת|מוסכם)','\\d[\\d,]*\\s*(ש"ח|₪|שקלים|אלף|דולר|אירו)|(הנקוב|הנקובה|הקבוע|הקבועה)[^.\\n]{0,15}בסעיף'),'en':('liabilit','limited to|shall not exceed|capped at','(total|agreed|aggregate) (fees|consideration|contract value|price|rent|charges)','(\\$|USD|NIS|ILS|EUR|€|£)\\s?\\d|\\d[\\d,]*\\s*(USD|NIS|ILS|EUR)|(set out|stated|specified) in (Section|Clause)')}
+INTERNAL_AUTHORS=tuple(A for A in(dt.INTERNAL_AUTHOR,getattr(dt,'INTERNAL_AUTHOR_EN',None),'Internal, delete before sending')if A)
+def _f(code,message,where=None):return{'code':code,'message':message,'where':where}
+def _sentences(text):return[A.strip()for A in re.split('(?<=[.?!;])\\s+',text)if A.strip()]
+def _parse_local(s):return _dt.datetime.strptime(s,dt.DATE_FMT_LOCAL if not s.endswith('Z')else dt.DATE_FMT)
+def concepts_for(lang):return CONCEPTS_EN if lang=='en'else CONCEPTS_HE
+def check_entity_name_en(profile,lang,mode,accept_text=''):
+	B=profile
+	if lang!='en'or not B.get('organization_name')or B.get('organization_name_en'):return[],[]
+	A=ENTITY_NAME_EN_PLACEHOLDER in(accept_text or'');D='העותק למשלוח אינו מופק עד שהשם נמסר ונשמר בפרופיל אצל סוכן ההקמה, וקובץ העבודה מופק מחדש מאותן הכרעות'if A else'הנוסח שלנו אינו משתמש בשם, ולכן העותק למשלוח מופק; כדאי לשמור את השם בפרופיל לסבב הבא';C=_f('ENTITY_NAME_EN_MISSING','הסכם באנגלית, ובפרופיל אין שם רשום באנגלית לחברה (organization_name_en)%s. %s. השם העברי אינו מתועתק ואינו מתורגם'%('; בנוסח יש מציין מקום %s'%ENTITY_NAME_EN_PLACEHOLDER if A else'',D));return([C],[])if mode=='send'and A else([],[C])
+INTERNAL_MARK=re.compile('sources annex|נספח (?:ה)?מקורות|remove before sending|delete before sending|למחיקה לפני (?:ה)?משלוח|(?<![א-ת])לא למשלוח|not for sending|internal only|for internal use|לשימוש פנימי בלבד|טיוטת עבודה פנימית|internal work(?:ing)? draft|^\\s*(?:internal|פנימי)\\s*[.:]?\\s*$|:\\s*internal\\s*\\.',re.I|re.M)
+PLAYBOOK_MENTION=re.compile('(?<![א-ת])[ובלמהש]{0,2}פלייבוק|\\bplaybooks?\\b|מדיניות(?: ה)?(?:חוזית|פנימית)|\\bour (?:internal |contracting )?polic(?:y|ies)\\b|\\binternal polic(?:y|ies)\\b',re.I)
+def check_internal_leak(parts,root,comments,mode,ext_ids=()):
+	E=parts;A=mode;F,G=[],[];B=[('גוף',A,dt.para_text(B))for(A,B)in enumerate(dt.body_paragraphs(root))]
+	if A=='send':
+		for C in E:
+			if re.match('word/(header|footer)\\d*\\.xml$',C):
+				try:J=etree.fromstring(E[C])
+				except etree.XMLSyntaxError:continue
+				B.append(('כותרת',C,''.join(A.text or''for A in J.iter(W+'t'))))
+	for D in comments:
+		if A=='send'or D['id']in set(ext_ids):B.append(('בועה',D['id'],D['text']))
+	for(K,L,H)in B:
+		I=INTERNAL_MARK.search(H or'')or PLAYBOOK_MENTION.search(H or'')
+		if I:(F if A=='send'else G).append(_f('INTERNAL_LEAK','תוכן פנימי ב%s שהצד השני רואה: "%s"'%(K,I.group(0).strip()[:60]),L))
+	return F,G
+def check_lawyer_name_en(profile,lang,mode):
+	A=profile;C=A.get('lawyer_name')or''
+	if lang!='en'or A.get('lawyer_name_en')or not re.search('[\u0590-\u05ff]',C):return[],[]
+	B=_f('LAWYER_NAME_EN_MISSING','הסכם באנגלית, ובפרופיל אין שם באנגלית לעורך הדין (lawyer_name_en): הבועות חתומות בשם העברי. העותק למשלוח אינו מופק עד שהשם נשמר אצל סוכן ההקמה');return([B],[])if mode=='send'else([],[B])
+def author_for(profile,lang):
+	A=profile
+	if lang=='en'and A.get('lawyer_name_en'):return A['lawyer_name_en']
+	return A['lawyer_name']
+def initials_for(profile,lang='he'):
+	A=profile
+	if A.get('lawyer_initials'):return A['lawyer_initials']
+	B=[A for A in author_for(A,lang).replace('"',' ').split()if A and A[0].isalpha()];return''.join(A[0]for A in B[:3]).upper()or'X'
+def check_package(parts,root,profile,received_comment_ids,window,work_path=None,author=None,received_authors=()):
+	M=work_path;L=profile;F=root;D=parts;C=author;A,N=[],{};C=C or L['lawyer_name'];R=etree.fromstring(D['word/settings.xml'])
+	if R.find(W+'trackRevisions')is None:A.append(_f('PKG_TRACK_REVISIONS','w:trackRevisions חסר ב-settings.xml'))
+	if R.find(W+'trackChanges')is not None:A.append(_f('PKG_TRACK_CHANGES_INVALID','w:trackChanges אינו רכיב בסכמה'))
+	for(H,b)in D.items():
+		if not H.endswith('.xml')or not H.startswith('word/'):continue
+		try:S=etree.fromstring(b)
+		except etree.XMLSyntaxError as I:A.append(_f('PKG_XML','XML פגום: %s'%I,H));continue
+		c=(S.get(dt.MC_IGNORABLE)or'').split();T=[A for A in c if A not in S.nsmap]
+		if T:A.append(_f('PKG_NAMESPACE_UNDECLARED','קידומות ב-mc:Ignorable שאינן מוצהרות: %s'%T,H))
+	U=[A for A in F.iter(W+'ins',W+'del')];J=[A for A in U if A.get(W+'author')==C];V={A.get(W+'author')for A in U}-{C}-set(received_authors or())
+	if V:A.append(_f('PKG_AUTHOR','סימוני מעקב במחבר אחר: %s'%sorted(A for A in V if A)))
+	X,d=window;O=None
+	for I in J:
+		E,G=I.get(W+'date'),I.get(dt.DATE_UTC_ATTR)
+		if not E or not re.fullmatch('\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d',E):A.append(_f('PKG_DATE_FORMAT','w:date בתבנית לא נכונה (שעה מקומית בלי Z): %r'%E));break
+		if not G or not re.fullmatch('\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\dZ',G):A.append(_f('PKG_DATE_UTC','w16du:dateUtc חסר או לא תקין: %r'%G));break
+		Y=_parse_local(E)
+		if not X<=Y<=d:A.append(_f('PKG_DATE_RANGE','תאריך שאינו של ההרצה: %s'%E));break
+		P=Y-_parse_local(G)
+		if O is None:O=P
+		e=_dt.datetime.now().astimezone().utcoffset()
+		if abs((P-e).total_seconds())>60 or P!=O:A.append(_f('PKG_DATE_UTC','הפרש בין w:date ל-dateUtc אינו הפרש השעון המקומי: %s / %s'%(E,G)));break
+	N['revisions']=len(J);N['distinct_dates']=len({A.get(W+'date')for A in J});f=etree.fromstring(D[dt.COMMENTS_PART])if dt.COMMENTS_PART in D else None;g=dt.areo_paragraphs(F,dt._areo_comment_ids(f));Z=F.getroottree();i={Z.getpath(A)for A in g}
+	def h(h):A=next(h.iterancestors(W+'p'),None);return A is not None and Z.getpath(A)in i and h.get(W+'val')==dt.AREO_HIGHLIGHT
+	a=[B for A in J if local_tag(A)=='ins'for B in A.iter(W+'highlight')if not h(B)]
+	if a:A.append(_f('PKG_HIGHLIGHT','צבע בטקסט שהוכנס: %d'%len(a)))
+	K=D.get('docProps/core.xml',b'').decode('utf-8');j=D.get('docProps/app.xml',b'').decode('utf-8')
+	if'python-docx'in K+j:A.append(_f('PKG_METADATA','"python-docx" במאפייני הקובץ'))
+	if dt.esc(C)not in K and C not in K:A.append(_f('PKG_METADATA','המחבר במאפייני הקובץ אינו עורך הדין מהפרופיל'))
+	for Q in re.finditer('<dcterms:(created|modified)[^>]*>([^<]+)<',K):
+		try:
+			k=_dt.datetime.strptime(Q.group(2)[:19],'%Y-%m-%dT%H:%M:%S')
+			if k<X-_dt.timedelta(days=1):A.append(_f('PKG_METADATA','תאריך %s במאפיינים קודם להרצה: %s'%(Q.group(1),Q.group(2))))
+		except ValueError:pass
+	if dt.audit_schema_order(F):A.append(_f('PKG_SCHEMA_ORDER','סדר סכמה שגוי ב-%d מכלים'%dt.audit_schema_order(F)))
+	if M and len(os.path.abspath(M))>paths.PATH_LIMIT:A.append(_f('PKG_PATH_LENGTH','נתיב של %d תווים (הגבול %d)'%(len(os.path.abspath(M)),paths.PATH_LIMIT)))
+	l=dt.read_comments(D)
+	for B in l:
+		if B['id']in received_comment_ids:continue
+		if B['author']!=C and B['author']not in INTERNAL_AUTHORS:A.append(_f('BUB_UNKNOWN_AUTHOR','בועה במחבר לא מוכר: %s'%B['author'],B['id']))
+		if B['author']==C and L.get('lawyer_initials')and B['initials']!=L['lawyer_initials']:A.append(_f('BUB_INITIALS','ראשי תיבות שאינם מהפרופיל: %s'%B['initials'],B['id']))
+	return A,N
+def local_tag(e):return dt.local(e.tag)
+def check_bubbles(ext,accept_text,state,reject_text='',lang='he'):
+	D=state;A=[];N=accept_text+'\n'+reject_text;O=bool((D or{}).get('policy_claim_allowed'));H=list((D or{}).get('deal_context',{}).get('facts',[]))if D else[];H+=list(((D or{}).get('meta')or{}).get('deal_context',{}).get('facts',[]))if D else[];P=[str(A.get('fact'))for A in H if A.get('disclosure')in('drafting_only','internal_only')];G={}
+	for C in ext:
+		B=C['text'];E=FORBIDDEN_ALWAYS.search(B)
+		if E:A.append(_f('BUB_FORBIDDEN','מונח פנימי בבועה: "%s"'%E.group(0),C['id']))
+		E=None if O else policy_claim_term(B)
+		if E:A.append(_f('BUB_FORBIDDEN','"%s" בבועה בלי טענת מדיניות מאושרת'%E.group(0),C['id']))
+		I=case_law_in_text(B)
+		if I:A.append(_f('BUB_CASE_LAW','הפניה לפסיקה בבועה: %s'%'; '.join(I[:3]),C['id']))
+		if LONG_DASH.search(B):A.append(_f('BUB_LONG_DASH','מקף ארוך בבועה',C['id']))
+		if len(SENT_END.findall(B+' '))>5:A.append(_f('BUB_SENTENCES','יותר מחמישה משפטים',C['id']))
+		if PRACTICE_OPENING[lang].search(B)or PRACTICE_OPENING['he'].search(B):A.append(_f('BUB_PRACTICE_OPENING','בועה שנפתחת במשפט נוהג',C['id']))
+		for J in re.findall('\\d[\\d,]*',CLAUSE_REF.sub(' ',B)):
+			if J.strip(',')not in N:A.append(_f('BUB_NUMBER_NOT_IN_BODY','המספר %s אינו בנוסח'%J,C['id']))
+		for K in P:
+			if K and K in B:A.append(_f('BUB_DISCLOSURE','עובדה שסווגה לנוסח בלבד או פנימית מופיעה בבועה',C['id']))
+		F=B.split();L=' '.join(F[:3]if F[:1]and F[0].lower()in('we','אנו','אנחנו')else F[:2]);G[L]=G.get(L,0)+1
+	Q=max(2,len(ext)//3);M={B:A for(B,A)in G.items()if A>Q}
+	if M:A.append(_f('BUB_REPEATED_OPENER','פתיח זהה ביותר משליש מהבועות: %s'%M))
+	return A
+def _para_accept(p):return''.join(dt._node_text(A)for(A,B)in dt._text_nodes(p)if dt.local(A.tag)!='delText'and'del'not in B)
+def _tied_reason(sents,idx,lang):
+	B=idx;A=sents
+	if REASON[lang].search(A[B]):return True
+	return B+1<len(A)and bool(REASON_LEAD[lang].search(A[B+1]))
+def _changed_sentences(p,author):
+	C=[]
+	for A in p.iter(W+'ins'):
+		if A.getparent()is not None and dt.local(A.getparent().tag)=='rPr'or A.get(W+'author')!=author:continue
+		B=''.join(A.text or''for A in A.iter(W+'t')).strip()
+		if len(B)>=2:C.append(B);C.extend(A.strip()for A in _sentences(B)if len(A.strip())>=2 and A.strip()!=B)
+	D=_para_accept(p);return'\n'.join(A for A in _sentences(D)if any(B in A for B in C))
+def changed_paragraphs(root,author):
+	B=author;E=[]
+	for(F,A)in enumerate(dt.body_paragraphs(root)):
+		C,D=dt.revision_text(A,'ins',B),dt.revision_text(A,'del',B)
+		if C.strip()or D.strip():
+			if _is_heading(A):C,D='',''
+			E.append((F,A,C,D,_changed_sentences(A,B)))
+	return E
+def _is_heading(p):A=_para_accept(p).strip();return dt._mark(p)=='ins'and 0<len(A)<60 and not re.search('[.;:]',A)
+def _strip_removed(dele,texts):
+	A=dele
+	for C in texts or():
+		for B in(C,C.strip()):
+			if B and B in A:A=A.replace(B,' ');break
+	return A
+def check_coverage(root,ext_by_para,author,lang='he',removed=None):
+	C=[];E=concepts_for(lang)
+	for(A,H,I,B,J)in changed_paragraphs(root,author):
+		B=_strip_removed(B,(removed or{}).get(A));F=' '.join(ext_by_para.get(A,[]));D=[C for(C,(A,D,E))in E.items()if re.search(A,I)or re.search(A,B)or C in NUMERIC_FUNCTIONS and re.search(A,J)]
+		if not F:K=', '.join(D)if D else'שינוי טכני (%s)'%(_para_accept(H)or B)[:40];C.append(_f('COV_CHANGE_WITHOUT_BUBBLE','שינוי בלי בועה חיצונית: %s'%K,A));continue
+		G=[A for A in D if not re.search(E[A][1],F,re.I if lang=='en'else 0)]
+		if G:C.append(_f('COV_UNCOVERED_CHANGE','הבועה אינה מתארת: %s'%', '.join(G),A))
+	return C
+def check_bubble_why(root,ext_by_para,author,accept_text,lang='he',context=None,removed=None):
+	A=lang;D=[];H=concepts_for(A);B=re.I if A=='en'else 0
+	for(C,I,O,J,P)in changed_paragraphs(root,author):
+		K=ext_by_para.get(C,[])
+		if not K:continue
+		F=[B for A in K for B in _sentences(A)];L=_strip_removed(J,(removed or{}).get(C));M=[B for(B,(A,D,C))in H.items()if C and(re.search(A,O)or re.search(A,L)or B in NUMERIC_FUNCTIONS and re.search(A,P))]
+		if dt._mark(I)in('del','both')and re.search(RIGHT_WORDS[A],L,B):M.append('__deleted_right__')
+		for E in M:
+			Q='מחקנו|הסרנו|נמחק|deleted|removed|struck'if E=='__deleted_right__'else H[E][1];N=[A for(A,C)in enumerate(F)if re.search(Q,C,B)]
+			if not N:continue
+			if not any(_tied_reason(F,B,A)for B in N):R='זכות שלהם שנמחקה'if E=='__deleted_right__'else E;D.append(_f('BUB_WHY_MISSING','אין משפט נימוק ל: %s'%R,C))
+		S=_para_accept(I);T,U,V,W=CAP_RX[A]
+		for G in F:
+			if KNOWN_CLAIM[A].search(G)and re.search('תקר|cap|limit',G,B):
+				X=[A for(A,C,C)in gap_checks.sentences(S)if re.search(T,A,B)and re.search(U,A,B)]
+				if any(re.search(V,A,B)and not re.search(W,A,B)for A in X):D.append(_f('BUB_CLAIM_FALSE','הבועה אומרת שבסיס התקרה ידוע מראש, והנוסח קובע רק תקרה ולא סכום',C))
+			if DELETION_CLAIM[A].search(G)and not J.strip():D.append(_f('BUB_CLAIM_FALSE','הבועה אומרת שמחקנו, ובפסקה לא נמחק דבר',C))
+	return D
+HEB_RUN=re.compile('[\u0590-\u05ff](?:[\u0590-\u05ff"\'׳״\\-. ]*[\u0590-\u05ff])?')
+def check_language(root,ext,author,lang,received_text):
+	B=[]
+	if lang!='en':return B
+	E=(received_text or'').translate(dt.QUOTE_FOLD)
+	def C(text):return[A.group(0)for A in HEB_RUN.finditer(text or'')if A.group(0).translate(dt.QUOTE_FOLD)not in E]
+	for(F,G)in enumerate(dt.body_paragraphs(root)):
+		A=C(dt.revision_text(G,'ins',author))
+		if A:B.append(_f('LANG_HEBREW_IN_EN','אותיות עבריות בנוסח שהכנסנו להסכם באנגלית: "%s". בהסכם באנגלית הישות נכתבת בשם הרשום באנגלית (organization_name_en בפרופיל)'%A[0][:40],F))
+	for D in ext:
+		A=C(D['text'])
+		if A:B.append(_f('LANG_HEBREW_IN_EN','אותיות עבריות בבועה בהסכם באנגלית: "%s"'%A[0][:40],D['id']))
+	return B
+BUBBLE_FAIL_FACTOR=1.5
+BUBBLE_WORDS={B:(A['max_words'],int(A['max_words']*BUBBLE_FAIL_FACTOR))for(B,A)in ROUND_MATRIX.items()}
+BUBBLE_SENTENCES={B:(A['max_sentences'],int(A['max_sentences']*BUBBLE_FAIL_FACTOR))for(B,A)in ROUND_MATRIX.items()}
+PASSIVE={'en':re.compile('\\b(?:is|are|was|were|has been|have been)\\s+(?:now\\s+)?(?:replaced|deleted|removed|amended|added|inserted|changed|limited|extended|reduced|qualified|completed|incorporated)\\b|\\bthe (?:revised |amended )?(?:clause|section|provision|paragraph|item|schedule|agreement) now (?:provides|states|covers|requires|says|includes)\\b|\\bunder the revised (?:clause|section)\\b|\\bnow replaces?\\b',re.I),'he':re.compile('(?<![א-ת])(?:הוחלפ(?:ה|ו)?|הוחלף|נמחק(?:ה|ו)?|תוקנ(?:ה|ו)|תוקן|הוסף|הוספה|הושלמ(?:ה|ו)|הושלם)(?![א-ת])|הסעיף (?:קובע|כולל|מחייב) כעת')}
+ACTIVE={'en':re.compile('\\b[Ww]e\\b'),'he':re.compile('(?<![א-ת])ו?(?:שינינו|הוספנו|מחקנו|השארנו|החלפנו|ביקשנו|צמצמנו|הרחבנו|קיבלנו|תיקנו|השלמנו|הסרנו|אנו|אנחנו|נבקש|נשמח|נציע)(?![א-ת])')}
+def _round_of(state,decisions=None):
+	B=decisions;A=(B or{}).get('round')if isinstance(B,dict)else None;A=A or((state or{}).get('meta')or{}).get('round_number')
+	try:return int(A)if A is not None else None
+	except(TypeError,ValueError):return
+def round_stage(state,decisions=None):
+	A=state or{};B=A.get('meta')or{};C=_round_of(A,decisions)
+	if C:return SB.stage_for_round(C)
+	D=B.get('round_stage')or B.get('stage')or A.get('stage');return D if D in BUBBLE_WORDS else'opening'
+def check_bubble_style(ext,lang,stage):
+	A=stage;G,F=[],[];A=A if A in BUBBLE_WORDS else'opening';H,I=BUBBLE_WORDS[A];J,K=BUBBLE_SENTENCES[A]
+	for C in ext:
+		B=C['text']or'';L=re.sub(REPLACES_SENT,' ',B,flags=re.I).strip()or B;D,E=len(L.split()),qb_sentences(L)
+		if D>I or E>K:G.append(_f('BUB_LENGTH','בועה של %d מילים ו-%d משפטים (הגבול בשלב %s: %d מילים, %d משפטים). לקצר: מה שינינו, למה, ומה נשאר'%(D,E,A,I,K),C['id']))
+		elif D>H or E>J:F.append(_f('BUB_LENGTH','בועה של %d מילים ו-%d משפטים (התקרה בשלב %s: %d מילים, %d משפטים)'%(D,E,A,H,J),C['id']))
+		M='en'if len(re.findall('[A-Za-z]',B))>len(re.findall('[א-ת]',B))else'he';N=PASSIVE[M].search(B)
+		if N and not ACTIVE[M].search(B):F.append(_f('BUB_PASSIVE_VOICE','בועה בגוף שלישי סביל ("%s"). קול פעיל: "We have replaced..." / "החלפנו..."'%N.group(0),C['id']))
+	return G,F
+GONE_CLAIM={'en':[re.compile('(?:^|[.;]\\s*)(?P<x>[^.;]{3,140}?)\\s+(?:is|are)\\s+no longer\\s+(?:required|needed|necessary|applicable|a condition)',re.I),re.compile('\\bno longer requires?\\s+(?P<x>[^.;,]{3,100})',re.I),re.compile('\\b(?:removed|deleted|struck out|struck)\\s+(?:the (?:words?|phrase|reference to|requirement (?:for|of|that))\\s+)?(?P<x>"[^"]{3,100}"|“[^”]{3,100}”)',re.I),re.compile('(?P<x>"[^"]{3,100}"|“[^”]{3,100}”)\\s+(?:has|have) been (?:removed|deleted)',re.I)],'he':[re.compile('(?P<x>[^.;]{3,100}?)\\s+(?:אינה|אינו|אינם|אינן)\\s+נדרש(?:ת|ים|ות)?\\s+עוד'),re.compile('(?:מחקנו|הסרנו)\\s+את\\s+(?:הדרישה ל|המילים\\s+)?(?P<x>"[^"]{3,100}"|״[^״]{3,100}״|[^.;,]{3,60})')]}
+APPROVAL={'en':re.compile("(?i:consent|approval|authori[sz]ation|agreement)\\s+of\\s+(?:the\\s+)?(?P<p>[A-Z][\\w-]+(?: [A-Z][\\w-]+)?)|(?P<q>[A-Z][\\w-]+)\\'s\\s+(?i:prior\\s+)?(?i:written\\s+)?(?i:consent|approval)"),'he':re.compile('(?:הסכמת|אישור|הסכמתה של|אישורו של)\\s+(?:ה)?(?P<p>[א-ת]{2,})')}
+LIST_LABEL=re.compile('^\\s*(\\(?[ivx]{1,4}\\)|\\(?[a-z]{1,2}\\)|\\(?\\d{1,2}\\)|\\(?[א-י]\\))\\s',re.I)
+def _approval_rx(party,lang):
+	A=re.escape(party)
+	if lang=='he':return re.compile('(?:הסכמת|אישור|לפי שיקול דעת|כפי שי?קבע|כפי שתקבע|להנחת דעת)\\s+(?:של\\s+)?ה?'+A)
+	return re.compile('(?:consent|approval|authori[sz]ation)\\s+of\\s+(?:the\\s+)?'+A+'|'+A+"\\'s\\s+(?:prior\\s+)?(?:written\\s+)?(?:consent|approval)|(?:as\\s+)?determined\\s+by\\s+(?:the\\s+)?"+A+'|(?:sole\\s+)?discretion\\s+of\\s+(?:the\\s+)?'+A+'|approved\\s+by\\s+(?:the\\s+)?'+A+'|to\\s+the\\s+satisfaction\\s+of\\s+(?:the\\s+)?'+A,re.I)
+def _scope(acc,first,last):
+	B=acc;A=last;D=list(range(first,A+1))
+	if B[A].rstrip().endswith(':'):
+		E=set()
+		for F in range(A+1,min(len(B),A+16)):
+			C=LIST_LABEL.match(B[F])
+			if not C or C.group(1).strip('()').lower()in E:break
+			E.add(C.group(1).strip('()').lower());D.append(F)
+	return D
+def check_bubble_text_match(root,ext,spans,lang):
+	G=spans;H=[];D=[_para_accept(A)for A in dt.body_paragraphs(root)];I=lambda s:_norm_ws(s).translate(dt.QUOTE_FOLD).lower()
+	for B in ext:
+		if B['id']not in G:continue
+		J,K=G[B['id']];N=I(' '.join(D[A]for A in _scope(D,J,K)));O=' '.join(D[A]for A in _scope(D,J,K));E='en'if len(re.findall('[A-Za-z]',B['text']))>len(re.findall('[א-ת]',B['text']))else'he'
+		for P in GONE_CLAIM[E]:
+			C=None
+			for Q in P.finditer(B['text']):
+				A=Q.group('x').strip().strip('"“”״');A=re.sub('^(?:the requirement (?:for|of|that)|the reference to|הדרישה ל)\\s*','',A,flags=re.I)
+				if len(A)>=3 and I(A)in N:C='הביטוי "%s" נשאר בנוסח'%A[:60]
+				else:
+					F=APPROVAL[E].search(A);L=F and(F.group('p')or F.groupdict().get('q'))
+					if L:
+						M=_approval_rx(L.strip(),E).search(O)
+						if M:C='הבועה אומרת ש-"%s" כבר אינו נדרש, ובנוסח נשאר "%s"'%(A[:50],M.group(0))
+				if C:break
+			if C:H.append(_f('BUB_TEXT_MISMATCH','הבועה מתארת תוצאה שהנוסח אינו נותן: %s. לתקן את הנוסח או את הבועה'%C,B['id']));break
+	return H
+MODIFYING_OPS='replace','replace_span','delete_paragraph','insert_paragraph'
+REOPEN_KINDS='reopen','reopened','reopen_instruction','withdraw','withdraw_concession'
+REOPEN_WHAT='פתיחה מחדש בהוראת עורך הדין'
+LAST_OFFERED='last_fallback','fallback_2','reserve','last'
+NO_TEXT=re.compile('^\\s*(?:אין|none|n/?a)\\b',re.I)
+def _is_reopen(h):return bool(h.get('reopen')or any(h.get(A)in REOPEN_KINDS for A in('kind','type','action'))or str(h.get('what')or'').startswith(REOPEN_WHAT))
+def _instructed(cl,d,st,cid,since=None):
+	B=since;B=B or 0
+	for C in(cl or{}).get('reopen_log')or():
+		if isinstance(C,dict)and C.get('recorded_at')and int(C.get('round')or 0)>=B:return True
+	if(cl or{}).get('reopen_instruction')or(d or{}).get('reopen_instruction'):return True
+	for D in(cl or{}).get('concession_history')or():
+		if isinstance(D,dict)and _is_reopen(D)and int(D.get('round')or 0)>=B:return True
+	for A in(st or{}).get('user_decisions')or():
+		if cid not in(A.get('applies_to')or())or A.get('answer_kind')!='explicit':continue
+		if str(A.get('id')or'').startswith('reopen-%s-'%cid)or A.get('reopen')or A.get('kind')in REOPEN_KINDS or A.get('situation')in REOPEN_KINDS:return True
+	return False
+def _agreed(st,cl):
+	if not isinstance(cl.get('closed_in_round'),int)or cl.get('closed_basis')not in SB.CLOSED_BASES:return False
+	return not SB.premature_closed(st,cl)
+def _delivered_concessions(st,clauses,rnd):
+	C={}
+	def D(cid,r):
+		A=cid
+		if A and isinstance(r,int)and r<rnd:C[A]=min(C.get(A,r),r)
+	for B in st.get('deliberate_concessions')or():
+		if isinstance(B,dict)and B.get('clause_ref')and not B.get('reopened_in_round'):D(B['clause_ref'],B.get('delivered_in_round'))
+	for(G,E)in clauses.items():
+		F=E.get('accepted_in_round')
+		if isinstance(F,int)and SB.delivered(st,F)and not _agreed(st,E):D(G,F)
+		for A in E.get('concession_history')or():
+			if isinstance(A,dict)and A.get('who')=='us'and not _is_reopen(A)and isinstance(A.get('round'),int)and SB.delivered(st,A['round']):D(G,A['round'])
+	return C
+def _sent_norm(s):return re.sub('\\s+',' ',(s or'').translate(dt.QUOTE_FOLD)).strip().lower()
+def check_round_rules(state,decisions,rroot,root,authors,spans,our_ids,prev_bubbles=(),mode='work'):
+	R=authors;Q=rroot;J=decisions;K,L=[],[];C=state or{};g=C.get('meta')or{};G=J.get('decisions',[])if isinstance(J,dict)else J or[];D=_round_of(C,J)or 1;H={A.get('clause_id'):A for A in C.get('clauses')or()if isinstance(A,dict)};S=_delivered_concessions(C,H,D);M={A for A in R or()if A};T=dt.body_paragraphs(Q)if Q is not None else[]
+	def h(d,cl,cid):
+		A=d.get('para')
+		if any(isinstance(B,dict)and int(B.get('round')or 0)==D and(B.get('clause_id')==cid or isinstance(A,int)and B.get('received_para')==A)for B in C.get('silent_changes')or()):return True
+		if(cl.get('reopened_by_counterparty')or{}).get('round')==D or any(isinstance(A,dict)and A.get('by')=='them'and A.get('round')==D for A in cl.get('rejections')or()):return True
+		return isinstance(A,int)and 0<=A<len(T)and any(A.get(W+'author')not in M for A in T[A].iter(W+'ins',W+'del'))
+	F=(g.get('deal_context')or{}).get('stance');F=(F.get('value')if isinstance(F,dict)else F)or'playbook';i={A.get('id'):A for A in G}
+	def j(d):
+		if not(d.get('conforming')and d.get('conforms_to')):return False
+		D=d['conforms_to'];A=i.get(D)
+		if A is not None and A is not d:return A.get('op')in MODIFYING_OPS+('comment_only',)
+		B=H.get(D);return bool(B)and B.get('status')not in('CLOSED',)and not _agreed(C,B)
+	for A in G:
+		E=A.get('clause_id')or A.get('id');B=H.get(E)or{};b=A.get('op')in MODIFYING_OPS and not h(A,B,E)and not j(A);U=B.get('closed_in_round')
+		if b and _agreed(C,B)and U<=D and not _instructed(B,A,C,E,U):K.append(_f('ROUND_REOPEN_CLOSED','ההכרעה משנה נוסח בסעיף שהוסכם בסבב %d, בלי הוראה רשומה לפתוח אותו מחדש. פתיחה מחדש רק בהוראת עורך הדין: negotiation_state.py reopen --clause %s --instruction "<ההוראה>" --reason "<הסיבה>" (reopen_log, עם התאריך)'%(U,E),A.get('id')))
+		elif b and E in S and not _instructed(B,A,C,E,S[E]):K.append(_f('ROUND_CONCESSION_WITHDRAWN','ההכרעה משנה נוסח בסעיף שוויתרנו עליו, והוויתור נמסר לצד השני בסבב %d: ויתור שנמסר אינו נלקח בחזרה בלי הוראה רשומה של עורך הדין (negotiation_state.py reopen)'%S[E],A.get('id')))
+		if D==1 and F in('playbook','stricter'):
+			N=[]
+			for V in(A,B):
+				N=[A for A in[V.get('fallback_1'),V.get('fallback_2')]+list(V.get('reserve')or())if isinstance(A,str)and A.strip()and not NO_TEXT.match(A)]
+				if N:break
+			X=N[-1]if N else None;k=_sent_norm(' '.join(str(A.get(B)or'')for B in('new','new_text','text')));l=A.get('offered_now')or B.get('offered_now')
+			if A.get('at_last_fallback')or l in LAST_OFFERED or X and len(X)>=20 and _sent_norm(X)in k:L.append(_f('ROUND_LAST_FALLBACK_EARLY','נוסח הנסיגה האחרון מוצע כבר בסבב 1, בגישת %s: לא נשאר מרווח לסבבים הבאים'%F,A.get('id')))
+	Y=list(prev_bubbles or())
+	for B in H.values():
+		for m in('external_comment_history','previous_external_comments'):Y+=[A if isinstance(A,str)else(A or{}).get('text','')for A in B.get(m)or()]
+	c={_sent_norm(A)for B in Y for A in _sentences(B or'')if len(A.split())>=8}
+	if D>1:
+		from orchestrator.question_batch import rejected_argument_findings as n
+		for A in G:
+			for Z in n(A,previous=Y):L.append(_f('BUB_REPEATS_REJECTED_ARGUMENT'if Z['code']=='ROUND_REPEATS_REJECTED_ARGUMENT'else Z['code'],Z['message'],A.get('id')))
+	if c and D>1:
+		for A in G:
+			o=A.get('external_comment')or'';d=[A for A in _sentences(o)if len(A.split())>=8 and _sent_norm(A)in c]
+			if d:B=H.get(A.get('clause_id')or A.get('id'))or{};p=' (ההצעה נדחתה בסבב הקודם)'if any(A in SB.THEIR_REJECTION for A in B.get('last_round_changes')or())else'';L.append(_f('BUB_REPEATS_REJECTED','הבועה חוזרת מילה במילה על נימוק מסבב קודם%s: "%s". נימוק שנדחה אינו חוזר בלי חידוש: עונים לנימוק שלהם, או מוסיפים נימוק חדש'%(p,d[0][:80]),A.get('id')))
+	if Q is not None:
+		e=_received_groups(root,R[0])if R else[];q={id(B):A for(A,B)in enumerate(dt.body_paragraphs(root))};r={D for(A,(B,C))in spans.items()if A in our_ids for D in range(B,C+1)};s={A.get('para'):A for A in G if isinstance(A.get('para'),int)}
+		for(O,t)in enumerate(T):
+			I=[]
+			for P in t.iter(W+'del'):
+				if P.get(W+'author')in M or P.getparent().tag==W+'rPr':continue
+				if any(A.tag==W+'ins'and A.get(W+'author')in M for A in P.iterancestors()):I.append(''.join(A.text or''for A in P.iter(W+'delText')))
+			I=[A for A in I if A.strip()]
+			if not I or O>=len(e):continue
+			a=e[O];u=_para_accept(a);v=''.join(B.text or''for A in a.iter(W+'del')if A.get(W+'author')not in M for B in A.iter(W+'delText'));f=[A for A in I if A in u and A not in v]
+			if not f:continue
+			A=s.get(O)or{}
+			if q.get(id(a))in r or A.get('external_comment'):continue
+			K.append(_f('ROUND_RESTORE_NO_BUBBLE','החזרנו נוסח שלנו שהצד שכנגד מחק ("%s") בלי בועה: דחייה ב-Word אינה משאירה סימון, ולכן הבועה אומרת מה מחקו, מה החזרנו ולמה'%f[0].strip()[:60],O))
+	return K,L
+def check_contradictions(ext,accept_text,lang='he'):
+	A=accept_text;B=[];C='\n'.join(A['text']for A in ext)
+	if re.search('(טעות|שגיאה)[^.\\n]{0,20}תרגום|תרגום (שגוי|לקוי|מכונה)|תורגם בטעות',C)and re.search('הנוסח העברי[^.\\n]{0,80}(המחייב|גובר)',A+'\n'+C):B.append(_f('CON_CONTRADICTION','בועה טוענת לתרגום שגוי, ובאותו סבב הנוסח העברי נקבע מחייב או גובר'))
+	if re.search('mistranslat|translation error|incorrectly translated',C,re.I)and re.search('prevails over any[^.\\n]{0,60}translation',A,re.I):B.append(_f('CON_CONTRADICTION','בועה טוענת לתרגום שגוי, והנוסח החתום גובר על כל תרגום'))
+	if re.search('מוגן ב(תנאי התשלום|הסכם)',C)and re.search('(שלילת|ישלול)[^.\\n]{0,10}עיכבון|לא יעכב[^.\\n]{0,80}מחלוקת',A)and not re.search('רשאי להשהות|זכות (ה)?השהי',A):B.append(_f('CON_CONTRADICTION','בועה נשענת על הגנת תשלום שהתגובה עצמה הסירה'))
+	if re.search('protected by the payment terms',C,re.I)and re.search('shall not (withhold|suspend)',A,re.I)and not re.search('may suspend|right to suspend',A,re.I):B.append(_f('CON_CONTRADICTION','בועה נשענת על הגנת תשלום שהתגובה עצמה הסירה'))
+	return B
 def check_reasoning_warnings(ext):
-    W_ = []
-    for c in ext:
-        if re.search(r'הדין (מטיל|קובע)[^.\n]{0,20}ממילא|חלה ממילא', c['text']) or \
-                re.search(r'(law|statute) (already )?(requires|imposes)[^.]{0,40}(anyway|in any event)|applies anyway',
-                          c['text'], re.I):
-            W_.append(_f('BUB_LAW_ANYWAY', 'נימוק "חובה שהדין מטיל ממילא" מזמין את התשובה שאין צורך בסעיף', c['id']))
-    return W_
-
-
-# --------------------------------------------------------------------------------------- מצייני מקום וזיהוי
-def check_placeholders(root, ext, author, state, mode):
-    F, report = [], {'ours': [], 'theirs': [], 'signing_blanks': []}
-    allowed_blank = any((v or {}).get('status') == 'signing_blank'
-                        for v in ((state or {}).get('entity_details') or {}).values())
-    blanks = tuple(ids.SIGNING_BLANKS.values())
-    for i, p in enumerate(dt.body_paragraphs(root)):
-        ins = dt.revision_text(p, 'ins', author)
-        rest = ins
-        for blank in blanks:
-            while blank in rest:
-                if allowed_blank:
-                    report['signing_blanks'].append({'para': i, 'text': blank})
-                else:
-                    report['ours'].append({'para': i, 'text': blank, 'why': 'אין תשובה "נשלים לפני החתימה"'})
-                rest = rest.replace(blank, '', 1)
-        for m in OUR_PH.finditer(rest):
-            report['ours'].append({'para': i, 'text': m.group(0)})
-        for m in UNDERSCORES.finditer(rest):
-            report['ours'].append({'para': i, 'text': m.group(0)})
-        plain = ''.join(n.text or '' for n in p.iter(W + 't')
-                        if not any(dt.local(a.tag) == 'ins' for a in n.iterancestors()))
-        for m in THEIR_PH.finditer(plain):
-            report['theirs'].append({'para': i, 'text': m.group(0)})
-    for c in ext:
-        for m in OUR_PH.finditer(c['text']):
-            report['ours'].append({'comment': c['id'], 'text': m.group(0)})
-    if mode == 'send' and report['ours']:
-        F.append(_f('PH_OURS', 'מציין מקום שלנו בעותק למשלוח: %s' % [x['text'] for x in report['ours']]))
-    return F, report
-
-
-def _digits(s):
-    return re.sub(r'\D', '', s or '')
-
-
-def _our_names(profile):
-    return [str(x).strip().lower() for x in (profile.get('organization_name'), profile.get('organization_name_en'))
-            if x and len(str(x).strip()) > 2]
-
-
-def check_identifiers(root, author, profile, lang='he', received_text=''):
-    # ספרת ביקורת רק ברישום ישראלי (ids.israeli_registry). מספר זר נבדק רק מול הפרופיל. כשהפרופיל אינו
-    # מכריע אם הרישום ישראלי, מספר שנכשל בבדיקה הישראלית הוא אזהרה ולא כשל.
-    # בדיקת הפורמט וההשוואה לפרופיל חלות רק על מספר שלנו: בפסקה שבה שם החברה שלנו (או בשתי הפסקאות שלפניה, בבלוק
-    # הצדדים), או מספר זהה לזה שבפרופיל. מספר אחר שהכנסנו (של הצד שכנגד או של צד שלישי, בכל מדינה) נבדק רק מול
-    # המסמך שהתקבל: כשאינו שם, אזהרה.
-    F, W_ = [], []
-    israeli = ids.israeli_registry(profile)
-    raw_prof = profile.get('organization_id') or profile.get('registration_number')
-    prof = ids.validate_company_number(raw_prof, israeli=israeli is not False) if raw_prof else None
-    names = _our_names(profile)
-    paras = dt.body_paragraphs(root)
-    # הנוסח הגלוי של כל פסקה אחרי קבלה (w:t, בלי w:delText), במספור של קובץ העבודה
-    acc_views = [''.join(t.text or '' for t in p.iter(W + 't')) for p in paras]
-    src_digits = _digits(received_text)
-    rx = COMPANY_NO[lang]
-    for i, p in enumerate(paras):
-        ins = dt.revision_text(p, 'ins', author)
-        here = acc_views[i].lower()
-        prev = acc_views[i - 1].lower() if i else ''
-        # שלנו: שם החברה שלנו באותה פסקה, או בפסקה שלפניה כשהפסקה הזו היא שורת המספר בלבד ("ח.פ. ...")
-        label_only = bool(re.match(r'\s*\(?\s*(?:ח\.?\s?פ|ע\.?\s?מ|מספר|company|registration|reg\.)', here, re.I))
-        mine = any(n in here for n in names) or (label_only and any(n in prev for n in names))
-        for m in rx.finditer(ins):
-            num_d = _digits(m.group('num'))
-            ours = mine or (bool(raw_prof) and num_d == _digits(raw_prof))
-            if not ours:
-                if src_digits and num_d not in src_digits:
-                    W_.append(_f('ID_NUMBER_NOT_IN_SOURCE', 'מספר רישום שהוכנס לנוסח, שאינו של החברה שלנו, אינו '
-                                 'במסמך שהתקבל: %s' % m.group('num'), i))
-                continue
-            v = ids.validate_company_number(m.group('num'), israeli=israeli is not False)
-            same = bool(prof) and v['number'] == prof['number']
-            if not v['valid']:
-                (F if israeli else W_).append(_f('ID_COMPANY_NUMBER', 'מספר תאגיד שנכשל בבדיקה (%s) הוכנס לנוסח: %s'
-                                                 % (v['reason'], m.group('num')), i))
-                if israeli is None and prof and not same:
-                    F.append(_f('ID_COMPANY_NUMBER', 'מספר תאגיד שונה מהפרופיל: %s' % m.group('num'), i))
-            elif prof and (prof['valid'] or israeli is not True) and not same:
-                F.append(_f('ID_COMPANY_NUMBER', 'מספר תאגיד שונה מהפרופיל: %s' % m.group('num'), i))
-            elif not prof and israeli is False:
-                W_.append(_f('ID_COMPANY_NUMBER', 'אין מספר רישום בפרופיל להשוואה: %s' % m.group('num'), i))
-        plain = ''.join(dt._node_text(n) for n, anc in dt._text_nodes(p)
-                        if 'ins' not in anc and 'del' not in anc and dt.local(n.tag) != 'delText')
-        for m in rx.finditer(plain):
-            # מספר של הצד שכנגד: מדינת ההתאגדות שלו אינה ידועה, ולכן אזהרה רק על מספר בן 9 ספרות שנכשל
-            v = ids.validate_company_number(m.group('num'))
-            if not v['valid'] and v['reason'] not in ('wrong_length', 'not_digits'):
-                W_.append(_f('ID_THEIR_NUMBER', 'מספר תאגיד בנוסח שלהם נכשל בבדיקה: %s' % m.group('num'), i))
-    return F, W_
-
-
-# --------------------------------------------------------------------------------------- פערים שהתגובה יוצרת
-def touched_paragraphs(root, author):
-    """הפסקאות (בהטלת "קבל הכול") שיש בהן נוסח שהכנסנו."""
-    out = []
-    for p in dt.body_paragraphs(root):
-        if dt.revision_text(p, 'ins', author).strip():
-            out.append(_para_accept(p))
-    return out
-
-
-NUM_PREFIX = re.compile(r'^\s*(\d+(\.\d+)*\.?|\(?[\dא-תa-z]{1,2}\))\s+', re.I)
-
-
-def _norm_ws(s):
-    return re.sub(r'\s+', ' ', s or '').strip()
-
-
-def _norm_cmp(s):
-    return _norm_ws(s).translate(dt.QUOTE_FOLD)
-
-
+	B=[]
+	for A in ext:
+		if re.search('הדין (מטיל|קובע)[^.\\n]{0,20}ממילא|חלה ממילא',A['text'])or re.search('(law|statute) (already )?(requires|imposes)[^.]{0,40}(anyway|in any event)|applies anyway',A['text'],re.I):B.append(_f('BUB_LAW_ANYWAY','נימוק "חובה שהדין מטיל ממילא" מזמין את התשובה שאין צורך בסעיף',A['id']))
+	return B
+def check_placeholders(root,ext,author,state,mode):
+	F,A=[],{'ours':[],'theirs':[],'signing_blanks':[]};I=any((A or{}).get('status')=='signing_blank'for A in((state or{}).get('entity_details')or{}).values());J=tuple(ids.SIGNING_BLANKS.values())
+	for(C,G)in enumerate(dt.body_paragraphs(root)):
+		K=dt.revision_text(G,'ins',author);D=K
+		for E in J:
+			while E in D:
+				if I:A['signing_blanks'].append({'para':C,'text':E})
+				else:A['ours'].append({'para':C,'text':E,'why':'אין תשובה "נשלים לפני החתימה"'})
+				D=D.replace(E,'',1)
+		for B in OUR_PH.finditer(D):A['ours'].append({'para':C,'text':B.group(0)})
+		for B in UNDERSCORES.finditer(D):A['ours'].append({'para':C,'text':B.group(0)})
+		L=''.join(A.text or''for A in G.iter(W+'t')if not any(dt.local(A.tag)=='ins'for A in A.iterancestors()))
+		for B in THEIR_PH.finditer(L):A['theirs'].append({'para':C,'text':B.group(0)})
+	for H in ext:
+		for B in OUR_PH.finditer(H['text']):A['ours'].append({'comment':H['id'],'text':B.group(0)})
+	if mode=='send'and A['ours']:F.append(_f('PH_OURS','מציין מקום שלנו בעותק למשלוח: %s'%[A['text']for A in A['ours']]))
+	return F,A
+def _digits(s):return re.sub('\\D','',s or'')
+def _our_names(profile):A=profile;return[str(A).strip().lower()for A in(A.get('organization_name'),A.get('organization_name_en'))if A and len(str(A).strip())>2]
+def check_identifiers(root,author,profile,lang='he',received_text=''):
+	G=profile;H,F=[],[];C=ids.israeli_registry(G);I=G.get('organization_id')or G.get('registration_number');D=ids.validate_company_number(I,israeli=C is not False)if I else None;J=_our_names(G);K=dt.body_paragraphs(root);L=[''.join(A.text or''for A in A.iter(W+'t'))for A in K];M=_digits(received_text);N=COMPANY_NO[lang]
+	for(B,O)in enumerate(K):
+		S=dt.revision_text(O,'ins',author);P=L[B].lower();T=L[B-1].lower()if B else'';U=bool(re.match('\\s*\\(?\\s*(?:ח\\.?\\s?פ|ע\\.?\\s?מ|מספר|company|registration|reg\\.)',P,re.I));V=any(A in P for A in J)or U and any(A in T for A in J)
+		for A in N.finditer(S):
+			Q=_digits(A.group('num'));X=V or bool(I)and Q==_digits(I)
+			if not X:
+				if M and Q not in M:F.append(_f('ID_NUMBER_NOT_IN_SOURCE','מספר רישום שהוכנס לנוסח, שאינו של החברה שלנו, אינו במסמך שהתקבל: %s'%A.group('num'),B))
+				continue
+			E=ids.validate_company_number(A.group('num'),israeli=C is not False);R=bool(D)and E['number']==D['number']
+			if not E['valid']:
+				(H if C else F).append(_f('ID_COMPANY_NUMBER','מספר תאגיד שנכשל בבדיקה (%s) הוכנס לנוסח: %s'%(E['reason'],A.group('num')),B))
+				if C is None and D and not R:H.append(_f('ID_COMPANY_NUMBER','מספר תאגיד שונה מהפרופיל: %s'%A.group('num'),B))
+			elif D and(D['valid']or C is not True)and not R:H.append(_f('ID_COMPANY_NUMBER','מספר תאגיד שונה מהפרופיל: %s'%A.group('num'),B))
+			elif not D and C is False:F.append(_f('ID_COMPANY_NUMBER','אין מספר רישום בפרופיל להשוואה: %s'%A.group('num'),B))
+		Y=''.join(dt._node_text(A)for(A,B)in dt._text_nodes(O)if'ins'not in B and'del'not in B and dt.local(A.tag)!='delText')
+		for A in N.finditer(Y):
+			E=ids.validate_company_number(A.group('num'))
+			if not E['valid']and E['reason']not in('wrong_length','not_digits'):F.append(_f('ID_THEIR_NUMBER','מספר תאגיד בנוסח שלהם נכשל בבדיקה: %s'%A.group('num'),B))
+	return H,F
+def touched_paragraphs(root,author):
+	A=[]
+	for B in dt.body_paragraphs(root):
+		if dt.revision_text(B,'ins',author).strip():A.append(_para_accept(B))
+	return A
+NUM_PREFIX=re.compile('^\\s*(\\d+(\\.\\d+)*\\.?|\\(?[\\dא-תa-z]{1,2}\\))\\s+',re.I)
+def _norm_ws(s):return re.sub('\\s+',' ',s or'').strip()
+def _norm_cmp(s):return _norm_ws(s).translate(dt.QUOTE_FOLD)
 def playbook_verbatim_texts(state):
-    """נוסחים שנלקחו מהפלייבוק כלשונם, מקובץ המצב: נוסחי הפלייבוק שבהכרעה PolicyDerived (בלי
-    deviation_from_approved ובלי safe_wording, שהוא נוסח של הרכיב), ורכיבי basis_elements מסוג PolicyDerived
-    (התאמה לעסקה נרשמת כרכיב ExpertJudgment נפרד, n8-state-schema.md)."""
-    out = []
-    for cl in (state or {}).get('clauses', []):
-        texts = [b.get('element') for b in cl.get('basis_elements') or [] if b.get('source') == 'PolicyDerived']
-        if cl.get('decision_basis') == 'PolicyDerived' and not cl.get('deviation_from_approved') \
-                and not cl.get('safe_wording'):
-            texts += [cl.get(k) for k in ('playbook_default', 'fallback_1', 'fallback_2')] + list(cl.get('reserve') or [])
-        out += [_norm_ws(x) for x in texts if isinstance(x, str) and x.strip()]
-    return out
-
-
-def _cap_from_playbook(t, lang, verbatim):
-    """הסייג "או המועד המרבי שבדין, לפי המוקדם" מותר רק כשכל משפט בפסקה שמפנה למועד בדין נמצא כלשונו בנוסח
-    מהפלייבוק (הבונה כותב אותו רק כשהדין החל קובע מועד מרבי, evidence-policy.md). נוסח שהרכיב כתב: אסור."""
-    X = gap_checks.P.get(lang) or gap_checks.P[gap_checks.detect_lang(t)]
-    I = re.I if lang == 'en' else 0
-    # משפט מסתיים בסימן פיסוק ורווח (_sentences), כדי ש-"5.1" לא יפצל אותו; מספור בראש הפסקה אינו חלק מהנוסח
-    hits = [NUM_PREFIX.sub('', s) for s in _sentences(t) if re.search(X['pay_latest'], s, I)]
-    return bool(verbatim and hits) and all(any(_norm_ws(s) in v for v in verbatim) for s in hits)
-
-
-def check_self_created_gaps(root, author, accept_text, lang='he', context=None, state=None):
-    """פערים שהתגובה יוצרת בעצמה, מהמודול המשותף (common/gap_checks.py): על כל פסקה שהכנסנו, ועל ההסכם כולו.
-    state: קובץ המצב. ממנו נגזר allow_statutory_cap לכל פסקה בנפרד (_cap_from_playbook), ולעולם לא גורף."""
-    F, seen = [], set()
-    ctx = dict(context or {})
-    ctx['accept_text'] = accept_text
-    ctx.pop('allow_statutory_cap', None)
-    verbatim = playbook_verbatim_texts(state)
-    ours = touched_paragraphs(root, author)
-    for t in ours:
-        pctx = dict(ctx, allow_statutory_cap=True) if _cap_from_playbook(t, lang, verbatim) else ctx
-        for x in gap_checks.check_wording(t, lang, context=pctx):
-            k = (x['code'], x['message_he'], t[:60])
-            if k not in seen:
-                seen.add(k)
-                F.append(_f(x['code'], x['message_he'], t[:60]))
-    for x in gap_checks.check_document(accept_text, ours, lang, ctx):
-        k = (x['code'], x['message_he'], None)
-        if k not in seen:
-            seen.add(k)
-            F.append(_f(x['code'], x['message_he']))
-    return F
-
-
+	B=[]
+	for A in(state or{}).get('clauses',[]):
+		C=[A.get('element')for A in A.get('basis_elements')or[]if A.get('source')=='PolicyDerived']
+		if A.get('decision_basis')=='PolicyDerived'and not A.get('deviation_from_approved')and not A.get('safe_wording'):C+=[A.get(B)for B in('playbook_default','fallback_1','fallback_2')]+list(A.get('reserve')or[])
+		B+=[_norm_ws(A)for A in C if isinstance(A,str)and A.strip()]
+	return B
+def _cap_from_playbook(t,lang,verbatim):A=verbatim;C=gap_checks.P.get(lang)or gap_checks.P[gap_checks.detect_lang(t)];D=re.I if lang=='en'else 0;B=[NUM_PREFIX.sub('',A)for A in _sentences(t)if re.search(C['pay_latest'],A,D)];return bool(A and B)and all(any(_norm_ws(B)in A for A in A)for B in B)
+def check_self_created_gaps(root,author,accept_text,lang='he',context=None,state=None):
+	H=accept_text;F=lang;G,D=[],set();B=dict(context or{});B['accept_text']=H;B.pop('allow_statutory_cap',None);J=playbook_verbatim_texts(state);I=touched_paragraphs(root,author)
+	for E in I:
+		K=dict(B,allow_statutory_cap=True)if _cap_from_playbook(E,F,J)else B
+		for A in gap_checks.check_wording(E,F,context=K):
+			C=A['code'],A['message_he'],E[:60]
+			if C not in D:D.add(C);G.append(_f(A['code'],A['message_he'],E[:60]))
+	for A in gap_checks.check_document(H,I,F,B):
+		C=A['code'],A['message_he'],None
+		if C not in D:D.add(C);G.append(_f(A['code'],A['message_he']))
+	return G
 def waived_gap_codes(state):
-    """קודי פער שהמשתמש הכריע במפורש לוותר עליהם (ויתור מכוון עם user_decision מפורש ו-gap_codes)."""
-    out = set()
-    for w in (state or {}).get('deliberate_concessions', []):
-        if (w.get('user_decision') or {}).get('answer_kind') == 'explicit':
-            out.update(w.get('gap_codes', []))
-    return out
-
-
-def check_state(state, mode):
-    F, W_ = [], []
-    for cl in (state or {}).get('clauses', []):
-        cid = cl.get('clause_id')
-        sw = cl.get('safe_wording') or {}
-        if sw:
-            flags = (sw.get('not_worse_than_position'), sw.get('not_worse_than_default'))
-            ref = sw.get('statute_ref') or {}
-            if True in flags and not (ref.get('source_id') and ref.get('url') and ref.get('verified_in') == 'playbook'):
-                F.append(_f('SAFE_WORDING_SELF_CERTIFIED', 'נוסח בטוח סומן "אינו מרע" בלי מקור מאומת בפלייבוק', cid))
-    if state and 'meta' in state:
-        from orchestrator.state_builder import validate_state
-        for e in validate_state(state):
-            (F if mode == 'send' else W_).append(_f(e['code'], e['message'], e['where']))
-    return F, W_
-
-
-CHANGE_OPS = ('replace', 'replace_span', 'insert_paragraph', 'delete_paragraph')
-
-
-def check_legal_review(state, decisions, core, mode):
-    """אין חסימה של עורך דין (כלל יסוד 6): עורך דין מאשר את הפלייבוק בלבד, והנושא ונותן שואל את רשימת השאלות שלו
-    ומוסר. סעיף שהפלייבוק או ההכרעה מסמנים "טעון בדיקה משפטית" אינו חוסם ואינו מחכה ל"נבדק": הוא פריט גלוי ללקוח,
-    NO_APPROVED_SOURCE, "AREO לא מצאה מקור מורשה לנקודה זו", עם צעד אחד הלאה (כלל יסוד 5), ואינו ממולא מהזיכרון.
-    נשאר חוסם רק STATE_NO_CLAUSES: במצב משלוח קובץ מצב חסר או בלי סעיפים הוא כשל של שלמות מבנית, כי השער אינו יכול
-    לדעת מה הוכרע. לכן write רץ לפני השער."""
-    F, W_ = [], []
-    st = state or {}
-    items = decisions.get('decisions', []) if isinstance(decisions, dict) else (decisions or [])
-    flagged = []
-    for cid in [c.get('clause_id') for c in st.get('clauses') or () if c.get('legal_review_required')] +             [d.get('id') for d in items if isinstance(d, dict) and d.get('legal_review_required')]:
-        if cid and cid not in flagged:
-            flagged.append(cid)
-    if flagged:
-        nm = st.get('numbering_map') or {}
-        W_.append(_f('NO_APPROVED_SOURCE',
-                     'AREO לא מצאה מקור מורשה לנקודה זו: %s. הצעד הבא: להוסיף לתיקיית ההסכמים של החברה הסכם שמסדיר '
-                     'אותה, או לאשר עמדה בפלייבוק. אינו מעכב את המשלוח' % ', '.join(nm.get(c) or c for c in flagged),
-                     ','.join(flagged)))
-    if not st.get('clauses'):
-        (F if mode == 'send' else W_).append(_f(
-            'STATE_NO_CLAUSES', 'קובץ המצב חסר או בלי סעיפים. השער במצב משלוח צריך את קובץ המצב של הסבב: הריצו קודם '
-            'negotiation_state.py write עם קובץ ההכרעות, ואחריו את השער עם --deal (או --state)'))
-    return F, W_
-
-
-def _our_ins_mark(p, author):
-    rpr = p.find(W + 'pPr/' + W + 'rPr')
-    m = rpr.find(W + 'ins') if rpr is not None else None
-    return m is not None and m.get(W + 'author') == author
-
-
-def _our_del_mark(p, author):
-    """פסקה שסימן הפסקה שלה במחיקה שלנו, ואין בה טקסט גלוי שאינו במחיקה שלנו (פסקה שמחקנו כולה)."""
-    rpr = p.find(W + 'pPr/' + W + 'rPr')
-    m = rpr.find(W + 'del') if rpr is not None else None
-    if m is None or m.get(W + 'author') != author:
-        return False
-    for t in p.iter(W + 't'):
-        if (t.text or '').strip() and not any(dt.local(a.tag) == 'del' for a in t.iterancestors()):
-            return False
-    return True
-
-
-def _received_groups(root, author):
-    """לכל פסקה בטיוטה שהתקבלה, הפסקה המקבילה בקובץ העבודה, באותו מיפוי כמו reject_ours_view: פסקה שהוספנו
-    (סימן פסקה בהוספה שלנו) מתמזגת עם הבאה. מכל קבוצה נבחרת הפסקה שיש בה טקסט שאינו הוספה שלנו."""
-    out, group = [], []
-    for p in dt.body_paragraphs(root):
-        group.append(p)
-        if _our_ins_mark(p, author):
-            continue
-        out.append(group)
-        group = []
-    if group:
-        out.append(group)
-
-    def theirs(q):
-        return any(('ins', author) not in dt._revision_of(n, q) for n, anc in dt._text_nodes(q))
-
-    return [next((q for q in reversed(g) if theirs(q)), g[-1]) for g in out]
-
-
-def check_decisions_applied(root, received_texts, decisions, author, our_comment_ids=(), received_paras=None,
-                            prior=(), received_rej=None):
-    """באג 3 (הרצה S1b, 28.10.2026): השער משווה את ההכרעות עצמן, ולא את נוסחי היעד שנגזרו ממה שהוחל בפועל.
-    כל הכרעה שאינה accept חייבת להופיע בקובץ: replace_span ו-replace בנוסח המתקבל, מחיקת פסקה כפסקה שכל הטקסט
-    שלה נמחק בשמנו, הוספת פסקה כפסקה שהוספנו, ובועה בלבד כבועה חיצונית בשמנו באותה פסקה. הכרעה שלא סומנה היא
-    DEC_NOT_APPLIED, כשל בשני המצבים: העותק למשלוח אינו מופק, וקובץ העבודה אינו מסומן כתקין.
-    received_rej: הנוסח של כל פסקה אחרי דחיית השינויים של הצד שכנגד (received_reject_text, הסימונים שלנו מסבבים
-    קודמים נשארים). הכרעה שדוחה את השינויים שלהם בפסקה (their_changes: reject) נכתבת מול הנוסח הזה, ו-old נספר בו
-    (S1d-R2, 13(ii): old מתוך ההוספה שלנו שחזרה בדחייה נספר בנוסח הגלוי, שבו הוא מחוק, ו-replace_span שסומן נכשל)."""
-    F = []
-    # הגרשיים בנוסח שסומן מותאמים למסמך (docx_tracked.match_quotes, L3), ולכן ההשוואה בלי הבדל ביניהם
-    items = decisions.get('decisions', []) if isinstance(decisions, dict) else (decisions or [])
-    work = _received_groups(root, author)
-    if len(work) != len(received_texts):
-        return [_f('DEC_NOT_APPLIED', 'קובץ העבודה אינו מתמפה לטיוטה שהתקבלה (%d פסקאות מול %d): אי אפשר לאמת '
-                   'שההכרעות סומנו' % (len(work), len(received_texts)))]
-    spans = dt.comment_paragraph_spans(root)
-    paras = dt.body_paragraphs(root)
-    pos = {id(p): k for k, p in enumerate(paras)}
-
-    def ours(p, kind):
-        return bool(dt.revision_text(p, kind, author)) or (kind == 'del' and any(
-            e.get(W + 'author') == author for e in p.iter(W + 'del')))
-
-    for d in items:
-        op, did, j = d.get('op'), d.get('id', '?'), d.get('para')
-        if op in (None, 'accept'):
-            continue
-        ok, why = True, ''
-        if op in ('replace_span', 'replace', 'delete_paragraph', 'comment_only'):
-            if not isinstance(j, int) or not 0 <= j < len(work):
-                F.append(_f('DEC_NOT_APPLIED', '%s: אין פסקה %s בטיוטה' % (did, j), did))
-                continue
-            p = work[j]
-            acc = _norm_cmp(_para_accept(p))
-        if op == 'replace_span':
-            old, new = _norm_cmp(d.get('old')), _norm_cmp(d.get('new'))
-            changed = ours(p, 'ins') or ours(p, 'del')
-            base = received_texts[j]
-            if received_rej is not None and j < len(received_rej) and dt.their_changes_mode(d) == 'reject':
-                base = received_rej[j]
-            ok = changed and (not new or new in acc) and (old in new or acc.count(old) < _norm_cmp(base).count(old))
-            if not ok and received_paras is not None and prior and j < len(received_paras):
-                # למחוק מחדש טקסט שהמחיקה הפתוחה שלנו מסבב קודם עדיין עליו: ההכרעה קיימת בטיוטה שהתקבלה
-                # (docx_tracked.prior_edit_exists), ו-apply_redlines מדווח אותה "קיימת מסבב קודם"
-                try:
-                    ok = bool(dt.prior_edit_exists(received_paras[j], d.get('old'), dt.match_quotes(
-                        d.get('new') or '', dt.quote_style(received_texts)), prior)) and (not new or new in acc)
-                except dt.UnsupportedEdit:
-                    ok = False
-            why = 'הטווח "%s" לא סומן' % (d.get('old') or '')[:40]
-        elif op == 'replace':
-            ok = acc == _norm_cmp(d.get('new_text'))
-            why = 'נוסח היעד לא סומן'
-        elif op == 'delete_paragraph':
-            ok = not acc and (ours(p, 'del') or not _norm_cmp(received_texts[j]))
-            why = 'הפסקה לא נמחקה'
-        elif op == 'insert_paragraph':
-            want = _norm_cmp(d.get('text'))[-60:]
-            ok = bool(want) and any(want in _norm_cmp(_para_accept(q)) for q in paras if dt._mark(q) == 'ins'
-                                    or ('ins', author) in [r for n, _ in dt._text_nodes(q)
-                                                           for r in dt._revision_of(n, q)])
-            why = 'הפסקה החדשה לא נוספה'
-        elif op == 'comment_only' and d.get('external_comment'):
-            k = pos.get(id(p))
-            ok = k is not None and any(first <= k <= last for cid, (first, last) in spans.items()
-                                       if cid in our_comment_ids)
-            why = 'הבועה לא נוספה'
-        if not ok:
-            F.append(_f('DEC_NOT_APPLIED', '%s (%s): %s. ההכרעה לא סומנה בקובץ, ולכן אינה מוכנה למשלוח'
-                        % (did, op, why), did))
-    return F
-
-
+	A=set()
+	for B in(state or{}).get('deliberate_concessions',[]):
+		if(B.get('user_decision')or{}).get('answer_kind')=='explicit':A.update(B.get('gap_codes',[]))
+	return A
+def check_state(state,mode):
+	A=state;C,F=[],[]
+	for G in(A or{}).get('clauses',[]):
+		H=G.get('clause_id');B=G.get('safe_wording')or{}
+		if B:
+			I=B.get('not_worse_than_position'),B.get('not_worse_than_default');D=B.get('statute_ref')or{}
+			if True in I and not(D.get('source_id')and D.get('url')and D.get('verified_in')=='playbook'):C.append(_f('SAFE_WORDING_SELF_CERTIFIED','נוסח בטוח סומן "אינו מרע" בלי מקור מאומת בפלייבוק',H))
+	if A and'meta'in A:
+		from orchestrator.state_builder import validate_state as J
+		for E in J(A):(C if mode=='send'else F).append(_f(E['code'],E['message'],E['where']))
+	return C,F
+CHANGE_OPS='replace','replace_span','insert_paragraph','delete_paragraph'
+def check_legal_review(state,decisions,core,mode):
+	B=decisions;F,C=[],[];D=state or{};G=B.get('decisions',[])if isinstance(B,dict)else B or[];A=[]
+	for E in[A.get('clause_id')for A in D.get('clauses')or()if A.get('legal_review_required')]+[A.get('id')for A in G if isinstance(A,dict)and A.get('legal_review_required')]:
+		if E and E not in A:A.append(E)
+	if A:H=D.get('numbering_map')or{};C.append(_f('NO_APPROVED_SOURCE','AREO לא מצאה מקור מורשה לנקודה זו: %s. הצעד הבא: להוסיף לתיקיית ההסכמים של החברה הסכם שמסדיר אותה, או לאשר עמדה בפלייבוק. אינו מעכב את המשלוח'%', '.join(H.get(A)or A for A in A),','.join(A)))
+	if not D.get('clauses'):(F if mode=='send'else C).append(_f('STATE_NO_CLAUSES','קובץ המצב חסר או בלי סעיפים. השער במצב משלוח צריך את קובץ המצב של הסבב: הריצו קודם negotiation_state.py write עם קובץ ההכרעות, ואחריו את השער עם --deal (או --state)'))
+	return F,C
+def _our_ins_mark(p,author):A=p.find(W+'pPr/'+W+'rPr');B=A.find(W+'ins')if A is not None else None;return B is not None and B.get(W+'author')==author
+def _our_del_mark(p,author):
+	A=p.find(W+'pPr/'+W+'rPr');B=A.find(W+'del')if A is not None else None
+	if B is None or B.get(W+'author')!=author:return False
+	for C in p.iter(W+'t'):
+		if(C.text or'').strip()and not any(dt.local(A.tag)=='del'for A in C.iterancestors()):return False
+	return True
+def _received_groups(root,author):
+	C=author;B,A=[],[]
+	for D in dt.body_paragraphs(root):
+		A.append(D)
+		if _our_ins_mark(D,C):continue
+		B.append(A);A=[]
+	if A:B.append(A)
+	def E(q):return any(('ins',C)not in dt._revision_of(A,q)for(A,B)in dt._text_nodes(q))
+	return[next((A for A in reversed(A)if E(A)),A[-1])for A in B]
+def check_decisions_applied(root,received_texts,decisions,author,our_comment_ids=(),received_paras=None,prior=(),received_rej=None):
+	T=prior;P=received_rej;O=received_paras;N=decisions;M=root;J=author;F=received_texts;Q=[];Z=N.get('decisions',[])if isinstance(N,dict)else N or[];K=_received_groups(M,J)
+	if len(K)!=len(F):return[_f('DEC_NOT_APPLIED','קובץ העבודה אינו מתמפה לטיוטה שהתקבלה (%d פסקאות מול %d): אי אפשר לאמת שההכרעות סומנו'%(len(K),len(F)))]
+	a=dt.comment_paragraph_spans(M);U=dt.body_paragraphs(M);b={id(B):A for(A,B)in enumerate(U)}
+	def R(p,kind):return bool(dt.revision_text(p,kind,J))or kind=='del'and any(A.get(W+'author')==J for A in p.iter(W+'del'))
+	for A in Z:
+		D,L,B=A.get('op'),A.get('id','?'),A.get('para')
+		if D in(None,'accept'):continue
+		C,E=True,''
+		if D in('replace_span','replace','delete_paragraph','comment_only'):
+			if not isinstance(B,int)or not 0<=B<len(K):Q.append(_f('DEC_NOT_APPLIED','%s: אין פסקה %s בטיוטה'%(L,B),L));continue
+			G=K[B];H=_norm_cmp(_para_accept(G))
+		if D=='replace_span':
+			S,I=_norm_cmp(A.get('old')),_norm_cmp(A.get('new'));c=R(G,'ins')or R(G,'del');V=F[B]
+			if P is not None and B<len(P)and dt.their_changes_mode(A)=='reject':V=P[B]
+			C=c and(not I or I in H)and(S in I or H.count(S)<_norm_cmp(V).count(S))
+			if not C and O is not None and T and B<len(O):
+				try:C=bool(dt.prior_edit_exists(O[B],A.get('old'),dt.match_quotes(A.get('new')or'',dt.quote_style(F)),T))and(not I or I in H)
+				except dt.UnsupportedEdit:C=False
+			E='הטווח "%s" לא סומן'%(A.get('old')or'')[:40]
+		elif D=='replace':C=H==_norm_cmp(A.get('new_text'));E='נוסח היעד לא סומן'
+		elif D=='delete_paragraph':C=not H and(R(G,'del')or not _norm_cmp(F[B]));E='הפסקה לא נמחקה'
+		elif D=='insert_paragraph':X=_norm_cmp(A.get('text'))[-60:];C=bool(X)and any(X in _norm_cmp(_para_accept(A))for A in U if dt._mark(A)=='ins'or('ins',J)in[C for(B,D)in dt._text_nodes(A)for C in dt._revision_of(B,A)]);E='הפסקה החדשה לא נוספה'
+		elif D=='comment_only'and A.get('external_comment'):Y=b.get(id(G));C=Y is not None and any(B<=Y<=C for(A,(B,C))in a.items()if A in our_comment_ids);E='הבועה לא נוספה'
+		if not C:Q.append(_f('DEC_NOT_APPLIED','%s (%s): %s. ההכרעה לא סומנה בקובץ, ולכן אינה מוכנה למשלוח'%(L,D,E),L))
+	return Q
 def hidden_text(p):
-    """הטקסט המוסתר בפסקה: ריצות עם w:vanish או w:webHidden ב-rPr שלהן (ולא בסימן הפסקה)."""
-    out = ''
-    for r in p.iter(W + 'r'):
-        rpr = r.find(W + 'rPr')
-        marks = [] if rpr is None else [rpr.find(W + 'vanish'), rpr.find(W + 'webHidden')]
-        if any(m is not None and m.get(W + 'val') not in ('0', 'false', 'off') for m in marks):
-            out += ''.join(t.text or '' for t in r.iter(W + 't', W + 'delText'))
-    return out
-
-
-def check_hidden_removals(rroot, decisions):
-    """בדיקה עצמאית S1c (28.10.2026): מחיקה של טקסט מוסתר בטיוטה שלהם, עם הבועה הניטרלית (external_comments_guide.md,
-    "טקסט מוסתר שהוסר"), מסומנת בהכרעה kind: hidden_text_removal, והיא שינוי מכוסה: בדיקת הכיסוי אינה דורשת שהבועה
-    תקרא בשמם מושגים שבטקסט המוסתר (בהרצה, "AI" בטקסט המוסתר הכשיל את הבועה התקנית ב-COV_UNCOVERED_CHANGE).
-    הסימון תקף רק על מחיקה (replace_span עם new ריק, או delete_paragraph) של טקסט שמוסתר בטיוטה שהתקבלה; אחרת
-    COV_HIDDEN_KIND_INVALID (כשל). מחזיר ({פסקה: [הטקסט שהוסר]}, כשלים)."""
-    items = decisions.get('decisions', []) if isinstance(decisions, dict) else (decisions or [])
-    paras = dt.body_paragraphs(rroot)
-    removed, F = {}, []
-    for d in items:
-        if d.get('kind') != 'hidden_text_removal':
-            continue
-        j, op = d.get('para'), d.get('op')
-        if not isinstance(j, int) or not 0 <= j < len(paras) or not (
-                (op == 'replace_span' and not (d.get('new') or '').strip()) or op == 'delete_paragraph'):
-            F.append(_f('COV_HIDDEN_KIND_INVALID', '%s: kind: hidden_text_removal רק על מחיקה של טקסט מוסתר '
-                        '(replace_span עם new ריק, או delete_paragraph)' % d.get('id'), d.get('id')))
-            continue
-        old = d.get('old') if op == 'replace_span' else dt.para_text(paras[j])
-        if not _norm_ws(old) or _norm_ws(old) not in _norm_ws(hidden_text(paras[j])):
-            F.append(_f('COV_HIDDEN_KIND_INVALID', '%s: הטווח "%s" אינו טקסט מוסתר בטיוטה שהתקבלה, ולכן הבועה צריכה '
-                        'לתאר אותו כמו כל שינוי' % (d.get('id'), (old or '')[:50]), d.get('id')))
-            continue
-        removed.setdefault(j, []).append(old)
-    return removed, F
-
-
-def check_silent_changes(state, decisions, not_applied, mode):
-    """H6 (בדיקה עצמאית S1c): כל שינוי שקט של הסבב (silent_changes בקובץ המצב, state_builder.apply_compare) מוכרע
-    ומסומן בעותק למשלוח. SILENT_CHANGE_UNDECIDED: שינוי בלי הכרעה (state_builder.unresolved_silent_changes, אחרי
-    קישור קובץ ההכרעות של הסבב ב-link_silent_decisions), או שההכרעה ש-decision_ref מצביע עליה אינה בקובץ ההכרעות,
-    לא סומנה בקובץ בפועל (DEC_NOT_APPLIED), או מסומנת בפסקה אחרת מהשינוי. כשל במצב משלוח, אזהרה במצב עבודה.
-    not_applied: מזהי ההכרעות שלא סומנו (None: אי אפשר לאמת אף הכרעה). מחזיר (כשלים, אזהרות)."""
-    st = state or {}
-    if not st.get('silent_changes'):
-        return [], []
-    rnd = _round_of(st, decisions)
-    view = {'meta': {'round_number': rnd}, 'silent_changes': [dict(x) for x in st['silent_changes'] if isinstance(x, dict)]}
-    items = {}
-    if decisions is not None:
-        SB.link_silent_decisions(view, decisions)
-        items = {d.get('id'): d for d in (decisions.get('decisions', []) if isinstance(decisions, dict) else decisions)}
-    out = []
-    for x in SB.unresolved_silent_changes(view, rnd):
-        out.append(_f('SILENT_CHANGE_UNDECIDED', 'שינוי שלא סומן בסעיף %s (%s) בלי הכרעה מסומנת: החזרה בעקוב אחר שינויים, '
-                      'או קבלה עם בועה, בהכרעה שנושאת silent_change: %s. נדרשת הכרעתך (מצב 9)'
-                      % (x.get('clause') or '?', x.get('id'), x.get('id')), x.get('id')))
-    for x in view['silent_changes']:
-        ref = x.get('decision_ref')
-        if int(x.get('round') or 0) != (rnd or 0) or x.get('decision') not in SB.SILENT_DECISIONS or not ref:
-            continue
-        d = items.get(ref)
-        why = None
-        if decisions is None:
-            why = 'קובץ ההכרעות לא נמסר לשער, ולכן לא נבדק שההכרעה %s סומנה' % ref
-        elif d is None:
-            why = 'ההכרעה %s אינה בקובץ ההכרעות של הסבב' % ref
-        elif not_applied is None or ref in not_applied:
-            why = 'ההכרעה %s לא סומנה בקובץ בפועל (DEC_NOT_APPLIED)' % ref
-        elif isinstance(d.get('para'), int) and isinstance(x.get('received_para'), int) \
-                and d['para'] != x['received_para']:
-            why = 'ההכרעה %s מסומנת בפסקה %s, והשינוי השקט בפסקה %s' % (ref, d['para'], x['received_para'])
-        if why:
-            out.append(_f('SILENT_CHANGE_UNDECIDED', 'שינוי שלא סומן בסעיף %s (%s): %s' % (x.get('clause') or '?',
-                                                                                          x.get('id'), why), x.get('id')))
-    return (out, []) if mode == 'send' else ([], out)
-
-
-def check_structure(root, author):
-    F = []
-    for i, p in enumerate(dt.body_paragraphs(root)):
-        if dt._mark(p) == 'ins':
-            if not _para_accept(p).strip():
-                F.append(_f('STRUCT_EMPTY_PARAGRAPH', 'פסקה ריקה שהוספנו', i))
-    num = re.compile(r'^\s*(\d+[\u05d0-\u05ea]?)[.)]\u200f?\s')
-    for view in ('accept', 'reject_del_only'):
-        seen = set()
-        for t in dt.paragraph_views(root, view):
-            m = num.match(t)
-            if m:
-                if m.group(1) in seen:
-                    F.append(_f('STRUCT_DUP_NUMBER', 'מספר מוקלד כפול בפרק (%s): %s' % (view, m.group(1))))
-                    break
-                seen.add(m.group(1))
-            elif t.strip() and len(t.strip()) < 60:
-                seen = set()  # כותרת פרק: המספור המוקלד מתחיל מחדש
-    return F
-
-
-# --------------------------------------------------------------------------------------- השער
-def sent_prior_keys(state, deal_dir):
-    """מפתחות הסימונים שלנו בקבצים שנשלחו (meta.sent_documents), בלי הסימונים שכבר היו בטיוטות שהתקבלו. כך סימון
-    פתוח שלנו מסבב קודם מזוהה כשלנו גם כשנחתם בשם שאינו בפרופיל. אותו כלל כמו apply_redlines.prior_history."""
-    meta = (state or {}).get('meta') or {}
-    sent = [d for d in meta.get('sent_documents') or () if isinstance(d, dict)]
-    if not (deal_dir and sent):
-        return set()
-
-    def where(rec):
-        f = rec.get('file_name') or rec.get('path') or ''
-        return f if os.path.isabs(f) else os.path.join(deal_dir, f)
-    last = max(int(d.get('round') or 0) for d in sent)
-    recv = [where(d) for d in meta.get('received_documents') or () if isinstance(d, dict)
-            and int(d.get('round') or 0) <= last]
-    return dt.sent_revision_keys([where(d) for d in sent], recv)
-
-
-def run_gate(path, received, mode, profile, state=None, expected_accept=None, window=None, work_path=None,
-             lang=None, register=None, context=None, decisions=None, core=None, deal_dir=None):
-    """mode: work / send. lang: 'he' / 'en' (בלי: לפי הטיוטה שהתקבלה). register: נשאר לתאימות, ואינו
-    בשימוש. decisions: קובץ ההכרעות של הסבב (dict). context: הקשר לבדיקת הפערים של common/gap_checks.py (our_terms, home_country). מחזיר dict עם passed, failures, warnings, info."""
-    assert mode in ('work', 'send')
-    parts = dt.read_package(path)
-    root = etree.fromstring(parts['word/document.xml'])
-    rparts = dt.read_package(received)
-    rroot = etree.fromstring(rparts['word/document.xml'])
-    orig = [dt.para_text(p) for p in dt.body_paragraphs(rroot)]
-    lang = lang or gap_checks.detect_lang('\n'.join(orig))
-    received_ids = {c['id'] for c in dt.read_comments(rparts)}
-    now = _dt.datetime.now()
-    window = window or (now - _dt.timedelta(days=2), now + _dt.timedelta(minutes=5))
-    author = author_for(profile, lang)
-    F, Wn = [], []
-    ours_names = [author] + [x for x in [profile.get('lawyer_name'), profile.get('lawyer_name_en')]
-                             + list(profile.get('lawyer_aliases') or []) if x and x != author]
-    # סבב 2 ואילך: הסימונים הפתוחים שלנו מסבבים קודמים הם חלק מהטיוטה שהתקבלה, ולא מהסבב הזה. בעץ שנבדק הם
-    # מקבלים מחבר נפרד, כך שכל בדיקה של "השינויים שלנו" (הלוך ושוב, כיסוי, תאריכים, מיפוי הפסקאות) רואה רק את הסבב
-    prior_keys = dt.prior_revisions(rroot, ours_names)
-    # deal_dir: גם סימון שלנו שנחתם בסבב קודם בשם אחר, לפי הקבצים שנשלחו
-    present = {dt.revision_key(e) for e in rroot.iter(W + 'ins', W + 'del')}
-    prior_keys |= sent_prior_keys(state, deal_dir) & present
-    prior_names = dt.set_aside_prior(root, prior_keys)
-    received_authors = {e.get(W + 'author') for e in rroot.iter(W + 'ins', W + 'del')} | prior_names
-    f, info = check_package(parts, root, profile, received_ids, window, work_path or path, author,
-                            received_authors=received_authors)
-    F += f
-    # דחיית השינויים שלנו בלבד, ולא "דחה הכול": השינויים הפתוחים של הצד שכנגד נשארים כפי שהתקבלו
-    rej = dt.reject_ours_view(root, author)
-    # בפסקה שבה הוכרעו השינויים הפתוחים שלהם (דחייה וסימון שלנו), הבסיס הוא הנוסח שלפני השינויים שלהם,
-    # ובקבלה הוא הנוסח שהתקבל. כל פסקה צריכה להתאים לאחד מהשניים
-    # הסימונים הפתוחים שלנו מסבבים קודמים נשארים גם כאן: רק השינויים של הצד שכנגד נדחים
-    orig_rej = [dt.received_reject_text(p, set(ours_names)) for p in dt.body_paragraphs(rroot)]
-    if len(rej) == len(orig):
-        rej_ok = all(a == b or a == c for a, b, c in zip(rej, orig, orig_rej))
-    else:
-        rej_ok = rej == orig
-    if not rej_ok:
-        F.append(_f('RT_REJECT', '"דחה הכול" אינו מחזיר את הטיוטה שהתקבלה'))
-    acc = dt.paragraph_views(root, 'accept')
-    if expected_accept is not None and acc != expected_accept:
-        F.append(_f('RT_ACCEPT', '"קבל הכול" אינו נותן את נוסחי היעד'))
-    # כפילות שההכרעה יצרה: הוספה שלנו מהסבב הזה שחוזרת על נוסח שכבר בפסקה (למשל ההוספה שלנו מסבב קודם, שחזרה כשהמחיקה
-    # שלהם בתוכה נדחתה). נוסחי היעד נגזרים מאותה הכרעה, ולכן RT_ACCEPT אינו מגלה אותה (S1d-R2, 13(ii))
-    for k, p in enumerate(dt.body_paragraphs(root)):
-        dup = dt.duplicated_insertions(p, lambda e: e is not None and e.get(W + 'author') == author)
-        if dup:
-            F.append(_f('RT_DUPLICATE', 'נוסח כפול בפסקה אחרי "קבל הכול": "%s..." מופיע יותר מפעם אחת, ואחת ההופעות '
-                        'בהוספה שלנו. ההוספה הישנה והחדשה עומדות זו לצד זו' % dup[0][:60], k))
-    accept_text = '\n'.join(acc)
-    comments = [c for c in dt.read_comments(parts) if c['id'] not in received_ids]
-    ext = [c for c in comments if c['author'] == author]
-    intc = [c for c in comments if c['author'] in INTERNAL_AUTHORS]
-    # בועה של אשכול נפרשת על כמה פסקאות, ומכסה כל אחת מהן
-    spans = dt.comment_paragraph_spans(root)
-    # פסקה שמחקנו כולה בסוף אשכול: הבועה של האשכול נסגרת בפסקה האחרונה שנשארת (docx_tracked.span_clusters), ולכן
-    # פסקאות מחוקות שצמודות לסוף הטווח שייכות לאותה בועה
-    bparas = dt.body_paragraphs(root)
-    ext_ids = {c['id'] for c in ext}
-    for cid, (first, last) in list(spans.items()):
-        if cid not in ext_ids or first is None:
-            continue
-        k = last
-        while k + 1 < len(bparas) and _our_del_mark(bparas[k + 1], author):
-            k += 1
-        if k != last:
-            spans[cid] = (first, k)
-    ext_by_para = {}
-    for c in ext:
-        first, last = spans.get(c['id'], (None, None))
-        for i in (range(first, last + 1) if first is not None else (None,)):
-            ext_by_para.setdefault(i, []).append(c['text'])
-    ctx = dict(context or {})
-    ctx.setdefault('waived', sorted(waived_gap_codes(state)))
-    F += check_bubbles(ext, accept_text, state, '\n'.join(rej), lang)
-    # בדיקה עצמאית S1c (28.10.2026): עברית בהסכם באנגלית (H1), אורך וקול לפי שלב הסבב (M1), בועה מול נוסח (M3),
-    # וכללי הסבבים על שדות קובץ המצב (H3, פער 9)
-    F += check_language(root, ext, author, lang, '\n'.join(orig + orig_rej))
-    f, w_ = check_bubble_style(ext, lang, round_stage(state, decisions))
-    F += f
-    Wn += w_
-    Wn += check_bubble_text_match(root, ext, spans, lang)
-    prev = [c['text'] for c in dt.read_comments(rparts) if c['author'] in ours_names]
-    f, w_ = check_round_rules(state, decisions, rroot, root, ours_names + sorted(prior_names), spans,
-                              {c['id'] for c in ext}, prev, mode)
-    F += f
-    Wn += w_
-    # טקסט מוסתר שהוסר עם הבועה הניטרלית (kind: hidden_text_removal) הוא שינוי מכוסה
-    removed, f = check_hidden_removals(rroot, decisions) if decisions is not None else ({}, [])
-    F += f
-    # המפתחות הם פסקאות בטיוטה שהתקבלה; בדיקת הכיסוי סופרת פסקאות בקובץ העבודה, שבו גם הפסקאות שהוספנו
-    wpos = {id(p): k for k, p in enumerate(dt.body_paragraphs(root))}
-    groups = _received_groups(root, author)
-    to_work = {j: wpos[id(g)] for j, g in enumerate(groups)} if len(groups) == len(orig) else {}
-    removed = {to_work.get(j, j): v for j, v in removed.items()}
-    cov = check_coverage(root, ext_by_para, author, lang, removed)
-    hidden_at = {to_work.get(j, j) for j, rp in enumerate(dt.body_paragraphs(rroot)) if hidden_text(rp).strip()}
-    for x in cov:
-        if x['code'] == 'COV_UNCOVERED_CHANGE' and x['where'] in hidden_at and x['where'] not in removed:
-            x['message'] += ('. בפסקה יש טקסט מוסתר בטיוטה שהתקבלה: כשהמחיקה היא של הטקסט המוסתר, עם הבועה הניטרלית, '
-                             'ההכרעה נושאת kind: hidden_text_removal')
-    F += cov
-    F += check_bubble_why(root, ext_by_para, author, accept_text, lang, ctx, removed)
-    F += check_contradictions(ext, accept_text, lang)
-    Wn += check_reasoning_warnings(ext)
-    f, ph = check_placeholders(root, ext, author, state, mode)
-    F += f
-    f, w_ = check_identifiers(root, author, profile, lang, '\n'.join(orig))
-    F += f
-    Wn += w_
-    F += check_self_created_gaps(root, author, accept_text, lang, ctx, state=state)
-    f, w_ = check_state(state, mode)
-    F += f
-    Wn += w_
-    # "טעון בדיקה משפטית": מקובץ המצב, מקובץ ההכרעות ומהפלייבוק (core), ובמצב משלוח קובץ מצב בלי סעיפים הוא כשל
-    f, w_ = check_legal_review(state, decisions, core, mode)
-    F += f
-    Wn += w_
-    f, w_ = check_entity_name_en(profile, lang, mode, accept_text + '\n' + '\n'.join(c['text'] for c in ext))
-    F += f
-    Wn += w_
-    f, w_ = check_lawyer_name_en(profile, lang, mode)
-    F += f
-    Wn += w_
-    f, w_ = check_internal_leak(parts, root, comments, mode, [c['id'] for c in ext])
-    F += f
-    Wn += w_
-    F += check_structure(root, author)
-    # באג 3: ההכרעות מול מה שסומן בפועל. בלי קובץ ההכרעות אי אפשר לדעת שלא נשמטה הכרעה, ולכן במצב משלוח זה כשל
-    not_applied = set()
-    if decisions is not None:
-        f = check_decisions_applied(root, orig, decisions, author, {c['id'] for c in ext},
-                                    received_paras=dt.body_paragraphs(rroot), prior=prior_keys,
-                                    received_rej=orig_rej)
-        F += f
-        not_applied = None if any(x['where'] is None for x in f) else {x['where'] for x in f}
-    elif mode == 'send':
-        F.append(_f('DEC_FILE_MISSING', 'השער רץ בלי קובץ ההכרעות (--decisions), ולכן אינו יכול לוודא שכל הכרעה '
-                    'סומנה בקובץ'))
-    else:
-        Wn.append(_f('DEC_FILE_MISSING', 'בלי קובץ ההכרעות לא נבדק שכל הכרעה סומנה בקובץ'))
-    # H6: שינוי שקט של הסבב בלי הכרעה מסומנת (כשל במצב משלוח, אזהרה במצב עבודה)
-    f, w_ = check_silent_changes(state, decisions, not_applied, mode)
-    F += f
-    Wn += w_
-    headers =''.join(parts[n].decode('utf-8', 'ignore') for n in parts if n.startswith('word/header'))
-    # הכותרת הפנימית נדרשת רק כשבקובץ העבודה יש שכבה פנימית (בועות פנימיות). מאז 18.10.2026 השכבה הפנימית
-    # אינה מופקת כברירת מחדל (apply_redlines --internal-layer), ולכן הדרישה הגורפת הכשילה כל קובץ עבודה.
-    # בועה פנימית של סעיף AREO לבדה אינה שכבה פנימית: היא נכתבת תמיד בקובץ העבודה, גם בלי --internal-layer
-    has_internal = any(c['author'] in INTERNAL_AUTHORS and not c['text'].strip().startswith(dt.AREO_LABEL_PREFIXES)
-                       for c in dt.read_comments(parts) if c['id'] not in received_ids)
-    # הכותרת הפנימית נכתבת בשפת התוצר (docx_tracked.internal_identity): בעברית INTERNAL_HEADER_TEXT, באנגלית
-    # INTERNAL_HEADER_TEXT_EN. הבדיקה מקבלת כל אחת מהן (בהסכם אנגלי השער במצב עבודה נכשל תמיד)
-    header_texts = (dt.INTERNAL_HEADER_TEXT, getattr(dt, 'INTERNAL_HEADER_TEXT_EN', dt.INTERNAL_HEADER_TEXT))
-    has_header = any(h in headers for h in header_texts)
-    if mode == 'work' and has_internal and not has_header:
-        F.append(_f('INT_HEADER_MISSING', 'חסרה הכותרת הפנימית בקובץ העבודה'))
-    if mode == 'send':
-        if has_header:
-            F.append(_f('INT_IN_SEND', 'הכותרת הפנימית נשארה בעותק למשלוח'))
-        if intc:
-            F.append(_f('INT_IN_SEND', 'בועה פנימית בעותק למשלוח: %d' % len(intc)))
-        # סעיף AREO: התווית והמירקור הצהוב הם לעורך הדין בלבד
-        visible = ' '.join(dt.para_text(p) for p in dt.body_paragraphs(root)) + ' ' + \
-            ' '.join(c['text'] for c in dt.read_comments(parts))
-        if any(x in visible for x in dt.AREO_LABEL_PREFIXES):
-            F.append(_f('AREO_IN_SEND', 'התווית של סעיף AREO נשארה בעותק למשלוח'))
-        hl = [h for rev in root.iter(W + 'ins', W + 'del') if rev.get(W + 'author') == author
-              for h in rev.iter(W + 'highlight') if h.get(W + 'val') == dt.AREO_HIGHLIGHT]
-        if hl:
-            F.append(_f('AREO_IN_SEND', 'מירקור צהוב בנוסח שלנו בעותק למשלוח: %d' % len(hl)))
-    info.update(lang=lang, external_comments=len(ext), internal_comments=len(intc), placeholders=ph,
-                signing_checklist=[dict(item='signing_blank', **x) for x in ph['signing_blanks']]
-                + [dict(item='their_placeholder', **x) for x in ph['theirs']])
-    return {'mode': mode, 'passed': not F, 'failures': F, 'warnings': Wn, 'info': info}
-
-
-RUNS_DIR = 'runs'
-
-
-def run_report_path(deal_dir, round_no, name):
-    """השם הקנוני של דוח בתיקיית העסקה, כש---out או --report לא ניתנו (29.10.2026): <deal>/runs/round-<N>/<name>,
-    למשל apply.json, gate-work.json ו-gate-send.json. בלי תיקיית עסקה או בלי מספר סבב: None (אין דוח, כמו קודם)."""
-    try:
-        n = int(round_no)
-    except (TypeError, ValueError):
-        return None
-    if not deal_dir or n < 1:
-        return None
-    return os.path.join(deal_dir, RUNS_DIR, 'round-%d' % n, name)
-
-
-def write_run_report(path, data):
-    """כותב דוח בשם הקנוני. הרצה חוזרת מחליפה את הקובץ, והדוח הקודם עובר ל-history/<שם>.<חותמת>.json באותה תיקייה,
-    במקום gate-work-2, gate-work-3 וכן הלאה ליד קובץ המצב."""
-    d = os.path.dirname(path)
-    os.makedirs(d, exist_ok=True)
-    if os.path.exists(path):
-        hist = os.path.join(d, 'history')
-        os.makedirs(hist, exist_ok=True)
-        stem, ext = os.path.splitext(os.path.basename(path))
-        stamp = _dt.datetime.fromtimestamp(os.path.getmtime(path)).strftime('%Y%m%dT%H%M%S')
-        target = os.path.join(hist, '%s.%s%s' % (stem, stamp, ext))
-        k = 2
-        while os.path.exists(target):
-            target = os.path.join(hist, '%s.%s-%d%s' % (stem, stamp, k, ext))
-            k += 1
-        os.replace(path, target)
-    with open(path, 'w', encoding='utf-8') as fh:
-        json.dump(data, fh, ensure_ascii=False, indent=2, default=str)
-    return path
-
-
-def build_send_copy(work_path, received, send_path, profile, state=None, expected_accept=None, window=None,
-                    lang=None, deal_dir=None, register=None, context=None, decisions=None, core=None):
-    """גוזר עותק זמני בלי השכבה הפנימית, מריץ עליו את השער במצב משלוח, ומשנה את שמו רק כשעבר.
-    כשנכשל: הקובץ הזמני נמחק, ואין בתיקייה קובץ "למשלוח". עותק "למשלוח" ישן שכבר נמצא בנתיב מקבל את הסיומת
-    " - לא למשלוח" (pre_send.retract_send_copy). deal_dir: תיקיית העסקה. register: נשאר לתאימות, ואינו בשימוש."""
-    if decisions is None and deal_dir and (state or {}).get('decisions_file'):
-        dp = os.path.join(deal_dir, state['decisions_file'])
-        if os.path.exists(dp):
-            with open(dp, encoding='utf-8') as fh:
-                decisions = json.load(fh)
-    tmp = send_path[:-5] + '.tmp.docx' if send_path.endswith('.docx') else send_path + '.tmp'
-    paths.check_write_path(tmp)
-    dt.strip_internal(work_path, tmp)
-    res = run_gate(tmp, received, 'send', profile, state, expected_accept, window, work_path=send_path, lang=lang,
-                   register=register, context=context, decisions=decisions, core=core, deal_dir=deal_dir)
-    if res['passed']:
-        os.replace(tmp, send_path)
-        res['send_copy'] = send_path
-        if state is not None:   # גרסה 1.2.0: העותק למשלוח (נתיב ו-sha256) נרשם בקובץ המצב
-            res['send_copy_record'] = pre_send.record_send_copy(state, send_path, deal_dir)
-    else:
-        os.remove(tmp)
-        res['send_copy'] = None
-        res['retracted'] = pre_send.retract_send_copy(send_path, state, res['info'].get('lang', 'he'),
-                                                      deal_dir=deal_dir)
-    return res
+	B=''
+	for C in p.iter(W+'r'):
+		A=C.find(W+'rPr');D=[]if A is None else[A.find(W+'vanish'),A.find(W+'webHidden')]
+		if any(A is not None and A.get(W+'val')not in('0','false','off')for A in D):B+=''.join(A.text or''for A in C.iter(W+'t',W+'delText'))
+	return B
+def check_hidden_removals(rroot,decisions):
+	D=decisions;I=D.get('decisions',[])if isinstance(D,dict)else D or[];E=dt.body_paragraphs(rroot);H,F={},[]
+	for A in I:
+		if A.get('kind')!='hidden_text_removal':continue
+		B,G=A.get('para'),A.get('op')
+		if not isinstance(B,int)or not 0<=B<len(E)or not(G=='replace_span'and not(A.get('new')or'').strip()or G=='delete_paragraph'):F.append(_f('COV_HIDDEN_KIND_INVALID','%s: kind: hidden_text_removal רק על מחיקה של טקסט מוסתר (replace_span עם new ריק, או delete_paragraph)'%A.get('id'),A.get('id')));continue
+		C=A.get('old')if G=='replace_span'else dt.para_text(E[B])
+		if not _norm_ws(C)or _norm_ws(C)not in _norm_ws(hidden_text(E[B])):F.append(_f('COV_HIDDEN_KIND_INVALID','%s: הטווח "%s" אינו טקסט מוסתר בטיוטה שהתקבלה, ולכן הבועה צריכה לתאר אותו כמו כל שינוי'%(A.get('id'),(C or'')[:50]),A.get('id')));continue
+		H.setdefault(B,[]).append(C)
+	return H,F
+def check_silent_changes(state,decisions,not_applied,mode):
+	J=not_applied;B=decisions;G=state or{}
+	if not G.get('silent_changes'):return[],[]
+	H=_round_of(G,B);I={'meta':{'round_number':H},'silent_changes':[dict(A)for A in G['silent_changes']if isinstance(A,dict)]};K={}
+	if B is not None:SB.link_silent_decisions(I,B);K={A.get('id'):A for A in(B.get('decisions',[])if isinstance(B,dict)else B)}
+	E=[]
+	for A in SB.unresolved_silent_changes(I,H):E.append(_f('SILENT_CHANGE_UNDECIDED','שינוי שלא סומן בסעיף %s (%s) בלי הכרעה מסומנת: החזרה בעקוב אחר שינויים, או קבלה עם בועה, בהכרעה שנושאת silent_change: %s. נדרשת הכרעתך (מצב 9)'%(A.get('clause')or'?',A.get('id'),A.get('id')),A.get('id')))
+	for A in I['silent_changes']:
+		C=A.get('decision_ref')
+		if int(A.get('round')or 0)!=(H or 0)or A.get('decision')not in SB.SILENT_DECISIONS or not C:continue
+		F=K.get(C);D=None
+		if B is None:D='קובץ ההכרעות לא נמסר לשער, ולכן לא נבדק שההכרעה %s סומנה'%C
+		elif F is None:D='ההכרעה %s אינה בקובץ ההכרעות של הסבב'%C
+		elif J is None or C in J:D='ההכרעה %s לא סומנה בקובץ בפועל (DEC_NOT_APPLIED)'%C
+		elif isinstance(F.get('para'),int)and isinstance(A.get('received_para'),int)and F['para']!=A['received_para']:D='ההכרעה %s מסומנת בפסקה %s, והשינוי השקט בפסקה %s'%(C,F['para'],A['received_para'])
+		if D:E.append(_f('SILENT_CHANGE_UNDECIDED','שינוי שלא סומן בסעיף %s (%s): %s'%(A.get('clause')or'?',A.get('id'),D),A.get('id')))
+	return(E,[])if mode=='send'else([],E)
+def check_structure(root,author):
+	B=[]
+	for(G,E)in enumerate(dt.body_paragraphs(root)):
+		if dt._mark(E)=='ins':
+			if not _para_accept(E).strip():B.append(_f('STRUCT_EMPTY_PARAGRAPH','פסקה ריקה שהוספנו',G))
+	H=re.compile('^\\s*(\\d+[\\u05d0-\\u05ea]?)[.)]\\u200f?\\s')
+	for F in('accept','reject_del_only'):
+		C=set()
+		for D in dt.paragraph_views(root,F):
+			A=H.match(D)
+			if A:
+				if A.group(1)in C:B.append(_f('STRUCT_DUP_NUMBER','מספר מוקלד כפול בפרק (%s): %s'%(F,A.group(1))));break
+				C.add(A.group(1))
+			elif D.strip()and len(D.strip())<60:C=set()
+	return B
+def sent_prior_keys(state,deal_dir):
+	B=deal_dir;C=(state or{}).get('meta')or{};A=[A for A in C.get('sent_documents')or()if isinstance(A,dict)]
+	if not(B and A):return set()
+	def D(rec):A=rec.get('file_name')or rec.get('path')or'';return A if os.path.isabs(A)else os.path.join(B,A)
+	E=max(int(A.get('round')or 0)for A in A);F=[D(A)for A in C.get('received_documents')or()if isinstance(A,dict)and int(A.get('round')or 0)<=E];return dt.sent_revision_keys([D(A)for A in A],F)
+def run_gate(path,received,mode,profile,state=None,expected_accept=None,window=None,work_path=None,lang=None,register=None,context=None,decisions=None,core=None,deal_dir=None):
+	j=expected_accept;Z=window;M=decisions;L=profile;J=state;H=mode;F=lang;assert H in('work','send');N=dt.read_package(path);C=etree.fromstring(N['word/document.xml']);a=dt.read_package(received);K=etree.fromstring(a['word/document.xml']);O=[dt.para_text(A)for A in dt.body_paragraphs(K)];F=F or gap_checks.detect_lang('\n'.join(O));b={A['id']for A in dt.read_comments(a)};k=_dt.datetime.now();Z=Z or(k-_dt.timedelta(days=2),k+_dt.timedelta(minutes=5));D=author_for(L,F);A,I=[],[];U=[D]+[A for A in[L.get('lawyer_name'),L.get('lawyer_name_en')]+list(L.get('lawyer_aliases')or[])if A and A!=D];c=dt.prior_revisions(K,U);z={dt.revision_key(A)for A in K.iter(W+'ins',W+'del')};c|=sent_prior_keys(J,deal_dir)&z;l=dt.set_aside_prior(C,c);A0={A.get(W+'author')for A in K.iter(W+'ins',W+'del')}|l;B,m=check_package(N,C,L,b,Z,work_path or path,D,received_authors=A0);A+=B;V=dt.reject_ours_view(C,D);d=[dt.received_reject_text(A,set(U))for A in dt.body_paragraphs(K)]
+	if len(V)==len(O):n=all(A==B or A==C for(A,B,C)in zip(V,O,d))
+	else:n=V==O
+	if not n:A.append(_f('RT_REJECT','"דחה הכול" אינו מחזיר את הטיוטה שהתקבלה'))
+	o=dt.paragraph_views(C,'accept')
+	if j is not None and o!=j:A.append(_f('RT_ACCEPT','"קבל הכול" אינו נותן את נוסחי היעד'))
+	for(P,A1)in enumerate(dt.body_paragraphs(C)):
+		p=dt.duplicated_insertions(A1,lambda e:e is not None and e.get(W+'author')==D)
+		if p:A.append(_f('RT_DUPLICATE','נוסח כפול בפסקה אחרי "קבל הכול": "%s..." מופיע יותר מפעם אחת, ואחת ההופעות בהוספה שלנו. ההוספה הישנה והחדשה עומדות זו לצד זו'%p[0][:60],P))
+	Q='\n'.join(o);e=[A for A in dt.read_comments(N)if A['id']not in b];G=[A for A in e if A['author']==D];f=[A for A in e if A['author']in INTERNAL_AUTHORS];R=dt.comment_paragraph_spans(C);q=dt.body_paragraphs(C);A2={A['id']for A in G}
+	for(r,(S,X))in list(R.items()):
+		if r not in A2 or S is None:continue
+		P=X
+		while P+1<len(q)and _our_del_mark(q[P+1],D):P+=1
+		if P!=X:R[r]=S,P
+	g={}
+	for s in G:
+		S,X=R.get(s['id'],(None,None))
+		for A3 in range(S,X+1)if S is not None else(None,):g.setdefault(A3,[]).append(s['text'])
+	h=dict(context or{});h.setdefault('waived',sorted(waived_gap_codes(J)));A+=check_bubbles(G,Q,J,'\n'.join(V),F);A+=check_language(C,G,D,F,'\n'.join(O+d));B,E=check_bubble_style(G,F,round_stage(J,M));A+=B;I+=E;I+=check_bubble_text_match(C,G,R,F);A4=[A['text']for A in dt.read_comments(a)if A['author']in U];B,E=check_round_rules(J,M,K,C,U+sorted(l),R,{A['id']for A in G},A4,H);A+=B;I+=E;T,B=check_hidden_removals(K,M)if M is not None else({},[]);A+=B;A5={id(B):A for(A,B)in enumerate(dt.body_paragraphs(C))};t=_received_groups(C,D);u={A:A5[id(B)]for(A,B)in enumerate(t)}if len(t)==len(O)else{};T={u.get(A,A):B for(A,B)in T.items()};v=check_coverage(C,g,D,F,T);A6={u.get(A,A)for(A,B)in enumerate(dt.body_paragraphs(K))if hidden_text(B).strip()}
+	for Y in v:
+		if Y['code']=='COV_UNCOVERED_CHANGE'and Y['where']in A6 and Y['where']not in T:Y['message']+='. בפסקה יש טקסט מוסתר בטיוטה שהתקבלה: כשהמחיקה היא של הטקסט המוסתר, עם הבועה הניטרלית, ההכרעה נושאת kind: hidden_text_removal'
+	A+=v;A+=check_bubble_why(C,g,D,Q,F,h,T);A+=check_contradictions(G,Q,F);I+=check_reasoning_warnings(G);B,i=check_placeholders(C,G,D,J,H);A+=B;B,E=check_identifiers(C,D,L,F,'\n'.join(O));A+=B;I+=E;A+=check_self_created_gaps(C,D,Q,F,h,state=J);B,E=check_state(J,H);A+=B;I+=E;B,E=check_legal_review(J,M,core,H);A+=B;I+=E;B,E=check_entity_name_en(L,F,H,Q+'\n'+'\n'.join(A['text']for A in G));A+=B;I+=E;B,E=check_lawyer_name_en(L,F,H);A+=B;I+=E;B,E=check_internal_leak(N,C,e,H,[A['id']for A in G]);A+=B;I+=E;A+=check_structure(C,D);w=set()
+	if M is not None:B=check_decisions_applied(C,O,M,D,{A['id']for A in G},received_paras=dt.body_paragraphs(K),prior=c,received_rej=d);A+=B;w=None if any(A['where']is None for A in B)else{A['where']for A in B}
+	elif H=='send':A.append(_f('DEC_FILE_MISSING','השער רץ בלי קובץ ההכרעות (--decisions), ולכן אינו יכול לוודא שכל הכרעה סומנה בקובץ'))
+	else:I.append(_f('DEC_FILE_MISSING','בלי קובץ ההכרעות לא נבדק שכל הכרעה סומנה בקובץ'))
+	B,E=check_silent_changes(J,M,w,H);A+=B;I+=E;A7=''.join(N[A].decode('utf-8','ignore')for A in N if A.startswith('word/header'));A8=any(A['author']in INTERNAL_AUTHORS and not A['text'].strip().startswith(dt.AREO_LABEL_PREFIXES)for A in dt.read_comments(N)if A['id']not in b);A9=dt.INTERNAL_HEADER_TEXT,getattr(dt,'INTERNAL_HEADER_TEXT_EN',dt.INTERNAL_HEADER_TEXT);x=any(A in A7 for A in A9)
+	if H=='work'and A8 and not x:A.append(_f('INT_HEADER_MISSING','חסרה הכותרת הפנימית בקובץ העבודה'))
+	if H=='send':
+		if x:A.append(_f('INT_IN_SEND','הכותרת הפנימית נשארה בעותק למשלוח'))
+		if f:A.append(_f('INT_IN_SEND','בועה פנימית בעותק למשלוח: %d'%len(f)))
+		AA=' '.join(dt.para_text(A)for A in dt.body_paragraphs(C))+' '+' '.join(A['text']for A in dt.read_comments(N))
+		if any(A in AA for A in dt.AREO_LABEL_PREFIXES):A.append(_f('AREO_IN_SEND','התווית של סעיף AREO נשארה בעותק למשלוח'))
+		y=[B for A in C.iter(W+'ins',W+'del')if A.get(W+'author')==D for B in A.iter(W+'highlight')if B.get(W+'val')==dt.AREO_HIGHLIGHT]
+		if y:A.append(_f('AREO_IN_SEND','מירקור צהוב בנוסח שלנו בעותק למשלוח: %d'%len(y)))
+	m.update(lang=F,external_comments=len(G),internal_comments=len(f),placeholders=i,signing_checklist=[dict(item='signing_blank',**A)for A in i['signing_blanks']]+[dict(item='their_placeholder',**A)for A in i['theirs']]);return{'mode':H,'passed':not A,'failures':A,'warnings':I,'info':m}
+RUNS_DIR='runs'
+def run_report_path(deal_dir,round_no,name):
+	A=deal_dir
+	try:B=int(round_no)
+	except(TypeError,ValueError):return
+	if not A or B<1:return
+	return os.path.join(A,RUNS_DIR,'round-%d'%B,name)
+def write_run_report(path,data):
+	A=path;D=os.path.dirname(A);os.makedirs(D,exist_ok=True)
+	if os.path.exists(A):
+		B=os.path.join(D,'history');os.makedirs(B,exist_ok=True);E,F=os.path.splitext(os.path.basename(A));G=_dt.datetime.fromtimestamp(os.path.getmtime(A)).strftime('%Y%m%dT%H%M%S');C=os.path.join(B,'%s.%s%s'%(E,G,F));H=2
+		while os.path.exists(C):C=os.path.join(B,'%s.%s-%d%s'%(E,G,H,F));H+=1
+		os.replace(A,C)
+	with open(A,'w',encoding='utf-8')as I:json.dump(data,I,ensure_ascii=False,indent=2,default=str)
+	return A
+def build_send_copy(work_path,received,send_path,profile,state=None,expected_accept=None,window=None,lang=None,deal_dir=None,register=None,context=None,decisions=None,core=None):
+	F=decisions;D=deal_dir;C=state;A=send_path
+	if F is None and D and(C or{}).get('decisions_file'):
+		G=os.path.join(D,C['decisions_file'])
+		if os.path.exists(G):
+			with open(G,encoding='utf-8')as H:F=json.load(H)
+	E=A[:-5]+'.tmp.docx'if A.endswith('.docx')else A+'.tmp';paths.check_write_path(E);dt.strip_internal(work_path,E);B=run_gate(E,received,'send',profile,C,expected_accept,window,work_path=A,lang=lang,register=register,context=context,decisions=F,core=core,deal_dir=D)
+	if B['passed']:
+		os.replace(E,A);B['send_copy']=A
+		if C is not None:B['send_copy_record']=pre_send.record_send_copy(C,A,D)
+	else:os.remove(E);B['send_copy']=None;B['retracted']=pre_send.retract_send_copy(A,C,B['info'].get('lang','he'),deal_dir=D)
+	return B

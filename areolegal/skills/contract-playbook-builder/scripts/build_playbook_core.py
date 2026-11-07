@@ -1,381 +1,128 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""בונה את גרעין ההפעלה (playbook-core.json) מהמודל, בקוד.
-
-`playbook-core-schema.md`: הגרעין "נגזר במלואו מהמודל", "לעולם אינו נערך ידנית ואינו
-מקור אמת", ונבנה מחדש בכל שמירה של המודל. עד עכשיו לא היה לו סקריפט: בכל הרצה הבונה כתב
-את הגרעין בעצמו, וכל הרצה יצאה אחרת. בהרצה חיה הגרעין הראשון נכשל בחוזה מול
-הנושא ונותן (`check_playbook_contract.py`): בלי קוד צד ומשפחה, בלי מספר כלל ובלי נוסח להחלה.
-הסקריפט הזה הוא הדרך היחידה לבנות גרעין.
-
-    python3 scripts/build_playbook_core.py --model <playbooks/<family_id>/playbook-model.json> \\
-        [--out <playbooks/<family_id>/playbook-core.json>]
-
-אחריו: `validate_playbook_model.py <model> --core <core>` ו-`check_playbook_contract.py`
-של הנושא ונותן. קוד יציאה: 0 נכתב, 2 קלט חסר.
-"""
-import argparse
-import datetime as _dt
-import hashlib
-import io
-import json
-import os
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # גם ב-python -I, שאינו מוסיף את תיקיית הסקריפט
-try:
-    import areo_lib  # noqa: F401  מוסיף את areolegal/lib לנתיב הייבוא
-    from playbook import status as S  # noqa: E402
-except ImportError:      # הסקריפט רץ גם בלי הספרייה; אז התווית נלקחת מהמודל כמו שהיא
-    S = None
-try:
-    from playbook import validate_model as VM  # noqa: E402  מקור העמדה (הסכם וסעיף) והנקודות בלי מקור מורשה
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+'בונה את גרעין ההפעלה (playbook-core.json) מהמודל, בקוד.'
+import argparse,datetime as _dt,hashlib,io,json,os,sys
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+try:import areo_lib;from playbook import status as S
+except ImportError:S=None
+try:from playbook import validate_model as VM
+except ImportError:VM=None
+try:from common.cli import OutputRefused,guard_out
 except ImportError:
-    VM = None
-try:
-    from common.cli import OutputRefused, guard_out  # noqa: E402
-except ImportError:      # בלי הספרייה: רק הבדיקה שהפלט אינו המודל עצמו
-    class OutputRefused(Exception):
-        pass
-
-    def guard_out(out, inputs=()):
-        k = os.path.normcase(os.path.realpath(out))
-        if any(p and os.path.normcase(os.path.realpath(p)) == k for p in inputs):
-            raise OutputRefused("--out הוא קובץ קלט: %s" % out)
-        return os.path.abspath(out)
-
-TRACKS = ("green", "yellow", "red")
-# הנושא "טכני": הרשימה הסגורה של `clause-catalog.md`, עם התווית שמוצגת. הגרעין נושא אותה, כדי שהנושא ונותן
-# ימפה כל סעיף בנייר של הצד השני לנושא בפלייבוק או לקוד טכני, ולא ישאיר סעיף בלי שיוך
-TECHNICAL_TOPICS = (("signature_block", "בלוק חתימה"), ("party_identification", "זיהוי הצדדים"),
-                    ("notice_addresses", "כתובות להודעות"), ("counterparts_esignature", "עותקים וחתימה אלקטרונית"),
-                    ("headings", "כותרות לנוחות"), ("interpretation_grammar", "כללי לשון"),
-                    ("recitals_descriptive", "מבוא תיאורי"), ("neutral_definition", "הגדרה שאינה משנה היקף"),
-                    ("bank_details", "פרטי חשבון בנק"), ("delivery_points_list", "רשימת נקודות אספקה"),
-                    ("admin_form_fields", "שדות מנהליים בטופס"),
-                    ("statutory_admin_restatement", "חזרה על חובה מנהלית שבחוק"))
-MARKET_OR_AREO = ("market_standard", "areo_proposal")
-CORE_SCHEMA = "2.0"
-
-
+	class OutputRefused(Exception):0
+	def guard_out(out,inputs=()):
+		A=out;B=os.path.normcase(os.path.realpath(A))
+		if any(A and os.path.normcase(os.path.realpath(A))==B for A in inputs):raise OutputRefused('--out הוא קובץ קלט: %s'%A)
+		return os.path.abspath(A)
+TRACKS='green','yellow','red'
+TECHNICAL_TOPICS=('signature_block','בלוק חתימה'),('party_identification','זיהוי הצדדים'),('notice_addresses','כתובות להודעות'),('counterparts_esignature','עותקים וחתימה אלקטרונית'),('headings','כותרות לנוחות'),('interpretation_grammar','כללי לשון'),('recitals_descriptive','מבוא תיאורי'),('neutral_definition','הגדרה שאינה משנה היקף'),('bank_details','פרטי חשבון בנק'),('delivery_points_list','רשימת נקודות אספקה'),('admin_form_fields','שדות מנהליים בטופס'),('statutory_admin_restatement','חזרה על חובה מנהלית שבחוק')
+MARKET_OR_AREO='market_standard','areo_proposal'
+CORE_SCHEMA='2.0'
 def text_of(v):
-    """הנוסח כמחרוזת: {"he","en"} או {"text"} או מחרוזת. העברית קודמת."""
-    if isinstance(v, dict):
-        for k in ("he", "text", "en"):
-            if isinstance(v.get(k), str) and v[k].strip():
-                return v[k]
-        return ""
-    return v if isinstance(v, str) else ""
-
-
+	if isinstance(v,dict):
+		for A in('he','text','en'):
+			if isinstance(v.get(A),str)and v[A].strip():return v[A]
+		return''
+	return v if isinstance(v,str)else''
 def fallback_source(yellow):
-    """מקור נוסח הנסיגה: מזהה ציטוט או תשובה, market_standard או areo_proposal (סכמת הגרעין)."""
-    fw = yellow.get("fallback_wording")
-    src = fw.get("source") if isinstance(fw, dict) else None
-    if src in MARKET_OR_AREO:
-        return src
-    refs = [r for r in yellow.get("basis_refs") or () if isinstance(r, str) and r.strip()]
-    if refs:
-        return refs[0]
-    if yellow.get("basis") in MARKET_OR_AREO:
-        return yellow["basis"]
-    return src or "areo_proposal"
-
-
-def block(track, cell, sources=None):
-    out = {"position": cell.get("position") or "", "basis": cell.get("basis") or "",
-           "label": cell.get("label") or ""}
-    # כלל מייסד 12: כל עמדה מציגה את ההסכם והסעיף שעליהם נשענה. נבנה בקוד מ-basis_refs ומרשימת הראיות של הכלל
-    if cell.get("basis_refs"):
-        out["basis_refs"] = [str(x) for x in cell["basis_refs"] if str(x).strip()]
-    if sources:
-        out["sources"] = [{k: v for k, v in x.items() if k in ("agreement", "clause", "evidence_id")}
-                          for x in sources]
-    if cell.get("source_label"):
-        out["source_label"] = cell["source_label"]
-    if cell.get("market_source_ids"):
-        out["source_ids"] = list(cell["market_source_ids"])
-    if track == "green":
-        out["preferred_wording"] = text_of(cell.get("proposed_clause"))
-    elif track == "yellow":
-        out["fallback_wording"] = text_of(cell.get("fallback_wording")) or text_of(cell.get("proposed_clause"))
-        out["fallback_source"] = fallback_source(cell)
-        # מדרגות הנסיגה בסדר, מהקרובה לירוק (playbook-schema.md, yellow.fallback_steps). הנושא ונותן צריך שתיים לפחות
-        # בנושא מהותי, כדי שתהיה מדרגה לסבב 2 שאינה הנסיגה האחרונה
-        out["fallback_steps"] = [text_of(x) for x in cell.get("fallback_steps") or () if text_of(x)]
-        if cell.get("fallback_steps_note"):
-            out["fallback_steps_note"] = cell["fallback_steps_note"]
-    else:
-        out["red_line"] = cell.get("position") or ""
-        if text_of(cell.get("proposed_clause")):
-            out["remedy_wording"] = text_of(cell.get("proposed_clause"))
-    return out
-
-
+	A=yellow;C=A.get('fallback_wording');B=C.get('source')if isinstance(C,dict)else None
+	if B in MARKET_OR_AREO:return B
+	D=[A for A in A.get('basis_refs')or()if isinstance(A,str)and A.strip()]
+	if D:return D[0]
+	if A.get('basis')in MARKET_OR_AREO:return A['basis']
+	return B or'areo_proposal'
+def block(track,cell,sources=None):
+	D=sources;C=track;A=cell;B={'position':A.get('position')or'','basis':A.get('basis')or'','label':A.get('label')or''}
+	if A.get('basis_refs'):B['basis_refs']=[str(A)for A in A['basis_refs']if str(A).strip()]
+	if D:B['sources']=[{A:B for(A,B)in A.items()if A in('agreement','clause','evidence_id')}for A in D]
+	if A.get('source_label'):B['source_label']=A['source_label']
+	if A.get('market_source_ids'):B['source_ids']=list(A['market_source_ids'])
+	if C=='green':B['preferred_wording']=text_of(A.get('proposed_clause'))
+	elif C=='yellow':
+		B['fallback_wording']=text_of(A.get('fallback_wording'))or text_of(A.get('proposed_clause'));B['fallback_source']=fallback_source(A);B['fallback_steps']=[text_of(A)for A in A.get('fallback_steps')or()if text_of(A)]
+		if A.get('fallback_steps_note'):B['fallback_steps_note']=A['fallback_steps_note']
+	else:
+		B['red_line']=A.get('position')or''
+		if text_of(A.get('proposed_clause')):B['remedy_wording']=text_of(A.get('proposed_clause'))
+	return B
 def legal_review(rule):
-    v = rule.get("legal_review_required")
-    if isinstance(v, list):
-        open_items = [x for x in v if not (isinstance(x, dict) and x.get("checked_by"))]
-        # evidence-policy.md ו-playbook-schema.md: track (green | yellow | red) לכל רשומה, כמו שגיליון העמדות
-        # קורא אותו. לפני כן נקרא כאן רק tracks, ו-legal_review_tracks יצא ריק;
-        # tracks נקרא עדיין לתאימות
-        tracks = sorted({t for x in open_items if isinstance(x, dict)
-                         for t in ([x["track"]] if isinstance(x.get("track"), str) and x["track"] else [])
-                         + list(x.get("tracks") or ())})
-        return bool(open_items), tracks
-    return bool(v), []
-
-
-def track_sources(rule, model, cell):
-    """[{agreement, clause, evidence_id}] של עמדה אחת, מ-playbook/validate_model.position_sources. [] בלי הספרייה."""
-    if VM is None or not isinstance(model, dict) or not isinstance(cell, dict):
-        return []
-    try:
-        return VM.position_sources(rule, model, cell)
-    except Exception:  # noqa: BLE001
-        return []
-
-
-def open_legal_point(rule, model):
-    """True כשמחקר הרשת הותר ולא נמצא מקור מורשה לנקודה (validate_model.no_source_notes): הסעיף נושא את ההערה הגלויה."""
-    if VM is None or not isinstance(model, dict):
-        return False
-    try:
-        return any(rid == rule.get("rule_id") for rid, _n, _h in VM.no_source_notes(model))
-    except Exception:  # noqa: BLE001
-        return False
-
-
-def clause(rule, model=None):
-    tl = rule.get("traffic_light") or {}
-    blocks = {t: block(t, tl.get(t) or {}, track_sources(rule, model, tl.get(t) or {})) for t in TRACKS}
-    lr, lr_tracks = legal_review(rule)
-    out = {"id": rule.get("rule_id"), "title": rule.get("topic_name") or rule.get("topic") or "",
-           # מה הנושא מכסה, כדי למפות אליו סעיף בנייר של הצד השני; topic_origin: catalog | corpus_derived
-           "clause_issue": rule.get("clause_issue") or "", "topic_ids": rule.get("topic_ids") or [],
-           "topic_origin": rule.get("topic_origin") or "catalog", "clause_kind": rule.get("clause_kind") or "",
-           "policy_ref": rule.get("policy_ref") or rule.get("rule_id"),
-           "importance": rule.get("importance") or "",
-           "activation_conditions": rule.get("activation_conditions") or [],
-           # בדיקת התוצאה של הכלל, שהנושא ונותן מריץ על הנוסח המתקבל
-           "post_checks": rule.get("post_checks") or [],
-           "green": blocks["green"], "yellow": blocks["yellow"], "red": blocks["red"],
-           # השדות השטוחים: עותק של הבלוקים, לתאימות עם הנושא ונותן והמנסח
-           "red_line": blocks["red"]["red_line"],
-           "preferred_wording": blocks["green"]["preferred_wording"],
-           "fallback_wording": blocks["yellow"]["fallback_wording"],
-           "fallback_source": blocks["yellow"]["fallback_source"],
-           "fallback_steps": blocks["yellow"]["fallback_steps"],
-           "round1_posture": rule.get("round1_posture") or "hold_green",
-           "round1_posture_source": rule.get("round1_posture_source") or "importance",
-           "statutory_override": rule.get("statutory_override") or [],
-           "evidence_count": rule.get("evidence_count") if rule.get("evidence_count") is not None else 0,
-           "policy_status": rule.get("policy_status") or "Inferred",
-           "confidence": rule.get("confidence") or "",
-           "presence": rule.get("presence_rule") or {},
-           "walk_away": bool(rule.get("walk_away")),
-           "legal_review_required": lr, "legal_review_tracks": lr_tracks,
-           "segment_overrides": [], "model_ref": "rules[id=%s]" % rule.get("rule_id")}
-    # אין רצפות ותקרות של הדין בקוד. נקודה שמחקר הרשת הותר לה ולא נמצא לה מקור מורשה נושאת הערה גלויה, והסוכן שיש בידו
-    # רק הגרעין מציג אותה כמו שהיא. שום דבר אינו נחסם בגללה
-    if open_legal_point(rule, model):
-        out["no_approved_source"] = True
-        out["no_source_note"] = (VM.no_source_text(model.get("output_language") or "he") if VM else "")
-    for t in TRACKS:
-        if isinstance(tl.get(t), dict) and isinstance(tl[t].get("values"), dict):
-            out[t]["values"] = tl[t]["values"]
-    if rule.get("walk_away") and rule.get("walk_away_source"):
-        out["walk_away_source"] = rule["walk_away_source"]
-    for var in rule.get("segment_variants") or ():
-        if not isinstance(var, dict) or not var.get("segment_id"):
-            continue
-        vtl = var.get("traffic_light") or {}
-        ov = {"segment_id": var["segment_id"], "negotiation_mode": var.get("negotiation_mode") or "negotiated",
-              "round1_posture": var.get("round1_posture") or out["round1_posture"],
-              "evidence_count": var.get("evidence_count") if var.get("evidence_count") is not None else 0}
-        for t in TRACKS:
-            if vtl.get(t):
-                ov[t] = block(t, vtl[t], track_sources(rule, model, vtl[t]))
-        ov["red_line"] = (ov.get("red") or {}).get("red_line", out["red_line"])
-        ov["preferred_wording"] = (ov.get("green") or {}).get("preferred_wording", out["preferred_wording"])
-        ov["fallback_wording"] = (ov.get("yellow") or {}).get("fallback_wording", out["fallback_wording"])
-        ov["fallback_source"] = (ov.get("yellow") or {}).get("fallback_source", out["fallback_source"])
-        ov["fallback_steps"] = (ov.get("yellow") or {}).get("fallback_steps", out["fallback_steps"])
-        out["segment_overrides"].append(ov)
-    return out
-
-
+	A=rule.get('legal_review_required')
+	if isinstance(A,list):B=[A for A in A if not(isinstance(A,dict)and A.get('checked_by'))];C=sorted({B for A in B if isinstance(A,dict)for B in([A['track']]if isinstance(A.get('track'),str)and A['track']else[])+list(A.get('tracks')or())});return bool(B),C
+	return bool(A),[]
+def track_sources(rule,model,cell):
+	A=model
+	if VM is None or not isinstance(A,dict)or not isinstance(cell,dict):return[]
+	try:return VM.position_sources(rule,A,cell)
+	except Exception:return[]
+def open_legal_point(rule,model):
+	A=model
+	if VM is None or not isinstance(A,dict):return False
+	try:return any(A==rule.get('rule_id')for(A,B,C)in VM.no_source_notes(A))
+	except Exception:return False
+def clause(rule,model=None):
+	H=model;A=rule;G=A.get('traffic_light')or{};E={B:block(B,G.get(B)or{},track_sources(A,H,G.get(B)or{}))for B in TRACKS};J,K=legal_review(A);B={'id':A.get('rule_id'),'title':A.get('topic_name')or A.get('topic')or'','clause_issue':A.get('clause_issue')or'','topic_ids':A.get('topic_ids')or[],'topic_origin':A.get('topic_origin')or'catalog','clause_kind':A.get('clause_kind')or'','policy_ref':A.get('policy_ref')or A.get('rule_id'),'importance':A.get('importance')or'','activation_conditions':A.get('activation_conditions')or[],'post_checks':A.get('post_checks')or[],'green':E['green'],'yellow':E['yellow'],'red':E['red'],'red_line':E['red']['red_line'],'preferred_wording':E['green']['preferred_wording'],'fallback_wording':E['yellow']['fallback_wording'],'fallback_source':E['yellow']['fallback_source'],'fallback_steps':E['yellow']['fallback_steps'],'round1_posture':A.get('round1_posture')or'hold_green','round1_posture_source':A.get('round1_posture_source')or'importance','statutory_override':A.get('statutory_override')or[],'evidence_count':A.get('evidence_count')if A.get('evidence_count')is not None else 0,'policy_status':A.get('policy_status')or'Inferred','confidence':A.get('confidence')or'','presence':A.get('presence_rule')or{},'walk_away':bool(A.get('walk_away')),'legal_review_required':J,'legal_review_tracks':K,'segment_overrides':[],'model_ref':'rules[id=%s]'%A.get('rule_id')}
+	if open_legal_point(A,H):B['no_approved_source']=True;B['no_source_note']=VM.no_source_text(H.get('output_language')or'he')if VM else''
+	for D in TRACKS:
+		if isinstance(G.get(D),dict)and isinstance(G[D].get('values'),dict):B[D]['values']=G[D]['values']
+	if A.get('walk_away')and A.get('walk_away_source'):B['walk_away_source']=A['walk_away_source']
+	for F in A.get('segment_variants')or():
+		if not isinstance(F,dict)or not F.get('segment_id'):continue
+		I=F.get('traffic_light')or{};C={'segment_id':F['segment_id'],'negotiation_mode':F.get('negotiation_mode')or'negotiated','round1_posture':F.get('round1_posture')or B['round1_posture'],'evidence_count':F.get('evidence_count')if F.get('evidence_count')is not None else 0}
+		for D in TRACKS:
+			if I.get(D):C[D]=block(D,I[D],track_sources(A,H,I[D]))
+		C['red_line']=(C.get('red')or{}).get('red_line',B['red_line']);C['preferred_wording']=(C.get('green')or{}).get('preferred_wording',B['preferred_wording']);C['fallback_wording']=(C.get('yellow')or{}).get('fallback_wording',B['fallback_wording']);C['fallback_source']=(C.get('yellow')or{}).get('fallback_source',B['fallback_source']);C['fallback_steps']=(C.get('yellow')or{}).get('fallback_steps',B['fallback_steps']);B['segment_overrides'].append(C)
+	return B
 def market_sources(model):
-    mr = model.get("market_research") or {}
-    supports = {}
-    for rng in mr.get("ranges") or ():
-        if not isinstance(rng, dict):
-            continue
-        for point in ("ours", "middle", "theirs"):
-            p = rng.get(point)
-            for sid in ((p if isinstance(p, dict) else {}).get("source_ids") or ()):
-                supports.setdefault(sid, []).append({"rule_id": rng.get("rule_id") or rng.get("topic"),
-                                                     "range_point": point})
-    out = []
-    for r in mr.get("source_refs") or ():
-        if not isinstance(r, dict) or r.get("read_status") in ("located_not_read", "excluded", "blocked"):
-            continue
-        out.append({k: r.get(k, "") for k in ("source_id", "issuing_body", "document", "doc_date",
-                                               "drafter_role", "drafted_by", "url", "retrieved_at")}
-                   | {"supports": supports.get(r.get("source_id"), [])})
-    return out
-
-
-def coverage_summary(model):
-    """הכיסוי, בקצרה: כמה יחידות קיבלו נושא, קוד טכני או סימון ייחודי, וכמה נושאים חדשים נגזרו מהקורפוס."""
-    cov = model.get("coverage") or {}
-    num = lambda a, b: cov.get(a) if isinstance(cov.get(a), int) else cov.get(b)  # noqa: E731
-    return {"units": num("units", "units_total"), "topic_units": num("topic_units", "units_mapped"),
-            "technical_units": num("technical_units", "units_technical"),
-            "unique_units": num("unique_units", "units_unique") or 0,
-            "unmapped_units": num("unmapped_units", "units_unmapped"),
-            # ספר הכיסוי (validate_model.coverage_ledger): סעיפים = עם מדיניות + בלי מדיניות שאפשר לחלץ + ייחודיים
-            "ledger": (VM.coverage_ledger(model) if VM is not None else None),
-            "topics": len([r for r in model.get("rules") or () if isinstance(r, dict)]),
-            "topics_new": sum(1 for r in model.get("rules") or () if isinstance(r, dict)
-                              and r.get("topic_origin") == "corpus_derived")}
-
-
-def gate_label(model, model_path):
-    """המעמד והתווית מהפונקציה של שער המדיניות (playbook/status.gate_status), כמו באינדקס. status_label שנשמר
-    במודל יכול להיות ישן: בהרצה קודמת הגרעין אמר "מבוסס הסכמי החברה" והשער "מבוסס נוסחים שהחברה מציגה"."""
-    if S is not None:
-        st = S.gate_status(model, model_path)
-        return st["playbook_status"], st["label"]
-    return model.get("playbook_status") or "Draft", model.get("status_label") or ""
-
-
-def build(model, model_path):
-    sc = model.get("scope_summary") or {}
-    pb_status, pb_label = gate_label(model, model_path)
-    fams = [f for f in sc.get("contract_families") or () if isinstance(f, dict)]
-    with open(model_path, "rb") as fh:
-        sha = hashlib.sha256(fh.read()).hexdigest()
-    role_code = model.get("company_role_code") or next((f.get("company_role_code") for f in fams
-                                                        if f.get("company_role_code")), "")
-    return {
-        "schema_version": CORE_SCHEMA,
-        "playbook_id": model.get("playbook_id") or "",
-        "family_id": model.get("family_id") or "",
-        # האיתור של הנושא ונותן מתאים פלייבוק לפי משפחה וצד (check_playbook_contract.py)
-        "family_code": model.get("family_code") or model.get("family_id") or "",
-        "company_role_code": role_code,
-        "corpus_origin": model.get("corpus_origin") or sc.get("corpus_origin") or "own",
-        "market_research_date": (model.get("market_research") or {}).get("research_date") or "",
-        "market_sources": market_sources(model),
-        "playbook_status": pb_status,
-        "status_label": pb_label,
-        "produced_with": model.get("produced_with") or {},
-        "playbook_version": str(model.get("version") or ""),
-        "core_version": model.get("core_version") or "",
-        "generated_at": _dt.date.today().isoformat(),
-        "source_model": os.path.basename(model_path),
-        "source_model_updated": (model.get("last_updated") or model.get("generated_at") or "")[:10],
-        "source_model_sha256": sha,
-        "company_role": sc.get("company_role") or next((f.get("company_role") for f in fams
-                                                        if f.get("company_role")), ""),
-        "output_language": model.get("output_language") or "he",
-        "applicability": model.get("applicability") or {},
-        # הדין החל (או מדינת ההתאגדות) כקודי מדינה: בלעדיו אין הנחה של מדינה
-        "home_countries": home_of(model),
-        "contract_families": [{k: f.get(k) for k in ("contract_family_name", "family_aliases", "company_role",
-                                                     "company_role_code") if f.get(k) is not None}
-                              for f in fams],
-        "clauses": [clause(r, model) for r in model.get("rules") or () if isinstance(r, dict)],
-        # כל נושא בפלייבוק הוא סעיף בגרעין, גם נושא חדש שנגזר מהקורפוס; ולצידם הנושא "טכני" והסעיפים הייחודיים
-        "technical_topics": [{"code": c, "label": lbl} for c, lbl in TECHNICAL_TOPICS],
-        "unique_clauses": [{k: u.get(k) for k in ("ref", "kind", "queue_id") if u.get(k)}
-                           for u in (model.get("coverage") or {}).get("unique_clauses") or () if isinstance(u, dict)],
-        "coverage": coverage_summary(model),
-        "segments": [{k: s.get(k) for k in ("segment_id", "label", "criteria", "negotiation_mode")}
-                     for s in ((model.get("segmentation_model") or {}).get("segments") or ())
-                     if isinstance(s, dict)],
-        # תוצאת הבדיקות הזולות (playbook/validity.validity_summary): סוכן שיש בידו רק הגרעין מזהיר את הלקוח כשהפלייבוק
-        # אינו עובר את הבדיקות של עצמו (validity.playbook_warnings), בלי לפתוח את המודל ובלי ההסכמים
-        "validity": validity_of(model),
-    }
-
-
-def stamp_model_label(model, model_path):
-    """בבנייה (אין עדיין approval_records): playbook_status ו-status_label של המודל ושל ה-handoff נכתבים מהגזירה
-    האחת (status.stamp), לפני שהגרעין, האינדקס, ה-Word וסביבת העבודה נבנים, כדי שהמודל לא ישמור תווית שנכתבה ביד
-    או בהרצה קודמת (ניסוי ארבעת הסוגים: המודל אמר "מבוסס הסכמי החברה", והשער אמר "לא מבוסס"). אחרי קליטה, הקליטה
-    היא שכותבת (after_ingest), והמאמת מסמן סטייה. מחזיר את התווית כשהמודל עודכן, אחרת None."""
-    if S is None or model.get("approval_records"):
-        return None
-    before = (model.get("playbook_status"), model.get("status_label"),
-              (model.get("handoff") or {}).get("status_label") if isinstance(model.get("handoff"), dict) else None)
-    st = S.stamp(model, None, None)
-    after = (model.get("playbook_status"), model.get("status_label"),
-             (model.get("handoff") or {}).get("status_label") if isinstance(model.get("handoff"), dict) else None)
-    if before == after:
-        return None
-    with io.open(model_path, "w", encoding="utf-8") as fh:
-        json.dump(model, fh, ensure_ascii=False, indent=1)
-    return st["label"]
-
-
+	C=model.get('market_research')or{};D={}
+	for A in C.get('ranges')or():
+		if not isinstance(A,dict):continue
+		for E in('ours','middle','theirs'):
+			F=A.get(E)
+			for H in(F if isinstance(F,dict)else{}).get('source_ids')or():D.setdefault(H,[]).append({'rule_id':A.get('rule_id')or A.get('topic'),'range_point':E})
+	G=[]
+	for B in C.get('source_refs')or():
+		if not isinstance(B,dict)or B.get('read_status')in('located_not_read','excluded','blocked'):continue
+		G.append({A:B.get(A,'')for A in('source_id','issuing_body','document','doc_date','drafter_role','drafted_by','url','retrieved_at')}|{'supports':D.get(B.get('source_id'),[])})
+	return G
+def coverage_summary(model):B=model;C=B.get('coverage')or{};A=lambda a,b:C.get(a)if isinstance(C.get(a),int)else C.get(b);return{'units':A('units','units_total'),'topic_units':A('topic_units','units_mapped'),'technical_units':A('technical_units','units_technical'),'unique_units':A('unique_units','units_unique')or 0,'unmapped_units':A('unmapped_units','units_unmapped'),'ledger':VM.coverage_ledger(B)if VM is not None else None,'topics':len([A for A in B.get('rules')or()if isinstance(A,dict)]),'topics_new':sum(1 for A in B.get('rules')or()if isinstance(A,dict)and A.get('topic_origin')=='corpus_derived')}
+def gate_label(model,model_path):
+	A=model
+	if S is not None:B=S.gate_status(A,model_path);return B['playbook_status'],B['label']
+	return A.get('playbook_status')or'Draft',A.get('status_label')or''
+def build(model,model_path):
+	B=model_path;A=model;C=A.get('scope_summary')or{};E,F=gate_label(A,B);D=[A for A in C.get('contract_families')or()if isinstance(A,dict)]
+	with open(B,'rb')as G:H=hashlib.sha256(G.read()).hexdigest()
+	I=A.get('company_role_code')or next((A.get('company_role_code')for A in D if A.get('company_role_code')),'');return{'schema_version':CORE_SCHEMA,'playbook_id':A.get('playbook_id')or'','family_id':A.get('family_id')or'','family_code':A.get('family_code')or A.get('family_id')or'','company_role_code':I,'corpus_origin':A.get('corpus_origin')or C.get('corpus_origin')or'own','market_research_date':(A.get('market_research')or{}).get('research_date')or'','market_sources':market_sources(A),'playbook_status':E,'status_label':F,'produced_with':A.get('produced_with')or{},'playbook_version':str(A.get('version')or''),'core_version':A.get('core_version')or'','generated_at':_dt.date.today().isoformat(),'source_model':os.path.basename(B),'source_model_updated':(A.get('last_updated')or A.get('generated_at')or'')[:10],'source_model_sha256':H,'company_role':C.get('company_role')or next((A.get('company_role')for A in D if A.get('company_role')),''),'output_language':A.get('output_language')or'he','applicability':A.get('applicability')or{},'home_countries':home_of(A),'contract_families':[{A:B.get(A)for A in('contract_family_name','family_aliases','company_role','company_role_code')if B.get(A)is not None}for B in D],'clauses':[clause(B,A)for B in A.get('rules')or()if isinstance(B,dict)],'technical_topics':[{'code':A,'label':B}for(A,B)in TECHNICAL_TOPICS],'unique_clauses':[{B:A.get(B)for B in('ref','kind','queue_id')if A.get(B)}for A in(A.get('coverage')or{}).get('unique_clauses')or()if isinstance(A,dict)],'coverage':coverage_summary(A),'segments':[{B:A.get(B)for B in('segment_id','label','criteria','negotiation_mode')}for A in(A.get('segmentation_model')or{}).get('segments')or()if isinstance(A,dict)],'validity':validity_of(A)}
+def stamp_model_label(model,model_path):
+	A=model
+	if S is None or A.get('approval_records'):return
+	B=A.get('playbook_status'),A.get('status_label'),(A.get('handoff')or{}).get('status_label')if isinstance(A.get('handoff'),dict)else None;C=S.stamp(A,None,None);D=A.get('playbook_status'),A.get('status_label'),(A.get('handoff')or{}).get('status_label')if isinstance(A.get('handoff'),dict)else None
+	if B==D:return
+	with io.open(model_path,'w',encoding='utf-8')as E:json.dump(A,E,ensure_ascii=False,indent=1)
+	return C['label']
 def home_of(model):
-    """קודי המדינות של הדין החל על הסוג (או מדינת ההתאגדות), מ-playbook/validate_model.home_countries. [] כשאינם ידועים."""
-    try:
-        from playbook import validate_model as VM
-        return VM.home_countries(model)
-    except Exception:  # noqa: BLE001
-        return []
-
-
+	try:from playbook import validate_model as A;return A.home_countries(model)
+	except Exception:return[]
 def validity_of(model):
-    """{'status', 'codes', 'rules', 'no_company_position'} מ-playbook/validity, או {} כשהספרייה אינה זמינה."""
-    try:
-        from playbook import validity as VY
-    except ImportError:
-        return {}
-    return VY.validity_summary(model)
-
-
+	try:from playbook import validity as A
+	except ImportError:return{}
+	return A.validity_summary(model)
 def main(argv=None):
-    sys.stdout.reconfigure(encoding="utf-8")
-    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--model", required=True, help="playbook-model.json")
-    ap.add_argument("--out", help="ברירת המחדל: playbook-core.json לצד המודל")
-    a = ap.parse_args(argv)
-    if not os.path.exists(a.model):
-        print("המודל אינו קיים: %s" % a.model)
-        return 2
-    with io.open(a.model, encoding="utf-8") as fh:
-        model = json.load(fh)
-    out = a.out or os.path.join(os.path.dirname(os.path.abspath(a.model)), "playbook-core.json")
-    try:
-        out = guard_out(out, inputs=[a.model])
-    except OutputRefused as exc:
-        print("refused: %s" % exc, file=sys.stderr)
-        return 2
-    stamped = stamp_model_label(model, a.model)
-    if stamped:
-        print("המודל: התווית נכתבה מהגזירה האחת (status.base_code): %s" % stamped)
-    core = build(model, a.model)
-    with io.open(out, "w", encoding="utf-8") as fh:
-        json.dump(core, fh, ensure_ascii=False, indent=1)
-    empty = [c["id"] for c in core["clauses"] if not c["preferred_wording"] or not c["fallback_wording"]]
-    print("נכתב %s: %d סעיפים" % (out, len(core["clauses"])))
-    if (core.get("validity") or {}).get("status") == "invalid":
-        # אין מסירה בשקט של פלייבוק שנכשל בבדיקות שלו: הקודים לבונה, והשורות ללקוח (wf2-opinion-research-finalize.md,
-        # שלב 12)
-        from playbook import validity as VY
-        print("הפלייבוק אינו עובר את הבדיקות של עצמו: %s" % ", ".join(
-            "%s x%d" % (k, v) for k, v in core["validity"]["codes"].items()))
-        for line in VY.playbook_warnings(core=core, lang=core.get("output_language") or "he"):
-            print("ללקוח: %s" % line)
-    if empty:
-        print("לסעיפים האלה אין נוסח ירוק או נוסח נסיגה במודל, והנושא ונותן לא יוכל להחיל אותם: %s"
-              % ", ".join(str(x) for x in empty))
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+	sys.stdout.reconfigure(encoding='utf-8');D=argparse.ArgumentParser(description=__doc__.split('\n')[0]);D.add_argument('--model',required=True,help='playbook-model.json');D.add_argument('--out',help='ברירת המחדל: playbook-core.json לצד המודל');A=D.parse_args(argv)
+	if not os.path.exists(A.model):print('המודל אינו קיים: %s'%A.model);return 2
+	with io.open(A.model,encoding='utf-8')as E:F=json.load(E)
+	C=A.out or os.path.join(os.path.dirname(os.path.abspath(A.model)),'playbook-core.json')
+	try:C=guard_out(C,inputs=[A.model])
+	except OutputRefused as I:print('refused: %s'%I,file=sys.stderr);return 2
+	G=stamp_model_label(F,A.model)
+	if G:print('המודל: התווית נכתבה מהגזירה האחת (status.base_code): %s'%G)
+	B=build(F,A.model)
+	with io.open(C,'w',encoding='utf-8')as E:json.dump(B,E,ensure_ascii=False,indent=1)
+	H=[A['id']for A in B['clauses']if not A['preferred_wording']or not A['fallback_wording']];print('נכתב %s: %d סעיפים'%(C,len(B['clauses'])))
+	if(B.get('validity')or{}).get('status')=='invalid':
+		from playbook import validity as J;print('הפלייבוק אינו עובר את הבדיקות של עצמו: %s'%', '.join('%s x%d'%(A,B)for(A,B)in B['validity']['codes'].items()))
+		for K in J.playbook_warnings(core=B,lang=B.get('output_language')or'he'):print('ללקוח: %s'%K)
+	if H:print('לסעיפים האלה אין נוסח ירוק או נוסח נסיגה במודל, והנושא ונותן לא יוכל להחיל אותם: %s'%', '.join(str(A)for A in H))
+	return 0
+if __name__=='__main__':sys.exit(main())

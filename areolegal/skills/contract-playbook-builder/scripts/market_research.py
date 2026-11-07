@@ -1,1339 +1,532 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""מחקר השוק של בונה הפלייבוק, בקוד ולא בשיקול דעת: הטווח, הבדיקות, הקישורים, ההודעה והרשת.
-
-עד עכשיו המודל חישב את הטווח, בדק את הקישורים וכתב את הודעת המסירה בעצמו,
-וכל הרצה יצאה קצת אחרת: "מקובל" על שני מקורות, "לטובתם" שהגנה על החברה יותר
-מנקודת המפגש, צהוב זהה לירוק, ומספרים שונים בצ'אט וב-Word.
-
-* `ranges` - הטווח לכל נושא מ-`coding[]` ו-`source_refs[]`: שלוש נקודות
-  (לטובתנו, באמצע, לטובתם), כל אחת רק עם שלושה מקורות נספרים מגופים שונים
-  ומתבניות שונות; "לטובתם" נמדדת רק ממקור שיכול להעיד עליה, ואחרת "לא נמדד";
-  שתיקה כדרגה; הצהוב כשנקודת המפגש שווה לירוק; תווית הוודאות לפי הטבלה; ומתי
-  מותר לכתוב "מקובל". נכתב ל-`market_research.ranges[]` ול-`counts`.
-* `check` - מה שהבודק פוסל: "מקובל" בלי נקודה שעומדת בכלל, אדום בבסיס שוק
-  שנשען על "לטובתם" שלא נמדדה, פלייבוק שנשען על השוק בלי תווית ובלי הודעת
-  שקיפות, המשפט "כל עמדה בו היא הצעה של Areo" כשיש ירוק מתבנית של החברה,
-  מספרים בהודעה שאינם הספירה, קישורים שנבדקו לפני שה-Word נבנה, ומסירה סופית
-  עם נימוק בטיוטה בלי `pass_b_stop_reason`.
-* `links` - כל קישור נבדק שוב, אחרי שה-Word והארטיפקט נבנו ולפני ההודעה, דרך
-  שכבת הרשת האחת. `link_checked_at` נרשם לכל רשומה; קישור שנכשל הופך את המקור
-  ל"אותר, לא נקרא", והטווח מחושב מחדש.
-* `message` - הודעת המסירה בתבנית הקבועה של `market-research.md`, "שקיפות":
-  התווית, המשפט הקבוע לפי המסלול (מהספירה), בבנייה לבקשת הנושא ונותן "מה
-  נבנה" ועד שלוש החלטות, ואז המקורות עם קישורים לחיצים, הטווח לכל נושא, מה לא
-  נמצא, מה לא אומת והמגבלות. נשמרת ב-`market_research.disclosure`.
-* `start` / `stop` - מושב מחקר: שומר את החילוץ, הפרופיל, העסקה ושמות החוקים לבדיקות שאחריו. אין
-  בתוסף hook שבודק את כלי החיפוש והקריאה של Claude: הבדיקה היא `query` לפני כל חיפוש, והקריאה רק ב-`fetch`.
-* `query` - הבדיקה, לפני כל חיפוש, חובה. השאילתה נרשמת ב-`market-research/query-log.jsonl` (רק הוספה),
-  ו-`fetch` מסרב לשאילתה שלא עברה כאן.
-* `fetch` - בקשה אחת לרשת, דרך `common/net.py`. במחקר שוק עם סוג המקור
-  (`--source-type`), והאתר נבדק מול רשימת המקורות המאושרים לפני הבקשה ואחרי כל הפניה. אתר שאינו ברשימת המקורות המאושרים נדחה בכל סוג ובכל מטרה (AREO לא מצאה מקור מורשה לנקודה זו). אתר בית משפט, מאגר
-  פסיקה או מדור פסיקה (`common/case_law.case_law_url`) נדחה תמיד. אחרי בדיקת השאילתה: אין בה
-  רצף מילים מההסכמים, שם צד (מהחילוץ, מהמניפסט ומהעסקה), שם הלקוח או הישויות או מילה ייחודית מהם, שם
-  מוצר או פרויקט מההסכמים, או מספר מההסכמים. שם חוק מותר רק ב-`--purpose legal`, ורק כשהוא אחד
-  משמות `--statute` (הרשימה הסגורה של ההרצה). העותק נשמר ב-`market-research/sources/` של המשפחה.
-
-    python3 scripts/market_research.py ranges  --model playbook-model.json
-    python3 scripts/market_research.py check   --model playbook-model.json [--word <הפלייבוק>.docx] [--final]
-    python3 scripts/market_research.py links   --model playbook-model.json --family-dir <playbooks/<family>> \
-        [--approved-sources <מקורות-מאושרים.json>]
-    python3 scripts/market_research.py message --model playbook-model.json [--out הודעה.md]
-    python3 scripts/market_research.py start   --family-dir <...> --corpus <חילוץ.json> --profile <פרופיל-לקוח.json> \
-        [--manifest <corpus-manifest.json>] [--deal <negotiation_state.json>]
-    python3 scripts/market_research.py query   --query "<השאילתה>" --purpose market
-    python3 scripts/market_research.py fetch   --family-dir <...> --source-id W1 --url <...> --purpose market \\
-        --source-type public_filing --query "<השאילתה>" --corpus <חילוץ.json> --profile <פרופיל-לקוח.json>
-    python3 scripts/market_research.py stop
-
-קוד יציאה: **0** תקין, **3** יש ממצא (בדיקה שנכשלה, קישור שנכשל, שאילתה
-שנעצרה), **2** קלט חסר.
-"""
-import argparse
-import datetime as _dt
-import io
-import json
-import os
-import re
-import sys
-import tempfile
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+'מחקר השוק של בונה הפלייבוק, בקוד ולא בשיקול דעת: הטווח, הבדיקות, הקישורים, ההודעה והרשת.'
+import argparse,datetime as _dt,io,json,os,re,sys,tempfile
 from collections import Counter
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # גם ב-python -I, שאינו מוסיף את תיקיית הסקריפט
-import areo_lib  # noqa: F401  מוסיף את areolegal/lib לנתיב הייבוא
-
-from playbook import market_counts as MC  # noqa: E402
-from playbook import status as S  # noqa: E402
-
-LEVELS = (2, 1, 0, -1, -2)
-OURS_POOL = ("same_side", "negotiated", "neutral_model")
-MIDDLE_POOL = ("negotiated", "neutral_model")
-THEIRS_POOL = ("other_side", "negotiated", "neutral_model")
-BALANCED = ("negotiated", "neutral_model")
-NOT_READ = ("located_not_read", "excluded", "blocked")
-MIN_SOURCES = 3
-OLD_YEARS = 7
-CERTAINTY = {"high": "ודאות גבוהה", "medium": "ודאות בינונית", "low": "ודאות נמוכה", "expert": "הערכת מומחה"}
-NOT_MEASURED = "לא נמדד: אין מקור מהצד השני"
-ALL_AREO = "כל עמדה בו היא הצעה של Areo"
-TEMPLATE_BASIS = ("own_paper_repeated", "template")
-MARKET_BASIS = ("market_standard",)
-STOP_REASONS = ("client_stop", "switch_component", "cannot_continue", "build_request")
-
-# ---- סוגי המקורות של מחקר השוק (market-research.md, "סוגי המקורות"): תווית בלבד ----
-# כל קריאה במחקר שוק מצהירה על סוג המקור, אבל הסוג אינו קובע מי מותר. מותר רק מה שברשימת המקורות
-# המאושרים (מקורות-מאושרים.json); אתר שאינו בה נדחה, והנקודה נושאת את ההערה "AREO לא מצאה מקור מורשה לנקודה זו". אין בקוד
-# שום רשימת גופים לפי סוג הסכם או סוג מקור (הרשימות הקודמות הועברו ל-removed-catalogs).
-SOURCE_TYPES = ("tender", "public_filing", "vendor_terms", "model_agreement")
-MODEL_UNLISTED = "לא נבדק: המקור אינו ברשימת המקורות המאושרים"
-NO_POSITION = "AREO לא מצאה מקור מורשה לנקודה זו"
-# המספר שנרשם ב-source_refs[].source_type (market-research.md: "1 עד 4, לפי סוגי המקורות")
-SOURCE_TYPE_NUM = {"tender": 1, "public_filing": 2, "vendor_terms": 3, "model_agreement": 4}
-# "ניסח / לטובת מי" בהודעה ללקוח: בעברית, ולא קוד המודל ("negotiated")
-DRAFTED_HE = {"same_side": "הצד שלנו", "other_side": "הצד שכנגד", "negotiated": "נוהל עליו משא ומתן",
-              "neutral_model": "מודל מאוזן", "unknown": "לא ידוע"}
-# "מי ניסח" בטבלת המקורות: התפקיד כפי שנרשם, והקודים הכלליים בעברית
-DRAFTER_HE = {"public_body": "גוף ציבורי", "model_body": "גוף שמפרסם הסכם מודל", "negotiated": "נוהל עליו משא ומתן",
-              "unknown": "לא ידוע", "same_side": "צד באותה פוזיציה כמו החברה", "other_side": "הצד שכנגד",
-              "supplier": "הספק", "customer": "הלקוח"}
-SOURCE_TYPE_HE = {"tender": "הליך תחרותי ציבורי", "public_filing": "דיווח פומבי", "vendor_terms": "תנאים שצד מפרסם",
-                  "model_agreement": "הסכם מודל"}
-# אסורים כמקור בכל סוג: מאגר מצרף (לאיתור בלבד; המסמך נקרא במקור המקורי), אתרי תבניות,
-# אנציקלופדיות ואתרי חדשות
-DENIED_DOMAINS = ("lawinsider.com", "wikipedia.org", "rocketlawyer.com", "legalzoom.com", "pandadoc.com",
-                  "templatelab.com", "docracy.com", "lawdepot.com", "jdsupra.com", "lexology.com",
-                  "law.com", "ynet.co.il", "globes.co.il", "calcalist.co.il", "themarker.com", "reuters.com")
-# שם של חוק בשאילתה רגולטורית מותר רק כשהוא אחד משמות --statute, שהבונה מעביר מהרשימה הסגורה של ההרצה
-# (rr2-checklist-report-boundary.md). אין זיהוי אוטומטי של "חוק ..." בשאילתה: ביטוי כזה בלע בעבר את שם
-# הלקוח שאחריו ("חוק אקמה מערכות בעמ ..."), והשאילתה נרשמה כשם חוק שעבר.
-# יומן השאילתות: שורת JSON לכל שאילתה, ורק מוסיפים לו (append). בגרסה הראשונה הוא נכתב מחדש כולו בכל
-# שאילתה, ו-Claude מריץ פקודות במקביל: בהרצה החיה כתיבות מקבילות מחקו זו את זו, וכל
-# השאילתות המשפטיות נעלמו מהיומן. יומן ביקורת שמאבד שורות אינו יומן
-QUERY_LOG = "query-log.jsonl"
-QUERY_LOG_OLD = "query-log.json"
-SESSION_FILE = "research-session.json"
-SESSION_HOURS = 6
-
-
-# --------------------------------------------------------------------------- עזר
-def load(path, what):
-    if not path or not os.path.exists(path):
-        print("%s אינו קיים: %s" % (what, path))
-        raise SystemExit(2)
-    with io.open(path, encoding="utf-8") as fh:
-        return json.load(fh)
-
-
-ENTITIES_FILE = "ישויות.json"
-
-
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+import areo_lib
+from playbook import market_counts as MC
+from playbook import status as S
+LEVELS=2,1,0,-1,-2
+OURS_POOL='same_side','negotiated','neutral_model'
+MIDDLE_POOL='negotiated','neutral_model'
+THEIRS_POOL='other_side','negotiated','neutral_model'
+BALANCED='negotiated','neutral_model'
+NOT_READ='located_not_read','excluded','blocked'
+MIN_SOURCES=3
+OLD_YEARS=7
+CERTAINTY={'high':'ודאות גבוהה','medium':'ודאות בינונית','low':'ודאות נמוכה','expert':'הערכת מומחה'}
+NOT_MEASURED='לא נמדד: אין מקור מהצד השני'
+ALL_AREO='כל עמדה בו היא הצעה של Areo'
+TEMPLATE_BASIS='own_paper_repeated','template'
+MARKET_BASIS='market_standard',
+STOP_REASONS='client_stop','switch_component','cannot_continue','build_request'
+SOURCE_TYPES='tender','public_filing','vendor_terms','model_agreement'
+MODEL_UNLISTED='לא נבדק: המקור אינו ברשימת המקורות המאושרים'
+NO_POSITION='AREO לא מצאה מקור מורשה לנקודה זו'
+SOURCE_TYPE_NUM={'tender':1,'public_filing':2,'vendor_terms':3,'model_agreement':4}
+DRAFTED_HE={'same_side':'הצד שלנו','other_side':'הצד שכנגד','negotiated':'נוהל עליו משא ומתן','neutral_model':'מודל מאוזן','unknown':'לא ידוע'}
+DRAFTER_HE={'public_body':'גוף ציבורי','model_body':'גוף שמפרסם הסכם מודל','negotiated':'נוהל עליו משא ומתן','unknown':'לא ידוע','same_side':'צד באותה פוזיציה כמו החברה','other_side':'הצד שכנגד','supplier':'הספק','customer':'הלקוח'}
+SOURCE_TYPE_HE={'tender':'הליך תחרותי ציבורי','public_filing':'דיווח פומבי','vendor_terms':'תנאים שצד מפרסם','model_agreement':'הסכם מודל'}
+DENIED_DOMAINS='lawinsider.com','wikipedia.org','rocketlawyer.com','legalzoom.com','pandadoc.com','templatelab.com','docracy.com','lawdepot.com','jdsupra.com','lexology.com','law.com','ynet.co.il','globes.co.il','calcalist.co.il','themarker.com','reuters.com'
+QUERY_LOG='query-log.jsonl'
+QUERY_LOG_OLD='query-log.json'
+SESSION_FILE='research-session.json'
+SESSION_HOURS=6
+def load(path,what):
+	A=path
+	if not A or not os.path.exists(A):print('%s אינו קיים: %s'%(what,A));raise SystemExit(2)
+	with io.open(A,encoding='utf-8')as B:return json.load(B)
+ENTITIES_FILE='ישויות.json'
 def load_profile(path):
-    """הפרופיל, ולצדו שמות הישויות מ-ישויות.json (בתיקיית הפרופיל או בתיקיות שמעליה), לבדיקת הפרטיות של
-    שאילתה וכתובת. השמות נשמרים במפתח פנימי, ואינם נכתבים לשום קובץ."""
-    prof = load(path, "הפרופיל")
-    folder = os.path.dirname(os.path.abspath(path))
-    for _ in range(4):
-        reg = os.path.join(folder, ENTITIES_FILE)
-        if os.path.isfile(reg):
-            try:
-                with io.open(reg, encoding="utf-8") as fh:
-                    data = json.load(fh)
-            except (OSError, ValueError):
-                break
-            items = data.get("entities") if isinstance(data, dict) else data
-            prof["_entity_names"] = [e.get("name") for e in items or () if isinstance(e, dict) and e.get("name")]
-            break
-        parent = os.path.dirname(folder)
-        if parent == folder:
-            break
-        folder = parent
-    return prof
-
-
-# מילים כלליות שאינן מזהות צד, גם כשהן חלק מהשם ("<Name> Systems Ltd": רק <Name> מזהה)
-GENERIC_NAME_WORDS = {w.casefold() for w in (
-    "limited", "ltd", "inc", "incorporated", "llc", "llp", "corp", "corporation", "company", "holdings",
-    "holding", "group", "gmbh", "plc", "the", "and", "services", "service", "systems", "system", "solutions",
-    "technologies", "technology", "tech", "software", "international", "global", "industries", "industry",
-    "enterprises", "partners", "partnership", "capital", "management", "consulting", "trading", "investments",
-    "properties", "property", "networks", "digital", "data", "cloud", "medical", "health", "healthcare",
-    "energy", "finance", "financial", "insurance", "bank", "media", "logistics", "development", "foundation",
-    "association", "university", "college", "institute", "trust", "fund", "agency", "authority", "ministry",
-    "council", "municipality", "state", "government", "national", "israel", "israeli", "europe", "america",
-    "american", "british", "project", "product", "platform", "programme", "program", "solution",
-    "agreement", "party", "parties", "online", "labs", "works", "pharma", "biotech", "foods", "retail", "estate",
-    "realty", "telecom", "communications", "security", "analytics", "ventures", "equity", "advisors",
-    "associates", "consultants", "engineering", "construction", "manufacturing", "supply", "supplies",
-    "products", "resources", "operations", "united", "general", "standard", "public", "private", "terms",
-    "rollout", "renewal", "phase", "deal", "תקשורת", "הנדסה", "בנייה", "אבטחה", "מזון", "נדלן", "נדל\"ן", "פיתוח", "ייזום", "מוצרים", "משאבים",
-    "בעמ", "בע\"מ", "בע״מ", "חברה", "חברת", "החברה", "מערכות", "שירותים", "שירותי", "אחזקות", "החזקות",
-    "טכנולוגיות", "תעשיות", "השקעות", "נכסים", "ניהול", "ייעוץ", "פתרונות", "קבוצת", "קבוצה", "ישראל",
-    "בינלאומי", "בינלאומית", "גלובל", "דיגיטל", "מדינת", "המדינה", "משרד", "רשות", "הרשות", "עיריית",
-    "העירייה", "מועצה", "עמותת", "עמותה", "אגודת", "אגודה", "שותפות", "קרן", "אוניברסיטת", "מכללת",
-    "פרויקט", "הפרויקט", "מוצר", "המוצר", "מערכת", "המערכת", "בין",
-    "לבין", "ובין", "להלן")}
-LEGAL_SUFFIX_EN = (r"(?:Ltd\.?|Limited|Inc\.?|Incorporated|L\.?L\.?C\.?|L\.?L\.?P\.?|plc|PLC|Corp\.?|"
-                   r"Corporation|GmbH|AG|S\.A\.?|SAS|S\.p\.A\.?|B\.V\.?|N\.V\.?|Pty|Co\.|Holdings)")
-ENTITY_EN = re.compile(r"\b((?:[A-Z][\w&'\-]*\.?\s+){0,4}[A-Z][\w&'\-]*),?\s+" + LEGAL_SUFFIX_EN + r"(?!\w)")
-ENTITY_HE = re.compile(r"((?:[א-ת][א-ת\"״'׳\-]*\s+){0,4}[א-ת][א-ת\"״'׳\-]*)\s+(?:בע[\"״]?מ|\(ע[\"״]?ר\)|"
-                       r"\(חל[\"״]?צ\)|\(שותפות מוגבלת\))")
-# שם פרויקט או מוצר: "Project Falcon", "the Falcon Platform", פרויקט "נשר"
-PROJECT_EN = re.compile(r"\b(?:Project|Programme|Program|Product|Platform)\s+([A-Z][\w\-]{2,})"
-                        r"|\b([A-Z][\w\-]{2,})\s+(?:Project|Programme|Platform)\b")
-PROJECT_HE = re.compile(r"(?:פרויקט|מיזם|תוכנית|מוצר|מערכת|פלטפורמת)\s+[\"״“]([^\"״”]{2,30})[\"״”]")
-QUOTED_ALIAS = re.compile(r"[(]\s*(?:להלן\s*:?\s*|hereinafter(?:\s+(?:referred\s+to\s+as|called))?\s*[:,]?\s*)?"
-                          r"(?:the\s+)?[\"״“]([^\"״”()]{2,40})[\"״”]\s*[)]", re.I)
-_HE_PREFIX = "והבכלמש"
-
-
+	C=load(path,'הפרופיל');A=os.path.dirname(os.path.abspath(path))
+	for H in range(4):
+		D=os.path.join(A,ENTITIES_FILE)
+		if os.path.isfile(D):
+			try:
+				with io.open(D,encoding='utf-8')as F:B=json.load(F)
+			except(OSError,ValueError):break
+			G=B.get('entities')if isinstance(B,dict)else B;C['_entity_names']=[A.get('name')for A in G or()if isinstance(A,dict)and A.get('name')];break
+		E=os.path.dirname(A)
+		if E==A:break
+		A=E
+	return C
+GENERIC_NAME_WORDS={A.casefold()for A in('limited','ltd','inc','incorporated','llc','llp','corp','corporation','company','holdings','holding','group','gmbh','plc','the','and','services','service','systems','system','solutions','technologies','technology','tech','software','international','global','industries','industry','enterprises','partners','partnership','capital','management','consulting','trading','investments','properties','property','networks','digital','data','cloud','medical','health','healthcare','energy','finance','financial','insurance','bank','media','logistics','development','foundation','association','university','college','institute','trust','fund','agency','authority','ministry','council','municipality','state','government','national','israel','israeli','europe','america','american','british','project','product','platform','programme','program','solution','agreement','party','parties','online','labs','works','pharma','biotech','foods','retail','estate','realty','telecom','communications','security','analytics','ventures','equity','advisors','associates','consultants','engineering','construction','manufacturing','supply','supplies','products','resources','operations','united','general','standard','public','private','terms','rollout','renewal','phase','deal','תקשורת','הנדסה','בנייה','אבטחה','מזון','נדלן','נדל"ן','פיתוח','ייזום','מוצרים','משאבים','בעמ','בע"מ','בע״מ','חברה','חברת','החברה','מערכות','שירותים','שירותי','אחזקות','החזקות','טכנולוגיות','תעשיות','השקעות','נכסים','ניהול','ייעוץ','פתרונות','קבוצת','קבוצה','ישראל','בינלאומי','בינלאומית','גלובל','דיגיטל','מדינת','המדינה','משרד','רשות','הרשות','עיריית','העירייה','מועצה','עמותת','עמותה','אגודת','אגודה','שותפות','קרן','אוניברסיטת','מכללת','פרויקט','הפרויקט','מוצר','המוצר','מערכת','המערכת','בין','לבין','ובין','להלן')}
+LEGAL_SUFFIX_EN='(?:Ltd\\.?|Limited|Inc\\.?|Incorporated|L\\.?L\\.?C\\.?|L\\.?L\\.?P\\.?|plc|PLC|Corp\\.?|Corporation|GmbH|AG|S\\.A\\.?|SAS|S\\.p\\.A\\.?|B\\.V\\.?|N\\.V\\.?|Pty|Co\\.|Holdings)'
+ENTITY_EN=re.compile("\\b((?:[A-Z][\\w&'\\-]*\\.?\\s+){0,4}[A-Z][\\w&'\\-]*),?\\s+"+LEGAL_SUFFIX_EN+'(?!\\w)')
+ENTITY_HE=re.compile('((?:[א-ת][א-ת\\"״\'׳\\-]*\\s+){0,4}[א-ת][א-ת\\"״\'׳\\-]*)\\s+(?:בע[\\"״]?מ|\\(ע[\\"״]?ר\\)|\\(חל[\\"״]?צ\\)|\\(שותפות מוגבלת\\))')
+PROJECT_EN=re.compile('\\b(?:Project|Programme|Program|Product|Platform)\\s+([A-Z][\\w\\-]{2,})|\\b([A-Z][\\w\\-]{2,})\\s+(?:Project|Programme|Platform)\\b')
+PROJECT_HE=re.compile('(?:פרויקט|מיזם|תוכנית|מוצר|מערכת|פלטפורמת)\\s+[\\"״“]([^\\"״”]{2,30})[\\"״”]')
+QUOTED_ALIAS=re.compile('[(]\\s*(?:להלן\\s*:?\\s*|hereinafter(?:\\s+(?:referred\\s+to\\s+as|called))?\\s*[:,]?\\s*)?(?:the\\s+)?[\\"״“]([^\\"״”()]{2,40})[\\"״”]\\s*[)]',re.I)
+_HE_PREFIX='והבכלמש'
 def _role_words():
-    """(בודק האם כינוי נראה כתפקיד, מה שאינו צד) מהמניפסט. אין רשימת תפקידים: כינוי מוגדר שנראה כתפקיד (מיודע בעברית,
-    בעל סיומת של תפקיד באנגלית) אינו שם של צד. בלעדיו: רק המילים הכלליות."""
-    try:
-        import build_corpus_manifest as BCM
-        return BCM._role_like, BCM.NOT_A_ROLE
-    except Exception:  # noqa: BLE001
-        return (lambda _n: False), None
-
-
+	try:import build_corpus_manifest as A;return A._role_like,A.NOT_A_ROLE
+	except Exception:return lambda _n:False,None
 def distinctive_tokens(name):
-    """המילים הייחודיות בשם: 4 אותיות ומעלה, ולא מילה כללית (Ltd, Systems, בע"מ, מערכות). Globex מ-Globex Corporation."""
-    out = []
-    for w in re.findall(r"[^\W\d_][\w'\-]*", str(name or "")):
-        w = w.strip("'-")
-        if len(re.sub(r"\W", "", w)) >= 4 and w.casefold() not in GENERIC_NAME_WORDS:
-            out.append(w)
-    return out
-
-
-def corpus_names(corpus=None, manifest=None, deal=None):
-    """שמות הצדדים, הפרויקטים והמוצרים: שם עם סיומת של ישות (Ltd, Inc, GmbH, בע"מ, ע"ר) בפתיח של כל הסכם,
-    כינוי מוגדר בסוגריים שאינו תפקיד ("Initech"), שם פרויקט או מוצר, הכינויים מהמניפסט (parties_hint), ושם
-    הצד שכנגד, העסקה, הפרויקט או המוצר מהעסקה. נשמרים בזיכרון בלבד, לבדיקת השאילתה והכתובת."""
-    roles, not_role = _role_words()
-    found = []
-
-    def add(n):
-        n = re.sub(r"\s+", " ", str(n or "")).strip(" ,.;:()\"'״“”")
-        # רק השם: מה שאחרי "בין", "לבין", "עם", "between" ("הסכם זה נערך בין אקמה מערכות" -> "אקמה מערכות")
-        n = re.split(r"(?:^|\s)(?:ו?ל?בין|עם|between|and|by)\s+", n, flags=re.I)[-1].strip()
-        if len(n) < 3 or re.search(r"\d", n):
-            return
-        low = re.sub(r"^the ", "", n.casefold())
-        if roles(n) or low in GENERIC_NAME_WORDS or (not_role is not None and not_role.match(n)):
-            return
-        if re.match(r"(?:חוק|תקנות|פקודת|צו)\s|.*\b(?:Act|Law|Regulations?|Directive)$", n, re.I):
-            return
-        found.append(n)
-
-    docs = corpus.get("documents") if isinstance(corpus, dict) else corpus
-    for d in docs or ():
-        if not isinstance(d, dict):
-            continue
-        paras = d.get("paragraphs") or [p for ps in (d.get("parts") or {}).values() for p in ps]
-        text = " ".join((p.get("text") or p.get("text_accept_all") or "") for p in paras if isinstance(p, dict))
-        head = text[:3000]
-        for rx in (ENTITY_EN, ENTITY_HE):
-            for m in rx.finditer(head):
-                add(m.group(1))
-        for m in QUOTED_ALIAS.finditer(head):
-            g = m.group(1).strip()
-            if not re.search(r"\b[A-Z]{2,8}\b", g) and len(g.split()) <= 3:
-                add(g)
-        for m in PROJECT_EN.finditer(text):
-            add(m.group(1) or m.group(2))
-        for m in PROJECT_HE.finditer(text):
-            add(m.group(1))
-    rows = (manifest.get("files") or manifest.get("documents") or []) if isinstance(manifest, dict) else manifest
-    for r in rows if isinstance(rows, list) else ():
-        for g in (r.get("parties_hint") or []) if isinstance(r, dict) else ():
-            add(g)
-    if isinstance(deal, dict):
-        cp = deal.get("counterparty")
-        for v in (deal.get("counterparty_name"), deal.get("counterparty_name_en"), deal.get("deal_name"),
-                  deal.get("project_name"), deal.get("product_name"), cp.get("name") if isinstance(cp, dict) else cp):
-            if isinstance(v, str):
-                add(v)
-        for p in deal.get("parties") or ():
-            add(p.get("name") if isinstance(p, dict) else p)
-        for k in ("meta", "deal", "deal_context"):
-            if isinstance(deal.get(k), dict):
-                found += corpus_names(deal=deal[k])
-    return list(dict.fromkeys(found))
-
-
-def client_names(profile, corpus=None, manifest=None, deal=None):
-    """שמות שאסור שיופיעו בשאילתה או בכתובת: השם הרשום של הלקוח בעברית ובאנגלית, שמות הישויות שהוקמו, אתר
-    הלקוח, ושמות הצדדים, הפרויקטים והמוצרים מההסכמים, מהמניפסט ומהעסקה. מפתח שאינו בפרופיל פשוט אינו נקרא."""
-    names = []
-    if profile:
-        names += [profile.get("organization_name"), profile.get("organization_name_en")]
-        names += list(profile.get("_entity_names") or ())
-        br = profile.get("branding") if isinstance(profile.get("branding"), dict) else {}
-        host = re.sub(r"^www\.", "", _host(br.get("website") or ""))
-        if host:
-            names.append(host)
-    if corpus or manifest or deal:
-        names += corpus_names(corpus, manifest, deal)
-    seen, out = set(), []
-    for n in names:
-        n = str(n or "").strip()
-        if n and n.lower() not in seen:
-            seen.add(n.lower())
-            out.append(n)
-    return out
-
-
+	B=[]
+	for A in re.findall("[^\\W\\d_][\\w'\\-]*",str(name or'')):
+		A=A.strip("'-")
+		if len(re.sub('\\W','',A))>=4 and A.casefold()not in GENERIC_NAME_WORDS:B.append(A)
+	return B
+def corpus_names(corpus=None,manifest=None,deal=None):
+	F=corpus;E=manifest;A=deal;R,L=_role_words();G=[]
+	def C(n):
+		n=re.sub('\\s+',' ',str(n or'')).strip(' ,.;:()"\'״“”');n=re.split('(?:^|\\s)(?:ו?ל?בין|עם|between|and|by)\\s+',n,flags=re.I)[-1].strip()
+		if len(n)<3 or re.search('\\d',n):return
+		A=re.sub('^the ','',n.casefold())
+		if R(n)or A in GENERIC_NAME_WORDS or L is not None and L.match(n):return
+		if re.match('(?:חוק|תקנות|פקודת|צו)\\s|.*\\b(?:Act|Law|Regulations?|Directive)$',n,re.I):return
+		G.append(n)
+	S=F.get('documents')if isinstance(F,dict)else F
+	for H in S or():
+		if not isinstance(H,dict):continue
+		T=H.get('paragraphs')or[B for A in(H.get('parts')or{}).values()for B in A];I=' '.join(A.get('text')or A.get('text_accept_all')or''for A in T if isinstance(A,dict));M=I[:3000]
+		for U in(ENTITY_EN,ENTITY_HE):
+			for B in U.finditer(M):C(B.group(1))
+		for B in QUOTED_ALIAS.finditer(M):
+			D=B.group(1).strip()
+			if not re.search('\\b[A-Z]{2,8}\\b',D)and len(D.split())<=3:C(D)
+		for B in PROJECT_EN.finditer(I):C(B.group(1)or B.group(2))
+		for B in PROJECT_HE.finditer(I):C(B.group(1))
+	N=E.get('files')or E.get('documents')or[]if isinstance(E,dict)else E
+	for O in N if isinstance(N,list)else():
+		for D in O.get('parties_hint')or[]if isinstance(O,dict)else():C(D)
+	if isinstance(A,dict):
+		J=A.get('counterparty')
+		for P in(A.get('counterparty_name'),A.get('counterparty_name_en'),A.get('deal_name'),A.get('project_name'),A.get('product_name'),J.get('name')if isinstance(J,dict)else J):
+			if isinstance(P,str):C(P)
+		for K in A.get('parties')or():C(K.get('name')if isinstance(K,dict)else K)
+		for Q in('meta','deal','deal_context'):
+			if isinstance(A.get(Q),dict):G+=corpus_names(deal=A[Q])
+	return list(dict.fromkeys(G))
+def client_names(profile,corpus=None,manifest=None,deal=None):
+	E=manifest;D=corpus;A=profile;C=[]
+	if A:
+		C+=[A.get('organization_name'),A.get('organization_name_en')];C+=list(A.get('_entity_names')or());I=A.get('branding')if isinstance(A.get('branding'),dict)else{};F=re.sub('^www\\.','',_host(I.get('website')or''))
+		if F:C.append(F)
+	if D or E or deal:C+=corpus_names(D,E,deal)
+	G,H=set(),[]
+	for B in C:
+		B=str(B or'').strip()
+		if B and B.lower()not in G:G.add(B.lower());H.append(B)
+	return H
 def name_tokens(names):
-    """המילים הייחודיות מכל השמות (Globex, Initech, Falcon, אקמה), בלי כפילות. מאתר: התווית הראשונה."""
-    out = []
-    for n in names:
-        if re.fullmatch(r"[\w\-]+(\.[\w\-]+)+", n):
-            n = n.split(".")[0]
-        out += distinctive_tokens(n)
-    return list(dict.fromkeys(out))
-
-
-def token_in(text, tokens):
-    """המילה הייחודית הראשונה שמופיעה בטקסט כמילה שלמה (בעברית גם אחרי אות שימוש: לגלובקס), או ''."""
-    t = " ".join(str(text or "").split())
-    for tok in tokens:
-        pre = "(?:[%s]{1,2})?" % _HE_PREFIX if re.match(r"[א-ת]", tok) else ""
-        if re.search(r"(?<!\w)%s%s(?!\w)" % (pre, re.escape(tok)), t, re.I):
-            return tok
-    return ""
-
-
-def save(path, data):
-    with io.open(path, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, ensure_ascii=False, indent=1)
-
-
-def now_iso():
-    return _dt.datetime.now().astimezone().isoformat(timespec="seconds")
-
-
-EN_MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
-
-
-def he_date(iso, lang="he"):
-    """תאריך בטקסט (הכללים המשותפים 3.6): בעברית D.M.YYYY, ובאנגלית "3 April 2027"."""
-    try:
-        d = _dt.date.fromisoformat(str(iso)[:10])
-    except ValueError:
-        return str(iso or "")
-    if lang == "en":
-        return "%d %s %d" % (d.day, EN_MONTHS[d.month - 1], d.year)
-    return "%d.%d.%d" % (d.day, d.month, d.year)
-
-
-def year_of(d):
-    m = re.match(r"(\d{4})", str(d or ""))
-    return int(m.group(1)) if m else None
-
-
-# --------------------------------------------------------------------------- הטווח
-def _host(url):
-    return (re.sub(r"^[a-z]+://", "", url or "", flags=re.I).split("/")[0].split(":")[0]).lower()
-
-
+	B=[]
+	for A in names:
+		if re.fullmatch('[\\w\\-]+(\\.[\\w\\-]+)+',A):A=A.split('.')[0]
+		B+=distinctive_tokens(A)
+	return list(dict.fromkeys(B))
+def token_in(text,tokens):
+	B=' '.join(str(text or'').split())
+	for A in tokens:
+		C='(?:[%s]{1,2})?'%_HE_PREFIX if re.match('[א-ת]',A)else''
+		if re.search('(?<!\\w)%s%s(?!\\w)'%(C,re.escape(A)),B,re.I):return A
+	return''
+def save(path,data):
+	with io.open(path,'w',encoding='utf-8')as A:json.dump(data,A,ensure_ascii=False,indent=1)
+def now_iso():return _dt.datetime.now().astimezone().isoformat(timespec='seconds')
+EN_MONTHS='January','February','March','April','May','June','July','August','September','October','November','December'
+def he_date(iso,lang='he'):
+	try:A=_dt.date.fromisoformat(str(iso)[:10])
+	except ValueError:return str(iso or'')
+	if lang=='en':return'%d %s %d'%(A.day,EN_MONTHS[A.month-1],A.year)
+	return'%d.%d.%d'%(A.day,A.month,A.year)
+def year_of(d):A=re.match('(\\d{4})',str(d or''));return int(A.group(1))if A else None
+def _host(url):return re.sub('^[a-z]+://','',url or'',flags=re.I).split('/')[0].split(':')[0].lower()
 def _approved_rules(path=None):
-    """כללי הכתובת מרשימת המקורות המאושרים; ריק כשהקובץ לא נמסר או לא נקרא (אז אין מקור מאושר)."""
-    try:
-        from risk.validate_register import approved_domains
-        return approved_domains(path)[0]
-    except Exception:  # noqa: BLE001
-        return ()
-
-
+	try:from risk.validate_register import approved_domains as A;return A(path)[0]
+	except Exception:return()
 def model_body_unlisted(ref):
-    """הסכם מודל (סוג 4, מנסח model_body או מודל מאוזן) מאתר שאינו ברשימת המקורות המאושרים, או בלי כתובת לבדיקה."""
-    if not (ref.get("source_type") in (4, "4") or ref.get("drafter_role") == "model_body"
-            or ref.get("drafted_by") == "neutral_model"):
-        return False
-    url = ref.get("final_url") or ref.get("url")
-    if not _host(url):
-        return True
-    try:
-        from risk.validate_register import domain_ok
-    except Exception:  # noqa: BLE001
-        return True
-    return not domain_ok(url, _approved_rules())
-
-
+	A=ref
+	if not(A.get('source_type')in(4,'4')or A.get('drafter_role')=='model_body'or A.get('drafted_by')=='neutral_model'):return False
+	B=A.get('final_url')or A.get('url')
+	if not _host(B):return True
+	try:from risk.validate_register import domain_ok as C
+	except Exception:return True
+	return not C(B,_approved_rules())
 def counted_ref(ref):
-    """מקור נספר: נקרא, יש לו תאריך, ומקור ממאגר מצרף נבדק מול המקור המקורי. הסכם מודל רק מגוף ברשימה הסגורה."""
-    if not ref or ref.get("read_status") in NOT_READ or not ref.get("doc_date"):
-        return False
-    if model_body_unlisted(ref):
-        return False
-    if ref.get("located_via") == "aggregator" and not ref.get("verified_against_original"):
-        return False
-    return ref.get("drafted_by") not in (None, "unknown")
-
-
-def level_of(c, silence_rank):
-    if c.get("special") == "silent" or c.get("level") == "silence":
-        return "silence" if silence_rank is not None else None
-    lv = c.get("level")
-    return lv if lv in LEVELS else None
-
-
-def rank(level, silence_rank):
-    return silence_rank if level == "silence" else level
-
-
-def pick(sources, refs):
-    """מקורות מגופים שונים ומתבניות שונות: כל גוף וכל משפחת תבנית נספרים פעם אחת."""
-    bodies, families, out = set(), set(), []
-    for sid in sorted(sources):
-        r = refs[sid]
-        b = (r.get("issuing_body") or sid).strip().lower()
-        f = (r.get("template_family") or sid).strip().lower()
-        if b in bodies or f in families:
-            continue
-        bodies.add(b)
-        families.add(f)
-        out.append(sid)
-    return out
-
-
-def topic_points(topic, coding, refs, silence_rank=None):
-    by_level, uncertain = {}, []
-    for c in coding:
-        if c.get("topic") != topic:
-            continue
-        ref = refs.get(c.get("source_id"))
-        if not counted_ref(ref) or c.get("special") in ("redacted", "not_relevant"):
-            continue
-        if c.get("status") == "uncertain":
-            uncertain.append(c["source_id"])
-            continue
-        if c.get("status") not in ("agreed", "resolved"):
-            continue
-        lv = level_of(c, silence_rank)
-        if lv is None:
-            continue
-        by_level.setdefault(lv, []).append(c["source_id"])
-    return by_level, uncertain
-
-
-def point_for(by_level, refs, pool, order, silence_rank, mode=False):
-    cands = []
-    for lv, sids in by_level.items():
-        chosen = pick([s for s in sids if refs[s].get("drafted_by") in pool], refs)
-        if len(chosen) >= MIN_SOURCES:
-            cands.append((lv, chosen))
-    if not cands:
-        return None
-    if mode:   # השכיחה; בשוויון, הקרובה לאיזון
-        cands.sort(key=lambda x: (-len(x[1]), abs(rank(x[0], silence_rank) or 0)))
-    else:
-        cands.sort(key=lambda x: rank(x[0], silence_rank) * (1 if order == "max" else -1), reverse=True)
-    lv, sids = cands[0]
-    return {"level": lv, "source_ids": sids}
-
-
-def certainty(point, refs, question, research_year, uncertain, by_level, silence_rank):
-    if not point or uncertain:
-        return CERTAINTY["expert"]
-    rs = [refs[s] for s in point["source_ids"]]
-    flaws = 0
-    if len({r.get("source_type") for r in rs}) < 2:
-        flaws += 1
-    juris = (question or {}).get("jurisdiction")
-    if juris and any(r.get("jurisdiction") and r.get("jurisdiction") != juris for r in rs):
-        flaws += 1
-    if research_year and any((year_of(r.get("doc_date")) or research_year) < research_year - OLD_YEARS for r in rs):
-        flaws += 1
-    here = rank(point["level"], silence_rank)
-    if any(lv != point["level"] and abs((rank(lv, silence_rank) or 0) - here) == 1 for lv in by_level):
-        flaws += 1
-    balanced = any(r.get("drafted_by") in BALANCED for r in rs)
-    if flaws == 0 and balanced:
-        return CERTAINTY["high"]
-    if flaws <= 1:
-        return CERTAINTY["medium"]
-    return CERTAINTY["low"]
-
-
-def accepted_ok(point, refs, question):
-    """"מקובל": שלושה מקורות נספרים מגופים ומתבניות שונים, מאותו סוג הסכם, ואחד מהם מנוהל או מאוזן."""
-    if not point:
-        return False
-    rs = [refs[s] for s in point["source_ids"]]
-    types = {(question or {}).get("agreement_type_he"), (question or {}).get("agreement_type_en")} - {None}
-    same_type = all(not types or r.get("agreement_type") in types for r in rs)
-    return len(rs) >= MIN_SOURCES and same_type and any(r.get("drafted_by") in BALANCED for r in rs)
-
-
+	A=ref
+	if not A or A.get('read_status')in NOT_READ or not A.get('doc_date'):return False
+	if model_body_unlisted(A):return False
+	if A.get('located_via')=='aggregator'and not A.get('verified_against_original'):return False
+	return A.get('drafted_by')not in(None,'unknown')
+def level_of(c,silence_rank):
+	if c.get('special')=='silent'or c.get('level')=='silence':return'silence'if silence_rank is not None else None
+	A=c.get('level');return A if A in LEVELS else None
+def rank(level,silence_rank):A=level;return silence_rank if A=='silence'else A
+def pick(sources,refs):
+	B,C,D=set(),set(),[]
+	for A in sorted(sources):
+		E=refs[A];F=(E.get('issuing_body')or A).strip().lower();G=(E.get('template_family')or A).strip().lower()
+		if F in B or G in C:continue
+		B.add(F);C.add(G);D.append(A)
+	return D
+def topic_points(topic,coding,refs,silence_rank=None):
+	B,C={},[]
+	for A in coding:
+		if A.get('topic')!=topic:continue
+		E=refs.get(A.get('source_id'))
+		if not counted_ref(E)or A.get('special')in('redacted','not_relevant'):continue
+		if A.get('status')=='uncertain':C.append(A['source_id']);continue
+		if A.get('status')not in('agreed','resolved'):continue
+		D=level_of(A,silence_rank)
+		if D is None:continue
+		B.setdefault(D,[]).append(A['source_id'])
+	return B,C
+def point_for(by_level,refs,pool,order,silence_rank,mode=False):
+	D=silence_rank;A=[]
+	for(B,C)in by_level.items():
+		E=pick([A for A in C if refs[A].get('drafted_by')in pool],refs)
+		if len(E)>=MIN_SOURCES:A.append((B,E))
+	if not A:return
+	if mode:A.sort(key=lambda x:(-len(x[1]),abs(rank(x[0],D)or 0)))
+	else:A.sort(key=lambda x:rank(x[0],D)*(1 if order=='max'else-1),reverse=True)
+	B,C=A[0];return{'level':B,'source_ids':C}
+def certainty(point,refs,question,research_year,uncertain,by_level,silence_rank):
+	E=silence_rank;D=research_year;B=point
+	if not B or uncertain:return CERTAINTY['expert']
+	C=[refs[A]for A in B['source_ids']];A=0
+	if len({A.get('source_type')for A in C})<2:A+=1
+	F=(question or{}).get('jurisdiction')
+	if F and any(A.get('jurisdiction')and A.get('jurisdiction')!=F for A in C):A+=1
+	if D and any((year_of(A.get('doc_date'))or D)<D-OLD_YEARS for A in C):A+=1
+	G=rank(B['level'],E)
+	if any(A!=B['level']and abs((rank(A,E)or 0)-G)==1 for A in by_level):A+=1
+	H=any(A.get('drafted_by')in BALANCED for A in C)
+	if A==0 and H:return CERTAINTY['high']
+	if A<=1:return CERTAINTY['medium']
+	return CERTAINTY['low']
+def accepted_ok(point,refs,question):
+	C=question;B=point
+	if not B:return False
+	A=[refs[A]for A in B['source_ids']];D={(C or{}).get('agreement_type_he'),(C or{}).get('agreement_type_en')}-{None};E=all(not D or A.get('agreement_type')in D for A in A);return len(A)>=MIN_SOURCES and E and any(A.get('drafted_by')in BALANCED for A in A)
 def compute_ranges(model):
-    mr = model.setdefault("market_research", {})
-    refs = {r["source_id"]: r for r in mr.get("source_refs") or [] if r.get("source_id")}
-    coding = mr.get("coding") or []
-    question = mr.get("question") or {}
-    research_year = year_of(mr.get("research_date"))
-    sheets = {s.get("topic"): s for s in mr.get("coding_sheets") or []}
-    old = {r.get("topic"): r for r in mr.get("ranges") or []}
-    topics = []
-    for c in coding:
-        if c.get("topic") and c["topic"] not in topics:
-            topics.append(c["topic"])
-    ranges = []
-    for topic in topics:
-        silence_rank = (sheets.get(topic) or {}).get("silence_level")
-        silence_rank = silence_rank if silence_rank in LEVELS else None
-        by_level, uncertain = topic_points(topic, coding, refs, silence_rank)
-        ours = point_for(by_level, refs, OURS_POOL, "max", silence_rank)
-        middle = point_for(by_level, refs, MIDDLE_POOL, None, silence_rank, mode=True)
-        has_other = any(refs[s].get("drafted_by") == "other_side" for sids in by_level.values() for s in sids)
-        theirs = point_for(by_level, refs, THEIRS_POOL if has_other else BALANCED, "min", silence_rank)
-        theirs_note = None
-        if not has_other:
-            cap = middle or ours
-            if theirs is None or (cap and rank(theirs["level"], silence_rank) > rank(cap["level"], silence_rank)):
-                theirs, theirs_note = None, NOT_MEASURED
-        if ours and middle and ours["level"] == middle["level"]:
-            yellow = ("theirs" if theirs and rank(theirs["level"], silence_rank) ==
-                      rank(ours["level"], silence_rank) - 1 else "areo_compromise")
-        else:
-            yellow = "middle" if middle else "areo_compromise"
-        out = {"topic": topic,
-               "distribution": {str(lv): sorted(s) for lv, s in sorted(by_level.items(), key=lambda x: str(x[0]))},
-               "uncertain": sorted(uncertain), "yellow_from": yellow}
-        for name, p in (("ours", ours), ("middle", middle), ("theirs", theirs)):
-            if p:
-                p = dict(p, position=name, certainty=certainty(p, refs, question, research_year, uncertain, by_level,
-                                                                silence_rank),
-                         accepted_ok=accepted_ok(p, refs, question))
-            out[name] = p
-        if theirs_note:
-            out["theirs_note"] = theirs_note
-        if not ours and not middle:
-            out["certainty"] = CERTAINTY["expert"]
-        if (old.get(topic) or {}).get("periods"):
-            out["periods"] = old[topic]["periods"]
-        ranges.append(out)
-    mr["ranges"] = ranges
-    used = {c["source_id"] for c in coding if c.get("source_id") in refs and counted_ref(refs[c["source_id"]])}
-    mr["counts"] = {"found": len(refs),
-                    "opened": sum(1 for r in refs.values() if r.get("read_status") not in ("located_not_read",)),
-                    "read": sum(1 for r in refs.values() if r.get("read_status") not in NOT_READ),
-                    "counted": len({(refs[s].get("template_family") or s).strip().lower() for s in used}),
-                    "excluded": sum(1 for r in refs.values() if r.get("read_status") in NOT_READ),
-                    # הגופים של המקורות שנספרו, כמו "counted": גם כשאף נקודה לא הגיעה לשלושה מקורות.
-                    # לפני כן נספרו רק גופים של נקודות, וההודעה אמרה "7 מסמכים מ-0 גופים"
-                    "bodies": len({(refs[s].get("issuing_body") or "").strip().lower() for s in used} - {""})}
-    return ranges
-
-
-# --------------------------------------------------------------------------- הבדיקות
+	C=model.setdefault('market_research',{});A={A['source_id']:A for A in C.get('source_refs')or[]if A.get('source_id')};K=C.get('coding')or[];P=C.get('question')or{};X=year_of(C.get('research_date'));Y={A.get('topic'):A for A in C.get('coding_sheets')or[]};Q={A.get('topic'):A for A in C.get('ranges')or[]};L=[]
+	for M in K:
+		if M.get('topic')and M['topic']not in L:L.append(M['topic'])
+	N=[]
+	for I in L:
+		B=(Y.get(I)or{}).get('silence_level');B=B if B in LEVELS else None;D,R=topic_points(I,K,A,B);E=point_for(D,A,OURS_POOL,'max',B);F=point_for(D,A,MIDDLE_POOL,None,B,mode=True);S=any(A[C].get('drafted_by')=='other_side'for B in D.values()for C in B);G=point_for(D,A,THEIRS_POOL if S else BALANCED,'min',B);O=None
+		if not S:
+			T=F or E
+			if G is None or T and rank(G['level'],B)>rank(T['level'],B):G,O=None,NOT_MEASURED
+		if E and F and E['level']==F['level']:U='theirs'if G and rank(G['level'],B)==rank(E['level'],B)-1 else'areo_compromise'
+		else:U='middle'if F else'areo_compromise'
+		J={'topic':I,'distribution':{str(A):sorted(B)for(A,B)in sorted(D.items(),key=lambda x:str(x[0]))},'uncertain':sorted(R),'yellow_from':U}
+		for(V,H)in(('ours',E),('middle',F),('theirs',G)):
+			if H:H=dict(H,position=V,certainty=certainty(H,A,P,X,R,D,B),accepted_ok=accepted_ok(H,A,P))
+			J[V]=H
+		if O:J['theirs_note']=O
+		if not E and not F:J['certainty']=CERTAINTY['expert']
+		if(Q.get(I)or{}).get('periods'):J['periods']=Q[I]['periods']
+		N.append(J)
+	C['ranges']=N;W={B['source_id']for B in K if B.get('source_id')in A and counted_ref(A[B['source_id']])};C['counts']={'found':len(A),'opened':sum(1 for A in A.values()if A.get('read_status')not in('located_not_read',)),'read':sum(1 for A in A.values()if A.get('read_status')not in NOT_READ),'counted':len({(A[B].get('template_family')or B).strip().lower()for B in W}),'excluded':sum(1 for A in A.values()if A.get('read_status')in NOT_READ),'bodies':len({(A[B].get('issuing_body')or'').strip().lower()for B in W}-{''})};return N
 def iter_tracks(model):
-    for rule in model.get("rules") or []:
-        for t in ("green", "yellow", "red"):
-            tl = (rule.get("traffic_light") or {}).get(t)
-            if isinstance(tl, dict):
-                yield rule, t, tl
-
-
-def text_of(tl):
-    return " ".join(str(tl.get(k) or "") for k in ("source_label", "rationale", "note", "proposed_clause",
-                                                    "position", "summary"))
-
-
-def range_for(model, rule):
-    topic = rule.get("market_topic") or rule.get("topic") or rule.get("title")
-    for r in (model.get("market_research") or {}).get("ranges") or []:
-        if r.get("topic") == topic:
-            return r
-    return None
-
-
-def uses_market(model):
-    return any(tl.get("basis") in MARKET_BASIS for _, _, tl in iter_tracks(model)) or \
-        model.get("corpus_origin") in ("own_plus_market", "market_built")
-
-
+	for A in model.get('rules')or[]:
+		for B in('green','yellow','red'):
+			C=(A.get('traffic_light')or{}).get(B)
+			if isinstance(C,dict):yield(A,B,C)
+def text_of(tl):return' '.join(str(tl.get(A)or'')for A in('source_label','rationale','note','proposed_clause','position','summary'))
+def range_for(model,rule):
+	A=rule;C=A.get('market_topic')or A.get('topic')or A.get('title')
+	for B in(model.get('market_research')or{}).get('ranges')or[]:
+		if B.get('topic')==C:return B
+def uses_market(model):A=model;return any(B.get('basis')in MARKET_BASIS for(A,A,B)in iter_tracks(A))or A.get('corpus_origin')in('own_plus_market','market_built')
 def docx_created(path):
-    import zipfile
-    try:
-        with zipfile.ZipFile(path) as z:
-            core = z.read("docProps/core.xml").decode("utf-8", "ignore")
-    except (OSError, KeyError, zipfile.BadZipFile):
-        return None
-    m = re.search(r"<dcterms:(?:modified|created)[^>]*>([^<]+)<", core)
-    return m.group(1) if m else None
-
-
+	import zipfile as A
+	try:
+		with A.ZipFile(path)as C:D=C.read('docProps/core.xml').decode('utf-8','ignore')
+	except(OSError,KeyError,A.BadZipFile):return
+	B=re.search('<dcterms:(?:modified|created)[^>]*>([^<]+)<',D);return B.group(1)if B else None
 def _ts(s):
-    try:
-        t = _dt.datetime.fromisoformat(str(s).replace("Z", "+00:00"))
-        return t if t.tzinfo else t.replace(tzinfo=_dt.timezone.utc)
-    except ValueError:
-        return None
-
-
-def check_model(model, word=None, final=False):
-    errs = []
-    mr = model.get("market_research") or {}
-    for rule, t, tl in iter_tracks(model):
-        where = "%s/%s" % (rule.get("rule_id"), t)
-        rng = range_for(model, rule)
-        point = (rng or {}).get(tl.get("range_point") or {"green": "ours", "yellow": "middle", "red": "theirs"}[t])
-        if "מקובל" in text_of(tl) and not (point and point.get("accepted_ok")):
-            errs.append("MARKET_ACCEPTED_UNSUPPORTED %s: \"מקובל\" בלי נקודה של שלושה מקורות נספרים, מגופים ומתבניות "
-                        "שונים, מאותו סוג הסכם ועם מקור מנוהל או מאוזן" % where)
-        if t == "red" and tl.get("basis") in MARKET_BASIS and rng and not rng.get("theirs"):
-            errs.append("RED_THEIRS_NOT_MEASURED %s: אדום בבסיס שוק, ו\"לטובתם\" לא נמדדה (%s)"
-                        % (where, rng.get("theirs_note") or "פחות משלושה מקורות"))
-    for r in mr.get("source_refs") or []:
-        if r.get("read_status") not in NOT_READ and model_body_unlisted(r):
-            errs.append("MODEL_BODY_NOT_LISTED %s: הסכם מודל מגוף שאינו ברשימה הסגורה (%s) אינו מקור, גם בהצהרה או "
-                        "באישור של הלקוח. הוצא אותו מ-source_refs ומהקידוד, ורשום אותו ב-counts.screened_out[] "
-                        "בסיבה \"%s\"" % (r.get("source_id"), _host(r.get("final_url") or r.get("url")) or "אין כתובת",
-                                           MODEL_UNLISTED))
-        if r.get("source_type") in (3, "3") and r.get("drafted_by") in BALANCED:
-            errs.append("VENDOR_TERMS_AS_BALANCED %s: תנאים שספק מפרסם הם העמדה של אותו ספק, ואינם נספרים "
-                        "לנקודת המפגש (drafted_by=%s)" % (r.get("source_id"), r.get("drafted_by")))
-    if uses_market(model):
-        disc = mr.get("disclosure") or {}
-        if not (model.get("status_label") or model.get("presentation_label")):
-            errs.append("MARKET_NO_LABEL: הפלייבוק נשען על מחקר שוק, ואין תווית")
-        if not disc.get("chat_message"):
-            errs.append("MARKET_NO_DISCLOSURE: הפלייבוק נשען על מחקר שוק, ואין הודעת שקיפות (market_research.disclosure)")
-        greens_template = any(t == "green" and tl.get("basis") in TEMPLATE_BASIS + ("documents_majority",)
-                              for _, t, tl in iter_tracks(model))
-        for f in ("fixed_sentence", "chat_message"):
-            txt = disc.get(f) or ""
-            if greens_template and ALL_AREO in txt:
-                errs.append("ALL_AREO_WITH_TEMPLATE: \"%s\" ב-%s, ויש ירוק מתבנית של החברה" % (ALL_AREO, f))
-            for c in MC.count_claims(txt, model):
-                errs.append("MARKET_COUNT_MISMATCH %s: %s" % (f, c))
-    if word:
-        built = _ts(docx_created(word))
-        for r in mr.get("source_refs") or []:
-            checked = _ts(r.get("link_checked_at"))
-            # מקור שלא נקרא אינו נספר ואינו מקושר, ו-links מדלג עליו; לכן אין לדרוש לו בדיקת קישור
-            # (הבדיקה הזו עוצרת מסירה על מקור שהחזיר 404)
-            if r.get("read_status") in NOT_READ:
-                continue
-            if r.get("url") and built and (not checked or checked < built):
-                errs.append("LINK_CHECK_BEFORE_WORD %s: הקישור נבדק לפני שה-Word נבנה (או לא נבדק)" % r.get("source_id"))
-    if final:
-        drafts = [r.get("rule_id") for r in model.get("rules") or [] if
-                  (r.get("rationale") or {}).get("rationale_status", r.get("rationale_status")) == "Draft"]
-        reason = (model.get("qa_summary") or {}).get("pass_b_stop_reason")
-        if drafts and reason not in STOP_REASONS:
-            errs.append("PASS_B_STOP_REASON: מסירה סופית עם %d כללים שהנימוק שלהם בטיוטה, בלי pass_b_stop_reason "
-                        "(%s)" % (len(drafts), " | ".join(STOP_REASONS)))
-    return errs
-
-
-# --------------------------------------------------------------------------- ההודעה
+	try:A=_dt.datetime.fromisoformat(str(s).replace('Z','+00:00'));return A if A.tzinfo else A.replace(tzinfo=_dt.timezone.utc)
+	except ValueError:return
+def check_model(model,word=None,final=False):
+	C=model;B=[];E=C.get('market_research')or{}
+	for(I,F,G)in iter_tracks(C):
+		J='%s/%s'%(I.get('rule_id'),F);D=range_for(C,I);K=(D or{}).get(G.get('range_point')or{'green':'ours','yellow':'middle','red':'theirs'}[F])
+		if'מקובל'in text_of(G)and not(K and K.get('accepted_ok')):B.append('MARKET_ACCEPTED_UNSUPPORTED %s: "מקובל" בלי נקודה של שלושה מקורות נספרים, מגופים ומתבניות שונים, מאותו סוג הסכם ועם מקור מנוהל או מאוזן'%J)
+		if F=='red'and G.get('basis')in MARKET_BASIS and D and not D.get('theirs'):B.append('RED_THEIRS_NOT_MEASURED %s: אדום בבסיס שוק, ו"לטובתם" לא נמדדה (%s)'%(J,D.get('theirs_note')or'פחות משלושה מקורות'))
+	for A in E.get('source_refs')or[]:
+		if A.get('read_status')not in NOT_READ and model_body_unlisted(A):B.append('MODEL_BODY_NOT_LISTED %s: הסכם מודל מגוף שאינו ברשימה הסגורה (%s) אינו מקור, גם בהצהרה או באישור של הלקוח. הוצא אותו מ-source_refs ומהקידוד, ורשום אותו ב-counts.screened_out[] בסיבה "%s"'%(A.get('source_id'),_host(A.get('final_url')or A.get('url'))or'אין כתובת',MODEL_UNLISTED))
+		if A.get('source_type')in(3,'3')and A.get('drafted_by')in BALANCED:B.append('VENDOR_TERMS_AS_BALANCED %s: תנאים שספק מפרסם הם העמדה של אותו ספק, ואינם נספרים לנקודת המפגש (drafted_by=%s)'%(A.get('source_id'),A.get('drafted_by')))
+	if uses_market(C):
+		L=E.get('disclosure')or{}
+		if not(C.get('status_label')or C.get('presentation_label')):B.append('MARKET_NO_LABEL: הפלייבוק נשען על מחקר שוק, ואין תווית')
+		if not L.get('chat_message'):B.append('MARKET_NO_DISCLOSURE: הפלייבוק נשען על מחקר שוק, ואין הודעת שקיפות (market_research.disclosure)')
+		Q=any(A=='green'and B.get('basis')in TEMPLATE_BASIS+('documents_majority',)for(C,A,B)in iter_tracks(C))
+		for H in('fixed_sentence','chat_message'):
+			M=L.get(H)or''
+			if Q and ALL_AREO in M:B.append('ALL_AREO_WITH_TEMPLATE: "%s" ב-%s, ויש ירוק מתבנית של החברה'%(ALL_AREO,H))
+			for R in MC.count_claims(M,C):B.append('MARKET_COUNT_MISMATCH %s: %s'%(H,R))
+	if word:
+		N=_ts(docx_created(word))
+		for A in E.get('source_refs')or[]:
+			O=_ts(A.get('link_checked_at'))
+			if A.get('read_status')in NOT_READ:continue
+			if A.get('url')and N and(not O or O<N):B.append('LINK_CHECK_BEFORE_WORD %s: הקישור נבדק לפני שה-Word נבנה (או לא נבדק)'%A.get('source_id'))
+	if final:
+		P=[A.get('rule_id')for A in C.get('rules')or[]if(A.get('rationale')or{}).get('rationale_status',A.get('rationale_status'))=='Draft'];S=(C.get('qa_summary')or{}).get('pass_b_stop_reason')
+		if P and S not in STOP_REASONS:B.append('PASS_B_STOP_REASON: מסירה סופית עם %d כללים שהנימוק שלהם בטיוטה, בלי pass_b_stop_reason (%s)'%(len(P),' | '.join(STOP_REASONS)))
+	return B
 def own_agreements(model):
-    try:
-        return S.agreements_counted(model) or 0
-    except Exception:  # noqa: BLE001  מודל חלקי: אין ספירה
-        return 0
-
-
-def legal_facts(model):
-    return sum(1 for s in model.get("external_sources") or [] if str(s.get("ref", "")).startswith("L")
-               and not str(s.get("verification") or "").startswith("לא אומת"))
-
-
+	try:return S.agreements_counted(model)or 0
+	except Exception:return 0
+def legal_facts(model):return sum(1 for A in model.get('external_sources')or[]if str(A.get('ref','')).startswith('L')and not str(A.get('verification')or'').startswith('לא אומת'))
 def fixed_sentence(model):
-    """המשפט הקבוע לפי המסלול, והמספרים מ-market_research.counts (market_counts, יחיד ורבים)."""
-    c = MC.counts(model)
-    F, R = c.get("counted", 0), c.get("read", 0)
-    L = legal_facts(model)
-    fam, read = MC._families(F), MC._docs_read(R)
-    legal = (", ולפי %s" % MC._legal(L)) if L else ""
-    origin = model.get("corpus_origin")
-    n_own = own_agreements(model)
-    areo = sum(1 for _, _, tl in iter_tracks(model) if tl.get("basis") in ("market_standard", "areo_proposal"))
-    templates = [tl for _, t, tl in iter_tracks(model) if t == "green" and tl.get("basis") in TEMPLATE_BASIS]
-    role = (model.get("company_role_code") or (model.get("meta") or {}).get("company_role_code") or "")
-    requested = ((model.get("meta") or {}).get("build_request") or {}).get("requested_by") not in (None, "", "user")
-    if requested and n_own:
-        return ("זו טיוטת מדיניות, שנבנתה לפי %d הסכמים שלכם ולפי %s (%s). העמדות שמקורן בשוק הן הצעה של Areo, "
-                "ועוד לא אישרתם אותן." % (n_own, fam, read))
-    if origin == "own_plus_market":
-        return ("הפלייבוק נבנה מ-%d הסכמים שלכם. בנושאים שאין עליהם ראיה בהסכמים, הוא נבנה לפי %s (%s). %d עמדות "
-                "הן הצעה של Areo, ואינן מבוססות על ההסכמים שלכם." % (n_own, fam, read, areo))
-    if origin == "market_built" and templates:
-        return ("הירוק נלקח מ-%d התבניות שלכם. הצהוב והאדום נבנו לפי %s (%s)%s. הם הצעה של Areo, ואינם מבוססים על "
-                "ההסכמים שלכם, כי אין הסכם חתום מהסוג הזה." % (len(templates), fam, read, legal))
-    if origin == "market_built" and role == "mutual":
-        return ("אין לכם הסכם הדדי מהסוג הזה, ולכן הפלייבוק נבנה כולו לפי %s (%s)%s. התבניות החד-צדדיות שלכם סווגו "
-                "לפי הכותרת והפתיח בלבד, ולא שימשו מקור לעמדות. %s." % (fam.replace("הסכמים", "הסכמים הדדיים", 1),
-                                                                   read, legal, ALL_AREO))
-    if origin == "market_built":
-        return ("הפלייבוק נבנה לפי %s (%s)%s. %s, ואינה מבוססת על ההסכמים שלכם." % (fam, read, legal, ALL_AREO))
-    findings = sum(1 for f in (model.get("market_research") or {}).get("findings") or [] if f.get("client_choice"))
-    return ("המדיניות נגזרה מ-%d ההסכמים שלכם, והושוותה ל-%s (%s). %d ממצאים שבחרתם נכנסו לפלייבוק, מסומנים כהצעה של "
-            "Areo." % (n_own, fam, read, findings))
-
-
-POS_HE = {"ours": "לטובתנו", "middle": "באמצע", "theirs": "לטובתם"}
-
-
+	A=model;G=MC.counts(A);J,K=G.get('counted',0),G.get('read',0);H=legal_facts(A);B,C=MC._families(J),MC._docs_read(K);F=', ולפי %s'%MC._legal(H)if H else'';D=A.get('corpus_origin');E=own_agreements(A);L=sum(1 for(A,A,B)in iter_tracks(A)if B.get('basis')in('market_standard','areo_proposal'));I=[A for(C,B,A)in iter_tracks(A)if B=='green'and A.get('basis')in TEMPLATE_BASIS];M=A.get('company_role_code')or(A.get('meta')or{}).get('company_role_code')or'';N=((A.get('meta')or{}).get('build_request')or{}).get('requested_by')not in(None,'','user')
+	if N and E:return'זו טיוטת מדיניות, שנבנתה לפי %d הסכמים שלכם ולפי %s (%s). העמדות שמקורן בשוק הן הצעה של Areo, ועוד לא אישרתם אותן.'%(E,B,C)
+	if D=='own_plus_market':return'הפלייבוק נבנה מ-%d הסכמים שלכם. בנושאים שאין עליהם ראיה בהסכמים, הוא נבנה לפי %s (%s). %d עמדות הן הצעה של Areo, ואינן מבוססות על ההסכמים שלכם.'%(E,B,C,L)
+	if D=='market_built'and I:return'הירוק נלקח מ-%d התבניות שלכם. הצהוב והאדום נבנו לפי %s (%s)%s. הם הצעה של Areo, ואינם מבוססים על ההסכמים שלכם, כי אין הסכם חתום מהסוג הזה.'%(len(I),B,C,F)
+	if D=='market_built'and M=='mutual':return'אין לכם הסכם הדדי מהסוג הזה, ולכן הפלייבוק נבנה כולו לפי %s (%s)%s. התבניות החד-צדדיות שלכם סווגו לפי הכותרת והפתיח בלבד, ולא שימשו מקור לעמדות. %s.'%(B.replace('הסכמים','הסכמים הדדיים',1),C,F,ALL_AREO)
+	if D=='market_built':return'הפלייבוק נבנה לפי %s (%s)%s. %s, ואינה מבוססת על ההסכמים שלכם.'%(B,C,F,ALL_AREO)
+	O=sum(1 for A in(A.get('market_research')or{}).get('findings')or[]if A.get('client_choice'));return'המדיניות נגזרה מ-%d ההסכמים שלכם, והושוותה ל-%s (%s). %d ממצאים שבחרתם נכנסו לפלייבוק, מסומנים כהצעה של Areo.'%(E,B,C,O)
+POS_HE={'ours':'לטובתנו','middle':'באמצע','theirs':'לטובתם'}
 def build_message(model):
-    mr = model.get("market_research") or {}
-    refs = mr.get("source_refs") or []
-    c = mr.get("counts") or {}
-    # התווית מהגזירה האחת (status.derive_status), ולא מה שנשמר במודל, שעלול להיות מבנייה קודמת או בניסוח הקודם
-    try:
-        label = S.derive_status(model)["label"]
-    except Exception:  # noqa: BLE001  מודל חלקי: התווית שנשמרה
-        label = model.get("status_label") or ""
-    sentence = fixed_sentence(model)
-    lines = [label, sentence, ""] if label else [sentence, ""]
-    requested = ((model.get("meta") or {}).get("build_request") or {}).get("requested_by") not in (None, "", "user")
-    if requested:
-        h = model.get("handoff") or {}
-        lines += ["מה נבנה: %d כללים, %d עמדות." % (len(model.get("rules") or []), sum(1 for _ in iter_tracks(model)))]
-        for d in (h.get("decisions_now") or [])[:3]:
-            lines.append("- %s (המלצה: %s)" % (d.get("question") or d.get("text") or "", d.get("recommendation") or ""))
-        lines.append("")
-    supports = {}
-    for r in mr.get("ranges") or []:
-        for p in ("ours", "middle", "theirs"):
-            for s in (r.get(p) or {}).get("source_ids") or ():
-                supports.setdefault(s, []).append("%s: %s" % (r["topic"], POS_HE[p]))
-    # "שנקראו" צמוד למספר המסמכים: בלעדיו market_counts קורא אותו כמספר שנספר, וההודעה נכשלה
-    # בבדיקה של עצמה בכל מחקר שבו לא כל מה שנקרא נספר 
-    lines.append("המקורות שעליהם נשענות העמדות (%d מסמכים שנקראו, מ-%d גופים; נמצאו %d, נקראו %d, נספרו %d; תאריך המחקר %s):"
-                 % (c.get("read", 0), c.get("bodies", 0), c.get("found", 0), c.get("read", 0), c.get("counted", 0),
-                    he_date(mr.get("research_date"))))
-    lines.append("| # | גוף | מסמך | תאריך | ניסח / לטובת מי | קישור | נושאים ועמדות שהוא תומך בהם |")
-    lines.append("|---|---|---|---|---|---|---|")
-    for r in refs:
-        if r.get("read_status") in NOT_READ:
-            continue
-        lines.append("| %s | %s | %s | %s | %s / %s | [פתיחה](%s) | %s |" % (
-            r.get("source_id"), r.get("issuing_body") or "", r.get("document") or "", he_date(r.get("doc_date")),
-            DRAFTER_HE.get(r.get("drafter_role"), r.get("drafter_role") or ""), DRAFTED_HE.get(r.get("drafted_by"), r.get("drafted_by") or ""),
-            r.get("url") or "",
-            "; ".join(supports.get(r.get("source_id"), [])) or "לא נספר לנקודה"))
-    lines += ["", "הטווח לכל נושא:"]
-    for r in mr.get("ranges") or []:
-        cert = next((r[p]["certainty"] for p in ("middle", "ours", "theirs") if r.get(p)), r.get("certainty") or
-                    CERTAINTY["expert"])
-        lines.append("**%s** (%s)" % (r["topic"], cert))
-        for p in ("ours", "middle", "theirs"):
-            pt = r.get(p)
-            if pt:
-                lines.append("- %s: דרגה %s. מקורות: %s." % (POS_HE[p], pt["level"], ", ".join(pt["source_ids"])))
-            elif p == "theirs" and r.get("theirs_note"):
-                lines.append("- %s: %s." % (POS_HE[p], r["theirs_note"]))
-            else:
-                lines.append("- %s: ממצא לא מאומת, פחות משלושה מקורות." % POS_HE[p])
-    missing = [r for r in refs if r.get("read_status") in NOT_READ]
-    if missing:
-        lines += ["", "מה לא נמצא:"]
-        lines += ["- %s: אותר, לא נקרא (%s), %s." % (r.get("document") or r.get("source_id"),
-                                                    r.get("read_reason") or r.get("read_status"), r.get("url") or "")
-                  for r in missing]
-    unver = mr.get("unverified_findings") or []
-    if unver:
-        lines += ["", "מה לא אומת:"]
-        lines += ["- %s" % (u.get("text") or u.get("label") or json.dumps(u, ensure_ascii=False)) for u in unver]
-    lim = mr.get("limitations") or []
-    if lim:
-        lines += ["", "מגבלות:"] + ["- %s" % x for x in lim]
-    if model.get("external_sources_table"):
-        lines += ["", model["external_sources_table"]]
-    return sentence, "\n".join(lines).strip() + "\n"
-
-
-# --------------------------------------------------------------------------- הרשת
-def agreement_phrases(corpus, n=4):
-    """רצפים של n מילים מההסכמים, ומספרים שמופיעים בהם, לבדיקת השאילתה."""
-    seqs, nums = set(), set()
-    docs = corpus.get("documents") if isinstance(corpus, dict) else corpus
-    for d in docs or ():
-        paras = d.get("paragraphs") or [p for ps in (d.get("parts") or {}).values() for p in ps]
-        for p in paras:
-            t = p.get("text") or p.get("text_accept_all") or ""
-            w = re.findall(r"\w+", t)
-            for i in range(len(w) - n + 1):
-                seqs.add(" ".join(w[i:i + n]).lower())
-            nums |= {x for x in re.findall(r"\d[\d,.]*\d|\d", t) if len(x.replace(",", "").replace(".", "")) >= 2}
-    return seqs, nums
-
-
-def query_problem(query, purpose, corpus, profile, statute_names=(), manifest=None, deal=None):
-    """(בעיה, שם החוק שהותר). שם חוק מותר רק ב-legal, ורק כשהוא אחד משמות --statute (הרשימה הסגורה של
-    ההרצה); אין זיהוי אוטומטי של "חוק ..." בשאילתה. שמות הלקוח, הישויות, הצדדים, הפרויקטים והמוצרים
-    נבדקים בשם המלא וגם במילה הייחודית שבהם (Globex מ-Globex Corporation, אקמה מ-אקמה מערכות בע"מ)."""
-    from common import net
-    q = query or ""
-    allowed = ""
-    if purpose == "legal":
-        for name in sorted(statute_names or (), key=len, reverse=True):
-            name = " ".join(str(name or "").split())
-            if name and name in " ".join(q.split()):
-                q = " ".join(q.split()).replace(name, " ")
-                allowed = allowed or name
-    names = client_names(profile, corpus, manifest, deal)
-    detail = net.client_detail_in_query(q, [x for x in names if x])
-    if detail:
-        return "פרט של הלקוח או של צד בשאילתה (%s)" % detail, allowed
-    tok = token_in(q, name_tokens(names))
-    if tok:
-        return "שם של הלקוח, של צד, של פרויקט או של מוצר בשאילתה (%s)" % tok, allowed
-    if corpus:
-        seqs, nums = agreement_phrases(corpus)
-        words = re.findall(r"\w+", q.lower())
-        for i in range(len(words) - 3):
-            if " ".join(words[i:i + 4]) in seqs:
-                return "רצף מילים מההסכמים בשאילתה (%s)" % " ".join(words[i:i + 4]), allowed
-        for x in re.findall(r"\d[\d,.]*\d|\d", q):
-            if x in nums and len(x.replace(",", "").replace(".", "")) >= 2:
-                return "מספר מההסכמים בשאילתה (%s)" % x, allowed
-    return None, allowed
-
-
-def url_problem(url, corpus, profile, manifest=None, deal=None):
-    """פרט של הלקוח בכתובת המסמך: שם מהפרופיל, מספר חברה או זהות, או רצף מילים מההסכמים.
-
-    הכתובת אינה שאילתה, ולכן היא אינה עוברת את בדיקת "מספר בן 5 ספרות ומעלה": בכתובת של
-    EDGAR יש תמיד מספר החברה המדווחת ב-SEC (CIK) ומספר ההגשה, ובדיקת השאילתה עצרה בגללם
-    כל מסמך EDGAR. מה שכן אסור בכתובת אסור גם כאן.
-    """
-    from urllib.parse import unquote
-    from common import net
-    u = unquote(url or "")
-    names = client_names(profile, corpus, manifest, deal)
-    for name in names:
-        if name and name.lower() in u.lower():
-            return "פרט של הלקוח בכתובת (%s)" % name
-    m = re.search(r"(?<!\d)\d{9}(?!\d)", u)
-    if m and net._id_check_digit(m.group(0)):
-        return "מספר חברה או זהות בכתובת (%s)" % m.group(0)
-    if corpus:
-        seqs, _ = agreement_phrases(corpus)
-        words = re.findall(r"[^\W\d_]+", u.lower())
-        for i in range(len(words) - 3):
-            if " ".join(words[i:i + 4]) in seqs:
-                return "רצף מילים מההסכמים בכתובת (%s)" % " ".join(words[i:i + 4])
-    return None
-
-
+	C=model;E=C.get('market_research')or{};K=E.get('source_refs')or[];F=E.get('counts')or{}
+	try:G=S.derive_status(C)['label']
+	except Exception:G=C.get('status_label')or''
+	H=fixed_sentence(C);B=[G,H,'']if G else[H,''];P=((C.get('meta')or{}).get('build_request')or{}).get('requested_by')not in(None,'','user')
+	if P:
+		Q=C.get('handoff')or{};B+=['מה נבנה: %d כללים, %d עמדות.'%(len(C.get('rules')or[]),sum(1 for A in iter_tracks(C)))]
+		for I in(Q.get('decisions_now')or[])[:3]:B.append('- %s (המלצה: %s)'%(I.get('question')or I.get('text')or'',I.get('recommendation')or''))
+		B.append('')
+	L={}
+	for A in E.get('ranges')or[]:
+		for D in('ours','middle','theirs'):
+			for R in(A.get(D)or{}).get('source_ids')or():L.setdefault(R,[]).append('%s: %s'%(A['topic'],POS_HE[D]))
+	B.append('המקורות שעליהם נשענות העמדות (%d מסמכים שנקראו, מ-%d גופים; נמצאו %d, נקראו %d, נספרו %d; תאריך המחקר %s):'%(F.get('read',0),F.get('bodies',0),F.get('found',0),F.get('read',0),F.get('counted',0),he_date(E.get('research_date'))));B.append('| # | גוף | מסמך | תאריך | ניסח / לטובת מי | קישור | נושאים ועמדות שהוא תומך בהם |');B.append('|---|---|---|---|---|---|---|')
+	for A in K:
+		if A.get('read_status')in NOT_READ:continue
+		B.append('| %s | %s | %s | %s | %s / %s | [פתיחה](%s) | %s |'%(A.get('source_id'),A.get('issuing_body')or'',A.get('document')or'',he_date(A.get('doc_date')),DRAFTER_HE.get(A.get('drafter_role'),A.get('drafter_role')or''),DRAFTED_HE.get(A.get('drafted_by'),A.get('drafted_by')or''),A.get('url')or'','; '.join(L.get(A.get('source_id'),[]))or'לא נספר לנקודה'))
+	B+=['','הטווח לכל נושא:']
+	for A in E.get('ranges')or[]:
+		T=next((A[B]['certainty']for B in('middle','ours','theirs')if A.get(B)),A.get('certainty')or CERTAINTY['expert']);B.append('**%s** (%s)'%(A['topic'],T))
+		for D in('ours','middle','theirs'):
+			J=A.get(D)
+			if J:B.append('- %s: דרגה %s. מקורות: %s.'%(POS_HE[D],J['level'],', '.join(J['source_ids'])))
+			elif D=='theirs'and A.get('theirs_note'):B.append('- %s: %s.'%(POS_HE[D],A['theirs_note']))
+			else:B.append('- %s: ממצא לא מאומת, פחות משלושה מקורות.'%POS_HE[D])
+	M=[A for A in K if A.get('read_status')in NOT_READ]
+	if M:B+=['','מה לא נמצא:'];B+=['- %s: אותר, לא נקרא (%s), %s.'%(A.get('document')or A.get('source_id'),A.get('read_reason')or A.get('read_status'),A.get('url')or'')for A in M]
+	N=E.get('unverified_findings')or[]
+	if N:B+=['','מה לא אומת:'];B+=['- %s'%(A.get('text')or A.get('label')or json.dumps(A,ensure_ascii=False))for A in N]
+	O=E.get('limitations')or[]
+	if O:B+=['','מגבלות:']+['- %s'%A for A in O]
+	if C.get('external_sources_table'):B+=['',C['external_sources_table']]
+	return H,'\n'.join(B).strip()+'\n'
+def agreement_phrases(corpus,n=4):
+	A=corpus;B,C=set(),set();I=A.get('documents')if isinstance(A,dict)else A
+	for D in I or():
+		J=D.get('paragraphs')or[B for A in(D.get('parts')or{}).values()for B in A]
+		for E in J:
+			F=E.get('text')or E.get('text_accept_all')or'';G=re.findall('\\w+',F)
+			for H in range(len(G)-n+1):B.add(' '.join(G[H:H+n]).lower())
+			C|={A for A in re.findall('\\d[\\d,.]*\\d|\\d',F)if len(A.replace(',','').replace('.',''))>=2}
+	return B,C
+def query_problem(query,purpose,corpus,profile,statute_names=(),manifest=None,deal=None):
+	E=corpus;from common import net;A=query or'';B=''
+	if purpose=='legal':
+		for C in sorted(statute_names or(),key=len,reverse=True):
+			C=' '.join(str(C or'').split())
+			if C and C in' '.join(A.split()):A=' '.join(A.split()).replace(C,' ');B=B or C
+	H=client_names(profile,E,manifest,deal);I=net.client_detail_in_query(A,[A for A in H if A])
+	if I:return'פרט של הלקוח או של צד בשאילתה (%s)'%I,B
+	J=token_in(A,name_tokens(H))
+	if J:return'שם של הלקוח, של צד, של פרויקט או של מוצר בשאילתה (%s)'%J,B
+	if E:
+		K,L=agreement_phrases(E);F=re.findall('\\w+',A.lower())
+		for D in range(len(F)-3):
+			if' '.join(F[D:D+4])in K:return'רצף מילים מההסכמים בשאילתה (%s)'%' '.join(F[D:D+4]),B
+		for G in re.findall('\\d[\\d,.]*\\d|\\d',A):
+			if G in L and len(G.replace(',','').replace('.',''))>=2:return'מספר מההסכמים בשאילתה (%s)'%G,B
+	return None,B
+def url_problem(url,corpus,profile,manifest=None,deal=None):
+	B=corpus;from urllib.parse import unquote as G;from common import net;C=G(url or'');H=client_names(profile,B,manifest,deal)
+	for D in H:
+		if D and D.lower()in C.lower():return'פרט של הלקוח בכתובת (%s)'%D
+	E=re.search('(?<!\\d)\\d{9}(?!\\d)',C)
+	if E and net._id_check_digit(E.group(0)):return'מספר חברה או זהות בכתובת (%s)'%E.group(0)
+	if B:
+		I,J=agreement_phrases(B);F=re.findall('[^\\W\\d_]+',C.lower())
+		for A in range(len(F)-3):
+			if' '.join(F[A:A+4])in I:return'רצף מילים מההסכמים בכתובת (%s)'%' '.join(F[A:A+4])
 def case_law_reason(url):
-    """הסיבה כשהכתובת היא אתר בית משפט, מאגר פסיקה או מדור פסיקה (common/case_law.py), אחרת None."""
-    try:
-        from common.case_law import case_law_url
-    except ImportError:  # ספרייה ישנה בלי המודול: הרשימה הקצרה שכאן
-        h = _host(url)
-        return ("%s הוא אתר בית משפט או מאגר פסיקה" % h) if re.search(r"(^|\.)(courts?|judiciary)\.", h + ".") else None
-    return case_law_url(url)
-
-
-def source_type_problem(url, source_type, vendor=None, approved_path=None):
-    """(בעיה, הכללים המותרים) לקריאה במחקר שוק. בעיה None = מותר. מותר רק אתר שברשימת המקורות המאושרים;
-    אתר בית משפט, מאגר פסיקה או מדור פסיקה נדחה תמיד; וסוג המקור הוא תווית בלבד."""
-    from risk.validate_register import domain_ok
-    host = _host(url)
-    if not host:
-        return "אין כתובת", None
-    cl = case_law_reason(url)
-    if cl:
-        return cl, None
-    if any(host == d or host.endswith("." + d) for d in DENIED_DOMAINS):
-        return ("%s אינו מקור למחקר שוק (מאגר מצרף, אתר תבניות, אנציקלופדיה או חדשות). מסמך שאותר במאגר "
-                "נקרא במקור המקורי שלו" % host), None
-    if source_type not in SOURCE_TYPES:
-        return "סוג המקור חסר או אינו אחד מארבעת הסוגים (%s)" % " | ".join(SOURCE_TYPES), None
-    rules = _approved_rules(approved_path)
-    if not rules or not domain_ok(url, rules):
-        return ("%s אינו ברשימת המקורות המאושרים: המסמך אינו נקרא ואינו נספר. %s" % (host, NO_POSITION)), None
-    if source_type == "vendor_terms" and not (vendor or "").strip():
-        return "תנאים שצד מפרסם: חסר שם הצד המפרסם (--vendor). הם נספרים רק כעמדה של אותו צד", None
-    return None, rules
-
-
-# ---- שלב החיפוש: השאילתה נבדקת לפני שהיא יוצאת למנוע החיפוש, ולא רק בקריאה ----
-# החיפוש עצמו נעשה בכלי החיפוש של Claude, ואין בתוסף hook שבודק אותו. לכן: `start` פותח מושב מחקר;
-# `query` בודק כל שאילתה לפני החיפוש (חובה בהוראות); ו-`fetch` מסרב לקרוא מסמך שהשאילתה שלו לא
-# נבדקה ועברה כאן. הקריאה רק דרך `fetch`, ולא בכלי הקריאה של Claude.
-def reading_dir():
-    """עותקי קריאה של מסמכים גדולים: מחוץ לתיקיית הלקוח, בתיקייה הזמנית, ונמחקים ב-stop."""
-    return os.path.join(tempfile.gettempdir(), "areo-research", "reading")
-
-
-def write_copy(source_id, res):
-    from risk.page_text import PdfTextUnavailable, page_text
-    body = res.get("content") or b""
-    try:
-        text = page_text(body)
-    except PdfTextUnavailable:
-        return None
-    d = reading_dir()
-    os.makedirs(d, exist_ok=True)
-    ext = "pdf" if body[:5] == b"%PDF-" else "htm"
-    with open(os.path.join(d, "%s.%s" % (source_id, ext)), "wb") as fh:
-        fh.write(body)
-    meta = {"url": res.get("url"), "final_url": res.get("final_url"), "status": res.get("status"),
-            "ext": ext, "log": res.get("log")}
-    save(os.path.join(d, "%s.json" % source_id), meta)
-    path = os.path.join(d, "%s.txt" % source_id)
-    with io.open(path, "w", encoding="utf-8") as fh:
-        fh.write(text)
-    return path
-
-
-def read_copy(source_id, url):
-    """עותק הקריאה של המסמך, כשנשמר לאותה כתובת בשלב הראשון. אחרת None."""
-    from common import net
-    d = reading_dir()
-    try:
-        with io.open(os.path.join(d, "%s.json" % source_id), encoding="utf-8") as fh:
-            meta = json.load(fh)
-        with open(os.path.join(d, "%s.%s" % (source_id, meta["ext"])), "rb") as fh:
-            content = fh.read()
-    except (OSError, ValueError, KeyError):
-        return None
-    if meta.get("url") != net.strip_secrets(net.to_uri(url))[0]:
-        return None
-    return dict(meta, content=content)
-
-
-def session_path():
-    return os.path.join(tempfile.gettempdir(), "areo-research", SESSION_FILE)
-
-
+	try:from common.case_law import case_law_url as B
+	except ImportError:A=_host(url);return'%s הוא אתר בית משפט או מאגר פסיקה'%A if re.search('(^|\\.)(courts?|judiciary)\\.',A+'.')else None
+	return B(url)
+def source_type_problem(url,source_type,vendor=None,approved_path=None):
+	D=source_type;B=url;from risk.validate_register import domain_ok as F;A=_host(B)
+	if not A:return'אין כתובת',None
+	E=case_law_reason(B)
+	if E:return E,None
+	if any(A==B or A.endswith('.'+B)for B in DENIED_DOMAINS):return'%s אינו מקור למחקר שוק (מאגר מצרף, אתר תבניות, אנציקלופדיה או חדשות). מסמך שאותר במאגר נקרא במקור המקורי שלו'%A,None
+	if D not in SOURCE_TYPES:return'סוג המקור חסר או אינו אחד מארבעת הסוגים (%s)'%' | '.join(SOURCE_TYPES),None
+	C=_approved_rules(approved_path)
+	if not C or not F(B,C):return'%s אינו ברשימת המקורות המאושרים: המסמך אינו נקרא ואינו נספר. %s'%(A,NO_POSITION),None
+	if D=='vendor_terms'and not(vendor or'').strip():return'תנאים שצד מפרסם: חסר שם הצד המפרסם (--vendor). הם נספרים רק כעמדה של אותו צד',None
+	return None,C
+def reading_dir():return os.path.join(tempfile.gettempdir(),'areo-research','reading')
+def write_copy(source_id,res):
+	C=source_id;A=res;from risk.page_text import PdfTextUnavailable as H,page_text as I;D=A.get('content')or b''
+	try:J=I(D)
+	except H:return
+	B=reading_dir();os.makedirs(B,exist_ok=True);F='pdf'if D[:5]==b'%PDF-'else'htm'
+	with open(os.path.join(B,'%s.%s'%(C,F)),'wb')as E:E.write(D)
+	K={'url':A.get('url'),'final_url':A.get('final_url'),'status':A.get('status'),'ext':F,'log':A.get('log')};save(os.path.join(B,'%s.json'%C),K);G=os.path.join(B,'%s.txt'%C)
+	with io.open(G,'w',encoding='utf-8')as E:E.write(J)
+	return G
+def read_copy(source_id,url):
+	C=source_id;from common import net;D=reading_dir()
+	try:
+		with io.open(os.path.join(D,'%s.json'%C),encoding='utf-8')as A:B=json.load(A)
+		with open(os.path.join(D,'%s.%s'%(C,B['ext'])),'rb')as A:E=A.read()
+	except(OSError,ValueError,KeyError):return
+	if B.get('url')!=net.strip_secrets(net.to_uri(url))[0]:return
+	return dict(B,content=E)
+def session_path():return os.path.join(tempfile.gettempdir(),'areo-research',SESSION_FILE)
 def load_session(now=None):
-    """המושב הפעיל, או None כשאין או שפג."""
-    try:
-        with io.open(session_path(), encoding="utf-8") as fh:
-            s = json.load(fh)
-    except (OSError, ValueError):
-        return None
-    now = now or _dt.datetime.now(_dt.timezone.utc)
-    try:
-        if _dt.datetime.fromisoformat(s.get("expires_at")) < now:
-            return None
-    except (TypeError, ValueError):
-        return None
-    return s
-
-
-def _log_path(family_dir):
-    return os.path.join(family_dir, "market-research", QUERY_LOG)
-
-
+	A=now
+	try:
+		with io.open(session_path(),encoding='utf-8')as C:B=json.load(C)
+	except(OSError,ValueError):return
+	A=A or _dt.datetime.now(_dt.timezone.utc)
+	try:
+		if _dt.datetime.fromisoformat(B.get('expires_at'))<A:return
+	except(TypeError,ValueError):return
+	return B
+def _log_path(family_dir):return os.path.join(family_dir,'market-research',QUERY_LOG)
 def read_query_log(family_dir):
-    out = []
-    old = os.path.join(family_dir, "market-research", QUERY_LOG_OLD)
-    try:
-        with io.open(old, encoding="utf-8") as fh:
-            out += json.load(fh)
-    except (OSError, ValueError):
-        pass
-    try:
-        with io.open(_log_path(family_dir), encoding="utf-8") as fh:
-            for line in fh:
-                try:
-                    out.append(json.loads(line))
-                except ValueError:
-                    continue      # שורה שנקטעה באמצע כתיבה
-    except OSError:
-        pass
-    return out
-
-
-def log_query(family_dir, entry):
-    os.makedirs(os.path.dirname(_log_path(family_dir)), exist_ok=True)
-    line = json.dumps(dict(entry, at=now_iso()), ensure_ascii=False) + "\n"
-    # כתיבה אחת במצב append: במערכות POSIX היא אטומית לשורה קצרה, ואינה מוחקת שורות של תהליך אחר
-    fd = os.open(_log_path(family_dir), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
-    try:
-        os.write(fd, line.encode("utf-8"))
-    finally:
-        os.close(fd)
-
-
-def query_passed(family_dir, query):
-    q = " ".join((query or "").split())
-    return any(e.get("precheck") in ("passed", "passed_statute_name") and " ".join((e.get("query") or "").split()) == q
-               for e in read_query_log(family_dir))
-
-
-def check_query(query, purpose, family_dir, corpus=None, profile=None, statutes=(), via="query", manifest=None,
-                deal=None):
-    """בודק שאילתה ורושם אותה ביומן השאילתות. מחזיר את הבעיה, או None כשמותר לחפש."""
-    problem, allowed = query_problem(query, purpose, corpus, profile, statutes, manifest, deal)
-    entry = {"query": query, "purpose": purpose, "via": via,
-             "precheck": "failed" if problem else ("passed_statute_name" if allowed else "passed")}
-    if problem:
-        entry["reason"] = problem
-    if allowed:
-        entry["statute_name"] = allowed
-    log_query(family_dir, entry)
-    return problem
-
-
-# --------------------------------------------------------------------------- הפקודות
+	C=family_dir;A=[];D=os.path.join(C,'market-research',QUERY_LOG_OLD)
+	try:
+		with io.open(D,encoding='utf-8')as B:A+=json.load(B)
+	except(OSError,ValueError):pass
+	try:
+		with io.open(_log_path(C),encoding='utf-8')as B:
+			for E in B:
+				try:A.append(json.loads(E))
+				except ValueError:continue
+	except OSError:pass
+	return A
+def log_query(family_dir,entry):
+	A=family_dir;os.makedirs(os.path.dirname(_log_path(A)),exist_ok=True);C=json.dumps(dict(entry,at=now_iso()),ensure_ascii=False)+'\n';B=os.open(_log_path(A),os.O_WRONLY|os.O_CREAT|os.O_APPEND,420)
+	try:os.write(B,C.encode('utf-8'))
+	finally:os.close(B)
+def query_passed(family_dir,query):B=' '.join((query or'').split());return any(A.get('precheck')in('passed','passed_statute_name')and' '.join((A.get('query')or'').split())==B for A in read_query_log(family_dir))
+def check_query(query,purpose,family_dir,corpus=None,profile=None,statutes=(),via='query',manifest=None,deal=None):
+	E=purpose;D=query;A,B=query_problem(D,E,corpus,profile,statutes,manifest,deal);C={'query':D,'purpose':E,'via':via,'precheck':'failed'if A else'passed_statute_name'if B else'passed'}
+	if A:C['reason']=A
+	if B:C['statute_name']=B
+	log_query(family_dir,C);return A
 def cmd_start(a):
-    for p, what in ((a.corpus, "החילוץ"), (a.profile, "הפרופיל"), (a.manifest, "המניפסט"), (a.deal, "העסקה")):
-        if p and not os.path.exists(p):
-            print("%s אינו קיים: %s" % (what, p))
-            return 2
-    until = _dt.datetime.now(_dt.timezone.utc) + _dt.timedelta(hours=SESSION_HOURS)
-    s = {"family_dir": os.path.abspath(a.family_dir),
-         "corpus": os.path.abspath(a.corpus) if a.corpus else None,
-         "profile": os.path.abspath(a.profile) if a.profile else None,
-         "manifest": os.path.abspath(a.manifest) if a.manifest else None,
-         "deal": os.path.abspath(a.deal) if a.deal else None,
-         "statutes": a.statute or [], "started_at": now_iso(), "expires_at": until.isoformat()}
-    os.makedirs(os.path.dirname(session_path()), exist_ok=True)
-    save(session_path(), s)
-    print("מושב מחקר נפתח עד %s. הרץ query על כל שאילתה לפני החיפוש, וחפש רק בנוסח שעבר; קריאה רק דרך fetch. "
-          "בסוף המחקר: stop." % until.astimezone().strftime("%H:%M"))
-    return 0
-
-
+	for(A,C)in((a.corpus,'החילוץ'),(a.profile,'הפרופיל'),(a.manifest,'המניפסט'),(a.deal,'העסקה')):
+		if A and not os.path.exists(A):print('%s אינו קיים: %s'%(C,A));return 2
+	B=_dt.datetime.now(_dt.timezone.utc)+_dt.timedelta(hours=SESSION_HOURS);D={'family_dir':os.path.abspath(a.family_dir),'corpus':os.path.abspath(a.corpus)if a.corpus else None,'profile':os.path.abspath(a.profile)if a.profile else None,'manifest':os.path.abspath(a.manifest)if a.manifest else None,'deal':os.path.abspath(a.deal)if a.deal else None,'statutes':a.statute or[],'started_at':now_iso(),'expires_at':B.isoformat()};os.makedirs(os.path.dirname(session_path()),exist_ok=True);save(session_path(),D);print('מושב מחקר נפתח עד %s. הרץ query על כל שאילתה לפני החיפוש, וחפש רק בנוסח שעבר; קריאה רק דרך fetch. בסוף המחקר: stop.'%B.astimezone().strftime('%H:%M'));return 0
 def cmd_stop(a):
-    import shutil
-    try:
-        os.remove(session_path())
-    except OSError:
-        pass
-    shutil.rmtree(reading_dir(), ignore_errors=True)
-    print("מושב המחקר נסגר.")
-    return 0
-
-
-def _opt(path, what):
-    return load(path, what) if path else None
-
-
+	import shutil as A
+	try:os.remove(session_path())
+	except OSError:pass
+	A.rmtree(reading_dir(),ignore_errors=True);print('מושב המחקר נסגר.');return 0
+def _opt(path,what):return load(path,what)if path else None
 def cmd_query(a):
-    s = load_session() or {}
-    family = a.family_dir or s.get("family_dir")
-    if not family:
-        print("אין מושב מחקר פעיל ולא נמסר --family-dir. התחל ב-start.")
-        return 2
-    corpus = load(a.corpus or s.get("corpus"), "החילוץ") if (a.corpus or s.get("corpus")) else None
-    profile = load_profile(a.profile or s.get("profile")) if (a.profile or s.get("profile")) else None
-    manifest = _opt(a.manifest or s.get("manifest"), "המניפסט")
-    deal = _opt(a.deal or s.get("deal"), "העסקה")
-    problem = check_query(a.query, a.purpose, family, corpus, profile, a.statute or s.get("statutes") or (),
-                          manifest=manifest, deal=deal)
-    if problem:
-        print("השאילתה נעצרה ולא תישלח: %s" % problem)
-        return 3
-    print("מותר לחפש, בדיוק בנוסח הזה: %s" % a.query)
-    return 0
-
-
+	A=load_session()or{};B=a.family_dir or A.get('family_dir')
+	if not B:print('אין מושב מחקר פעיל ולא נמסר --family-dir. התחל ב-start.');return 2
+	D=load(a.corpus or A.get('corpus'),'החילוץ')if a.corpus or A.get('corpus')else None;E=load_profile(a.profile or A.get('profile'))if a.profile or A.get('profile')else None;F=_opt(a.manifest or A.get('manifest'),'המניפסט');G=_opt(a.deal or A.get('deal'),'העסקה');C=check_query(a.query,a.purpose,B,D,E,a.statute or A.get('statutes')or(),manifest=F,deal=G)
+	if C:print('השאילתה נעצרה ולא תישלח: %s'%C);return 3
+	print('מותר לחפש, בדיוק בנוסח הזה: %s'%a.query);return 0
 def cmd_ranges(a):
-    model = load(a.model, "המודל")
-    ranges = compute_ranges(model)
-    save(a.model, model)
-    for r in ranges:
-        pts = ", ".join("%s %s" % (POS_HE[p], r[p]["level"]) for p in ("ours", "middle", "theirs") if r.get(p))
-        print("%s: %s%s; צהוב מ-%s" % (r["topic"], pts or "אין נקודה עם שלושה מקורות",
-                                     "; לטובתם: " + r["theirs_note"] if r.get("theirs_note") else "", r["yellow_from"]))
-    print("ספירה: %s" % json.dumps(model["market_research"]["counts"], ensure_ascii=False))
-    return 0
-
-
+	B=load(a.model,'המודל');C=compute_ranges(B);save(a.model,B)
+	for A in C:D=', '.join('%s %s'%(POS_HE[B],A[B]['level'])for B in('ours','middle','theirs')if A.get(B));print('%s: %s%s; צהוב מ-%s'%(A['topic'],D or'אין נקודה עם שלושה מקורות','; לטובתם: '+A['theirs_note']if A.get('theirs_note')else'',A['yellow_from']))
+	print('ספירה: %s'%json.dumps(B['market_research']['counts'],ensure_ascii=False));return 0
 def cmd_check(a):
-    model = load(a.model, "המודל")
-    errs = check_model(model, word=a.word, final=a.final)
-    for e in errs:
-        print("שגיאה: %s" % e)
-    print("שגיאות: %d" % len(errs))
-    return 3 if errs else 0
-
-
-SOURCE_TYPE_KEY = {v: k for k, v in SOURCE_TYPE_NUM.items()}
-
-
+	B=load(a.model,'המודל');A=check_model(B,word=a.word,final=a.final)
+	for C in A:print('שגיאה: %s'%C)
+	print('שגיאות: %d'%len(A));return 3 if A else 0
+SOURCE_TYPE_KEY={B:A for(A,B)in SOURCE_TYPE_NUM.items()}
 def ref_problem(r):
-    """הבדיקות של fetch על מקור שוק שכבר נרשם, לפני שהקישור נפתח שוב: פסיקה, וסוג המקור ורשימת האתרים שלו."""
-    st = r.get("source_type")
-    key = SOURCE_TYPE_KEY.get(int(st)) if str(st or "").isdigit() else st
-    problem, _ = source_type_problem(r.get("final_url") or r.get("url"), key, r.get("vendor") or r.get("issuing_body"))
-    if not problem and r.get("final_url") and r.get("final_url") != r.get("url"):
-        problem, _ = source_type_problem(r["url"], key, r.get("vendor") or r.get("issuing_body"))
-    return problem
-
-
-def legal_problem(url, rules):
-    """מקור משפטי (L, X): לא פסיקה, ורק בדומיין ובנתיב שברשימת המקורות המאושרים."""
-    from risk.validate_register import domain_ok
-    cl = case_law_reason(url)
-    if cl:
-        return cl
-    if not domain_ok(url, rules):
-        return "דומיין או נתיב שאינו ברשימת המקורות המאושרים (%s)" % _host(url)
-    return None
-
-
+	A=r.get('source_type');C=SOURCE_TYPE_KEY.get(int(A))if str(A or'').isdigit()else A;B,D=source_type_problem(r.get('final_url')or r.get('url'),C,r.get('vendor')or r.get('issuing_body'))
+	if not B and r.get('final_url')and r.get('final_url')!=r.get('url'):B,D=source_type_problem(r['url'],C,r.get('vendor')or r.get('issuing_body'))
+	return B
+def legal_problem(url,rules):
+	A=url;from risk.validate_register import domain_ok as C;B=case_law_reason(A)
+	if B:return B
+	if not C(A,rules):return'דומיין או נתיב שאינו ברשימת המקורות המאושרים (%s)'%_host(A)
 def cmd_links(a):
-    from common import net
-    from risk.validate_register import approved_domains
-    model = load(a.model, "המודל")
-    mr = model.get("market_research") or {}
-    failed = []
-    if a.approved_sources and not os.path.isfile(a.approved_sources):
-        print("קובץ המקורות המאושרים אינו קיים: %s" % a.approved_sources)
-        return 2
-    rules = approved_domains(a.approved_sources)[0]
-    run_dir = os.path.join(tempfile.gettempdir(), "areo-net", "links-" + os.path.basename(os.path.normpath(a.family_dir)))
-    os.makedirs(run_dir, exist_ok=True)
-    for r in mr.get("source_refs") or []:
-        if not r.get("url") or r.get("read_status") in NOT_READ:
-            continue
-        # אותן בדיקות כמו ב-fetch, לפני הבקשה: כתובת שנפסלת אינה נפתחת שוב, והמקור יוצא מהספירה
-        problem = ref_problem(r)
-        r["link_checked_at"] = now_iso()
-        if problem:
-            r["read_status"] = "excluded"
-            r["read_reason"] = "לא נבדק שוב: %s" % problem
-            failed.append(r.get("source_id"))
-            continue
-        _, allowed = source_type_problem(r.get("url"), SOURCE_TYPE_KEY.get(int(r["source_type"]))
-                                         if str(r.get("source_type") or "").isdigit() else r.get("source_type"),
-                                         r.get("vendor") or r.get("issuing_body"))
-        res = net.fetch(r["url"], "בדיקת קישור לפני המסירה", allowed_domains=allowed, run_dir=run_dir)
-        ok = res.get("status") and 200 <= res["status"] < 300 and not res.get("blocked")
-        same = bool(r.get("file_sha256") and res.get("sha256") == r["file_sha256"])
-        if ok and not same and r.get("document") and res.get("text"):
-            # מסמך זהה לעותק שנשמר הוא אותו מסמך, מה שלא תהיה הכותרת. בלי גיבוב: שם המסמך בכותרת או
-            # בפתיחת הטקסט, בלי תלות ברישיות. ב-EDGAR הכותרת היא שם הקובץ ("ny20050730x1_exd2.htm"), ולכן
-            # בדיקה לפי הכותרת בלבד הוציאה מהספירה הסכמים תקינים
-            title = re.search(r"<title[^>]*>(.*?)</title>", res["text"], re.S | re.I)
-            head = ((title.group(1) if title else "") + " " +
-                    re.sub(r"<[^>]+>", " ", res["text"])[:20000]).lower()
-            if not any(w.lower() in head for w in re.findall(r"\w{4,}", r["document"])[:3]):
-                ok, res["reason"] = False, "שם המסמך אינו מופיע בדף"
-        if ok and r.get("file_sha256") and res.get("sha256") and res["sha256"] != r["file_sha256"]:
-            r["file_sha256_new"] = res["sha256"]
-            r.setdefault("notes", []).append("המסמך השתנה מאז ההורדה (%s)" % he_date(r["link_checked_at"]))
-        if not ok:
-            r["read_status"] = "located_not_read"
-            r["read_reason"] = "הקישור לא נפתח ב-%s (%s)" % (he_date(r["link_checked_at"]), res.get("reason"))
-            failed.append(r["source_id"])
-    for s in model.get("external_sources") or []:
-        if s.get("url") and str(s.get("ref", "")).startswith(("L", "X")):
-            s["link_checked_at"] = now_iso()
-            problem = legal_problem(s["url"], rules)
-            if problem:
-                s["verification"] = "לא אומת: %s" % problem
-                failed.append(s.get("ref"))
-                continue
-            res = net.fetch(s["url"], "בדיקת קישור לפני המסירה", run_dir=run_dir,
-                            allowed_domains=rules)   # Rules כמו שהוא: הנתיב נבדק שוב גם אחרי הפניה
-            if not (res.get("status") and 200 <= res["status"] < 300 and not res.get("blocked")):
-                s["verification"] = "לא אומת: הקישור לא נפתח ב-%s" % he_date(s["link_checked_at"])
-                failed.append(s.get("ref"))
-    if failed:
-        compute_ranges(model)
-    mr.setdefault("refresh", {})["last_link_check"] = now_iso()
-    save(a.model, model)
-    print("נבדקו הקישורים. נכשלו: %s" % (", ".join(str(x) for x in failed) if failed else "אף אחד"))
-    if failed:
-        print("הטווח חושב מחדש בלי המקורות שנכשלו. הרץ שוב message לפני המסירה.")
-    return 3 if failed else 0
-
-
+	from common import net;from risk.validate_register import approved_domains as L;F=load(a.model,'המודל');I=F.get('market_research')or{};D=[]
+	if a.approved_sources and not os.path.isfile(a.approved_sources):print('קובץ המקורות המאושרים אינו קיים: %s'%a.approved_sources);return 2
+	J=L(a.approved_sources)[0];H=os.path.join(tempfile.gettempdir(),'areo-net','links-'+os.path.basename(os.path.normpath(a.family_dir)));os.makedirs(H,exist_ok=True)
+	for A in I.get('source_refs')or[]:
+		if not A.get('url')or A.get('read_status')in NOT_READ:continue
+		E=ref_problem(A);A['link_checked_at']=now_iso()
+		if E:A['read_status']='excluded';A['read_reason']='לא נבדק שוב: %s'%E;D.append(A.get('source_id'));continue
+		P,M=source_type_problem(A.get('url'),SOURCE_TYPE_KEY.get(int(A['source_type']))if str(A.get('source_type')or'').isdigit()else A.get('source_type'),A.get('vendor')or A.get('issuing_body'));B=net.fetch(A['url'],'בדיקת קישור לפני המסירה',allowed_domains=M,run_dir=H);G=B.get('status')and 200<=B['status']<300 and not B.get('blocked');N=bool(A.get('file_sha256')and B.get('sha256')==A['file_sha256'])
+		if G and not N and A.get('document')and B.get('text'):
+			K=re.search('<title[^>]*>(.*?)</title>',B['text'],re.S|re.I);O=((K.group(1)if K else'')+' '+re.sub('<[^>]+>',' ',B['text'])[:20000]).lower()
+			if not any(A.lower()in O for A in re.findall('\\w{4,}',A['document'])[:3]):G,B['reason']=False,'שם המסמך אינו מופיע בדף'
+		if G and A.get('file_sha256')and B.get('sha256')and B['sha256']!=A['file_sha256']:A['file_sha256_new']=B['sha256'];A.setdefault('notes',[]).append('המסמך השתנה מאז ההורדה (%s)'%he_date(A['link_checked_at']))
+		if not G:A['read_status']='located_not_read';A['read_reason']='הקישור לא נפתח ב-%s (%s)'%(he_date(A['link_checked_at']),B.get('reason'));D.append(A['source_id'])
+	for C in F.get('external_sources')or[]:
+		if C.get('url')and str(C.get('ref','')).startswith(('L','X')):
+			C['link_checked_at']=now_iso();E=legal_problem(C['url'],J)
+			if E:C['verification']='לא אומת: %s'%E;D.append(C.get('ref'));continue
+			B=net.fetch(C['url'],'בדיקת קישור לפני המסירה',run_dir=H,allowed_domains=J)
+			if not(B.get('status')and 200<=B['status']<300 and not B.get('blocked')):C['verification']='לא אומת: הקישור לא נפתח ב-%s'%he_date(C['link_checked_at']);D.append(C.get('ref'))
+	if D:compute_ranges(F)
+	I.setdefault('refresh',{})['last_link_check']=now_iso();save(a.model,F);print('נבדקו הקישורים. נכשלו: %s'%(', '.join(str(A)for A in D)if D else'אף אחד'))
+	if D:print('הטווח חושב מחדש בלי המקורות שנכשלו. הרץ שוב message לפני המסירה.')
+	return 3 if D else 0
 def cmd_message(a):
-    path = None
-    if a.out:
-        # לפני כל כתיבה (גם למודל): --out לעולם אינו המודל או מסמך קיים
-        from common.cli import OutputRefused, guard_out
-        try:
-            path = guard_out(a.out, inputs=[a.model])
-        except OutputRefused as exc:
-            print("refused: %s" % exc, file=sys.stderr)
-            return 2
-    model = load(a.model, "המודל")
-    sentence, msg = build_message(model)
-    mr = model.setdefault("market_research", {})
-    mr["disclosure"] = {"fixed_sentence": sentence, "chat_message": msg, "shown_at": now_iso(), "word_chapter": True}
-    if isinstance(model.get("handoff"), dict):
-        model["handoff"]["counted_sources"] = (mr.get("counts") or {}).get("counted")
-    save(a.model, model)
-    errs = [e for e in check_model(model) if e.startswith(("MARKET_COUNT_MISMATCH", "ALL_AREO"))]
-    if path:
-        with io.open(path, "w", encoding="utf-8") as fh:
-            fh.write(msg)
-    print(msg)
-    for e in errs:
-        print("שגיאה: %s" % e)
-    return 3 if errs else 0
-
-
+	B=None
+	if a.out:
+		from common.cli import OutputRefused as F,guard_out as G
+		try:B=G(a.out,inputs=[a.model])
+		except F as H:print('refused: %s'%H,file=sys.stderr);return 2
+	A=load(a.model,'המודל');I,C=build_message(A);D=A.setdefault('market_research',{});D['disclosure']={'fixed_sentence':I,'chat_message':C,'shown_at':now_iso(),'word_chapter':True}
+	if isinstance(A.get('handoff'),dict):A['handoff']['counted_sources']=(D.get('counts')or{}).get('counted')
+	save(a.model,A);E=[A for A in check_model(A)if A.startswith(('MARKET_COUNT_MISMATCH','ALL_AREO'))]
+	if B:
+		with io.open(B,'w',encoding='utf-8')as J:J.write(C)
+	print(C)
+	for K in E:print('שגיאה: %s'%K)
+	return 3 if E else 0
 def cmd_fetch(a):
-    from common import net
-    from risk.entity_store import EntityStore
-    s = load_session() or {}
-    corpus_p, profile_p = a.corpus or s.get("corpus"), a.profile or s.get("profile")
-    corpus = load(corpus_p, "החילוץ") if corpus_p else None
-    profile = load_profile(profile_p) if profile_p else None
-    manifest = _opt(a.manifest or s.get("manifest"), "המניפסט")
-    deal = _opt(a.deal or s.get("deal"), "העסקה")
-
-    def refuse(reason, precheck="failed"):
-        print(json.dumps({"sent": False, "precheck": precheck, "reason": reason, "query": a.query},
-                         ensure_ascii=False, indent=1))
-        return 3
-
-    # השאילתה שהביאה את המסמך נבדקה לפני שיצאה למנוע החיפוש (query)
-    if not query_passed(a.family_dir, a.query):
-        return refuse("השאילתה לא נבדקה לפני החיפוש. הרץ query על השאילתה לפני החיפוש, וחפש בדיוק בנוסח שעבר",
-                      "not_prechecked")
-    problem, allowed = query_problem(a.query, a.purpose, corpus, profile, a.statute or s.get("statutes") or (),
-                                     manifest, deal)
-    problem = problem or url_problem(a.url, corpus, profile, manifest, deal)
-    if problem:
-        return refuse(problem)
-    cl = case_law_reason(a.url)
-    if cl:
-        # פסיקה רק ממחבר פסיקה סגור (כלל 1.1): בכל מטרה ובכל סוג, גם בדומיין שמאושר לחקיקה
-        return refuse(cl, "case_law")
-    if a.purpose == "legal":
-        # המקורות הרגולטוריים מהקובץ המשותף מקורות-מאושרים.json (--approved-sources, משתנה הסביבה
-        # AREO_APPROVED_SOURCES, או העותק שבתוסף), בלי רשימה תקפה אין מקור מאושר (אין רשימת נפילה): אותה פונקציה כמו בבודק ובמעריך הסיכונים
-        from urllib.parse import urlsplit
-        from risk.validate_register import approved_domains, domain_ok
-        if a.approved_sources and not os.path.isfile(a.approved_sources):
-            print("קובץ המקורות המאושרים אינו קיים: %s" % a.approved_sources)
-            return 2
-        rules = approved_domains(a.approved_sources)[0]
-        if not domain_ok(a.url, rules):
-            return refuse("דומיין או נתיב שאינו ברשימת המקורות המאושרים (%s)"
-                          % urlsplit(a.url).hostname, "approved_sources")
-        # הכללים כמו שהם (Rules, עם כללי הדחייה ב-refuse): שכבת הרשת בודקת שוב דומיין ונתיב גם אחרי הפניה
-        allowed_domains = rules
-    else:
-        problem, allowed_domains = source_type_problem(a.url, a.source_type, a.vendor, a.approved_sources)
-        if problem:
-            return refuse(problem, "source_type")
-    store = EntityStore(os.path.join(a.family_dir, "market-research"))
-    cached = read_copy(a.source_id, a.url) if a.excerpt else None
-    if cached:
-        # השלב השני של מסמך גדול: הקטע נבחר מעותק הקריאה, ונשמר בלי בקשה נוספת לאתר
-        res = {"status": cached["status"], "blocked": False, "lawyer_task": None, "log": cached["log"]}
-        try:
-            res["stored"], _ = store.store_page(a.source_id, cached["final_url"], cached["content"],
-                                                ext=cached["ext"], excerpt=a.excerpt)
-            res["reason"] = "ok: נשמר חלון סביב הקטע, מעותק הקריאה (בלי בקשה נוספת)"
-        except Exception as exc:  # noqa: BLE001  StoreError: הקטע לא נמצא בדף
-            res["stored"], res["reason"] = None, "ok, not stored: %s" % exc
-    else:
-        run_dir = os.path.join(tempfile.gettempdir(), "areo-net", os.path.basename(os.path.normpath(a.family_dir)))
-        os.makedirs(run_dir, exist_ok=True)
-        res = net.fetch(a.url, a.topic or a.purpose, allowed_domains=allowed_domains, store=store,
-                        source_id=a.source_id, excerpt=a.excerpt, run_dir=run_dir)
-    log = dict(res["log"], query=a.query, purpose=a.purpose, topic=a.topic,
-               precheck="passed_statute_name" if allowed else "passed")
-    if allowed:
-        log["statute_name"] = allowed
-    out = {"sent": True, "status": res.get("status"), "blocked": res.get("blocked"), "reason": res.get("reason"),
-           "lawyer_task": res.get("lawyer_task"), "stored": res.get("stored"), "search_log": log}
-    if a.purpose == "market":
-        # נכנס כמו שהוא ל-source_refs[]: סוג המקור קובע לאיזו נקודה בטווח הוא נספר
-        out["source_type"] = SOURCE_TYPE_NUM[a.source_type]
-        if a.vendor:
-            out["vendor"] = a.vendor
-    if res.get("blocked"):
-        out["read_status"] = "located_not_read"
-        out["read_reason"] = "אותר, לא נקרא: נחסם"
-    elif not res.get("stored") and res.get("content") and not a.excerpt:
-        # מסמך גדול (PDF של מכרז, למשל) נשמר בתיקיית הלקוח רק כחלון סביב קטע מילולי. בלי עותק קריאה
-        # אי אפשר היה לבחור את הקטע: הטקסט לא הגיע אל הבונה, ומסמכי המכרזים לא נקראו
-        path = write_copy(a.source_id, res)
-        if path:
-            out["reading_copy"] = path
-            out["next"] = ("המסמך גדול מכדי להישמר כולו. קרא את reading_copy, ובחר את הקטע המילולי של הנושא. "
-                           "אחר כך הרץ שוב fetch עם אותם פרטים ועם --excerpt \"<הקטע>\": החלון סביבו נשמר, "
-                           "בלי בקשה נוספת לאתר. עותק הקריאה נמחק ב-stop.")
-    print(json.dumps(out, ensure_ascii=False, indent=1))
-    return 0 if res.get("stored") or out.get("reading_copy") else 3
-
-
-def cmd_lookup(a):
-    """הרשומה של כתובת אחת ברשימת המקורות המאושרים, מהדיסק. המודל אינו קורא את הרשימה (157K תווים): הוא שואל את הקוד
-    על כתובת אחת לפני fetch, ומקבל רק approved (עם הרשומה) או not_on_list / case_law_only / pending / no_list."""
-    from common.approved_sources import lookup
-    res = lookup(a.url, a.approved_sources)
-    print(json.dumps(res, ensure_ascii=False, indent=1))
-    return 0 if res["status"] == "approved" else (2 if res["status"] == "no_list" else 1)
-
-
+	from common import net;from risk.entity_store import EntityStore as U;E=load_session()or{};H,I=a.corpus or E.get('corpus'),a.profile or E.get('profile');J=load(H,'החילוץ')if H else None;K=load_profile(I)if I else None;L=_opt(a.manifest or E.get('manifest'),'המניפסט');M=_opt(a.deal or E.get('deal'),'העסקה')
+	def F(reason,precheck='failed'):print(json.dumps({'sent':False,'precheck':precheck,'reason':reason,'query':a.query},ensure_ascii=False,indent=1));return 3
+	if not query_passed(a.family_dir,a.query):return F('השאילתה לא נבדקה לפני החיפוש. הרץ query על השאילתה לפני החיפוש, וחפש בדיוק בנוסח שעבר','not_prechecked')
+	C,G=query_problem(a.query,a.purpose,J,K,a.statute or E.get('statutes')or(),L,M);C=C or url_problem(a.url,J,K,L,M)
+	if C:return F(C)
+	N=case_law_reason(a.url)
+	if N:return F(N,'case_law')
+	if a.purpose=='legal':
+		from urllib.parse import urlsplit as V;from risk.validate_register import approved_domains as W,domain_ok as X
+		if a.approved_sources and not os.path.isfile(a.approved_sources):print('קובץ המקורות המאושרים אינו קיים: %s'%a.approved_sources);return 2
+		O=W(a.approved_sources)[0]
+		if not X(a.url,O):return F('דומיין או נתיב שאינו ברשימת המקורות המאושרים (%s)'%V(a.url).hostname,'approved_sources')
+		P=O
+	else:
+		C,P=source_type_problem(a.url,a.source_type,a.vendor,a.approved_sources)
+		if C:return F(C,'source_type')
+	Q=U(os.path.join(a.family_dir,'market-research'));D=read_copy(a.source_id,a.url)if a.excerpt else None
+	if D:
+		A={'status':D['status'],'blocked':False,'lawyer_task':None,'log':D['log']}
+		try:A['stored'],Z=Q.store_page(a.source_id,D['final_url'],D['content'],ext=D['ext'],excerpt=a.excerpt);A['reason']='ok: נשמר חלון סביב הקטע, מעותק הקריאה (בלי בקשה נוספת)'
+		except Exception as Y:A['stored'],A['reason']=None,'ok, not stored: %s'%Y
+	else:R=os.path.join(tempfile.gettempdir(),'areo-net',os.path.basename(os.path.normpath(a.family_dir)));os.makedirs(R,exist_ok=True);A=net.fetch(a.url,a.topic or a.purpose,allowed_domains=P,store=Q,source_id=a.source_id,excerpt=a.excerpt,run_dir=R)
+	S=dict(A['log'],query=a.query,purpose=a.purpose,topic=a.topic,precheck='passed_statute_name'if G else'passed')
+	if G:S['statute_name']=G
+	B={'sent':True,'status':A.get('status'),'blocked':A.get('blocked'),'reason':A.get('reason'),'lawyer_task':A.get('lawyer_task'),'stored':A.get('stored'),'search_log':S}
+	if a.purpose=='market':
+		B['source_type']=SOURCE_TYPE_NUM[a.source_type]
+		if a.vendor:B['vendor']=a.vendor
+	if A.get('blocked'):B['read_status']='located_not_read';B['read_reason']='אותר, לא נקרא: נחסם'
+	elif not A.get('stored')and A.get('content')and not a.excerpt:
+		T=write_copy(a.source_id,A)
+		if T:B['reading_copy']=T;B['next']='המסמך גדול מכדי להישמר כולו. קרא את reading_copy, ובחר את הקטע המילולי של הנושא. אחר כך הרץ שוב fetch עם אותם פרטים ועם --excerpt "<הקטע>": החלון סביבו נשמר, בלי בקשה נוספת לאתר. עותק הקריאה נמחק ב-stop.'
+	print(json.dumps(B,ensure_ascii=False,indent=1));return 0 if A.get('stored')or B.get('reading_copy')else 3
+def cmd_lookup(a):from common.approved_sources import lookup as B;A=B(a.url,a.approved_sources);print(json.dumps(A,ensure_ascii=False,indent=1));return 0 if A['status']=='approved'else 2 if A['status']=='no_list'else 1
 def main(argv=None):
-    sys.dont_write_bytecode = True
-    sys.stdout.reconfigure(encoding="utf-8")
-    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    sub = ap.add_subparsers(dest="cmd", required=True)
-    r = sub.add_parser("ranges", help="הטווח לכל נושא")
-    r.add_argument("--model", required=True)
-    c = sub.add_parser("check", help="הבדיקות של מחקר השוק")
-    c.add_argument("--model", required=True)
-    c.add_argument("--word", help="ה-Word שנבנה: הקישורים חייבים להיבדק אחריו")
-    c.add_argument("--final", action="store_true", help="מסירה סופית: pass_b_stop_reason")
-    l = sub.add_parser("links", help="בדיקת הקישורים לפני המסירה")
-    l.add_argument("--model", required=True)
-    l.add_argument("--family-dir", required=True)
-    l.add_argument("--approved-sources", help="מקורות-מאושרים.json, לבדיקת המקורות המשפטיים (L, X) לפני הקריאה (ברירת מחדל: "
-                                         "AREO_APPROVED_SOURCES, ואחריו העותק שבתוסף)")
-    m = sub.add_parser("message", help="הודעת המסירה")
-    m.add_argument("--model", required=True)
-    m.add_argument("--out")
-    f = sub.add_parser("fetch", help="בקשה אחת לרשת")
-    f.add_argument("--family-dir", required=True, help="playbooks/<family_id>: העותק נשמר ב-market-research/sources/")
-    f.add_argument("--source-id", required=True)
-    f.add_argument("--url", required=True)
-    f.add_argument("--query", required=True, help="השאילתה, מילה במילה, כפי שתירשם ביומן")
-    f.add_argument("--purpose", required=True, choices=("market", "legal"))
-    f.add_argument("--topic", help="הנושא שלשמו נשלחה")
-    f.add_argument("--excerpt")
-    f.add_argument("--corpus", help="החילוץ של ההסכמים: הבדיקה שאין בשאילתה רצף או מספר מהם")
-    f.add_argument("--profile")
-    f.add_argument("--manifest", help="מניפסט הקורפוס: כינויי הצדדים (parties_hint) נבדקים בשאילתה")
-    f.add_argument("--deal", help="קובץ העסקה (negotiation_state.json), כשהבנייה לבקשת הנושא ונותן: שם הצד שכנגד")
-    f.add_argument("--statute", action="append", help="שם חוק או רגולטור מהרשימה הסגורה (רק ב-legal)")
-    f.add_argument("--source-type", choices=sorted(SOURCE_TYPES),
-                   help="חובה במחקר שוק: tender | public_filing | vendor_terms | model_agreement")
-    f.add_argument("--vendor", "--publisher", dest="vendor",
-                   help="שם הצד שמפרסם את התנאים באתר שלו (vendor_terms)")
-    f.add_argument("--approved-sources", help="מקורות-מאושרים.json, לקריאה רגולטורית (ברירת מחדל: "
-                                              "AREO_APPROVED_SOURCES, ואחריו העותק שבתוסף, lib/מקורות-מאושרים.json; "
-                                              "אין רשימת נפילה בקוד)")
-    st = sub.add_parser("start", help="פותח מושב מחקר: מכאן כל חיפוש ברשת נבדק לפני שהוא נשלח")
-    st.add_argument("--family-dir", required=True)
-    st.add_argument("--corpus")
-    st.add_argument("--profile")
-    st.add_argument("--manifest")
-    st.add_argument("--deal")
-    st.add_argument("--statute", action="append")
-    sub.add_parser("stop", help="סוגר את מושב המחקר")
-    lk = sub.add_parser("lookup", help="הרשומה של כתובת אחת ברשימת המקורות המאושרים, בלי לקרוא את הרשימה")
-    lk.add_argument("--url", required=True)
-    lk.add_argument("--approved-sources", help="מקורות-מאושרים.json (ברירת מחדל: AREO_APPROVED_SOURCES, ואחריו העותק שבתוסף, "
-                                               "lib/מקורות-מאושרים.json)")
-    q = sub.add_parser("query", help="בודק שאילתה לפני החיפוש, ורושם אותה ביומן")
-    q.add_argument("--query", required=True)
-    q.add_argument("--purpose", required=True, choices=("market", "legal"))
-    q.add_argument("--family-dir", help="ברירת המחדל: של המושב הפעיל")
-    q.add_argument("--corpus")
-    q.add_argument("--profile")
-    q.add_argument("--manifest")
-    q.add_argument("--deal")
-    q.add_argument("--statute", action="append")
-    a = ap.parse_args(argv)
-    if a.cmd == "fetch" and a.purpose == "market" and not a.source_type:
-        ap.error("במחקר שוק חובה --source-type (ארבעת סוגי המקורות של market-research.md)")
-    return {"ranges": cmd_ranges, "check": cmd_check, "links": cmd_links, "message": cmd_message,
-            "fetch": cmd_fetch, "start": cmd_start, "stop": cmd_stop, "query": cmd_query,
-            "lookup": cmd_lookup}[a.cmd](a)
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+	sys.dont_write_bytecode=True;sys.stdout.reconfigure(encoding='utf-8');F=argparse.ArgumentParser(description=__doc__.split('\n')[0]);B=F.add_subparsers(dest='cmd',required=True);K=B.add_parser('ranges',help='הטווח לכל נושא');K.add_argument('--model',required=True);G=B.add_parser('check',help='הבדיקות של מחקר השוק');G.add_argument('--model',required=True);G.add_argument('--word',help='ה-Word שנבנה: הקישורים חייבים להיבדק אחריו');G.add_argument('--final',action='store_true',help='מסירה סופית: pass_b_stop_reason');H=B.add_parser('links',help='בדיקת הקישורים לפני המסירה');H.add_argument('--model',required=True);H.add_argument('--family-dir',required=True);H.add_argument('--approved-sources',help='מקורות-מאושרים.json, לבדיקת המקורות המשפטיים (L, X) לפני הקריאה (ברירת מחדל: AREO_APPROVED_SOURCES, ואחריו העותק שבתוסף)');I=B.add_parser('message',help='הודעת המסירה');I.add_argument('--model',required=True);I.add_argument('--out');A=B.add_parser('fetch',help='בקשה אחת לרשת');A.add_argument('--family-dir',required=True,help='playbooks/<family_id>: העותק נשמר ב-market-research/sources/');A.add_argument('--source-id',required=True);A.add_argument('--url',required=True);A.add_argument('--query',required=True,help='השאילתה, מילה במילה, כפי שתירשם ביומן');A.add_argument('--purpose',required=True,choices=('market','legal'));A.add_argument('--topic',help='הנושא שלשמו נשלחה');A.add_argument('--excerpt');A.add_argument('--corpus',help='החילוץ של ההסכמים: הבדיקה שאין בשאילתה רצף או מספר מהם');A.add_argument('--profile');A.add_argument('--manifest',help='מניפסט הקורפוס: כינויי הצדדים (parties_hint) נבדקים בשאילתה');A.add_argument('--deal',help='קובץ העסקה (negotiation_state.json), כשהבנייה לבקשת הנושא ונותן: שם הצד שכנגד');A.add_argument('--statute',action='append',help='שם חוק או רגולטור מהרשימה הסגורה (רק ב-legal)');A.add_argument('--source-type',choices=sorted(SOURCE_TYPES),help='חובה במחקר שוק: tender | public_filing | vendor_terms | model_agreement');A.add_argument('--vendor','--publisher',dest='vendor',help='שם הצד שמפרסם את התנאים באתר שלו (vendor_terms)');A.add_argument('--approved-sources',help='מקורות-מאושרים.json, לקריאה רגולטורית (ברירת מחדל: AREO_APPROVED_SOURCES, ואחריו העותק שבתוסף, lib/מקורות-מאושרים.json; אין רשימת נפילה בקוד)');D=B.add_parser('start',help='פותח מושב מחקר: מכאן כל חיפוש ברשת נבדק לפני שהוא נשלח');D.add_argument('--family-dir',required=True);D.add_argument('--corpus');D.add_argument('--profile');D.add_argument('--manifest');D.add_argument('--deal');D.add_argument('--statute',action='append');B.add_parser('stop',help='סוגר את מושב המחקר');J=B.add_parser('lookup',help='הרשומה של כתובת אחת ברשימת המקורות המאושרים, בלי לקרוא את הרשימה');J.add_argument('--url',required=True);J.add_argument('--approved-sources',help='מקורות-מאושרים.json (ברירת מחדל: AREO_APPROVED_SOURCES, ואחריו העותק שבתוסף, lib/מקורות-מאושרים.json)');C=B.add_parser('query',help='בודק שאילתה לפני החיפוש, ורושם אותה ביומן');C.add_argument('--query',required=True);C.add_argument('--purpose',required=True,choices=('market','legal'));C.add_argument('--family-dir',help='ברירת המחדל: של המושב הפעיל');C.add_argument('--corpus');C.add_argument('--profile');C.add_argument('--manifest');C.add_argument('--deal');C.add_argument('--statute',action='append');E=F.parse_args(argv)
+	if E.cmd=='fetch'and E.purpose=='market'and not E.source_type:F.error('במחקר שוק חובה --source-type (ארבעת סוגי המקורות של market-research.md)')
+	return{'ranges':cmd_ranges,'check':cmd_check,'links':cmd_links,'message':cmd_message,'fetch':cmd_fetch,'start':cmd_start,'stop':cmd_stop,'query':cmd_query,'lookup':cmd_lookup}[E.cmd](E)
+if __name__=='__main__':sys.exit(main())

@@ -1,198 +1,46 @@
 # -*- coding: utf-8 -*-
-"""בדיקות כלל 2.22 ("נוסח שאנחנו כותבים אינו יוצר פער"), בעברית ובאנגלית, במודול משותף אחד
-(מימוש ייחוס, הערות הנושא ונותן 4.9, שינוי 81; משמש גם את playbook/validate_model.py ואת risk/validate_register.py).
-
-המודול כללי לכל סוג הסכם .
-הוא בודק רק מנגנונים שחלים בכל הסכם, ונשען על התפקיד של הסעיף (סיום, סודיות, תקרה, תשלום, מחיקה), ולא על
-סוג ההסכם, על הצד או על עובדות של לקוחה. שיקול משפטי על סעיף מסוים בסוג הסכם מסוים שייך לפלייבוק של הלקוחה,
-ולא לכאן (החלטה 22, כלל נוקשה 2.26). כלל 2.22 כולל רק את המחלקות האלה:
-
-  GAP_DISPUTE_CARVEOUT            זכות סיום בעילת אי-תשלום: חריג מחלוקת שחל על סכום, מועד וקיזוז.
-  GAP_TERMINATION_HANDOVER        זכות סיום בהתקשרות מתמשכת: חובת העברה מסודרת.
-  GAP_CONFIDENTIALITY_EXCEPTIONS  חובת סודיות: גילוי לפי דין או רשות, יועצים ומבקרים, צד שלישי, פיתוח עצמאי.
-  GAP_PAYMENT_WORDING             נוסח "בטוח" למועד תשלום נוקב מספר (המספר בא מהפלייבוק), ולעולם אינו מפנה
-                                  ל"מועד המאוחר ביותר שהדין מתיר" או ל"לפי המאוחר". חריג אחד: מספר ימים, ואחריו
-                                  "או המועד המרבי שבדין, לפי המוקדם", מותר רק כש-context['allow_statutory_cap']
-                                  (נוסח בפלייבוק, evidence-policy.md, "Needs legal review": הבונה כותב אותו רק
-                                  כשהדין החל קובע מועד מרבי, והמספר נשאר). בנוסח בטוח של הנושא ונותן הוא אסור.
-
-    from common.gap_checks import check_wording, check_document
-    check_wording(text, lang, topic=None, context=None) -> [{'code', 'message_he', 'span'}]
-    check_document(accept_text, touched, lang, context=None) -> [{'code', 'message_he', 'span'}]
-
-- check_wording בודק נוסח אחד (פסקה שהכנסנו, או נוסח ירוק או צהוב בפלייבוק). context['accept_text'] (ההסכם כולו
-  בהטלת "קבל הכול", או כל נוסחי הפלייבוק יחד) משמש את הבדיקות שתלויות בשאר ההסכם. בלי context: מול הנוסח עצמו.
-- check_document נשמר לממשק (בדיקות שחלות על ההסכם כולו). בכלל 2.22 הנוכחי אין מחלקה כזו, והוא מחזיר רשימה ריקה.
-- topic (לא חובה): 'confidentiality' מפעיל את בדיקת החריגים גם בלי מילת החובה. כל ערך אחר אינו משנה דבר.
-- context['waived']: קודים שהמשתמש הכריע במפורש לוותר עליהם (ויתור מכוון עם user_decision מפורש).
-- context['allow_statutory_cap']: True מתיר את הסייג "או המועד המרבי שבדין, לפי המוקדם" אחרי מספר ימים (ראו
-  GAP_PAYMENT_WORDING). playbook/validate_model.py מעביר אותו לנוסחי הפלייבוק, ו-orchestrator/qa_gate.py
-  מעביר אותו לכל פסקה בנפרד, רק כשהנוסח נלקח מהפלייבוק כלשונו; ברירת המחדל False.
-span הוא (start, end) בתוך text, או None. message_he תמיד בעברית.
-
-Python 3, ספרייה סטנדרטית בלבד. בלי פנייה לרשת.
-"""
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
 import re
-
-HEB = re.compile('[א-ת]')
-
-# אוצר ביטויים לפי תפקיד הסעיף, בעברית ובאנגלית. אין כאן מונח של סוג הסכם מסוים.
-P = {
-    'he': {
-        'terminate': r'לסיים|סיום|לבטל את ההסכם',
-        'breach': r'הפרה|הפר',
-        'payment': r'תשלום|לשלם',
-        'dispute': r'חולק|במחלוקת|מחלוקת',
-        'd_amount': r'סכום|חיוב|שיעור',
-        'd_timing': r'מועד',
-        'setoff': r'לקזז|קיזוז|קוזז',
-        'term_right': r'רשאי לסיים|רשאי לבטל|יסתיים|סיום מיידי',
-        'handover': r'העברה מסודרת|יעביר[^.\n]{0,40}(תוצרים|העבודה|המידע|החומרים|הנכס|המושכר|הציוד)|תקופת מעבר|'
-                    r'חפיפה|השבת (המושכר|הנכס|הציוד|החומרים)|יחזיר[^.\n]{0,30}(המושכר|הנכס|הציוד)',
-        'ongoing_ctx': r'שירותים|תוצרים|אספקה|יספק|המושכר|רישיון|תחזוקה|הפצה|העבודה',
-        'conf': r'סודיות|בסוד|מידע סודי',
-        'conf_duty': r'ישמור|לא יגלה|לא ימסור|לא יעביר|ישמרו',
-        'law_exc': r'(לפי|על פי|מכוח) (כל )?דין|צו (של )?(בית משפט|שיפוטי)|רשות מוסמכת|דרישת רשות|רגולטור|רשות מפקחת',
-        'adv_exc': r'יועצ(יו|יה|יהם|ים)[^.\n]{0,20}(המקצועיים|המשפטיים)|רו(א|אה|אי) ה?חשבון|המבקר הפנימי|מבקר הפנים',
-        'tp_exc': r'(התקבל|שקיבל|קיבל|שהגיע)[^.\n]{0,60}מצד שלישי',
-        'indep': r'פותח[^.\n]{0,20}באופן עצמאי|פיתוח עצמאי|פיתח[^.\n]{0,20}באופן עצמאי',
-        # "באופן שוטף" ו"על בסיס שוטף" אינם מועד תשלום
-        'pay_term': r'(ישולם|ישולמו|תשולם|משולמת|ישלם|התשלום|התמורה|דמי \S+)[^.\n]{0,80}'
-                    r'(בתוך|תוך|מתום|ממועד|(?<!באופן )(?<!בסיס )שוטף(?![\u05d0-\u05ea]))',
-        'pay_latest': r'המועד המאוחר ביותר|המועד המרבי|המועד המירבי|לפי המוקדם|לפי המאוחר',
-        # הסייג הבטוח: מספר ימים "או המועד המרבי שבדין, לפי המוקדם". הוא מקצר בלבד, ולכן אינו פער
-        'pay_cap_safe': r'או (את )?ה?מועד המי?רבי (ה?קבוע |ש)?ב?(דין|חוק)[^.;\n]{0,40}?,? לפי המוקדם',
-        'days': r'\d+\s*(יום|ימים|ימי עסקים)|\[\s*\d+\s*\]\s*(יום|ימים|ימי עסקים)',
-    },
-    'en': {
-        'terminate': r'terminat',
-        'breach': r'breach',
-        'payment': r'pay',
-        'dispute': r'disput',
-        'd_amount': r'amount|liability|quantum|sum',
-        'd_timing': r'timing|due date|when due|time of payment',
-        'setoff': r'set[- ]?off',
-        'term_right': r'may terminate|right to terminate|immediate termination|terminate this agreement',
-        'handover': r'hand ?over|transition (period|assistance|services)|orderly (transfer|transition)|'
-                    r'deliver (all )?(work|deliverables|materials)|return (of )?the (premises|equipment|goods)|vacate',
-        'ongoing_ctx': r'\bservices\b|deliverables|\bsupply\b|premises|licen[cs]e|maintenance|distribut|work product',
-        'conf': r'Confidential Information|in confidence|confidential',
-        'conf_duty': r'shall not (disclose|make any public|use)|shall (keep|hold)[^.\n]{0,40}confiden|'
-                     r'(are|as|treat[^.\n]{0,30}as) Confidential Information',
-        'law_exc': r'required by (applicable )?law|compelled[^.\n]{0,20}by law|court order|legal process|'
-                   r'regulatory|supervisory authority|governmental authority|competent authority',
-        'adv_exc': r'advis[eo]rs?|auditors?|accountants?',
-        'tp_exc': r'(received|obtained|acquired)[^.\n]{0,80}from a third party|from a third party',
-        'indep': r'independently developed|developed independently',
-        'pay_term': r'(shall be paid|shall pay|payable|payment)[^.\n]{0,80}(within|net|from the end|after receipt|following)',
-        'pay_latest': r'whichever is (earlier|later)|latest (date|time) permitted|maximum (period|term) permitted',
-        'pay_cap_safe': r'or (within )?the maximum (period|term) permitted (by|under) (the )?(applicable )?law'
-                        r'[^.;\n]{0,40}?,? whichever is (the )?earlier',
-        'days': r'\d+\s*(calendar |business )?days|net\s*\d+',
-    },
-}
-
-MSG = {
-    'GAP_DISPUTE_CARVEOUT': 'זכות סיום בעילת אי-תשלום בלי חריג מחלוקת שחל על סכום, מועד וקיזוז',
-    'GAP_TERMINATION_HANDOVER': 'זכות סיום בלי חובת חפיפה והעברה מסודרת',
-    'GAP_CONFIDENTIALITY_EXCEPTIONS': 'חובת סודיות בלי החריגים שהחברה עצמה צריכה',
-    'GAP_PAYMENT_WORDING': 'נוסח תשלום שאינו נוקב מספר ימים, או שמפנה למועד מרבי בדין',
-}
-DOCUMENT_CODES = ()
-ALL_CODES = tuple(MSG)
-
-
-def detect_lang(text):
-    """'he' כשיש בטקסט לפחות אותיות עבריות כמו לטיניות, אחרת 'en'."""
-    return 'he' if len(HEB.findall(text or '')) >= len(re.findall('[A-Za-z]', text or '')) else 'en'
-
-
-def _f(code, extra='', span=None):
-    return {'code': code, 'message_he': MSG[code] + (': ' + extra if extra else ''), 'span': span}
-
-
+HEB=re.compile('[א-ת]')
+P={'he':{'terminate':'לסיים|סיום|לבטל את ההסכם','breach':'הפרה|הפר','payment':'תשלום|לשלם','dispute':'חולק|במחלוקת|מחלוקת','d_amount':'סכום|חיוב|שיעור','d_timing':'מועד','setoff':'לקזז|קיזוז|קוזז','term_right':'רשאי לסיים|רשאי לבטל|יסתיים|סיום מיידי','handover':'העברה מסודרת|יעביר[^.\\n]{0,40}(תוצרים|העבודה|המידע|החומרים|הנכס|המושכר|הציוד)|תקופת מעבר|חפיפה|השבת (המושכר|הנכס|הציוד|החומרים)|יחזיר[^.\\n]{0,30}(המושכר|הנכס|הציוד)','ongoing_ctx':'שירותים|תוצרים|אספקה|יספק|המושכר|רישיון|תחזוקה|הפצה|העבודה','conf':'סודיות|בסוד|מידע סודי','conf_duty':'ישמור|לא יגלה|לא ימסור|לא יעביר|ישמרו','law_exc':'(לפי|על פי|מכוח) (כל )?דין|צו (של )?(בית משפט|שיפוטי)|רשות מוסמכת|דרישת רשות|רגולטור|רשות מפקחת','adv_exc':'יועצ(יו|יה|יהם|ים)[^.\\n]{0,20}(המקצועיים|המשפטיים)|רו(א|אה|אי) ה?חשבון|המבקר הפנימי|מבקר הפנים','tp_exc':'(התקבל|שקיבל|קיבל|שהגיע)[^.\\n]{0,60}מצד שלישי','indep':'פותח[^.\\n]{0,20}באופן עצמאי|פיתוח עצמאי|פיתח[^.\\n]{0,20}באופן עצמאי','pay_term':'(ישולם|ישולמו|תשולם|משולמת|ישלם|התשלום|התמורה|דמי \\S+)[^.\\n]{0,80}(בתוך|תוך|מתום|ממועד|(?<!באופן )(?<!בסיס )שוטף(?![\\u05d0-\\u05ea]))','pay_latest':'המועד המאוחר ביותר|המועד המרבי|המועד המירבי|לפי המוקדם|לפי המאוחר','pay_cap_safe':'או (את )?ה?מועד המי?רבי (ה?קבוע |ש)?ב?(דין|חוק)[^.;\\n]{0,40}?,? לפי המוקדם','days':'\\d+\\s*(יום|ימים|ימי עסקים)|\\[\\s*\\d+\\s*\\]\\s*(יום|ימים|ימי עסקים)'},'en':{'terminate':'terminat','breach':'breach','payment':'pay','dispute':'disput','d_amount':'amount|liability|quantum|sum','d_timing':'timing|due date|when due|time of payment','setoff':'set[- ]?off','term_right':'may terminate|right to terminate|immediate termination|terminate this agreement','handover':'hand ?over|transition (period|assistance|services)|orderly (transfer|transition)|deliver (all )?(work|deliverables|materials)|return (of )?the (premises|equipment|goods)|vacate','ongoing_ctx':'\\bservices\\b|deliverables|\\bsupply\\b|premises|licen[cs]e|maintenance|distribut|work product','conf':'Confidential Information|in confidence|confidential','conf_duty':'shall not (disclose|make any public|use)|shall (keep|hold)[^.\\n]{0,40}confiden|(are|as|treat[^.\\n]{0,30}as) Confidential Information','law_exc':'required by (applicable )?law|compelled[^.\\n]{0,20}by law|court order|legal process|regulatory|supervisory authority|governmental authority|competent authority','adv_exc':'advis[eo]rs?|auditors?|accountants?','tp_exc':'(received|obtained|acquired)[^.\\n]{0,80}from a third party|from a third party','indep':'independently developed|developed independently','pay_term':'(shall be paid|shall pay|payable|payment)[^.\\n]{0,80}(within|net|from the end|after receipt|following)','pay_latest':'whichever is (earlier|later)|latest (date|time) permitted|maximum (period|term) permitted','pay_cap_safe':'or (within )?the maximum (period|term) permitted (by|under) (the )?(applicable )?law[^.;\\n]{0,40}?,? whichever is (the )?earlier','days':'\\d+\\s*(calendar |business )?days|net\\s*\\d+'}}
+MSG={'GAP_DISPUTE_CARVEOUT':'זכות סיום בעילת אי-תשלום בלי חריג מחלוקת שחל על סכום, מועד וקיזוז','GAP_TERMINATION_HANDOVER':'זכות סיום בלי חובת חפיפה והעברה מסודרת','GAP_CONFIDENTIALITY_EXCEPTIONS':'חובת סודיות בלי החריגים שהחברה עצמה צריכה','GAP_PAYMENT_WORDING':'נוסח תשלום שאינו נוקב מספר ימים, או שמפנה למועד מרבי בדין'}
+DOCUMENT_CODES=()
+ALL_CODES=tuple(MSG)
+def detect_lang(text):return'he'if len(HEB.findall(text or''))>=len(re.findall('[A-Za-z]',text or''))else'en'
+def _f(code,extra='',span=None):A=extra;return{'code':code,'message_he':MSG[code]+(': '+A if A else''),'span':span}
 def sentences(text):
-    """(משפט, התחלה, סוף). מפריד אחרי . ? ! ; ואחרי מעבר שורה."""
-    out = []
-    for m in re.finditer(r'[^.?!;\n]+(?:[.?!;]+|$)', text or ''):
-        s = m.group(0)
-        if s.strip():
-            lead = len(s) - len(s.lstrip())
-            out.append((s.strip(), m.start() + lead, m.start() + lead + len(s.strip())))
-    return out
-
-
-def _s(rx, text, flags=0):
-    return re.search(rx, text or '', flags)
-
-
-def _paragraphs(doc):
-    return [x for x in (doc or '').split('\n') if x.strip()]
-
-
+	C=[]
+	for B in re.finditer('[^.?!;\\n]+(?:[.?!;]+|$)',text or''):
+		A=B.group(0)
+		if A.strip():D=len(A)-len(A.lstrip());C.append((A.strip(),B.start()+D,B.start()+D+len(A.strip())))
+	return C
+def _s(rx,text,flags=0):return re.search(rx,text or'',flags)
+def _paragraphs(doc):return[A for A in(doc or'').split('\n')if A.strip()]
 def _dedupe(F):
-    seen, out = set(), []
-    for x in F:
-        k = (x['code'], x['message_he'], x['span'])
-        if k not in seen:
-            seen.add(k)
-            out.append(x)
-    return out
-
-
-def check_wording(text, lang, topic=None, context=None):
-    """כל המחלקות על נוסח אחד. ראו את ראש המודול."""
-    lang = lang if lang in P else detect_lang(text)
-    X = P[lang]
-    ctx = context or {}
-    doc = ctx.get('accept_text') or text
-    I = re.I if lang == 'en' else 0
-    F = []
-    t = text or ''
-    sents = sentences(t)
-    # חריג מחלוקת בזכות סיום
-    if _s(X['terminate'], t, I) and _s(X['breach'], t, I):
-        dispute = [(s, a, b) for s, a, b in sents if _s(X['dispute'], s, I)]
-        if not dispute and _s(X['payment'], t, I):
-            F.append(_f('GAP_DISPUTE_CARVEOUT', 'אין חריג למחלוקת'))
-        setoff_anywhere = _s(X['setoff'], doc, I)
-        for s, a, b in dispute:
-            miss = [n for n, k in (('סכום', 'd_amount'), ('מועד', 'd_timing')) if not _s(X[k], s, I)]
-            if setoff_anywhere and not _s(X['setoff'], s, I):
-                miss.append('קיזוז')
-            if miss:
-                F.append(_f('GAP_DISPUTE_CARVEOUT', 'החריג אינו חל על ' + ', '.join(miss), (a, b)))
-    # חפיפה בסיום של התקשרות מתמשכת
-    m = _s(X['term_right'], t, I)
-    if m and _s(X['ongoing_ctx'], doc, I) and not _s(X['handover'], doc, I):
-        F.append(_f('GAP_TERMINATION_HANDOVER', '', (m.start(), m.end())))
-    # חריגי סודיות
-    if (topic == 'confidentiality' or _s(X['conf'], t, I)) and (topic == 'confidentiality' or _s(X['conf_duty'], t, I)):
-        names = (('גילוי לפי דין או לפי דרישת רשות', X['law_exc']), ('יועצים, רואה החשבון והמבקר הפנימי', X['adv_exc']),
-                 ('מידע שהתקבל כדין מצד שלישי', X['tp_exc']), ('פיתוח עצמאי', X['indep']))
-        miss = [n for n, rx in names if not _s(rx, doc, I)]
-        if miss:
-            F.append(_f('GAP_CONFIDENTIALITY_EXCEPTIONS', 'חסרים: ' + '; '.join(miss)))
-    # נוסח תשלום
-    if _s(X['pay_term'], t, I):
-        # הסייג הבטוח, עם מספר ימים, אינו פער; כל הפניה אחרת למועד בדין, בנוסף לו או במקומו, היא פער
-        rest = re.sub(X['pay_cap_safe'], lambda k: ' ' * len(k.group(0)), t, flags=I) \
-            if ctx.get('allow_statutory_cap') and _s(X['days'], t, I) else t
-        m = _s(X['pay_latest'], rest, I)
-        if m:
-            F.append(_f('GAP_PAYMENT_WORDING', 'הפניה ל"מועד מאוחר ביותר" או ל"לפי המוקדם"', (m.start(), m.end())))
-        if not _s(X['days'], t, I):
-            F.append(_f('GAP_PAYMENT_WORDING', 'אין מספר ימים'))
-    if not ctx.get('accept_text'):
-        F += check_document(t, [t], lang, ctx)
-    waived = set(ctx.get('waived') or ())
-    return _dedupe([x for x in F if x['code'] not in waived])
-
-
-def check_document(accept_text, touched, lang, context=None):
-    """בדיקות שחלות על ההסכם כולו. touched: הפסקאות שהכנסנו (רק התנגשות שבה לנוסח שלנו יש חלק נבדקת)."""
-    lang = lang if lang in P else detect_lang(accept_text)
-    ctx = context or {}
-    F = []
-    waived = set(ctx.get('waived') or ())
-    return _dedupe([x for x in F if x['code'] not in waived])
+	B,C=set(),[]
+	for A in F:
+		D=A['code'],A['message_he'],A['span']
+		if D not in B:B.add(D);C.append(A)
+	return C
+def check_wording(text,lang,topic=None,context=None):
+	K=topic;J=text;F=lang;F=F if F in P else detect_lang(J);A=P[F];H=context or{};I=H.get('accept_text')or J;B=re.I if F=='en'else 0;D=[];C=J or'';N=sentences(C)
+	if _s(A['terminate'],C,B)and _s(A['breach'],C,B):
+		L=[(C,D,E)for(C,D,E)in N if _s(A['dispute'],C,B)]
+		if not L and _s(A['payment'],C,B):D.append(_f('GAP_DISPUTE_CARVEOUT','אין חריג למחלוקת'))
+		O=_s(A['setoff'],I,B)
+		for(M,Q,R)in L:
+			G=[C for(C,D)in(('סכום','d_amount'),('מועד','d_timing'))if not _s(A[D],M,B)]
+			if O and not _s(A['setoff'],M,B):G.append('קיזוז')
+			if G:D.append(_f('GAP_DISPUTE_CARVEOUT','החריג אינו חל על '+', '.join(G),(Q,R)))
+	E=_s(A['term_right'],C,B)
+	if E and _s(A['ongoing_ctx'],I,B)and not _s(A['handover'],I,B):D.append(_f('GAP_TERMINATION_HANDOVER','',(E.start(),E.end())))
+	if(K=='confidentiality'or _s(A['conf'],C,B))and(K=='confidentiality'or _s(A['conf_duty'],C,B)):
+		S=('גילוי לפי דין או לפי דרישת רשות',A['law_exc']),('יועצים, רואה החשבון והמבקר הפנימי',A['adv_exc']),('מידע שהתקבל כדין מצד שלישי',A['tp_exc']),('פיתוח עצמאי',A['indep']);G=[A for(A,C)in S if not _s(C,I,B)]
+		if G:D.append(_f('GAP_CONFIDENTIALITY_EXCEPTIONS','חסרים: '+'; '.join(G)))
+	if _s(A['pay_term'],C,B):
+		T=re.sub(A['pay_cap_safe'],lambda k:' '*len(k.group(0)),C,flags=B)if H.get('allow_statutory_cap')and _s(A['days'],C,B)else C;E=_s(A['pay_latest'],T,B)
+		if E:D.append(_f('GAP_PAYMENT_WORDING','הפניה ל"מועד מאוחר ביותר" או ל"לפי המוקדם"',(E.start(),E.end())))
+		if not _s(A['days'],C,B):D.append(_f('GAP_PAYMENT_WORDING','אין מספר ימים'))
+	if not H.get('accept_text'):D+=check_document(C,[C],F,H)
+	U=set(H.get('waived')or());return _dedupe([A for A in D if A['code']not in U])
+def check_document(accept_text,touched,lang,context=None):A=lang;A=A if A in P else detect_lang(accept_text);B=context or{};C=[];D=set(B.get('waived')or());return _dedupe([A for A in C if A['code']not in D])

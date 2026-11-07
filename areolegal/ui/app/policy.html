@@ -1,0 +1,1380 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}body{margin:0}</style></head><body><title>מדיניות חוזית</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700&family=Assistant:wght@400;500;600;700&family=Poppins:wght@400;700&display=swap">
+<style>
+/* Layout: side menu with the playbook picker on top, one calm content column beside it; on a phone the menu becomes a scrolling strip */
+:root{
+  --night:#0d0f14; --panel:#14171f; --raised:#1b1f29; --line:#272d3a; --line-strong:#353c4c;
+  --ink:#eef1f5; --mist:#9aa3b2; --faint:#6b7486;
+  --aurora:#2fe6a6; --aurora-ink:#06231a; --aurora-soft:rgba(47,230,166,.12);
+  --g:#38d39f; --g-soft:rgba(56,211,159,.10); --y:#f2b45c; --y-soft:rgba(242,180,92,.10); --r:#f2676c; --r-soft:rgba(242,103,108,.10);
+  --legal:#b6a3ff; --legal-soft:rgba(167,139,250,.14); --clay:#E08A66; --clay-soft:rgba(224,138,102,.16);
+  --c1:#17a070; --c2:#4b86d8; --c3:#8f74ea; --c0:#353c4c;
+  --display:'Rubik','Assistant',system-ui,sans-serif; --body:'Assistant',system-ui,-apple-system,'Segoe UI',sans-serif; --mark:'Poppins','Assistant',sans-serif; --serif:'Rubik','Assistant',system-ui,sans-serif;
+  --fab-bg:#171c25; --fab-ink:#f3f5f8; --fab-orb:#0d1016; --paper:#1d222c; --hl:rgba(56,211,159,.55);
+  color-scheme:dark;
+}
+:root[data-areo="light"],:root[data-theme="light"]:not([data-areo="dark"]){
+  --night:#F4F7F5; --panel:#FFFFFF; --raised:#F0F3F6; --line:#DBE4E0; --line-strong:#C6D3CD;
+  --ink:#10221C; --mist:#4F615A; --faint:#7A8A84;
+  --aurora:#0B8C66; --aurora-ink:#FFFFFF; --aurora-soft:#E1F5EC;
+  --g:#0F9D6E; --g-soft:#E7F6EF; --y:#B07A06; --y-soft:#FBF3DF; --r:#C93434; --r-soft:#FCEBEB;
+  --legal:#4A30A8; --legal-soft:#EFEAFD; --clay:#B4552F; --clay-soft:#FBEDE5;
+  --c1:#0B8C66; --c2:#2F6FC6; --c3:#6B4FD8; --c0:#C6D3CD;
+  --fab-bg:#10221C; --fab-ink:#F4F7F5; --fab-orb:#08140F; --paper:#FFFFFF; --hl:rgba(15,157,110,.42);
+  color-scheme:light;
+}
+:root[data-size="lg"]{font-size:18px}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--night);color:var(--ink);font-family:var(--body);font-size:1rem;line-height:1.6}
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100%}
+aside{background:var(--panel);border-inline-end:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:14px;position:sticky;top:0;height:100vh;overflow:auto}
+.wordmark{font-family:var(--mark);font-weight:700;font-size:20px;direction:ltr;text-align:right;letter-spacing:-.3px;padding:0 6px}
+.wordmark span{color:var(--mist);font-weight:400}.wordmark b{color:var(--aurora)}
+.co{font-size:13px;color:var(--mist);padding:0 6px;margin-top:-10px}
+.picker{position:relative}
+.pickbtn{width:100%;text-align:start;background:var(--raised);border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;color:var(--ink);font:inherit;cursor:pointer;display:flex;gap:8px;align-items:center}
+.pickbtn .t{flex:1;min-width:0}.pickbtn b{display:block;font-size:15px}.pickbtn small{display:block;color:var(--mist);font-size:12.5px}
+.pickbtn .car{color:var(--faint)}
+.menu{position:absolute;inset-inline:0;top:calc(100% + 6px);background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;padding:6px;z-index:30;box-shadow:0 12px 32px rgba(0,0,0,.35)}
+.menu button{width:100%;text-align:start;background:none;border:0;border-radius:8px;padding:9px 10px;color:var(--ink);font:inherit;cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.menu button:hover{background:var(--raised)}
+.menu .sub{font-size:12.5px;color:var(--mist)}
+.menu .add{color:var(--aurora);font-weight:600;border-top:1px solid var(--line);border-radius:0 0 8px 8px;margin-top:4px}
+nav{display:flex;flex-direction:column;gap:2px}
+.nv{display:flex;align-items:center;gap:10px;width:100%;text-align:start;background:none;border:0;border-inline-start:3px solid transparent;border-radius:10px;padding:8px 10px;color:var(--mist);font:inherit;font-size:15px;cursor:pointer}
+.nv:hover{background:var(--raised);color:var(--ink)}
+.nv[aria-current="page"]{background:var(--aurora-soft);color:var(--aurora);font-weight:600;border-inline-start-color:var(--aurora)}
+.nv .cnt{margin-inline-start:auto;font-size:12px;font-weight:700;background:var(--raised);color:var(--mist);border-radius:999px;padding:0 8px;line-height:20px}
+.nv .cnt.w{background:var(--legal-soft);color:var(--legal)}
+.product{font-size:13.5px;color:var(--aurora);font-weight:600;padding:0 6px;margin-top:-10px}
+.product .pbtag{font-weight:400;color:var(--mist);font-size:12.5px}
+.xlink{margin-top:auto;display:flex;align-items:center;gap:10px;justify-content:space-between;border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--ink);text-decoration:none}
+.xlink:hover{border-color:var(--aurora)}.xlink b{display:block;font-size:14.5px}.xlink small{display:block;font-size:12.5px;color:var(--mist)}
+.xlink svg{width:17px;height:17px;color:var(--mist);flex:0 0 auto}
+.asidefoot{font-size:12.5px;color:var(--faint);padding:0 6px}
+main{padding:18px max(20px,env(safe-area-inset-left,0px)) 48px max(20px,env(safe-area-inset-right,0px));min-width:0}
+.col{max-width:1180px;margin:0;display:flex;flex-direction:column;gap:14px}
+.bar0{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.crumb{font-size:13.5px;color:var(--mist)}
+.iconbtn{height:38px;min-width:38px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--line-strong);background:var(--raised);color:var(--mist);cursor:pointer;font:inherit;font-size:14px}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.25;text-wrap:balance}
+h1{font-size:26px;font-weight:700}h2{font-size:19px;font-weight:600}h3{font-size:16px;font-weight:600}
+.lead{margin:0;color:var(--mist);max-width:64ch}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.stat b{display:block;font-family:var(--display);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--mist)}
+@media (max-width:620px){.stats{grid-template-columns:repeat(2,1fr)}}
+.pill{display:inline-block;font-size:12.5px;font-weight:700;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.pill.draft{background:var(--y-soft);color:var(--y)}.pill.ok{background:var(--g-soft);color:var(--g)}.pill.wait{background:var(--legal-soft);color:var(--legal)}.pill.crit{background:var(--r-soft);color:var(--r)}
+.hero{position:relative;overflow:hidden;border-radius:20px;border:1px solid var(--line);padding:20px 22px;display:flex;flex-direction:column;gap:12px;
+  background:radial-gradient(110% 140% at 100% 0%,var(--aurora-soft) 0%,transparent 55%),radial-gradient(80% 120% at 0% 100%,rgba(75,134,216,.10) 0%,transparent 60%),var(--panel)}
+.hero .eb{font-size:12.5px;font-weight:700;color:var(--aurora);letter-spacing:.12em}
+.hero h1{font-size:28px}
+.metas{display:flex;flex-wrap:wrap;gap:8px}
+.meta{font-size:13.5px;color:var(--ink);background:var(--raised);border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+.meta b{font-variant-numeric:tabular-nums}
+.stats5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media (max-width:700px){.stats5{grid-template-columns:repeat(2,1fr)}}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:760px){.charts{grid-template-columns:1fr}}
+.chart{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.chart h3{font-size:15.5px}
+.chart .sub{font-size:13px;color:var(--mist);margin-top:-6px}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.chart svg text{font-family:var(--body);fill:var(--mist);font-size:12px}
+.chart svg .val{fill:var(--ink);font-weight:700}
+.chart svg .big{fill:var(--ink);font-family:var(--display);font-size:26px;font-weight:600}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mist)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:6px;vertical-align:-1px}
+.hbars{display:flex;flex-direction:column;gap:10px}
+.hrow{display:grid;grid-template-columns:112px 1fr;gap:10px;align-items:center}
+.hl{font-size:13.5px;color:var(--mist);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.htrack{display:block;min-width:0}
+.hfill{display:flex;gap:2px;height:26px;min-width:28px}
+.seg{display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:12.5px;font-weight:700;min-width:22px;font-variant-numeric:tabular-nums}
+.donutwrap{display:flex;gap:16px;align-items:center}
+.donutwrap svg{max-width:150px;flex:0 0 150px}
+.donutwrap .legend{flex-direction:column;gap:8px}
+.bar{height:6px;border-radius:6px;background:var(--line);overflow:hidden}.bar i{display:block;height:100%;background:var(--aurora)}
+.mix{display:flex;height:10px;border-radius:6px;overflow:hidden;gap:2px}.mix i{display:block}
+ul.notes{margin:0;padding-inline-start:18px;display:flex;flex-direction:column;gap:6px;color:var(--ink)}
+ul.notes li::marker{color:var(--faint)}
+.btn{border:0;border-radius:12px;padding:10px 18px;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.btn.primary{background:var(--aurora);color:var(--aurora-ink)}.btn.primary:hover{filter:brightness(1.06)}
+.btn.soft{background:var(--raised);color:var(--ink);border:1px solid var(--line-strong)}
+.btn.small{padding:7px 14px;font-size:14px}
+.linkbtn{background:none;border:0;color:var(--aurora);font:inherit;font-size:14.5px;font-weight:600;cursor:pointer;padding:2px 0}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.search input,.ask textarea{width:100%;background:var(--panel);border:1px solid var(--line-strong);color:var(--ink);border-radius:14px;padding:14px 16px;font:inherit;font-size:1.05rem;outline:none}
+.ask textarea{min-height:70px;resize:vertical}
+.search input:focus,.ask textarea:focus{border-color:var(--aurora);box-shadow:0 0 0 3px var(--aurora-soft)}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line-strong);background:transparent;color:var(--ink);border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--aurora-soft);border-color:var(--aurora);color:var(--aurora);font-weight:600}
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--panel)}
+.item{display:flex;gap:12px;align-items:center;text-align:start;width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:14px 18px;color:var(--ink);font:inherit;cursor:pointer}
+.item:last-child{border-bottom:0}.item:hover{background:var(--raised)}
+.item .txt{flex:1;min-width:0}.item b{display:block;font-size:16px}
+.item .gp{display:block;font-size:14px;color:var(--mist);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+mark{background:var(--aurora-soft);color:var(--ink);border-radius:3px}
+.chev{color:var(--faint);font-size:18px}
+.empty{padding:20px;color:var(--mist);text-align:center}
+.lane{border-radius:16px;padding:16px 18px;border:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:10px;border-inline-start:4px solid var(--c)}
+.lane.g{--c:var(--g)}.lane.y{--c:var(--y)}.lane.r{--c:var(--r)}
+.lane .ln{font-size:13px;font-weight:700;color:var(--c)}
+.lane .pos{font-size:16.5px;font-weight:600}.lane.g .pos{font-size:18px}
+.clause{background:var(--raised);border-radius:12px;padding:12px 14px;font-size:15px}
+.fx,.basis{font-size:13.5px;color:var(--mist)}
+details{border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+details summary{cursor:pointer;padding:13px 16px;font-weight:600;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:"+";float:left;color:var(--faint)}details[open] summary::after{content:"-"}
+details .in{padding:0 16px 14px;display:flex;flex-direction:column;gap:10px}
+.ev{border-inline-start:2px solid var(--line-strong);padding-inline-start:12px}
+.ev .src{font-size:13px;color:var(--mist)}.ev q{display:block;font-size:14.5px}
+.decide{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.qa{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.qa b{display:block}.qa .rec{font-size:14px;color:var(--mist);margin-top:4px}
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px;background:var(--panel)}
+th,td{text-align:start;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mist);font-weight:600;font-size:13px;background:var(--raised)}tr:last-child td{border-bottom:0}
+td.diff{background:var(--y-soft)}
+.answer{border-inline-start:4px solid var(--aurora)}
+/* Ask: a dark capsule with a slowly turning traffic-light ring; answers come back as ruling cards, not chat bubbles */
+@property --spin{syntax:'<angle>';inherits:false;initial-value:0deg}
+.fab{position:fixed;bottom:calc(22px + env(safe-area-inset-bottom,0px));left:calc(22px + env(safe-area-inset-left,0px));z-index:40;display:flex;align-items:center;gap:12px;padding:7px 20px 7px 8px;border-radius:999px;border:1.5px solid transparent;background:linear-gradient(var(--fab-bg),var(--fab-bg)) padding-box,conic-gradient(from var(--spin),var(--g),var(--y),var(--r),var(--g)) border-box;color:var(--fab-ink);font:inherit;cursor:pointer;box-shadow:0 14px 36px rgba(0,0,0,.32),0 2px 6px rgba(0,0,0,.2);animation:spin 9s linear infinite;transition:transform .2s ease}
+.fab:hover{transform:translateY(-2px)}
+@keyframes spin{to{--spin:360deg}}
+.fab .fl{display:flex;flex-direction:column;align-items:flex-start;line-height:1.2;text-align:start}
+.fab .fl b{font-family:var(--serif);font-size:16.5px;font-weight:700}
+.fab .fl small{font-size:12px;opacity:.68}
+.orb{flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--fab-orb);display:flex;align-items:center;justify-content:center;gap:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.orb i{width:6px;height:6px;border-radius:50%;animation:blink 2.4s ease-in-out infinite}
+.orb i:nth-child(1){background:var(--g)}.orb i:nth-child(2){background:var(--y);animation-delay:.3s}.orb i:nth-child(3){background:var(--r);animation-delay:.6s}
+@keyframes blink{0%,60%,100%{opacity:1;transform:none}30%{opacity:.35;transform:scale(.7)}}
+.orb.sm{width:30px;height:30px;gap:3px}.orb.sm i{width:5px;height:5px}
+.askp{overscroll-behavior:contain;position:fixed;bottom:calc(22px + env(safe-area-inset-bottom,0px));left:calc(22px + env(safe-area-inset-left,0px));z-index:45;width:430px;max-width:calc(100% - 44px);height:min(620px,calc(100vh - 64px));display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line-strong);border-radius:22px;box-shadow:0 30px 70px rgba(0,0,0,.42),0 4px 14px rgba(0,0,0,.18);overflow:hidden;transform-origin:bottom left;animation:pop .22s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes pop{from{transform:translateY(10px) scale(.97)}}
+.askp header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px 12px;background:var(--fab-bg);color:var(--fab-ink)}
+.askp .ah{display:flex;gap:11px;align-items:center}
+.askp header b{font-family:var(--serif);font-size:18px;font-weight:700;display:block;line-height:1.2}
+.askp header small{display:block;font-size:12.5px;opacity:.68;font-weight:400}
+.askp .x{background:rgba(255,255,255,.08);border:0;color:inherit;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;line-height:1}
+.tri{display:flex;height:3px}.tri i{flex:1}.tri i:nth-child(1){background:var(--g)}.tri i:nth-child(2){background:var(--y)}.tri i:nth-child(3){background:var(--r)}
+.msgs{flex:1;overflow:auto;padding:18px 18px 8px;display:flex;flex-direction:column;gap:16px}
+.msgs>*{flex-shrink:0}
+.msgs{min-height:0;overscroll-behavior:contain}
+.intro .iq{font-family:var(--serif);font-size:22px;font-weight:700;line-height:1.25}
+.intro p{margin:6px 0 0;color:var(--mist);font-size:14.5px}
+.cases{display:flex;flex-direction:column}
+.cases button{display:flex;gap:12px;align-items:baseline;text-align:start;background:none;border:0;border-top:1px solid var(--line);padding:11px 2px;color:var(--ink);font:inherit;font-size:14.5px;cursor:pointer}
+.cases button:last-child{border-bottom:1px solid var(--line)}
+.cases button .n{font-family:var(--serif);color:var(--faint);font-size:13px;min-width:18px}
+.cases button:hover{color:var(--aurora)}
+.q{border-inline-start:2px solid var(--ink);padding:2px 12px 2px 0;padding-inline-start:12px}
+.q small{display:block;font-size:11.5px;color:var(--faint);font-weight:600;letter-spacing:.04em}
+.q p{margin:2px 0 0;font-family:var(--serif);font-size:17px;line-height:1.45}
+.rul{--lc:var(--mist);--ls:var(--raised);border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel)}
+.rul.vg{--lc:var(--g);--ls:var(--g-soft)}.rul.vy{--lc:var(--y);--ls:var(--y-soft)}.rul.vr{--lc:var(--r);--ls:var(--r-soft)}
+.rhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;background:var(--ls);border-bottom:1px solid var(--line)}
+.vd{display:flex;align-items:center;gap:8px;font-family:var(--serif);font-weight:700;font-size:16.5px;color:var(--ink)}
+.vi{width:22px;height:22px;border-radius:50%;background:var(--lc);color:var(--panel);display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;font-style:normal;font-family:var(--body);font-weight:700}
+.scale{display:flex;gap:3px;align-items:flex-end;flex:0 0 auto}
+.scale i{width:22px;height:6px;border-radius:3px;opacity:.28}
+.scale i.g{background:var(--g)}.scale i.y{background:var(--y)}.scale i.r{background:var(--r)}
+.scale i.on{opacity:1;height:10px}
+.rbody{padding:12px 14px 4px;font-size:15px;line-height:1.6;white-space:pre-wrap}
+.fn{margin:8px 14px 12px;padding-top:9px;border-top:1px dashed var(--line-strong);font-size:13px;color:var(--mist);display:flex;flex-direction:column;gap:4px}
+.fn q{font-family:var(--serif);color:var(--ink);font-size:14px;quotes:none}
+.fn .row{justify-content:space-between}
+.ladder{display:flex;flex-direction:column;gap:6px;padding:12px 14px 4px}
+.ladder div{display:grid;grid-template-columns:10px 1fr;gap:9px;align-items:baseline;font-size:14px}
+.ladder div i{width:9px;height:9px;border-radius:50%;transform:translateY(1px)}
+.ladder b{font-weight:700}
+.thinking{display:flex;align-items:center;gap:10px;padding:14px;color:var(--mist);font-size:14px}
+.askin{display:flex;gap:8px;align-items:center;margin:6px 14px 0;padding:6px 6px 6px 6px;border:1px solid var(--line-strong);border-radius:16px;background:var(--night)}
+.askin:focus-within{border-color:var(--aurora)}
+.askin textarea{flex:1;min-width:0;background:none;border:0;color:var(--ink);padding:6px 8px;font:inherit;font-size:15px;resize:none;height:36px;outline:none}
+.send{flex:0 0 auto;width:36px;height:36px;border-radius:12px;border:0;background:var(--fab-bg);color:var(--fab-ink);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.askfoot{font-size:11.5px;color:var(--faint);text-align:center;padding:7px 14px 11px}
+@media (max-width:520px){.askp{left:0;right:0;bottom:0;width:100%;max-width:100%;height:84vh;border-radius:22px 22px 0 0}.fab .fl small{display:none}}
+@media (prefers-reduced-motion:reduce){.fab,.orb i,.askp,.tk{animation:none}}
+/* Overview: a ledger of figures, the approval seal, the agreements as pages, and the policy map */
+.ledger{display:flex;flex-wrap:wrap;border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line)}
+.ledger div{flex:1 1 110px;padding:12px 16px 10px;border-inline-start:1px solid var(--line)}
+.ledger div:first-child{border-inline-start:0;padding-inline-start:2px}
+.ledger b{display:block;font-family:var(--serif);font-size:32px;font-weight:600;line-height:1.05;font-variant-numeric:lining-nums tabular-nums}
+.ledger span{font-size:13px;color:var(--mist)}
+.board{display:grid;grid-template-columns:270px 1fr;gap:14px}
+@media (max-width:860px){.board{grid-template-columns:1fr}}
+.panelx{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;min-width:0}
+.kick{font-size:12.5px;color:var(--mist);font-weight:700;display:flex;align-items:center;gap:8px}
+.kick::before{content:"";width:16px;height:1.5px;background:var(--aurora)}
+.ttl{font-family:var(--serif);font-size:19px;font-weight:700;margin:6px 0 12px;line-height:1.3}
+.hx{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:28px;align-items:center}
+.hmain{min-width:0;display:flex;flex-direction:column;gap:10px}
+@media (max-width:760px){.hx{grid-template-columns:1fr}.hx .seal{justify-self:center}}
+.seal{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;width:200px}
+.seal .kick{align-self:flex-start}
+.seal svg{width:100%;max-width:170px;height:auto;display:block}
+.seal .num{font-family:var(--serif);font-weight:700;fill:var(--ink)}
+.seal .ring{font-family:var(--mark);font-size:8.6px;letter-spacing:2.4px;fill:var(--faint)}
+.seal .of{font-family:var(--body);font-size:11.5px;fill:var(--mist)}
+.sealt{margin:0;font-size:14.5px}
+.sealt b{font-family:var(--serif);font-size:16px}
+.skey{display:flex;gap:14px;font-size:12.5px;color:var(--mist);justify-content:center;flex-wrap:wrap}
+.skey i{display:inline-block;width:4px;height:11px;border-radius:2px;margin-inline-end:6px;vertical-align:-1px}
+.pkey,.mkey{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--mist);margin-top:14px;align-items:center}
+.maphead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.maphead .ttl{margin-bottom:4px}
+.mkey{margin-top:0}
+.mkey .tile{display:inline-flex;width:28px;height:16px;margin-inline-end:6px;vertical-align:-3px;border-radius:4px}
+.mrow{display:grid;grid-template-columns:minmax(0,1.55fr) repeat(3,minmax(52px,1fr));gap:8px;align-items:center;width:100%;background:none;border:0;padding:5px 6px;border-radius:10px;color:var(--ink);font:inherit;text-align:start;cursor:pointer}
+button.mrow:hover{background:var(--raised)}
+.mh{cursor:default;padding-bottom:8px;margin-top:10px;border-bottom:1px solid var(--line-strong);border-radius:0}
+.mh>span:first-child{font-size:12.5px;color:var(--mist);font-weight:700}
+.mhl{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1.25}
+.mhl b{font-size:13.5px;display:flex;align-items:center;gap:6px}
+.mhl b i{width:8px;height:8px;border-radius:50%}
+.mhl.g b i{background:var(--g)}.mhl.y b i{background:var(--y)}.mhl.r b i{background:var(--r)}
+.mhl small{font-size:11.5px;color:var(--mist)}
+.mgrp{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:var(--mist);margin:12px 6px 2px}
+.mgrp::after{content:"";flex:1;height:1px;background:var(--line)}
+.mgrp.c{color:var(--r)}
+.mtn{font-size:14.5px;line-height:1.3}
+.tile{--lc:var(--mist);position:relative;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:3px}
+.tile.g{--lc:var(--g)}.tile.y{--lc:var(--y)}.tile.r{--lc:var(--r)}
+.tile.own{background:color-mix(in srgb,var(--lc) 24%,transparent);border-inline-start:3px solid var(--lc)}
+.tile.areo{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--lc) 42%,transparent) 0 1.6px,transparent 1.6px 6px);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lc) 45%,transparent)}
+.tile.w{outline:1.5px dashed var(--legal);outline-offset:2px}
+.tile.w::after{content:"";position:absolute;top:-6px;inset-inline-end:-6px;width:9px;height:9px;border-radius:50%;background:var(--legal);box-shadow:0 0 0 2px var(--panel)}
+.tally{display:flex;gap:3px}.tally i{width:2px;height:13px;border-radius:1px;background:var(--ink);opacity:.62}
+.tile .ar{font-family:var(--mark);font-size:10.5px;font-weight:700;color:var(--ink);opacity:.72;background:var(--panel);padding:0 5px;border-radius:4px}
+.insight{display:flex;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:14px;color:var(--mist)}
+.insight::before{content:"”";font-family:var(--serif);font-size:34px;line-height:.8;color:var(--aurora)}
+@media (max-width:560px){.mrow{grid-template-columns:minmax(0,1.2fr) repeat(3,40px);gap:6px}.mhl small{display:none}.mhl b{font-size:11.5px;flex-direction:column;gap:2px}.mtn{font-size:13.5px}}
+.tt{position:fixed;z-index:60;max-width:300px;background:var(--fab-bg);color:var(--fab-ink);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.5;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.35);white-space:pre-line}
+.tt b{font-family:var(--serif);font-size:14.5px;display:block;margin-bottom:2px}
+.col h1,.col h2{font-family:var(--serif);font-weight:700}
+.bigsearch{display:flex;align-items:center;gap:10px;background:var(--panel);border:1.5px solid var(--line-strong);border-radius:16px;padding:4px 16px}
+.bigsearch:focus-within{border-color:var(--aurora)}
+.bigsearch span{font-size:20px;color:var(--mist)}
+.bigsearch input{flex:1;min-width:0;background:none;border:0;outline:none;color:var(--ink);font:inherit;font-size:16.5px;padding:12px 0}
+.wbar{display:flex;align-items:center;gap:12px;width:100%;text-align:start;background:var(--legal-soft);border:1px solid color-mix(in srgb,var(--legal) 35%,transparent);border-radius:14px;padding:11px 16px;color:var(--ink);font:inherit;font-size:14.5px;cursor:pointer}
+.wbar .go{margin-inline-start:auto;color:var(--legal);font-weight:700;white-space:nowrap}
+.tools2{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.tools2 .filters{margin:0}
+.tools2 .r{display:flex;gap:8px}
+.relx{margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:10px}
+.relxh{font-size:13px;font-weight:700;color:var(--mist)}
+.rlx{display:flex;flex-direction:column;gap:4px;padding-inline-start:12px;border-inline-start:2px solid var(--line-strong)}
+.rlxt{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.rlxd{font-size:12.5px;color:var(--mist);background:var(--raised);border-radius:999px;padding:1px 9px}
+.rlx .linkbtn{font-size:15px}
+.rlx p{margin:0;font-size:14.5px}
+.rlx blockquote{margin:2px 0 0;font-size:13.5px;color:var(--mist);background:var(--raised);border-radius:8px;padding:6px 10px}
+.rlx blockquote small{display:block;font-weight:700;font-size:12px}
+.rlx .rlxa{font-size:13.5px;color:var(--ink)}.rlx .rlxa::before{content:"כשמשנים: ";font-weight:700;color:var(--mist)}
+.tg.chg{color:var(--aurora);border-color:color-mix(in srgb,var(--aurora) 45%,transparent)}
+.pill.sending{background:var(--raised);color:var(--mist)}
+.lane2.changed{box-shadow:0 0 0 2px color-mix(in srgb,var(--legal) 30%,transparent)}
+.l2act{display:flex;justify-content:flex-end}
+.edbtn{background:none;border:1px solid var(--line-strong);border-radius:10px;padding:6px 12px;color:var(--ink);font:inherit;font-size:13.5px;cursor:pointer}
+.edbtn:hover{border-color:var(--aurora);color:var(--aurora)}
+.diff2{background:var(--raised);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.dd{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dd small{display:block;font-size:12px;font-weight:700;color:var(--mist)}
+.dd .was p{text-decoration:line-through;color:var(--mist);font-size:14px}
+.dd .now p{font-size:14px;font-weight:600}
+.dnote,.dwhy{font-size:13.5px!important;color:var(--mist)}
+.dwhy b{color:var(--ink)}
+.more{border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.more summary{cursor:pointer;padding:12px 14px;font-weight:700;font-size:15px;list-style:none;display:flex;gap:10px;align-items:baseline}
+.more summary::-webkit-details-marker{display:none}
+.more summary::before{content:"+";color:var(--aurora);font-weight:700;width:12px}
+.more summary::after{content:none}
+.more[open] summary::before{content:"−"}
+.more summary small{font-weight:400;color:var(--mist);font-size:13px}
+.morein{padding:0 14px 14px;display:flex;flex-direction:column;gap:14px}
+.wlane{border-inline-start:3px solid var(--lc);padding-inline-start:12px;display:flex;flex-direction:column;gap:8px}
+.wlane.g{--lc:var(--g)}.wlane.y{--lc:var(--y)}.wlane.r{--lc:var(--r)}
+.wlk{font-weight:700;font-size:14px;display:flex;gap:8px;align-items:baseline}
+.wlk i{display:none}
+.wlk small{font-weight:400;color:var(--mist);font-size:12.5px}
+.flow{display:flex;gap:0;margin:0;padding:0;list-style:none;counter-reset:f}
+.flow li{flex:1;counter-increment:f;font-size:12.5px;color:var(--mist);padding:8px 6px 0;border-top:3px solid var(--line);text-align:center}
+.flow li::before{content:counter(f) ". "}
+.flow li.on{color:var(--ink);font-weight:700;border-top-color:var(--aurora)}
+.edhelp,.edrel{font-size:13.5px!important;color:var(--mist)}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld span{font-size:13.5px;font-weight:700}
+.fld span small{font-weight:400;color:var(--mist);margin-inline-start:6px}
+.fld textarea{background:var(--night);border:1px solid var(--line-strong);border-radius:10px;color:var(--ink);font:inherit;font-size:14.5px;line-height:1.6;padding:9px 11px;resize:vertical}
+.fld textarea:focus{outline:none;border-color:var(--aurora)}
+.ederr{color:var(--r);font-size:13.5px!important;font-weight:600}
+.chg-ap{display:inline-block;font-size:12px;font-weight:700;color:var(--legal);margin-inline-start:8px}
+.rhead2{display:flex;flex-direction:column;gap:14px}
+/* One sheet per topic: three position columns, rows aligned across them (position, wording, conditions, reason, sources) */
+.sh3{display:grid;grid-template-columns:118px repeat(3,minmax(0,1fr));grid-template-rows:repeat(7,auto);border:1px solid var(--line-strong);border-radius:14px;overflow:hidden;background:var(--panel)}
+.sh3 .labs,.sh3 .lcol{display:grid;grid-row:1/8;grid-template-rows:subgrid}
+.sh3 .labs{background:var(--raised)}
+.sh3 .lcol{border-inline-start:1px solid var(--line);--lc:var(--mist)}
+.sh3 .lcol.g{--lc:var(--g)}.sh3 .lcol.y{--lc:var(--y)}.sh3 .lcol.r{--lc:var(--r)}
+.sh3 .lcol.changed{background:color-mix(in srgb,var(--legal) 5%,var(--panel))}
+.sh3 .cell{padding:10px 14px;border-top:1px solid var(--line);min-width:0}
+.sh3 .cell:first-child{border-top:0}
+.sh3 .cell.lab{font-size:12.5px;font-weight:700;color:var(--mist);padding-top:12px}
+.sh3 .cell.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;box-shadow:inset 0 4px 0 var(--lc);padding-top:14px;background:color-mix(in srgb,var(--lc) 8%,var(--panel))}
+.sh3 .labs .cell:first-child{box-shadow:inset 0 4px 0 var(--line-strong);padding-top:14px}
+.sh3 .cell.hd b{font-family:var(--display);font-size:15.5px;font-weight:600}
+.sh3 .cell.hd .l2ok{margin:0;font-size:12px}
+.sh3 .cell.hd .pill{font-size:11.5px}
+.sp{margin:0;font-size:14.5px;font-weight:600;line-height:1.55}
+.was2,.why2{font-size:13px;color:var(--mist);margin-top:6px}
+.was2{text-decoration:line-through}
+.was2 small,.why2 small{text-decoration:none;font-weight:700;display:inline-block}
+.sh3 .cbox{background:var(--paper);padding:9px 11px;display:flex;flex-direction:column;gap:4px}
+.sh3 .cbox p{font-size:13.5px;line-height:1.7;margin:0}
+.sh3 .cbox .linkbtn{align-self:flex-end;font-size:12.5px}
+.sh3 ul{margin:0;padding-inline-start:16px;font-size:13.5px;display:flex;flex-direction:column;gap:3px}
+.sh3 .cell p{margin:0 0 6px;font-size:13.5px;line-height:1.55}
+.sh3 .fx small,.sh3 .steps small{font-weight:700;color:var(--mist)}
+.sh3 .steps ol{margin:4px 0 0;padding-inline-start:16px;font-size:13px;display:flex;flex-direction:column;gap:4px}
+.sbasis{font-size:12.5px;color:var(--mist);margin-bottom:6px}
+.sh3 .chips2{gap:6px}
+.sh3 .schip{padding:4px 9px;font-size:13px;border-radius:9px}
+.sh3 .noev{font-size:13px;color:var(--mist)}
+.sh3 .cell.act{display:flex;align-items:center}
+.sh3note{margin:0;font-size:13.5px;color:var(--mist)}
+.sh3.mini{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto auto;margin:0 18px 16px;border-color:var(--line)}
+.sh3.mini .lcol{grid-row:1/3}
+.sh3.mini .lcol:first-child{border-inline-start:0}
+.sh3.mini .cell.hd{padding:10px 12px 6px;font-size:13px;justify-content:flex-start}
+.sh3.mini .cell.hd b{font-size:13.5px}
+.sh3.mini .cell{padding:6px 12px 10px;border-top:0;display:flex;flex-direction:column;gap:3px}
+.sh3.mini .mp{font-size:13.5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sh3.mini .mb{font-size:12px;color:var(--mist)}
+@media (max-width:760px){.sh3,.sh3.mini{display:block}.sh3 .labs{display:none}.sh3 .lcol{display:block;border-inline-start:0;border-top:1px solid var(--line-strong)}.sh3 .lcol:first-child{border-top:0}.sh3 .cell[data-l]::before{content:attr(data-l);display:block;font-size:12px;font-weight:700;color:var(--mist);margin-bottom:4px}.sh3 .cell:empty{display:none}}
+/* Compare: topic list grouped by whether the agreements differ, and the chosen topic agreement by agreement */
+.cstats{display:flex;flex-wrap:wrap;border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line)}
+.cstats div{flex:1 1 150px;padding:10px 16px;border-inline-start:1px solid var(--line)}
+.cstats div:first-child{border-inline-start:0;padding-inline-start:2px}
+.cstats b{display:block;font-family:var(--display);font-size:28px;font-weight:600;line-height:1.1}
+.cstats span{font-size:13px;color:var(--mist)}
+.cmpw{display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.cmpw{grid-template-columns:1fr}}
+.clist{display:flex;flex-direction:column;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px;position:sticky;top:12px}
+.cgrp{font-size:12px;font-weight:700;color:var(--mist);padding:10px 10px 4px}
+.ci{display:flex;flex-direction:column;gap:1px;text-align:start;background:none;border:0;border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit;cursor:pointer}
+.ci b{font-size:14px;font-weight:600}
+.ci small{font-size:12.5px;color:var(--mist);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ci:hover{background:var(--raised)}
+.ci.on{background:var(--raised);box-shadow:inset -3px 0 0 var(--aurora)}
+.cmpd{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.cmph{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.cmpins{margin:0;font-size:15px;line-height:1.6}
+.cmrows{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.cmr{padding:12px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.cmrh{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.cmrh b{font-size:14.5px}
+.cmrh .linkbtn{margin-inline-start:auto;font-size:13px}
+.ctag{font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px}
+.ctag.g{background:var(--g-soft);color:var(--g)}.ctag.y{background:var(--y-soft);color:var(--y)}.ctag.r{background:var(--r-soft);color:var(--r)}
+.cmeta{font-size:12.5px;color:var(--mist)}
+.cmq{margin:0;font-size:15px;line-height:1.75}
+.cmr.miss .cmq{color:var(--mist)}
+mark.dv{background:var(--y-soft);color:var(--ink);box-shadow:inset 0 -2px 0 var(--y);border-radius:3px;padding:0 2px}
+.cmleg{margin:0;font-size:12.5px;color:var(--mist)}
+.cact{background:var(--raised);border-radius:12px;padding:12px 14px;font-size:14.5px;line-height:1.6}
+.cact.ok{background:var(--g-soft)}
+.cact ol{margin:8px 0 0;padding-inline-start:20px;display:flex;flex-direction:column;gap:10px}
+.cact li span{display:block}
+.cbtns{display:flex!important;gap:8px;flex-wrap:wrap;margin-top:8px}
+.sentok{font-size:13px;color:var(--g);font-weight:600}
+.cstd{display:flex;justify-content:flex-start}
+.prenote{font-size:13.5px!important;background:var(--y-soft);border-radius:8px;padding:8px 10px}
+.expw{position:relative}
+#expbtn{height:38px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;border-radius:10px}
+.expm{position:absolute;top:calc(100% + 6px);left:0;z-index:30;width:270px;background:var(--panel);border:1px solid var(--line-strong);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.22);padding:6px;display:flex;flex-direction:column}
+.expm button{display:flex;flex-direction:column;align-items:flex-start;text-align:start;background:none;border:0;border-radius:10px;padding:9px 10px;color:var(--ink);font:inherit;cursor:pointer}
+.expm button:hover{background:var(--raised)}
+.expm b{font-size:14px}
+.expm small{font-size:12.5px;color:var(--mist)}
+.exphint{margin:4px 10px 6px;font-size:12px;color:var(--faint)}
+.qcard{display:flex;flex-direction:column;gap:0}
+.qcard .row{align-items:flex-start;margin-bottom:6px}
+.qcount{font-size:12.5px;font-weight:700;color:var(--legal);background:var(--legal-soft);border-radius:999px;padding:3px 10px;white-space:nowrap}
+.qi{border-top:1px solid var(--line);padding:12px 0;display:flex;flex-direction:column;gap:4px}
+.qi p{margin:0;font-size:14.5px}
+.qi.done{opacity:.75}
+.qrec{color:var(--mist)}
+.qrec span{font-weight:700;color:var(--ink)}
+.qedit textarea{width:100%;background:var(--night);border:1px solid var(--line-strong);border-radius:10px;color:var(--ink);font:inherit;font-size:14.5px;padding:8px 10px;margin-top:6px}
+.sgtitle{font-size:16px;margin:6px 0 -4px}
+.sgl{display:flex;flex-direction:column;gap:10px}
+.sgempty,.sgnote{font-size:14px;color:var(--mist);background:var(--raised);border-radius:12px;padding:12px 14px;margin:0}
+.sgnote{background:none;padding:0;font-size:13px}
+.sgc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.sgc.sug{border-style:dashed}
+.sgh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sgh b{font-family:var(--display);font-size:16px;font-weight:600}
+.sgh .pill,.sgh .l2ok{margin-inline-start:auto}
+.sgw{margin:0;font-size:14px}
+.sgw span{font-weight:700}
+.sgt{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.sgr{display:grid;grid-template-columns:200px 1fr;gap:4px 12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.sgr b{font-weight:600;grid-row:span 2}
+.sgp{display:flex;gap:6px;align-items:baseline}
+.sgp .d{width:7px;height:7px;border-radius:50%;flex:0 0 auto;transform:translateY(-1px)}
+.d.g{background:var(--g)}.d.r{background:var(--r)}
+.sgn{color:var(--mist)}
+.sgpick{display:flex;flex-direction:column;gap:4px;max-height:330px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:6px}
+.spk{border-radius:8px;padding:6px 8px}
+.spk.on{background:var(--raised)}
+.spk label{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.spk .sgnote2{display:none;width:100%;margin-top:6px;background:var(--night);border:1px solid var(--line-strong);border-radius:8px;color:var(--ink);font:inherit;font-size:13.5px;padding:6px 9px}
+.spk.on .sgnote2{display:block}
+.fld input:not([type]){background:var(--night);border:1px solid var(--line-strong);border-radius:10px;color:var(--ink);font:inherit;font-size:14.5px;padding:9px 11px}
+.segpick{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--mist)}
+.segband{margin:0 18px 12px;background:var(--legal-soft);border-radius:10px;padding:8px 12px;font-size:14px}
+.segband.same{background:var(--raised);color:var(--mist)}
+.rx.open .segband{margin:12px 18px 0}
+@media (max-width:640px){.sgr{grid-template-columns:1fr}.sgr b{grid-row:auto}}
+.srcmix{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;font-size:13.5px;color:var(--mist);border-top:1px solid var(--line);padding-top:10px}
+.srcmix b{color:var(--ink);font-family:var(--display);font-size:15px;font-weight:600}
+.srcmix .smk{font-weight:700;color:var(--ink)}
+.srcmix .sep{width:1px;height:14px;background:var(--line-strong);align-self:center}
+.smhint{margin:0;font-size:13px;color:var(--mist)}
+.whobar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--raised);border-radius:12px;padding:10px 14px;font-size:14.5px}
+.whobar.ask{background:var(--legal-soft)}
+.whobar input{background:var(--panel);border:1px solid var(--line-strong);border-radius:9px;color:var(--ink);font:inherit;font-size:14px;padding:7px 10px;min-width:160px}
+.approg{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--mist)}
+.approg b{color:var(--ink)}
+.apl2{display:flex;flex-direction:column;gap:12px}
+.apc{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.apc.decided.g{border-color:color-mix(in srgb,var(--g) 50%,transparent)}.apc.decided.r{border-color:color-mix(in srgb,var(--r) 50%,transparent)}.apc.decided.y{border-color:color-mix(in srgb,var(--y) 50%,transparent)}
+.aph{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.aph b{font-family:var(--display);font-size:16.5px;font-weight:600}
+.aph .apl{font-size:13px;color:var(--mist)}
+.aph .linkbtn{margin-inline-start:auto;font-size:13px}
+.aptag{font-size:12px;font-weight:700;color:var(--legal);background:var(--legal-soft);border-radius:999px;padding:2px 9px}
+.apq{background:var(--y-soft);border-radius:12px;padding:10px 12px}
+.apq small,.apbody small{display:block;font-size:12px;font-weight:700;color:var(--mist)}
+.apq p{margin:2px 0 0;font-size:15px;line-height:1.6;font-weight:500}
+.aprefs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.aprefs span{font-size:12.5px;background:var(--panel);border:1px solid var(--line-strong);border-radius:8px;padding:2px 8px}
+.apbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.apbody p{margin:2px 0 0}
+.apcl{font-size:14px;line-height:1.7;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.apdiff p{font-size:13.5px;color:var(--mist)}
+.apact{display:flex;gap:8px;flex-wrap:wrap}
+.apdone{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.apres{font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.apres.g{background:var(--g-soft);color:var(--g)}.apres.y{background:var(--y-soft);color:var(--y)}.apres.r{background:var(--r-soft);color:var(--r)}
+.apin{flex:1;min-width:200px;background:var(--night);border:1px solid var(--line-strong);border-radius:9px;color:var(--ink);font:inherit;font-size:14px;padding:7px 10px}
+.apnote{font-size:13.5px;color:var(--mist)}
+.apsend{position:sticky;bottom:12px;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--fab-bg);color:var(--fab-ink);border-radius:14px;padding:10px 12px 10px 16px;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+@media (min-width:700px){.apsend{justify-content:flex-start;margin-inline-end:250px}}
+@media (max-width:699px){.apsend{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+.apstat{font-size:13px;color:var(--legal);font-weight:600}
+.apsaved{font-size:13px;color:var(--g);font-weight:700}
+.histl{display:flex;flex-direction:column}
+.hi{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.hi .hm{color:var(--mist);margin-inline-start:auto}
+.stline{margin:4px 0 0;display:flex;gap:8px;align-items:baseline;font-size:15px;font-weight:600;color:var(--legal)}
+.stline.ok{color:var(--g)}
+.stline i{font-style:normal}
+.metaline{margin:8px 0 0;font-size:14px;color:var(--mist);display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.metaline b{color:var(--ink)}
+.metaline .mi+.mi::before{content:"·";color:var(--faint);margin-inline-end:8px}
+.stamp{width:150px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;border:2px solid color-mix(in srgb,var(--g) 55%,transparent);border-radius:16px;padding:14px 10px;transform:rotate(-2deg)}
+.stamp .stc{width:40px;height:40px;border-radius:50%;background:var(--g);color:var(--panel);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;margin-bottom:4px}
+.stamp b{font-family:var(--display);font-size:18px;color:var(--g)}
+.stamp small{font-size:12.5px;color:var(--mist)}
+.next h2{font-size:17px;margin-bottom:8px}
+.nexts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.nx{background:var(--panel);border:1px solid var(--line);border-inline-start:4px solid var(--lc,var(--line-strong));border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.nx.n{--lc:var(--legal)}.nx.q{--lc:var(--y)}.nx.a{--lc:var(--mist)}.nx.s{--lc:var(--g)}
+.nx b{font-family:var(--display);font-size:26px;font-weight:600;line-height:1.1}
+.nx span{font-size:14px;color:var(--mist)}
+.nx .linkbtn{align-self:flex-start;margin-top:4px}
+.hdt{display:flex;flex-direction:column;gap:2px}
+.areo-h{font-size:11.5px;font-weight:700;color:var(--mist);border:1px dashed var(--line-strong);border-radius:6px;padding:0 6px;align-self:flex-start}
+.areonote{margin:0;font-size:14px;background:var(--raised);border-radius:12px;padding:10px 14px}
+@media (max-width:760px){
+  .stamp{width:auto;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:4px 10px;transform:none;padding:10px 14px;justify-self:stretch}
+  .stamp .stc{width:28px;height:28px;font-size:15px;margin:0}
+  .stamp b{font-size:16px}
+  .pickbtn{padding:8px 12px}
+  .co{display:none}
+  .app>aside{position:relative!important}
+  .wordmark{font-size:18px}
+}
+/* Source chips open a side drawer with the full clause and its details */
+.chips2{display:flex;gap:8px;flex-wrap:wrap}
+.schip{display:inline-flex;gap:8px;align-items:baseline;background:var(--panel);border:1.5px solid var(--line-strong);border-radius:12px;padding:7px 12px;color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
+.schip.ours{border-color:color-mix(in srgb,var(--g) 70%,transparent)}
+.schip:hover{background:var(--raised)}
+.schip .yr{color:var(--mist);font-size:13px}
+.schip b{font-weight:700;font-variant-numeric:tabular-nums}
+.chiphelp{font-size:12.5px;color:var(--faint);margin:2px 0 0!important}
+.scrim{position:fixed;inset:0;background:rgba(5,8,12,.45);z-index:55}
+.drawer{position:fixed;top:0;bottom:0;left:0;width:min(470px,100%);z-index:56;background:var(--panel);border-inline-end:1px solid var(--line-strong);box-shadow:0 0 60px rgba(0,0,0,.35);display:flex;flex-direction:column;animation:drin .2s ease}
+@keyframes drin{from{transform:translateX(-24px)}}
+.drh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+.drk{font-size:13px;font-weight:700;color:var(--aurora)}
+.drh h3{font-family:var(--display);font-size:19px;margin-top:4px}
+.drx{width:38px;height:38px;border-radius:10px;border:1px solid var(--line-strong);background:none;color:var(--ink);font-size:20px;cursor:pointer;flex:0 0 auto}
+.drb{flex:1;overflow:auto;padding:16px 20px 24px;display:flex;flex-direction:column;gap:12px}
+.drb h4{margin:6px 0 0;font-size:13px;font-weight:700;color:var(--aurora)}
+.drb p{margin:0;font-size:14.5px;line-height:1.6}
+.drtags{display:flex;gap:6px;flex-wrap:wrap}
+.dtag{font-size:12.5px;font-weight:600;border-radius:999px;padding:3px 11px;background:var(--raised);color:var(--ink)}
+.dtag.g{background:var(--g-soft);color:var(--g)}.dtag.y{background:var(--y-soft);color:var(--y)}.dtag.r{background:var(--r-soft);color:var(--r)}
+.drrows{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.drr{display:grid;grid-template-columns:150px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.drr span{color:var(--mist)}
+.drr b{font-weight:500}
+.drq{margin:0;background:var(--paper);border:1px solid var(--line);border-inline-start:4px solid var(--lc);border-radius:10px;padding:14px 16px;font-size:16px;line-height:1.75}
+.drq.g{--lc:var(--g)}.drq.y{--lc:var(--y)}.drq.r{--lc:var(--r)}
+.drok{font-size:13px;color:var(--g)}
+.dracts{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.drnav{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mist)}
+.drnav button[disabled]{opacity:.4;cursor:default}
+.drfoot{font-size:12.5px!important;color:var(--faint);background:var(--raised);border-radius:10px;padding:10px 12px}
+@media (prefers-reduced-motion:reduce){.drawer{animation:none}}
+/* Policy clauses: one calm accordion per topic; closed shows the three positions, open shows wording, conditions, approval and the source quotes */
+.rhd{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.rhd .lead{margin:6px 0 0;max-width:62ch}
+.dls{display:flex;gap:8px;flex-wrap:wrap}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tools .search{flex:1 1 280px}
+.rxs{display:flex;flex-direction:column;gap:12px}
+.rx{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.rx.open{border-color:var(--line-strong);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.rxh{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:14px;align-items:center;width:100%;background:none;border:0;padding:14px 18px 10px;color:var(--ink);font:inherit;text-align:start;cursor:pointer}
+.rxn{font-family:var(--display);font-weight:600;font-size:15px;color:var(--faint);font-variant-numeric:tabular-nums}
+.rxt b{display:block;font-family:var(--display);font-size:17.5px;font-weight:600;line-height:1.3}
+.rxt small{display:block;font-size:13.5px;color:var(--mist)}
+.rxtags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tg{font-size:12px;border:1px solid var(--line-strong);color:var(--mist);border-radius:999px;padding:2px 9px;white-space:nowrap}
+.tg.crit{color:var(--r);border-color:color-mix(in srgb,var(--r) 45%,transparent)}
+.tg.wait{color:var(--legal);border-color:color-mix(in srgb,var(--legal) 45%,transparent)}
+.rxc{font-size:12.5px;color:var(--aurora);font-weight:700;white-space:nowrap}
+.rxl{display:flex;flex-direction:column;gap:2px;padding:0 18px 14px}
+.ll{display:grid;grid-template-columns:118px minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:6px 10px;border-inline-start:3px solid var(--lc);border-radius:2px}
+.ll.g{--lc:var(--g)}.ll.y{--lc:var(--y)}.ll.r{--lc:var(--r)}
+.ll .lk{font-size:13px;font-weight:700;color:var(--mist)}
+.ll .lp{font-size:14.5px;line-height:1.5}
+.ll .lb{font-size:12.5px;color:var(--mist);white-space:nowrap;display:flex;gap:6px;align-items:center}
+.areo-t{font-family:var(--mark);font-size:11px;font-weight:700;border:1px dashed var(--line-strong);border-radius:4px;padding:0 5px}
+.wdot{width:8px;height:8px;border-radius:50%;background:var(--legal);display:inline-block}
+.rxb{border-top:1px solid var(--line);padding:16px 18px 18px;display:flex;flex-direction:column;gap:14px}
+.whyb .rat{margin:0 0 12px;font-size:15px;line-height:1.7;max-width:80ch}
+.wcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.wcols div{background:var(--raised);border-radius:12px;padding:10px 12px}
+.rxb h4{margin:0 0 4px;font-size:12.5px;font-weight:700;color:var(--mist)}
+.rxb p{margin:0}
+.wcols p{font-size:14px;line-height:1.55}
+.lane2{border:1px solid var(--line);border-inline-start:4px solid var(--lc);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.lane2.g{--lc:var(--g)}.lane2.y{--lc:var(--y)}.lane2.r{--lc:var(--r)}
+.l2h{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.l2k{display:flex;align-items:baseline;gap:8px;font-family:var(--display);font-weight:600;font-size:16px}
+.l2k i{width:9px;height:9px;border-radius:50%;background:var(--lc);align-self:center}
+.l2k small{font-family:var(--body);font-size:12.5px;color:var(--mist);font-weight:500}
+.l2m{font-size:12.5px;color:var(--mist);border-inline-start:1px solid var(--line-strong);padding-inline-start:12px}
+.l2ok{font-size:12.5px;color:var(--g);font-weight:600;margin-inline-start:auto}
+.l2h .pill{margin-inline-start:auto}
+.l2p{font-size:15.5px;font-weight:600;line-height:1.55}
+.cbox{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 14px 12px}
+.cboxh{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--mist);font-weight:700;margin-bottom:4px}
+.cbox p{font-size:15px;line-height:1.75}
+.steps ol{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:8px}
+.steps li p{font-size:14.5px}
+.steps li small{display:block;font-size:13px;color:var(--mist)}
+.l2meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.l2meta ul{margin:0;padding-inline-start:18px;font-size:14px;display:flex;flex-direction:column;gap:3px}
+.l2meta p{font-size:14px;line-height:1.55}
+.srcs{border-top:1px dashed var(--line-strong);padding-top:10px;display:flex;flex-direction:column;gap:8px}
+.sq{display:flex;flex-direction:column;gap:3px}
+.sqh{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;font-size:13px;color:var(--mist)}
+.sqh b{color:var(--ink);font-size:13.5px}
+.paper{color:var(--g);font-weight:600}
+.sq q{quotes:none;font-size:14px;line-height:1.6;color:var(--ink);background:var(--raised);border-radius:8px;padding:7px 11px;display:block}
+.noev{font-size:13.5px;color:var(--mist)}
+.relb{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;font-size:13.5px;color:var(--mist)}
+@media (max-width:640px){.rxh{grid-template-columns:auto minmax(0,1fr) auto}.rxtags{grid-column:2/4;justify-content:flex-start}.ll{grid-template-columns:1fr}.ll .lb{white-space:normal}}
+
+
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--raised);border:1px solid var(--line-strong);color:var(--ink);padding:10px 16px;border-radius:10px;font-size:14px;z-index:50}
+.proto{font-size:12.5px;color:var(--faint);text-align:center;margin-top:8px}
+.btn:focus-visible,.chip:focus-visible,.item:focus-visible,.iconbtn:focus-visible,.linkbtn:focus-visible,.nv:focus-visible,.pickbtn:focus-visible{outline:2px solid var(--aurora);outline-offset:2px}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  aside{position:sticky;top:0;height:auto;z-index:20;padding:12px max(14px,env(safe-area-inset-left,0px)) 10px max(14px,env(safe-area-inset-right,0px));border-inline-end:0;border-bottom:1px solid var(--line);gap:10px}
+  nav{flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:2px}
+  .nv{white-space:nowrap;width:auto;border-inline-start:0;border-bottom:2px solid transparent;border-radius:8px}
+  .nv[aria-current="page"]{border-bottom-color:var(--aurora)}
+  .asidefoot{display:none}.co{margin-top:-6px}
+}
+</style>
+
+<div class="app" dir="rtl" lang="he">
+  <aside>
+    <div class="wordmark">Areo<span>Contracts</span><b>.</b></div>
+    <div class="product">מדיניות חוזית <span class="pbtag">· פלייבוק</span></div>
+    <div class="co" id="co"></div>
+    <div class="picker"><button type="button" class="pickbtn" id="pickbtn" aria-expanded="false"><span class="t"><b id="pkname"></b><small id="pksub"></small></span><span class="car" aria-hidden="true">▾</span></button>
+      <div class="menu" id="pkmenu" hidden></div></div>
+    <nav id="nav"></nav>
+    <div class="asidefoot" id="foot"></div>
+  </aside>
+  <main><div class="col" id="view"></div></main>
+</div>
+<button type="button" class="fab" id="fab"><span class="orb" aria-hidden="true"><i></i><i></i><i></i></span><span class="fl"><b>שאלו את המדיניות</b><small>הכרעה לפי העמדות שלכם</small></span></button>
+<section class="askp" id="askp" hidden aria-label="שאלו את המדיניות" dir="rtl" lang="he">
+  <header><div class="ah"><span class="orb sm" aria-hidden="true"><i></i><i></i><i></i></span><div><b>שאלו את המדיניות</b><small id="askscope"></small></div></div><button type="button" class="x" id="askx" aria-label="סגירה">×</button></header>
+  <div class="tri" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="msgs" id="msgs" aria-live="polite"></div>
+  <div class="askin"><textarea id="askin" placeholder="מה הצד השני ביקש?" aria-label="השאלה"></textarea><button type="button" class="send" id="asksend" aria-label="לשאול">←</button></div>
+  <div class="askfoot">עונה מתוך המדיניות בלבד. ההחלטה נשארת אצל עורך הדין.</div>
+</section>
+<div class="tt" id="tt" hidden></div>
+<div class="scrim" id="scrim" hidden data-drclose></div>
+<aside class="drawer" id="drawer" hidden role="dialog" aria-modal="true" aria-label="המקור בהסכם" dir="rtl" lang="he"></aside>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+'use strict';
+/* the client's playbooks, from Areo-נתונים (lib/app/policy_view.py): {company, current, books:[{key,type,label,family,side,status,status_label,updated,rules,built,data}]} */
+var P=/*__AREO_POLICY__*/null;
+var EMPTY={company:'',family:'',side:'',docs:0,date:'',approver:null,deal:'',suff:'',limits:[],notObserved:[],seg:{status:'',checked:[]},segs:[],qs:[],cov:{units:0,topic:0,tech:0,by:[]},status:{label:'',approved:0,total:0,open_questions:[]},src:{},com:{fields:[],rows:[]},rules:[]};
+function fill(d){var o={};d=d||{};for(var k in EMPTY)o[k]=(d[k]==null)?EMPTY[k]:d[k];for(var j in d)if(!(j in o))o[j]=d[j];o.rules=(o.rules||[]).map(function(r){r.L=r.L||{};['green','yellow','red'].forEach(function(k){var L=r.L[k];if(!L||!L.p){r.L[k]={};return}['ev','crit','steps','lr'].forEach(function(f){if(!Array.isArray(L[f]))L[f]=[]})});r.rel=r.rel||[];r.relx=r.relx||[];return r});return o}
+var BOOKS=((P&&P.books)||[]).filter(function(b){return b&&b.data}).map(function(b){var d=fill(b.data),n=d.rules.length;return {id:b.key,key:b.key,type:b.type||b.key,name:b.label||b.family||b.key,family:b.family||'',side:b.side||'',sub:(b.side?b.side+' · ':'')+(n===1?'נושא אחד':n+' נושאים'),built:b.built!==false,data:d}});
+var CUR=0;(function(){var want=P&&P.current;try{var kept=localStorage.getItem('areo-policy-book');if(kept&&BOOKS.some(function(b){return b.key===kept}))want=kept}catch(e){}BOOKS.forEach(function(b,i){if(b.key===want)CUR=i})})();
+function book(){return BOOKS[CUR]||{id:'',key:'',type:'',name:'',sub:'',built:false}}
+var D=BOOKS.length?BOOKS[CUR].data:fill(null);
+var LN={green:['העמדה שלנו','g'],yellow:['אפשר להתפשר על','y'],red:['קו אדום','r']};
+var S={sent:{},savedNote:0,ad:{},rej:{},hist:[],who:null,sdec:{},seg:'',sed:null,qa:{},qall:false,amend:{},chg:{},det:{},ed:null,dr:null,open:{},cl:null,sec:'overview',q:'',f:'all',id:null,dec:{},ask:'',asked:'',cmp:null};
+try{var th=localStorage.getItem('areo-theme');if(th)document.documentElement.setAttribute('data-areo',th);var sz=localStorage.getItem('areo-size');if(sz)document.documentElement.setAttribute('data-size',sz)}catch(e){}
+var $=function(s){return document.querySelector(s)};
+function fullName(n){return String(n||'').trim().split(/\s+/).filter(function(w){return w.length>1}).length>=2}
+try{S.who=JSON.parse(localStorage.getItem('areo-approver')||'null');if(S.who&&!fullName(S.who.name))S.who=null}catch(e){}
+if(!S.who&&D.approver&&fullName(D.approver.name))S.who={name:D.approver.name,role:D.approver.role||'',fromProfile:true};
+function sentKey(){return 'areo-sent:'+book().key}
+function loadSent(){try{S.sent=JSON.parse(localStorage.getItem(sentKey())||'{}')||{}}catch(e){S.sent={}}}
+loadSent();
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+function lanesOf(r){return ['green','yellow','red'].filter(function(k){return r.L[k]&&r.L[k].p})}
+function isOk(r,k){var key=r.id+k;if(S.chg[key]&&S.dec[key]!=='ok')return false;return r.L[k].ok||S.dec[key]==='ok'}
+function waiting(){var w=[];D.rules.forEach(function(r){lanesOf(r).forEach(function(k){if(!isOk(r,k))w.push([r,k])})});return w}
+function counts(){var t=0,ok=0;D.rules.forEach(function(r){lanesOf(r).forEach(function(k){t++;if(isOk(r,k))ok++})});return {t:t,ok:ok}}
+function topicWaiting(r){return lanesOf(r).some(function(k){return !isOk(r,k)})}
+function norm(s){return String(s||'').toLowerCase()}
+function words(q){return norm(q).split(/[\s,.?!:;"']+/).filter(function(w){return w.length>1&&['של','את','מה','לגבי','שלנו','אנחנו','על','עם','לא','או','זה','יש','האם','כמה','איך','הוא','היא','אם'].indexOf(w)<0})}
+function hay(r){return norm([r.t,r.why,r.cp].concat(lanesOf(r).map(function(k){return r.L[k].p+' '+r.L[k].cl})).join(' '))}
+function hit(r,q){if(!q)return true;return hay(r).indexOf(norm(q))>=0}
+function hl(text,q){var t=esc(text);if(!q)return t;var i=norm(text).indexOf(norm(q));if(i<0)return t;return esc(text.slice(0,i))+'<mark>'+esc(text.slice(i,i+q.length))+'</mark>'+esc(text.slice(i+q.length))}
+function srcName(id){var s=D.src[id];return s?(s.cp||s.name):id}
+var SECS=[['overview','תמונת מצב'],['rules','סעיפי מדיניות'],['segments','מדיניות לפי סגמנטים'],['approve','הכרעה ואישור']];
+
+function navHtml(){
+  var w=waiting().length,cnt={rules:D.rules.length,sources:Object.keys(D.src).length,questions:D.qs.length,approve:w};
+  return SECS.map(function(s){var c=cnt[s[0]];return '<button type="button" class="nv" data-sec="'+s[0]+'"'+(S.sec===s[0]||(S.sec==='topic'&&s[0]==='rules')?' aria-current="page"':'')+'><span>'+s[1]+'</span>'+(c?'<span class="cnt'+(s[0]==='approve'?' w':'')+'">'+c+'</span>':'')+'</button>'}).join('');
+}
+function emptyHtml(){return '<div class="card" style="margin-top:24px"><h1>עוד אין פלייבוק</h1><p class="lead">כתבו בשיחה: פלייבוק. Areo יבנה את המדיניות החוזית מההסכמים שבתיקייה, והיא תופיע כאן.</p></div>'}
+function render(){
+  if(!BOOKS.length){$('#co').textContent=(P&&P.company)||'';$('#pkname').textContent='מדיניות חוזית';$('#pksub').textContent='עוד אין פלייבוק';$('#nav').innerHTML='';$('#foot').textContent='';$('#fab').hidden=true;$('#view').innerHTML=emptyHtml();return}
+  var b=book(),c=counts();
+  $('#co').textContent=D.company;$('#pkname').textContent=b.name;$('#pksub').textContent=b.sub;
+  $('#nav').innerHTML=navHtml();
+  $('#foot').textContent=[D.date?'עודכן '+dmy(D.date):'',D.docs?D.docs+' הסכמים':''].filter(Boolean).join(' · ');
+  var h='<div class="bar0"><span class="crumb">'+esc(b.name)+' · '+esc((SECS.filter(function(s){return s[0]===S.sec})[0]||['','סעיף מדיניות'])[1])+'</span><span style="display:flex;gap:8px;align-items:center"><span class="expw"><button type="button" class="btn soft small" id="expbtn" aria-expanded="false" aria-haspopup="true">ייצוא ▾</button><div class="expm" id="expm" hidden><button type="button" data-dl="docx"><b>מסמך המדיניות</b><small>Word: כל הנושאים, הנוסחים והמקורות</small></button><button type="button" data-dl="xlsx"><b>טבלת העמדות</b><small>Excel: שורה לכל עמדה</small></button><button type="button" data-dl="zip"><b>הכל בקובץ אחד</b><small>ZIP עם שני הקבצים</small></button></div></span><button type="button" class="iconbtn" id="themebtn" aria-label="'+(curTheme()==='light'?'מעבר למצב כהה':'מעבר למצב בהיר')+'">'+themeIcon()+'</button></span></div>';
+  var w=waiting();
+  if(S.sec==='overview'){
+    h+='<div class="hero hx"><div class="hmain"><div class="eb">'+esc(D.company)+' · מדיניות חוזית</div><h1>המדיניות החוזית: '+esc(b.name)+'</h1>'+
+      (D.status&&D.status.label?'<p class="stline'+(w.length?'':' ok')+'"><i aria-hidden="true">'+(w.length?'◔':'✓')+'</i>'+esc(D.status.label)+'</p>':'')+
+      '<p class="metaline">'+metaLine()+'</p></div>'+sealHtml(c,w)+'</div>';
+    h+=nextHtml(w);
+    h+=mapHtml();
+    h+=knowHtml();
+    h+=questionsHtml();
+  }
+  else if(S.sec==='rules'){
+    var crit2=D.rules.filter(function(r){return r.imp==='critical'||r.imp==='high'}).length,wt=D.rules.filter(topicWaiting).length,ar=D.rules.filter(function(r){return lanesOf(r).some(function(k){return r.L[k].areo})}).length,allOpen=D.rules.every(function(r){return S.open[r.id]});
+    h+='<div id="rhead" class="rhead2">'+rulesHead()+'</div>'+segPicker()+'<div class="tools2"><div class="filters" role="group">'+[['all','הכל ('+D.rules.length+')'],['wait','מחכים לאישור ('+wt+')'],['crit','קריטיים וגבוהים ('+crit2+')'],['areo','עם הצעות של Areo ('+ar+')']].map(function(x){return '<button type="button" class="chip" data-f="'+x[0]+'" aria-pressed="'+(S.f===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>'+
+      '<div class="r"><button type="button" class="btn soft small" data-all>'+(allOpen?'סגירת הכל':'פתיחת הכל')+'</button></div></div>'+
+      (S.f==='areo'?'<p class="areonote"><b>הצעה של Areo</b> היא עמדה שלא נמצאה בהסכמים שלכם, ולכן Areo כתבה אותה. אחרי שעורך דין אישר אותה, היא חלק מהמדיניות כמו כל עמדה אחרת. טיוטות ממשא ומתן יחליפו אותה בניסיון שלכם.</p>':'')+
+      '<div class="rxs" id="list">'+listHtml()+'</div>';
+  }
+  else if(S.sec==='topic'){
+    var i=D.rules.findIndex(function(r){return r.id===S.id}),r=D.rules[i];
+    h+='<button type="button" class="linkbtn" data-sec="rules" style="align-self:flex-start">→ סעיפי מדיניות</button>'+
+      '<div class="row" style="justify-content:flex-start"><h1>'+esc(r.t)+'</h1>'+(r.imp==='critical'?'<span class="pill crit">קריטי</span>':'')+'</div><p class="lead">'+esc(r.why)+'</p>';
+    lanesOf(r).forEach(function(k){var L=r.L[k],ok=isOk(r,k);
+      h+='<div class="lane '+LN[k][1]+'"><div class="row"><span class="ln">'+LN[k][0]+'</span>'+(ok?'<span class="pill ok">מאושר</span>':'<span class="pill wait">מחכה לבדיקת עורך דין</span>')+'</div><div class="pos">'+esc(L.p)+'</div>'+
+        (k==='green'&&L.cl?'<div class="clause">'+esc(L.cl)+'<div class="row" style="margin-top:8px"><span class="basis">הנוסח המוצע</span><button type="button" class="linkbtn" data-copy="'+r.id+'">העתקת הנוסח</button></div></div>':'')+
+        (k==='green'&&L.fx?'<div class="fx">'+esc(L.fx)+'</div>':'')+
+        '<div class="basis">'+(L.areo?'הצעה של Areo: אין דוגמה בהסכמים שלכם':(L.ev.length?'מבוסס על '+L.ev.length+' מההסכמים שלכם':'נגזר מההסכמים שלכם'))+'</div>'+
+        (ok?'':'<div class="decide"><button type="button" class="btn primary small" data-ok="'+r.id+'|'+k+'">נבדק, מאשר</button><button type="button" class="btn soft small" data-demo>לבקש שינוי</button></div>')+'</div>'});
+    if(r.cp)h+='<details><summary>מה הצד השני ירצה</summary><div class="in">'+esc(r.cp)+'</div></details>';
+    var evs=[];lanesOf(r).forEach(function(k){r.L[k].ev.forEach(function(e){if(e.q)evs.push([k,e])})});
+    if(evs.length)h+='<details><summary>על מה זה מבוסס ('+evs.length+')</summary><div class="in">'+evs.map(function(x){return '<div class="ev"><div class="src">'+LN[x[0]][0]+' · '+esc(srcName(x[1].s))+(x[1].c?', סעיף '+esc(x[1].c):'')+'</div><q>'+esc(x[1].q)+'</q></div>'}).join('')+'</div></details>';
+    h+='<div class="row">'+(i>0?'<button type="button" class="linkbtn" data-topic="'+D.rules[i-1].id+'">→ '+esc(D.rules[i-1].t)+'</button>':'<span></span>')+(i<D.rules.length-1?'<button type="button" class="linkbtn" data-topic="'+D.rules[i+1].id+'">'+esc(D.rules[i+1].t)+' ←</button>':'<span></span>')+'</div>';
+  }
+  else if(S.sec==='compare'){
+    h+=compareHtml();
+  }
+  else if(S.sec==='commercial'){
+    var ids2=Object.keys(D.src);
+    h+='<h1>תנאים מסחריים</h1><p class="lead">התנאים המסחריים כפי שהם בכל אחד מההסכמים.</p><div class="tblwrap"><table><thead><tr><th>תנאי</th>'+ids2.map(function(id){return '<th>'+esc(srcName(id))+'</th>'}).join('')+'</tr></thead><tbody>'+
+      D.com.fields.map(function(f){var vals=ids2.map(function(id){var x=D.com.rows.filter(function(r){return r.s===id&&r.f===f.key})[0];return x?x.v:''});var diff=vals.filter(function(v,i){return v&&vals.indexOf(v)===i}).length>1;
+        return '<tr><td><b>'+esc(f.label)+'</b></td>'+vals.map(function(v){return '<td'+(diff?' class="diff"':'')+'>'+esc(v)+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div><p class="basis">צבע צהוב: התנאי שונה בין ההסכמים.</p>';
+  }
+  else if(S.sec==='segments'){
+    h+=segmentsHtml();
+  }
+  else if(S.sec==='sources'){
+    var ids3=Object.keys(D.src);
+    h+='<h1>המקורות</h1><p class="lead">ההסכמים שהמדיניות נבנתה מהם. כל עמדה מפנה לסעיף שבהם.</p><div class="list">'+ids3.map(function(id){var s=D.src[id],n=0;D.rules.forEach(function(r){lanesOf(r).forEach(function(k){r.L[k].ev.forEach(function(e){if(e.s===id)n++})})});
+      return '<div class="item" style="cursor:default"><span class="txt"><b>'+esc(s.name)+'</b><span class="gp">'+esc(s.cp)+' · נחתם '+esc(dmy(s.date))+'</span></span><span class="basis">'+n+' הפניות</span></div>'}).join('')+'</div>';
+  }
+  else if(S.sec==='questions'){
+    h+='<h1>שאלות פתוחות</h1><p class="lead">מה שהמדיניות לא יכלה להכריע לבד. תשובה בשיחה מעדכנת את המדיניות.</p>'+D.qs.map(function(q){return '<div class="qa"><b>'+esc(q.t)+'</b>'+esc(q.q)+(q.rec?'<div class="rec">'+esc(q.rec)+'</div>':'')+'</div>'}).join('');
+  }
+  else if(S.sec==='departments'){
+    h+='<h1>מחלקות</h1><p class="lead">מי בחברה אחראי לקיים כל התחייבות בהסכמים מהסוג הזה.</p><div class="card"><h2>עוד לא נקבעו מחלקות</h2><p class="lead">ההסכמים לא מייחסים חיובים למחלקות. אפשר לבחור את המחלקות המעורבות, ו-Areo תשייך אליהן את ההתחייבויות.</p><div class="decide"><button type="button" class="btn soft small" data-demo>לבחור מחלקות</button></div></div>';
+  }
+  else if(S.sec==='display'){
+    var lg=document.documentElement.getAttribute('data-size')==='lg';
+    h+='<h1>התאמת תצוגה וייצוא</h1><div class="card"><h2>תצוגה</h2><div class="filters"><button type="button" class="chip" data-size="" aria-pressed="'+!lg+'">טקסט רגיל</button><button type="button" class="chip" data-size="lg" aria-pressed="'+lg+'">טקסט גדול</button><button type="button" class="chip" id="themebtn2">בהיר / כהה</button></div></div>'+
+      '<div class="card"><h2>ייצוא ושיתוף</h2><p class="lead">מסמך המדיניות ב-Word, טבלת העמדות ב-Excel, או קישור לצוות.</p><div class="decide"><button type="button" class="btn soft small" data-dl="docx">מסמך Word</button><button type="button" class="btn soft small" data-dl="xlsx">טבלת Excel</button><button type="button" class="btn soft small" data-dl="zip">הכל בקובץ אחד</button><button type="button" class="btn soft small" data-demo>שיתוף עם הצוות</button></div></div>';
+  }
+  else if(S.sec==='approve'){
+    h+=approveHtml();
+  }
+
+  $('#view').innerHTML=h;
+}
+var CH=[],samp=null,busy=false;
+try{if(window.claude&&window.claude.use)window.claude.use('sample').then(function(x){samp=x}).catch(function(){})}catch(e){}
+function policyText(){return D.rules.map(function(r){return '['+r.t+'] חשיבות: '+r.imp+'. למה: '+r.why+' | העמדה שלנו: '+r.L.green.p+(r.L.green.cl?' (נוסח: '+r.L.green.cl+')':'')+' | פשרה אפשרית: '+(r.L.yellow.p||'-')+' | קו אדום: '+(r.L.red.p||'-')+' | הצד השני ירצה: '+(r.cp||'-')}).join('\n')}
+function localAnswer(q){var ws=words(q),sc=D.rules.map(function(r){var t=hay(r),s=0;ws.forEach(function(w){if(t.indexOf(w)>=0)s+=(norm(r.t).indexOf(w)>=0?3:1)});return [s,r]}).filter(function(x){return x[0]>0}).sort(function(a,b){return b[0]-a[0]}).slice(0,2);
+  if(!sc.length)return {text:'לא מצאתי במדיניות נושא שעונה על זה. אפשר לנסח את השאלה אחרת.',topics:[]};
+  return {text:sc.map(function(x){var r=x[1];return r.t+':\nהעמדה שלנו: '+r.L.green.p+(r.L.yellow.p?'\nפשרה אפשרית: '+r.L.yellow.p:'')+(r.L.red.p?'\nקו אדום: '+r.L.red.p:'')}).join('\n\n'),topics:sc.map(function(x){return x[1]})}}
+function topicsIn(text){return D.rules.filter(function(r){return text.indexOf(r.t)>=0}).slice(0,3)}
+var VD={g:['בתוך העמדה שלנו','✓','green'],y:['פשרה שאפשר לקבל','≈','yellow'],r:['מעבר לקו האדום','✕','red'],n:['המדיניות לא עונה על זה','?',null]};
+function parseRuling(t){
+  var lines=String(t||'').split('\n'),first=(lines[0]||'').replace(/[*:\s]/g,'');
+  var v=/^ירוק/.test(first)?'g':/^צהוב/.test(first)?'y':/^אדום/.test(first)?'r':/^אין/.test(first)?'n':null;
+  if(!v)return {v:null,topic:null,body:lines.length>1||t.length>12?t:''};
+  var topic=null,rest=lines.slice(1);
+  if(rest.length&&/^\s*\**נושא/.test(rest[0])){var nm=rest[0].replace(/^\s*\**נושא\**\s*:?\s*/,'').replace(/\*/g,'').trim();topic=D.rules.filter(function(r){return nm&&(r.t===nm||nm.indexOf(r.t)>=0||r.t.indexOf(nm)>=0)})[0]||null;rest=rest.slice(1)}
+  return {v:v,topic:topic,body:rest.join('\n').trim()};
+}
+function scaleHtml(v){return '<span class="scale" aria-hidden="true">'+['g','y','r'].map(function(k){return '<i class="'+k+(k===v?' on':'')+'"></i>'}).join('')+'</span>'}
+function rulingHtml(c,i){
+  if(c.local){var r=c.local;
+    if(!r)return '<article class="rul" id="m'+i+'"><div class="rhead"><span class="vd"><i class="vi">?</i>לא מצאנו נושא כזה</span></div><div class="rbody">אפשר לנסח את השאלה אחרת.</div><div class="fn"></div></article>';
+    return '<article class="rul" id="m'+i+'"><div class="rhead"><span class="vd"><i class="vi">§</i>'+esc(r.t)+'</span>'+scaleHtml(null)+'</div><div class="ladder">'+
+      lanesOf(r).map(function(k){return '<div><i style="background:var(--'+LN[k][1]+')"></i><span><b>'+LN[k][0]+':</b> '+esc(r.L[k].p)+'</span></div>'}).join('')+
+      '</div><div class="fn"><div class="row"><span>מתוך המדיניות, בלי הכרעה על המקרה שלכם</span><button type="button" class="linkbtn" data-topic="'+r.id+'" data-close="1">לנושא ←</button></div></div></article>'}
+  var p=parseRuling(c.text);
+  if(c.pending&&!p.v&&!p.body)return '<article class="rul" id="m'+i+'"><div class="thinking"><span class="orb sm" aria-hidden="true"><i></i><i></i><i></i></span>בודקים במדיניות…</div></article>';
+  var v=p.v||'n',L=p.topic&&VD[v][2]?p.topic.L[VD[v][2]]:null,tops=p.topic?[p.topic]:topicsIn(c.text);
+  return '<article class="rul v'+v+'" id="m'+i+'"><div class="rhead"><span class="vd"><i class="vi">'+VD[v][1]+'</i>'+VD[v][0]+'</span>'+(v!=='n'?scaleHtml(v):'')+'</div>'+
+    '<div class="rbody">'+esc(p.body||'')+'</div>'+
+    (c.pending?'':'<div class="fn">'+(L&&L.p?'<span>לפי המדיניות · '+esc(p.topic.t)+' · '+LN[VD[v][2]][0]+'</span><q>'+esc(L.p)+'</q>':'')+
+      (tops.length?'<div class="row"><span></span>'+tops.slice(0,2).map(function(r){return '<button type="button" class="linkbtn" data-topic="'+r.id+'" data-close="1">'+(p.topic?'לנושא ←':'לנושא: '+esc(r.t))+'</button>'}).join('')+'</div>':'')+'</div>')+
+    '</article>';
+}
+function suggest(){var ord={critical:0,high:1,medium:2,low:3};return D.rules.slice().sort(function(a,b){return (a.imp in ord?ord[a.imp]:4)-(b.imp in ord?ord[b.imp]:4)||D.rules.indexOf(a)-D.rules.indexOf(b)}).slice(0,4).map(function(r){return 'מה העמדה שלנו על '+r.t+'?'})}
+function drawAsk(){
+  var m=$('#msgs'),h='';
+  if(!CH.length)h='<div class="intro"><div class="iq">הצד השני ביקש משהו?</div><p>כתבו מה ביקשו, ותקבלו הכרעה לפי המדיניות: בתוך העמדה, פשרה שאפשר לקבל, או מעבר לקו האדום.</p></div>'+
+    '<div class="cases">'+suggest().map(function(q,i){return '<button type="button" data-sugg="'+esc(q)+'"><span class="n">0'+(i+1)+'</span><span>'+esc(q)+'</span></button>'}).join('')+'</div>';
+  CH.forEach(function(c,i){h+=c.who==='u'?'<div class="q"><small>השאלה</small><p>'+esc(c.text)+'</p></div>':rulingHtml(c,i)});
+  m.innerHTML=h;m.scrollTop=m.scrollHeight;
+}
+function openAsk(){$('#askp').hidden=false;$('#fab').hidden=true;var c=counts();$('#askscope').textContent=book().name+' · '+D.rules.length+' נושאים, '+c.t+' עמדות';drawAsk();setTimeout(function(){var i=$('#askin');if(i)i.focus()},60)}
+function closeAsk(){$('#askp').hidden=true;$('#fab').hidden=false}
+function askNow(q){q=(q||'').trim();if(!q||busy)return;busy=true;CH.push({who:'u',text:q});var a={who:'a',text:'',pending:true};CH.push(a);var idx=CH.length-1;drawAsk();$('#askin').value='';
+  var fin=function(){busy=false;a.pending=false;drawAsk()};
+  var paint=function(){var el=$('#m'+idx);if(el){el.outerHTML=rulingHtml(a,idx);var m=$('#msgs');m.scrollTop=m.scrollHeight}};
+  if(samp){
+    var prompt='אתה עוזר לעורך דין בחברה '+D.company+(D.side?', שהיא '+D.side:'')+(D.family?', בסוג ההסכם: '+D.family:'')+'. הכרע לפי המדיניות החוזית שלהלן בלבד.\n'+
+      'החזר בדיוק בפורמט הזה, בלי שום דבר לפניו:\n'+
+      'שורה 1: מילה אחת בלבד: ירוק (הבקשה בתוך העמדה המועדפת שלנו) / צהוב (זו פשרה שהמדיניות מאפשרת) / אדום (הבקשה מעבר לקו האדום) / אין (המדיניות לא עונה על זה). אם השאלה היא מה העמדה שלנו ולא בקשה של הצד השני, כתוב ירוק.\n'+
+      'שורה 2: נושא: ושם הנושא המדויק מהמדיניות שעליו ההכרעה נשענת.\n'+
+      'משורה 3: התשובה בעברית, 2 עד 3 משפטים קצרים: מה עושים ומה מציעים במקום. בלי כוכביות ובלי כותרות. אל תמציא עמדות, אל תצטט פסיקה, ואל תשתמש במקף ארוך.\n\nהמדיניות:\n'+policyText()+'\n\nהשאלה: '+q;
+    samp(prompt,{modelTier:'quick',cache:false,onText:function(u){a.text=u.text;paint()}})
+      .then(function(res){a.text=(res&&res.text)||a.text;fin()},function(){var l=localAnswer(q);a.local=l.topics[0]||null;a.isLocal=true;fin()});
+  } else {var l=localAnswer(q);setTimeout(function(){a.local=l.topics[0]||null;a.isLocal=true;fin()},450)}
+}
+function ownAreo(k){var own=0,ar=0;D.rules.forEach(function(r){var x=r.L[k];if(x&&x.p){x.areo?ar++:own++}});return [own,ar]}
+function ledgerHtml(c,crit){var g=0,a=0;['green','yellow','red'].forEach(function(k){var x=ownAreo(k);g+=x[0];a+=x[1]});
+  return '<div class="ledger">'+[[D.rules.length,'נושאים במדיניות'],[c.t,'עמדות'],[g,'נלמדו מההסכמים שלכם'],[a,'הצעות של Areo'],[crit,'נושא קריטי']].map(function(x){return '<div><b>'+x[0]+'</b><span>'+x[1]+'</span></div>'}).join('')+'</div>'}
+function sealHtml(c,w){
+  if(!w.length&&c.t){var by='',at='';D.rules.forEach(function(r){lanesOf(r).forEach(function(k){var L=r.L[k];if(L.at&&L.at>at){at=L.at;by=L.signer||''}})});
+    return '<div class="stamp" role="img" aria-label="המדיניות מאושרת"><span class="stc">✓</span><b>מאושרת</b><small>'+c.t+' מתוך '+c.t+' עמדות</small>'+(at?'<small>'+dmy(at)+'</small>':'')+'</div>'}
+  var n=c.t,ok=c.ok,t='',cx=100,cy=100;
+  for(var i=0;i<n;i++){var an=(-90+i*360/n)*Math.PI/180,co=Math.cos(an),si=Math.sin(an),isok=i<ok;
+    t+='<line class="tk" style="animation-delay:'+(i*22)+'ms;stroke:var('+(isok?'--g':'--legal')+')" x1="'+(cx+76*co).toFixed(1)+'" y1="'+(cy+76*si).toFixed(1)+'" x2="'+(cx+(isok?92:95)*co).toFixed(1)+'" y2="'+(cy+(isok?92:95)*si).toFixed(1)+'" stroke-width="5" stroke-linecap="round"></line>'}
+  var svg='<svg viewBox="0 0 200 200" role="img" aria-label="'+ok+' מתוך '+n+' עמדות אושרו בידי עורך דין"><defs><path id="sealp" d="M100,100 m-58,0 a58,58 0 1,1 116,0 a58,58 0 1,1 -116,0"></path></defs>'+t+
+    '<circle cx="100" cy="100" r="69" fill="none" style="stroke:var(--line-strong)" stroke-width="1"></circle><circle cx="100" cy="100" r="47" fill="none" style="stroke:var(--line-strong)" stroke-width="1"></circle>'+
+    '<text class="ring"><textPath href="#sealp" textLength="356" lengthAdjust="spacing">AREO · CONTRACT POLICY · PLAYBOOK ·</textPath></text>'+
+    '<text x="100" y="110" text-anchor="middle" class="num" font-size="42">'+ok+'</text><text x="100" y="128" text-anchor="middle" class="of">מתוך '+n+'</text></svg>';
+  return '<div class="seal">'+svg+
+    (w.length?'<p class="sealt"><b>'+w.length+' עמדות</b> מחכות לאישור</p><button type="button" class="btn primary small" data-sec="approve">לעבור עליהן</button>':'<p class="sealt"><b>כל העמדות</b> אושרו</p>')+
+    '<div class="skey"><span><i style="background:var(--g)"></i>אושרה</span><span><i style="background:var(--legal)"></i>מחכה</span></div></div>';
+}
+function mapHtml(){
+  var ord={critical:0,high:1,medium:2,low:3},lvn={critical:'קריטי',high:'חשיבות גבוהה',medium:'חשיבות בינונית',low:'חשיבות נמוכה'};
+  var io=function(r){return r.imp in ord?ord[r.imp]:4};var rs=D.rules.slice().sort(function(a,b){return io(a)-io(b)||D.rules.indexOf(a)-D.rules.indexOf(b)});lvn['']='חשיבות לא נקבעה';
+  var lanes=[['green','העמדה המועדפת','g'],['yellow','פשרה אפשרית','y'],['red','קו אדום','r']],tot={own:0,ar:0},last=null;
+  var head='<div class="mrow mh" aria-hidden="true"><span>נושא</span>'+lanes.map(function(L){var x=ownAreo(L[0]);tot.own+=x[0];tot.ar+=x[1];return '<span class="mhl '+L[2]+'"><b><i></i>'+L[1]+'</b><small>'+x[0]+' מההסכמים · '+x[1]+' Areo</small></span>'}).join('')+'</div>';
+  var rows=rs.map(function(r){var g='';if((r.imp||'')!==last){last=r.imp||'';var cnt=D.rules.filter(function(x){return (x.imp||'')===(r.imp||'')}).length;g='<div class="mgrp'+(r.imp==='critical'?' c':'')+'">'+lvn[r.imp||'']+' · '+cnt+'</div>'}
+    return g+'<button type="button" class="mrow" data-topic="'+r.id+'" aria-label="'+esc(r.t)+'"><span class="mtn">'+esc(r.t)+'</span>'+lanes.map(function(L){var x=r.L[L[0]];if(!x||!x.p)return '<span></span>';var wt=!isOk(r,L[0]),n=x.ev.length;
+      var tip=r.t+' · '+L[1]+'\n'+x.p+'\n'+(x.areo?'הצעה של Areo: אין דוגמה בהסכמים שלכם':'נמצא ב-'+n+' מההסכמים שלכם')+(wt?'\nמחכה לבדיקת עורך דין':'');
+      return '<span class="tile '+L[2]+' '+(x.areo?'areo':'own')+(wt?' w':'')+'" data-tt="'+esc(tip)+'">'+(x.areo?'<span class="ar">Areo</span>':'<span class="tally">'+new Array(Math.max(1,n)+1).join('<i></i>')+'</span>')+'</span>'}).join('')+'</button>'}).join('');
+  var y=ownAreo('yellow'),rd=ownAreo('red');
+  return '<div class="panelx"><div class="maphead"><div><div class="kick">מפת המדיניות</div><h3 class="ttl">'+D.rules.length+' נושאים, שלוש עמדות לכל אחד</h3></div>'+
+    '<div class="mkey"><span><i class="tile own"><span class="tally"><i></i><i></i></span></i>מההסכמים שלכם, קו לכל הסכם</span><span><i class="tile areo"></i>הצעה של Areo</span><span><i class="tile own w"></i>מחכה לעורך דין</span></div></div>'+
+    head+rows+
+    '</div>';
+}
+var ttEl=null;
+document.addEventListener('mouseover',function(e){var t=e.target.closest&&e.target.closest('[data-tt]');if(!ttEl)ttEl=$('#tt');if(!t){ttEl.hidden=true;return}var p=t.getAttribute('data-tt').split('\n');ttEl.innerHTML='<b>'+esc(p[0])+'</b>'+esc(p.slice(1).join('\n'));ttEl.hidden=false});
+document.addEventListener('mousemove',function(e){if(!ttEl||ttEl.hidden)return;var w=ttEl.offsetWidth,h=ttEl.offsetHeight,x=e.clientX-w-14,y=e.clientY+16;if(x<8)x=e.clientX+14;if(y+h>innerHeight-8)y=e.clientY-h-12;ttEl.style.left=x+'px';ttEl.style.top=y+'px'});
+var LANE={green:['העמדה המועדפת','g','נקודת הפתיחה שלנו'],yellow:['פשרה אפשרית','y','עד כאן אפשר לוותר'],red:['קו אדום','r','כאן עוצרים']};
+var IMPN={critical:'קריטי',high:'חשיבות גבוהה',medium:'חשיבות בינונית',low:'חשיבות נמוכה'};
+function dmy(s){if(!s)return '';var p=String(s).slice(0,10).split('-');return p.length===3?(+p[2])+'.'+(+p[1])+'.'+p[0]:String(s)}
+function shortName(s){return srcName(s).replace(/ בע"מ| בעמ/,'')}
+function idsToNames(t){return String(t||'').replace(/\bS\d\d\b/g,function(m){return D.src[m]?shortName(m):m})}
+function laneSrcs(L){var seen={},out=[];(L.ev||[]).forEach(function(e){if(!seen[e.s]){seen[e.s]=1;out.push(e)}});return out}
+function basisText(L){if(L.areo)return 'הצעה של Areo';var n=laneSrcs(L).length;return n?n+' מתוך '+D.docs+' הסכמים':'נגזר מההסכמים'}
+function laneLine(r,k){var L=r.L[k];if(!L||!L.p)return '';var ok=isOk(r,k);
+  return '<div class="ll '+LANE[k][1]+'"><span class="lk">'+LANE[k][0]+'</span><span class="lp">'+hl(L.p,S.q)+'</span><span class="lb">'+(L.areo?'<span class="areo-t">Areo</span>':esc(basisText(L)))+(ok?'':'<i class="wdot" title="מחכה לעורך דין"></i>')+'</span></div>'}
+var TAGW={signed_own_paper:'נחתם על הנייר של החברה, ולכן הוא מראה מה החברה עצמה מציעה ומקבלת.',signed_their_paper:'נחתם על הנייר של הצד השני, ולכן הוא מראה על מה החברה הסכימה במשא ומתן.',draft:'טיוטה ממשא ומתן, ולכן הוא מראה עמדה ולא תוצאה.'};
+var SIDEW={pro:'מיטיב עם החברה',con:'פחות טוב לחברה',neutral:'ניטרלי'};
+function srcChips(r,k){var src=laneSrcs(r.L[k]);
+  return '<div class="chips2">'+src.map(function(e,i){var s=D.src[e.s]||{};return '<button type="button" class="schip'+(s.paper==='ours'?' ours':'')+'" data-src="'+r.id+'|'+k+'|'+i+'"><span>'+esc(srcName(e.s))+'</span><span class="yr">'+esc(String(s.date||'').slice(0,4))+'</span>'+(e.c?'<b>'+esc(e.c)+'</b>':'')+'</button>'}).join('')+'</div>'+
+    '<p class="chiphelp">לחיצה על מקור פותחת את הנוסח המלא ואת כל הפרטים עליו. מסגרת ירוקה: הסכם על הנייר של החברה.</p>'}
+function openDrawer(id,k,i){var r=D.rules.filter(function(x){return x.id===id})[0];if(!r)return;var list=laneSrcs(r.L[k]),e=list[i];if(!e)return;var s=D.src[e.s]||{};
+  S.dr=[id,k,i];
+  var row=function(a,b){return b?'<div class="drr"><span>'+a+'</span><b>'+esc(b)+'</b></div>':''};
+  var h='<header class="drh"><div><div class="drk">'+(s.paper==='ours'?'מהסכמי החברה':'מהסכם של הצד השני')+(e.c?' · סעיף '+esc(e.c):'')+'</div><h3>'+esc(srcName(e.s))+(s.date?' · '+esc(String(s.date).slice(0,4)):'')+'</h3></div><button type="button" class="drx" data-drclose aria-label="סגירה">×</button></header>'+
+    '<div class="drb"><div class="drtags">'+(e.sd&&SIDEW[e.sd]?'<span class="dtag g">'+SIDEW[e.sd]+'</span>':'')+'<span class="dtag '+LANE[k][1]+'">'+LANE[k][0]+'</span>'+(e.c?'<span class="dtag">סעיף '+esc(String(e.c).split('.')[0])+'</span>':'')+'</div>'+
+    '<div class="drrows">'+row('מסמך',s.name)+row('סעיף',e.c)+row('נחתם',dmy(s.date))+row('הצד של החברה בהסכם',s.role)+row('הנייר',s.paper==='ours'?'של החברה':s.paper?'של הצד השני':'')+row('נושא במדיניות',r.t)+'</div>'+
+    '<h4>הנוסח המילולי בהסכם</h4><blockquote class="drq '+LANE[k][1]+'">'+esc(e.q||'')+'</blockquote>'+
+    '<div class="drok">✓ מתוך טקסט ההסכם'+(s.paper==='ours'?' · הנייר שלכם':'')+'</div>'+
+    ((e.tag&&TAGW[e.tag])||e.note?'<h4>למה הסעיף הזה צוטט</h4><p>'+esc(TAGW[e.tag]||'')+(e.note&&e.note.length>=20?' '+esc(e.note)+'.':'')+'</p>'+(e.note&&e.note.length<20?'<p><b>הערך שנחתם:</b> '+esc(e.note)+'</p>':''):'')+
+    '<h4>מה המדיניות אומרת</h4><p>'+esc(r.L[k].p)+'</p>'+
+    '<div class="dracts"><button type="button" class="btn primary small" data-drcopy>העתקת הנוסח</button>'+(list.length>1?'<span class="drnav"><button type="button" class="btn soft small" data-drnav="-1"'+(i?'':' disabled')+'>→ הקודם</button><span>'+(i+1)+' מתוך '+list.length+'</span><button type="button" class="btn soft small" data-drnav="1"'+(i<list.length-1?'':' disabled')+'>הבא ←</button></span>':'')+'</div>'+
+    '<p class="drfoot">הנוסח מוצג כלשונו מתוך ההסכם. ציטוט הוא דוגמה מההסכמים שלכם, ואינו המדיניות עצמה.</p></div>';
+  $('#drawer').innerHTML=h;$('#drawer').hidden=false;$('#scrim').hidden=false;setTimeout(function(){var x=$('.drx');if(x)x.focus()},30);
+}
+function closeDrawer(){S.ed=null;S.sed=null;$('#drawer').hidden=true;$('#scrim').hidden=true;var d=S.dr;S.dr=null;if(d){var b=document.querySelector('[data-src="'+d.join('|')+'"]');if(b)b.focus()}}
+function chgOf(r,k){return S.chg[r.id+k]}
+function rulesHead(){
+  var w=waiting(),nc=w.filter(function(x){var c=chgOf(x[0],x[1]);return c&&c.state==='pending'}).length;
+  return '<div><h1>סעיפי מדיניות</h1><p class="lead">חפשו נושא כדי לראות מה מבקשים, על מה אפשר להתפשר ומה לא חותמים. מכל עמדה אפשר להעתיק נוסח, לראות מאיזה הסכם היא נלמדה, ולבקש שינוי.</p></div>'+
+    '<div class="bigsearch"><span aria-hidden="true">⌕</span><input type="search" id="q" value="'+esc(S.q)+'" placeholder="על מה הצד השני ביקש? למשל: תקרת אחריות, דין זר, תשלום ב-90 יום" aria-label="חיפוש במדיניות"></div>'+
+    (w.length?'<button type="button" class="wbar" data-sec="approve"><i class="wdot"></i><span><b>'+w.length+' עמדות מחכות לאישור שלך</b>'+(nc?' · '+nc+' מהן שינויים שביקשתם':'')+'</span><span class="go">לאישור ←</span></button>':'');
+}
+var LNAME={green:'העמדה המועדפת',yellow:'פשרה אפשרית',red:'קו אדום'};
+function lstat(r,k){var ok=isOk(r,k),c=chgOf(r,k);return c&&c.state==='sending'?'<span class="pill sending">נשלח לעדכון…</span>':c&&!ok?'<span class="pill wait">שונתה, מחכה לאישור</span>':ok?'<span class="l2ok">✓ מאושר</span>':'<span class="pill wait">מחכה לאישור</span>'}
+function rangeMini(r){
+  return '<div class="sh3 mini">'+['green','yellow','red'].map(function(k){var L=r.L[k]||{};var ok=!L.p||isOk(r,k);
+    return '<div class="lcol '+LANE[k][1]+'"><div class="cell hd"><b>'+LNAME[k]+'</b>'+(ok?'':'<i class="wdot" title="מחכה לאישור"></i>')+'</div><div class="cell"><span class="mp">'+hl(L.p||'',S.q)+'</span><span class="mb">'+(L.p?(L.areo?'הצעה של Areo':esc(basisText(L))):'')+'</span></div></div>'}).join('')+'</div>';
+}
+function srcMini(r,k){var src=laneSrcs(r.L[k]);
+  if(!src.length)return '<span class="noev">הצעה של Areo. אין סעיף כזה בהסכמים שלכם.</span>';
+  return '<div class="chips2">'+src.map(function(e,i){var s=D.src[e.s]||{};return '<button type="button" class="schip'+(s.paper==='ours'?' ours':'')+'" data-src="'+r.id+'|'+k+'|'+i+'"><span>'+esc(shortName(e.s))+'</span>'+(e.c?'<b>'+esc(e.c)+'</b>':'')+'</button>'}).join('')+'</div>'}
+function rangeFull(r){
+  var rows=[['',''],['העמדה','p'],['הנוסח','cl'],['מתי העמדה חלה','crit'],['למה','why'],['המקור בהסכמים','src'],['','act']];
+  var cell=function(k,key){var L=r.L[k];if(!L||!L.p)return '<div class="cell"></div>';var c=chgOf(r,k);
+    if(key==='p')return '<div class="cell" data-l="העמדה"><p class="sp">'+esc(L.p)+'</p>'+(c&&c.state==='pending'?'<div class="was2"><small>היה:</small> '+esc(c.old.p)+'</div><div class="why2"><small>למה שונתה:</small> '+esc(c.why)+'</div>':'')+'</div>';
+    if(key==='cl')return '<div class="cell" data-l="הנוסח">'+(L.cl?'<div class="cbox"><p>'+esc(L.cl)+'</p><button type="button" class="linkbtn" data-copy2="'+r.id+'|'+k+'">העתקה</button></div>':'')+'</div>';
+    if(key==='crit')return '<div class="cell" data-l="מתי העמדה חלה">'+(L.crit&&L.crit.length?'<ul>'+L.crit.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul>':'')+'</div>';
+    if(key==='why'){var w='';if(L.why)w+='<p>'+esc(idsToNames(L.why))+'</p>';if(L.fx)w+='<p class="fx"><small>מה זה אומר לחברה:</small> '+esc(L.fx)+'</p>';
+      if(k==='yellow'&&L.steps&&L.steps.length>1)w+='<div class="steps"><small>מדרגות הוויתור</small><ol>'+L.steps.map(function(s){return '<li>'+esc(s.t)+(s.g?'<small> מוותרים על: '+esc(s.g)+'</small>':'')+'</li>'}).join('')+'</ol></div>';
+      return '<div class="cell" data-l="למה">'+w+'</div>'}
+    if(key==='src')return '<div class="cell" data-l="המקור בהסכמים"><div class="sbasis">'+esc(basisText(L))+'</div>'+srcMini(r,k)+'</div>';
+    if(key==='act')return '<div class="cell act">'+(c&&c.state==='sending'?'':'<button type="button" class="edbtn" data-edit="'+r.id+'|'+k+'">✎ לשנות</button>')+'</div>';
+    return '<div class="cell"></div>'};
+  var h='<div class="sh3"><div class="labs" aria-hidden="true">'+rows.map(function(x){return '<div class="cell lab">'+x[0]+'</div>'}).join('')+'</div>'+
+    ['green','yellow','red'].map(function(k){var L=r.L[k]||{};
+      return '<div class="lcol '+LANE[k][1]+(chgOf(r,k)?' changed':'')+'"><div class="cell hd"><span class="hdt"><b>'+LNAME[k]+'</b>'+(L.areo?'<span class="areo-h">הצעה של Areo</span>':'')+'</span>'+(L.p?lstat(r,k):'')+'</div>'+rows.slice(1).map(function(x){return cell(k,x[1])}).join('')+'</div>'}).join('')+'</div>';
+  return '<p class="sh3note">שלוש העמדות הן טווח אחד: מתחילים מהעמדה המועדפת, מתפשרים עד הפשרה, ולא עוברים את הקו האדום. לחיצה על הסכם פותחת את הנוסח המלא שלו.</p>'+h;
+}
+function topicWhy(r){return (r.rat?'<p class="rat">'+esc(idsToNames(r.rat))+'</p>':'')+'<div class="wcols">'+
+    (r.legal?'<div><h4>השיקול המשפטי</h4><p>'+esc(r.legal)+'</p></div>':'')+(r.biz?'<div><h4>השיקול העסקי</h4><p>'+esc(r.biz)+'</p></div>':'')+(r.cp?'<div><h4>הטענות הצפויות מהצד השני</h4><p>'+esc(r.cp)+'</p></div>':'')+'</div>'}
+function whyHtml(r){var h=(r.rat?'<p class="rat">'+esc(idsToNames(r.rat))+'</p>':'')+'<div class="wcols">'+
+    (r.legal?'<div><h4>השיקול המשפטי</h4><p>'+esc(r.legal)+'</p></div>':'')+(r.biz?'<div><h4>השיקול העסקי</h4><p>'+esc(r.biz)+'</p></div>':'')+(r.cp?'<div><h4>הטענות הצפויות מהצד השני</h4><p>'+esc(r.cp)+'</p></div>':'')+'</div>';
+  lanesOf(r).forEach(function(k){var L=r.L[k],m='';
+    if(L.crit&&L.crit.length)m+='<div><h4>תחולת העמדה</h4><ul>'+L.crit.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul></div>';
+    if(L.why)m+='<div><h4>'+(k==='red'?'הנימוק לקו האדום':'הנימוק לפשרה')+'</h4><p>'+esc(idsToNames(L.why))+'</p></div>';
+    if(L.fx)m+='<div><h4>המשמעות לחברה</h4><p>'+esc(L.fx)+'</p></div>';
+    if(k==='yellow'&&L.steps&&L.steps.length>1)m+='<div class="steps"><h4>סדר הוויתורים</h4><ol>'+L.steps.map(function(s){return '<li><p>'+esc(s.t)+'</p>'+(s.g?'<small>מוותרים על: '+esc(s.g)+'</small>':'')+'</li>'}).join('')+'</ol></div>';
+    if(m)h+='<div class="wlane '+LANE[k][1]+'"><div class="wlk"><i></i>'+LANE[k][0]+'</div><div class="l2meta">'+m+'</div></div>'});
+  return h}
+function basisHtml(r){return lanesOf(r).map(function(k){var L=r.L[k],src=laneSrcs(L);
+  return '<div class="wlane '+LANE[k][1]+'"><div class="wlk"><i></i>'+LANE[k][0]+'<small>'+esc(basisText(L))+'</small></div>'+(src.length?srcChips(r,k):'<p class="noev">אין סעיף כזה בהסכמים שלכם. זו הצעה של Areo.</p>')+'</div>'}).join('')}
+function listHtml(){
+  var rs=D.rules.filter(function(r){return hit(r,S.q)&&(S.f==='all'||(S.f==='wait'&&topicWaiting(r))||(S.f==='crit'&&(r.imp==='critical'||r.imp==='high'))||(S.f==='areo'&&lanesOf(r).some(function(k){return r.L[k].areo})))});
+  if(!rs.length)return '<div class="empty">לא מצאנו נושא כזה במדיניות. אפשר לנסות מילה אחרת, או לשאול את המדיניות.</div>';
+  return rs.map(function(r){var n=D.rules.indexOf(r)+1,open=!!S.open[r.id],wt=topicWaiting(r),ch=lanesOf(r).some(function(k){return chgOf(r,k)});
+    var tags=(r.imp==='critical'?'<span class="tg crit">קריטי</span>':r.imp==='high'?'<span class="tg">חשיבות גבוהה</span>':'')+(r.kind?'<span class="tg">'+esc(r.kind)+'</span>':'')+(ch?'<span class="tg chg">שונה</span>':'')+(wt?'<span class="tg wait">מחכה לאישור</span>':'');
+    var h='<section class="rx'+(open?' open':'')+'" id="rx-'+r.id+'"><button type="button" class="rxh" data-tog="'+r.id+'" aria-expanded="'+open+'"><span class="rxn">'+(n<10?'0':'')+n+'</span><span class="rxt"><b>'+hl(r.t,S.q)+'</b>'+(r.sub?'<small>'+esc(r.sub)+'</small>':'')+'</span><span class="rxtags">'+tags+'</span><span class="rxc" aria-hidden="true">'+(open?'סגירה':'פתיחה')+'</span></button>';
+    if(!open)return h+segBand(r,true)+rangeMini(r)+'</section>';
+    h+=segBand(r,false)+'<div class="rxb">'+rangeFull(r)+
+      '<details class="more" data-det="'+r.id+'w"'+(S.det[r.id+'w']?' open':'')+'><summary>הנימוק לעמדה <small>השיקולים המשפטיים והעסקיים, והטענות הצפויות מהצד השני</small></summary><div class="morein">'+topicWhy(r)+'</div></details>';
+    h+=relatedHtml(r);
+    return h+'</div></section>'}).join('');
+}
+/* Related clauses: what the agreements show about how this topic and another one affect each other. Only when there is a link */
+var RELDIR={affects:'מושפע מהנושא הזה',affected_by:'משפיע על הנושא הזה',mutual:'השפעה הדדית'};
+function relatedHtml(r){
+  var L=(r.relx||[]).filter(function(x){return D.rules.some(function(y){return y.id===x.id})});
+  if(!L.length)return '';
+  return '<section class="relx"><div class="relxh">סעיפים קשורים</div>'+L.map(function(x){var t=D.rules.filter(function(y){return y.id===x.id})[0];
+    return '<div class="rlx"><div class="rlxt"><button type="button" class="linkbtn" data-topic="'+x.id+'">'+esc(t.t)+'</button><span class="rlxd">'+RELDIR[x.dir]+'</span>'+(x.basis==='areo'?'<span class="tg areo-h">הצעת Areo</span>':'')+'</div>'+
+      '<p>'+esc(x.why)+'</p>'+
+      (x.q?'<blockquote><small>'+esc(x.q.c)+(x.q.n>1?' · אותו נוסח ב-'+x.q.n+' הסכמים':'')+'</small>'+esc(x.q.t)+'</blockquote>':'')+
+      (x.act?'<p class="rlxa">'+esc(x.act)+'</p>':'')+'</div>'}).join('')+'</section>';
+}
+/* change request: edited in a drawer, sent to the Claude chat beside the page, then waits for approval */
+var room=null;
+function openEditor(id,k,pre){var r=D.rules.filter(function(x){return x.id===id})[0],L=r.L[k];S.dr=null;S.ed=[id,k];
+  var rel=(r.rel||[]).map(function(x){return D.rules.filter(function(y){return y.id===x})[0]}).filter(Boolean);
+  $('#drawer').innerHTML='<header class="drh"><div><div class="drk">שינוי בעמדה</div><h3>'+esc(r.t)+' · '+LANE[k][0]+'</h3></div><button type="button" class="drx" data-drclose aria-label="סגירה">×</button></header>'+
+    '<div class="drb"><ol class="flow"><li class="on">משנים כאן</li><li>Areo מעדכן את הפלייבוק</li><li>עורך דין מאשר</li></ol>'+
+    '<p class="edhelp">שנו רק את מה שצריך. עד שעורך דין מאשר, כל הסוכנים ממשיכים לעבוד לפי הגרסה הנוכחית.</p>'+
+    '<label class="fld"><span>העמדה</span><textarea id="edp" rows="2">'+esc(L.p)+'</textarea></label>'+
+    (L.cl?'<label class="fld"><span>הנוסח</span><textarea id="edcl" rows="4">'+esc(L.cl)+'</textarea></label>':'')+
+    '<label class="fld"><span>תחולת העמדה <small>שורה לכל תנאי</small></span><textarea id="edcr" rows="3">'+esc((L.crit||[]).join('\n'))+'</textarea></label>'+
+    '<label class="fld req"><span>למה משנים <small>חובה. נשמר בהיסטוריה של הסעיף</small></span><textarea id="edwhy" rows="2" placeholder="למשל: ההנהלה אישרה להעלות את התקרה מול ספקים קריטיים"></textarea></label>'+
+    (rel.length?'<p class="edrel">Areo יבדוק שהשינוי לא סותר את: '+rel.map(function(x){return esc(x.t)}).join(', ')+'.</p>':'')+
+    '<p class="ederr" id="ederr" hidden></p>'+
+    '<div class="dracts"><button type="button" class="btn primary" data-edsend>לשלוח לעדכון</button><button type="button" class="btn soft" data-drclose>ביטול</button></div></div>';
+  $('#drawer').hidden=false;$('#scrim').hidden=false;
+  if(pre){if(pre.cl&&$('#edcl'))$('#edcl').value=pre.cl;if(pre.why)$('#edwhy').value=pre.why;if(pre.note){var hp=$('.edhelp');if(hp)hp.insertAdjacentHTML('afterend','<p class="prenote">'+esc(pre.note)+'</p>')}}
+  setTimeout(function(){var x=$(pre?'#edp':'#edp');if(x)x.focus()},30);
+}
+function cut(s,n){s=String(s||'').replace(/[​-‏‪-‮⁦-⁩­]/g,'');return s.length>n?s.slice(0,n):s}
+function sendEdit(){var id=S.ed[0],k=S.ed[1],r=D.rules.filter(function(x){return x.id===id})[0],L=r.L[k];
+  var nw={p:($('#edp').value||'').trim(),cl:$('#edcl')?($('#edcl').value||'').trim():L.cl,crit:($('#edcr').value||'').split('\n').map(function(x){return x.trim()}).filter(Boolean)};
+  var why=($('#edwhy').value||'').trim(),old={p:L.p,cl:L.cl,crit:(L.crit||[]).slice()},err=$('#ederr');
+  if(!nw.p){err.textContent='העמדה לא יכולה להיות ריקה.';err.hidden=false;return}
+  if(nw.p===old.p&&nw.cl===old.cl&&nw.crit.join('|')===old.crit.join('|')){err.textContent='לא שיניתם כלום עדיין.';err.hidden=false;return}
+  if(!why){err.textContent='כתבו בקצרה למה משנים. זה נשמר בהיסטוריה של הסעיף.';err.hidden=false;$('#edwhy').focus();return}
+  var payload={label:'בקשת שינוי: '+cut(r.t,40)+' · '+LANE[k][0],kind:'playbook_change',playbook:book().key,rule_id:id,topic:cut(r.t,80),lane:k,
+    before:{position:cut(old.p,500),clause:cut(old.cl,900),conditions:old.crit.slice(0,8).map(function(x){return cut(x,160)})},
+    after:{position:cut(nw.p,500),clause:cut(nw.cl,900),conditions:nw.crit.slice(0,8).map(function(x){return cut(x,160)})},reason:cut(why,400)};
+  var sent=!!dbx;submitReq(payload,function(){});
+  var key=id+k;delete S.dec[key];S.chg[key]={old:old,nw:nw,why:why,state:'sending'};
+  closeDrawer();S.open[id]=true;refreshList();
+  toast(sent?'הבקשה נשמרה. Areo מעדכן את הפלייבוק.':'הבקשה ירדה לקובץ. שמרו אותו בתיקייה Areo-נתונים.');
+  setTimeout(function(){var c=S.chg[key];if(!c)return;L.p=nw.p;L.cl=nw.cl;L.crit=nw.crit;c.state='pending';refreshList();toast('העמדה עודכנה ומחכה לאישור עורך דין.')},2400);
+}
+function refreshList(){if(S.sec==='rules'&&$('#list')){$('#list').innerHTML=listHtml();var nav=$('#nav');if(nav)nav.innerHTML=navHtml();var hd=$('#rhead');if(hd)hd.innerHTML=rulesHead()}else render()}
+/* Compare: the same topic across the agreements, with what differs marked against the most common wording */
+function stripNo(q){return String(q||'').replace(/^\s*[\d.]+\s*/,'').trim()}
+function toks(s){return s.split(/\s+/).filter(Boolean)}
+function lcsMark(a,b){/* marks tokens of b that are not in the LCS with a; returns [{t,d}] and the changed runs on both sides */
+  var n=a.length,m=b.length,T=[];for(var i=0;i<=n;i++){T.push(new Array(m+1).fill(0))}
+  for(i=n-1;i>=0;i--)for(var j=m-1;j>=0;j--)T[i][j]=a[i]===b[j]?T[i+1][j+1]+1:Math.max(T[i+1][j],T[i][j+1]);
+  var out=[],ra=[],rb=[],ca='',cb='';i=0;j=0;
+  var cl=function(v){return v.trim().replace(/[.,;:]+$/,'')};var flush=function(){if(cl(ca))ra.push(cl(ca));if(cl(cb))rb.push(cl(cb));ca='';cb=''};var nxt=function(arr,k){return arr[k]||''};
+  while(i<n&&j<m){if(a[i]===b[j]){if(/^\d+$/.test(ca.trim())&&/^\d+$/.test(cb.trim())){ca+=' '+a[i];cb+=' '+b[j]}flush();out.push({t:b[j],d:0});i++;j++}else if(T[i+1][j]>=T[i][j+1]){ca+=(ca?' ':'')+a[i];i++}else{cb+=(cb?' ':'')+b[j];out.push({t:b[j],d:1});j++}}
+  while(i<n){ca+=(ca?' ':'')+a[i];i++}while(j<m){cb+=(cb?' ':'')+b[j];out.push({t:b[j],d:1});j++}flush();
+  return {out:out,ra:ra,rb:rb};
+}
+function cmpModel(r){
+  var ids=Object.keys(D.src),rows=[];
+  ids.forEach(function(s){var hitk=null,ev=null,idx=-1;['green','yellow','red'].some(function(k){var list=laneSrcs(r.L[k]);for(var i=0;i<list.length;i++){if(list[i].s===s&&list[i].q){hitk=k;ev=list[i];idx=i;return true}}return false});
+    rows.push({s:s,k:hitk,e:ev,i:idx,q:ev?stripNo(ev.q):''})});
+  var have=rows.filter(function(x){return x.q}),cnt={};have.forEach(function(x){cnt[x.q]=(cnt[x.q]||0)+1});
+  var base=have.length?have.slice().sort(function(a,b){return cnt[b.q]-cnt[a.q]})[0].q:'';
+  var uniq=Object.keys(cnt).length,vals=[];
+  rows.forEach(function(x){if(!x.q)return;if(x.q===base){x.base=true;x.marks=[{t:x.q,d:0}];return}
+    var d=lcsMark(toks(base),toks(x.q));x.marks=d.out;d.ra.forEach(function(v){if(vals.indexOf(v)<0)vals.unshift(v)});d.rb.forEach(function(v){if(vals.indexOf(v)<0)vals.push(v)})});
+  if(vals.some(function(v){return v.length>22}))vals=['נוסח שונה'];
+  var missing=rows.filter(function(x){return !x.q}).length;
+  var kind=!have.length?'none':(uniq>1||(missing&&have.length))?'diff':'same';
+  return {rows:rows,base:base,uniq:uniq,vals:vals,missing:missing,have:have.length,kind:kind};
+}
+function cmpSummary(m){if(m.kind==='none')return 'לא מופיע באף הסכם';if(m.kind==='same')return 'נוסח זהה בכל '+m.have+' ההסכמים';
+  var p=[];if(m.vals.length)p.push(m.vals.slice(0,4).join(' · '));if(m.missing)p.push('חסר ב-'+m.missing);return p.join(' · ')||m.uniq+' נוסחים'}
+function compareHtml(){
+  var M={};D.rules.forEach(function(r){M[r.id]=cmpModel(r)});
+  var diff=D.rules.filter(function(r){return M[r.id].kind==='diff'}),same=D.rules.filter(function(r){return M[r.id].kind==='same'}),none=D.rules.filter(function(r){return M[r.id].kind==='none'});
+  var cr=D.rules.filter(function(r){return r.id===S.cmp})[0]||diff[0]||D.rules[0];S.cmp=cr.id;var m=M[cr.id];
+  var item=function(r){var mm=M[r.id];return '<button type="button" class="ci'+(r.id===cr.id?' on':'')+'" data-cmp="'+r.id+'" aria-pressed="'+(r.id===cr.id)+'"><b>'+esc(r.t)+'</b><small>'+esc(cmpSummary(mm))+'</small></button>'};
+  var h='<div><h1>השוואת סעיפים</h1><p class="lead">כאן מיישרים את הנייר שלכם. רואים איפה ההסכמים נחתמו אחרת, בוחרים איזה נוסח יהיה הסטנדרט, ומתקנים הסכם שחסר בו סעיף.</p></div>'+
+    '<div class="cstats"><div><b>'+diff.length+'</b><span>נושאים שבהם ההסכמים שונים</span></div><div><b>'+same.length+'</b><span>נושאים בנוסח אחיד</span></div><div><b>'+none.length+'</b><span>לא מופיעים באף הסכם</span></div></div>'+
+    '<div class="cmpw"><nav class="clist" aria-label="נושאים">'+
+      (diff.length?'<div class="cgrp">שונים בין ההסכמים</div>'+diff.map(item).join(''):'')+
+      (same.length?'<div class="cgrp">אחידים</div>'+same.map(item).join(''):'')+
+      (none.length?'<div class="cgrp">לא מופיעים</div>'+none.map(item).join(''):'')+'</nav>';
+  h+='<section class="cmpd"><div class="cmph"><h2>'+esc(cr.t)+'</h2><button type="button" class="linkbtn" data-topic="'+cr.id+'">לנושא במדיניות ←</button></div>';
+  var lc={green:0,yellow:0,red:0};m.rows.forEach(function(x){if(x.k)lc[x.k]++});
+  var ins=m.kind==='none'?'אף אחד מההסכמים לא מתייחס לנושא הזה. העמדות בו הן הצעה של Areo.':
+    m.kind==='same'?'כל '+m.have+' ההסכמים חתומים על אותו נוסח בדיוק. כאן הנייר שלכם אחיד, ואין מה ליישר.':
+    [lc.green?lc.green+' בעמדה המועדפת':'',lc.yellow?lc.yellow+' בפשרה':'',lc.red?lc.red+' מעבר לקו האדום':'',m.missing?m.missing+' בלי סעיף בכלל':''].filter(Boolean).join(', ')+'.'+(m.vals[0]==='נוסח שונה'?' הנוסח עצמו שונה בין ההסכמים, המסומן למטה.':m.vals.length?' מה שונה: '+m.vals.slice(0,4).join(' · ')+'.':'');
+  h+='<p class="cmpins">'+esc(ins)+'</p>';
+  var acts='',miss=m.rows.filter(function(x){return !x.q});
+  if(m.kind==='same')acts='<div class="cact ok"><b>אין מה לעשות כאן.</b> הנוסח אחיד בכל ההסכמים, והוא כבר העמדה המועדפת במדיניות.</div>';
+  else if(m.kind==='none')acts='<div class="cact"><b>מה אפשר לעשות:</b> לבדוק את העמדות שהציעה Areo ולאשר אותן. <button type="button" class="linkbtn" data-topic="'+cr.id+'">לעמדות בנושא ←</button></div>';
+  else{
+    acts='<div class="cact"><b>מה אפשר לעשות כאן</b><ol>';
+    if(miss.length)acts+='<li><span>'+(miss.length===1?'בהסכם עם '+esc(shortName(miss[0].s))+' אין סעיף '+esc(cr.t)+'.':miss.length+' הסכמים בלי סעיף '+esc(cr.t)+'.')+(cr.imp==='critical'?' זה נושא קריטי.':'')+' אפשר להכין תיקון להסכם עם הנוסח שבמדיניות.</span><span class="cbtns">'+miss.map(function(x){var sent=S.amend[cr.id+x.s];return sent?'<span class="sentok">✓ נשלח לניסוח: '+esc(shortName(x.s))+'</span>':'<button type="button" class="btn primary small" data-amend="'+cr.id+'|'+x.s+'">להכין תיקון להסכם עם '+esc(shortName(x.s))+'</button>'}).join('')+'</span></li>';
+    if(m.uniq>1)acts+='<li><span>ההסכמים נחתמו בנוסחים שונים. בחרו איזה מהם יהיה הנוסח המועדף, ליד ההסכם המתאים למטה. הבחירה עוברת לעדכון בשיחה ולאישור עורך דין, כמו כל שינוי.</span></li>';
+    acts+='</ol></div>';
+  }
+  h+=acts;
+  if(m.kind!=='none')h+='<div class="cmrows">'+m.rows.map(function(x){var s=D.src[x.s]||{};
+    if(!x.q)return '<div class="cmr miss"><div class="cmrh"><b>'+esc(shortName(x.s))+'</b><span class="ctag r">אין סעיף כזה</span></div><p class="cmq">ההסכם הזה לא מתייחס לנושא.</p></div>';
+    var txt=x.marks.map(function(t,ti){var nx=x.marks[ti+1];return (t.d?'<mark class="dv">'+esc(t.t)+(nx&&nx.d?' ':'')+'</mark>':esc(t.t))+(nx&&!(t.d&&nx.d)?' ':'')}).join('');
+    return '<div class="cmr '+LANE[x.k][1]+'"><div class="cmrh"><b>'+esc(shortName(x.s))+'</b><span class="ctag '+LANE[x.k][1]+'">'+({green:'בעמדה המועדפת',yellow:'בפשרה',red:'מעבר לקו האדום'})[x.k]+'</span>'+(x.e.c?'<span class="cmeta">סעיף '+esc(x.e.c)+'</span>':'')+(m.uniq>1&&x.base?'<span class="cmeta">הנוסח הנפוץ</span>':'')+'<button type="button" class="linkbtn" data-src="'+cr.id+'|'+x.k+'|'+x.i+'">לפרטים</button></div><p class="cmq">'+txt+'</p>'+(m.uniq>1?'<div class="cstd">'+(x.q===stripNo(cr.L.green.cl)?'<span class="sentok">זה הנוסח המועדף היום</span>':'<button type="button" class="edbtn" data-std="'+cr.id+'|'+x.s+'">לקבוע כנוסח המועדף</button>')+'</div>':'')+'</div>'}).join('')+'</div>'+
+    (m.uniq>1?'<p class="cmleg"><mark class="dv">מסומן</mark> מה שונה מהנוסח הנפוץ.</p>':'');
+  return h+'</section></div>';
+}
+/* open questions: what the policy could not decide alone; an answer goes to the chat and updates the playbook */
+function questionsHtml(){if(!D.qs||!D.qs.length)return '';var open=D.qs.filter(function(q,i){return !(S.qa[i]&&S.qa[i].mode==='sent')}).length;
+  var list=S.qall?D.qs:D.qs.slice(0,3);
+  return '<div class="card qcard"><div class="row"><div><h2>שאלות פתוחות</h2><p class="lead">מה שהמדיניות לא יכלה להכריע לבד. התשובה נשמרת, ו-Areo מעדכן את הפלייבוק.</p></div><span class="qcount">'+open+' פתוחות</span></div>'+
+    list.map(function(q,i){var st=S.qa[i]||{};
+      return '<div class="qi'+(st.mode==='sent'?' done':'')+'"><b>'+esc(q.t)+'</b><p>'+esc(q.q)+'</p>'+(q.rec?'<p class="qrec"><span>ההמלצה:</span> '+esc(q.rec)+'</p>':'')+
+        (st.mode==='sent'?'<p class="sentok">✓ נשמר'+(st.text?': '+esc(st.text):': קיבלתם את ההמלצה')+'</p>':
+         st.mode==='edit'?'<div class="qedit"><textarea id="qa'+i+'" rows="2" placeholder="התשובה שלכם"></textarea><div class="decide"><button type="button" class="btn primary small" data-qsend="'+i+'">לשלוח</button></div></div>':
+         '<div class="decide">'+(q.rec?'<button type="button" class="btn primary small" data-qok="'+i+'">לקבל את ההמלצה</button>':'')+'<button type="button" class="btn soft small" data-qother="'+i+'">לענות אחרת</button></div>')+'</div>'}).join('')+
+    (!S.qall&&D.qs.length>3?'<button type="button" class="linkbtn" data-qall>להציג את כל '+D.qs.length+' השאלות</button>':'')+'</div>';
+}
+function answerQ(i,accept){var q=D.qs[i],txt='';if(!accept){var ta=$('#qa'+i);txt=ta?(ta.value||'').trim():'';if(!txt){toast('כתבו תשובה קצרה.');return}}
+  var pl={label:'תשובה לשאלה פתוחה: '+cut(q.t,50),kind:'policy_question_answer',topic:cut(q.t,80),question:cut(q.q,500),recommendation:cut(q.rec||'',500),accepted_recommendation:!!accept,answer:cut(txt,800)};
+  submitReq(pl,function(ok){S.qa[i]={mode:'sent',text:txt};render();toast(ok?'התשובה נשמרה.':'התשובה ירדה לקובץ. שמרו אותו בתיקייה Areo-נתונים.')})}
+/* Segments: groups of counterparties that get a different policy on some topics. Defined here, saved into the playbook by Claude */
+var SEGSUG=[];
+function segDrafts(){try{return JSON.parse(localStorage.getItem('areo-seg-drafts:'+book().key)||'[]')}catch(e){return []}}
+function saveDrafts(a){try{localStorage.setItem('areo-seg-drafts:'+book().key,JSON.stringify(a))}catch(e){}}
+function allSegs(){var saved=(D.segs||[]),ids=saved.map(function(x){return x.id});return saved.concat(segDrafts().filter(function(x){return ids.indexOf(x.id)<0}).map(function(x){x.draft=true;return x}))}
+function ruleById(id){return D.rules.filter(function(x){return x.id===id})[0]}
+function segStatus(g){if(g.draft)return '<span class="pill sending">נשמרה. Areo מכין עמדות</span>';var w=g.topics.some(function(t){return t.L&&!t.ok&&!S.sdec[g.id+t.rid]});return w?'<span class="pill wait">מחכה לאישור</span>':'<span class="l2ok">✓ מאושרת</span>'}
+function segCard(g){
+  return '<div class="sgc"><div class="sgh"><b>'+esc(g.name)+'</b><span class="tg">'+(g.origin==='areo'?'הצעה של Areo':'הוגדרה על ידכם')+'</span>'+segStatus(g)+'</div>'+
+    '<p class="sgw"><span>איך מזהים:</span> '+esc(g.how)+'</p><div class="sgt">'+g.topics.map(function(t){var r=ruleById(t.rid);if(!r)return '';
+      return '<div class="sgr"><b>'+esc(r.t)+'</b>'+(t.L&&t.L.green?'<span class="sgp"><i class="d g"></i>'+esc(t.L.green.p)+'</span>'+(t.L.red&&t.L.red.p?'<span class="sgp"><i class="d r"></i>'+esc(t.L.red.p)+'</span>':''):'<span class="sgn">'+(t.note?esc(t.note):'Areo יציע את העמדה')+'</span>')+'</div>'}).join('')+'</div>'+
+    '<div class="decide">'+(g.draft?'':'<button type="button" class="btn soft small" data-segview="'+g.id+'">להציג במדיניות</button>')+'<button type="button" class="btn soft small" data-segedit="'+g.id+'">לערוך</button></div></div>';
+}
+function segmentsHtml(){
+  var gs=allSegs(),have=gs.map(function(g){return g.key||''});
+  var sug=SEGSUG.filter(function(x){return have.indexOf(x.key)<0});
+  return '<div class="rhd"><div><h1>מדיניות לפי סגמנטים</h1><p class="lead">קבוצה היא סוג של צד שמקבל מדיניות אחרת בכמה נושאים, למשל צדדים זרים או גופים ציבוריים. בכל שאר הנושאים חלה המדיניות הרגילה.</p></div><button type="button" class="btn primary" data-segnew>+ קבוצה חדשה</button></div>'+
+    '<h2 class="sgtitle">הקבוצות שלכם</h2>'+(gs.length?'<div class="sgl">'+gs.map(segCard).join('')+'</div>':'<div class="sgempty">עוד אין קבוצות. כל הצדדים מקבלים את אותה מדיניות.</div>')+
+    (sug.length?'<h2 class="sgtitle">Areo ממליצה לבדוק</h2><div class="sgl">'+sug.map(function(x){return '<div class="sgc sug"><div class="sgh"><b>'+esc(x.name)+'</b><span class="tg">לא הופיעו בהסכמים שלכם</span></div><p class="sgw">'+esc(x.how)+'</p><p class="sgw"><span>נושאים שכדאי לבדוק:</span> '+Object.keys(x.topics).map(function(id){var r=ruleById(id);return r?esc(r.t):''}).filter(Boolean).join(', ')+'</p><div class="decide"><button type="button" class="btn soft small" data-segsug="'+x.key+'">להגדיר את הקבוצה</button></div></div>'}).join('')+'</div>':'')+
+    (D.seg&&D.seg.checked&&D.seg.checked.length?'<p class="sgnote">Areo בדקה בהסכמים: '+esc(D.seg.checked.join(' '))+'</p>':'');
+}
+function openSegEditor(g){S.dr=null;S.ed=null;S.sed=g&&g.id||null;var pick={};if(g)(g.topics||[]).forEach(function(t){pick[t.rid]=t.note||''});
+  $('#drawer').innerHTML='<header class="drh"><div><div class="drk">'+(S.sed?'עריכת קבוצה':'קבוצה חדשה')+'</div><h3>מדיניות לקבוצה של צדדים</h3></div><button type="button" class="drx" data-drclose aria-label="סגירה">×</button></header>'+
+    '<div class="drb"><ol class="flow"><li class="on">מגדירים כאן</li><li>Areo מציע עמדות ושומר</li><li>עורך דין מאשר</li></ol>'+
+    '<label class="fld"><span>שם הקבוצה</span><input id="sgname" value="'+esc(g&&g.name||'')+'" placeholder="למשל: ספקים קריטיים"></label>'+
+    '<label class="fld"><span>איך מזהים צד מהקבוצה</span><textarea id="sghow" rows="2" placeholder="למשל: ספק שהשבתת השירות שלו עוצרת את הפעילות של החברה">'+esc(g&&g.how||'')+'</textarea></label>'+
+    '<div class="fld"><span>באילו נושאים המדיניות שונה <small>בכל השאר חלה המדיניות הרגילה</small></span><div class="sgpick">'+D.rules.map(function(r){var on=pick.hasOwnProperty(r.id);
+      return '<div class="spk'+(on?' on':'')+'"><label><input type="checkbox" data-sgt="'+r.id+'"'+(on?' checked':'')+'> '+esc(r.t)+'</label><input class="sgnote2" data-sgn="'+r.id+'" value="'+esc(pick[r.id]||'')+'" placeholder="מה שונה? למשל: תקרה של 24 חודשי תמורה (לא חובה)"></div>'}).join('')+'</div></div>'+
+    '<p class="edhelp">Areo יציע עמדות לנושאים שבחרתם, לפי מה שכתבתם, וישמור את הקבוצה בפלייבוק. העמדות יחכו לאישור עורך דין לפני שהסוכנים עובדים לפיהן.</p>'+
+    '<p class="ederr" id="ederr" hidden></p><div class="dracts"><button type="button" class="btn primary" data-segsave>לשמור את הקבוצה</button><button type="button" class="btn soft" data-drclose>ביטול</button></div></div>';
+  $('#drawer').hidden=false;$('#scrim').hidden=false;setTimeout(function(){var x=$('#sgname');if(x)x.focus()},30);
+}
+function saveSeg(){var name=($('#sgname').value||'').trim(),how=($('#sghow').value||'').trim(),err=$('#ederr'),topics=[];
+  document.querySelectorAll('[data-sgt]').forEach(function(c){if(c.checked){var n=document.querySelector('[data-sgn="'+c.dataset.sgt+'"]');topics.push({rid:c.dataset.sgt,note:(n&&n.value||'').trim()})}});
+  if(!name){err.textContent='תנו שם לקבוצה.';err.hidden=false;return}
+  if(!how){err.textContent='כתבו איך מזהים צד מהקבוצה. כך הסוכנים יידעו מתי להחיל אותה.';err.hidden=false;return}
+  if(!topics.length){err.textContent='בחרו לפחות נושא אחד שבו המדיניות שונה.';err.hidden=false;return}
+  var id=S.sed||('SEG-'+Date.now().toString(36)),sug=SEGSUG.filter(function(x){return x.name===name})[0];
+  var rec={id:id,name:name,how:how,origin:'user',key:sug?sug.key:'',topics:topics,created:new Date().toISOString().slice(0,10)};
+  var pl={label:'קבוצה במדיניות: '+cut(name,50),kind:'segment_define',playbook:book().key,segment_id:id,name:cut(name,80),identify:cut(how,500),
+    topics:topics.slice(0,11).map(function(t){var r=ruleById(t.rid);return {rule_id:t.rid,topic:cut(r.t,80),what_differs:cut(t.note,300),base_preferred:cut(r.L.green.p,300)}})};
+  var ok=!!dbx;submitReq(pl,function(){});
+  var dr=segDrafts().filter(function(x){return x.id!==id});dr.push(rec);saveDrafts(dr);
+  closeDrawer();S.sec='segments';render();toast(ok?'הקבוצה נשמרה. Areo מכין לה עמדות ומוסיף אותה לפלייבוק.':'הקבוצה ירדה לקובץ. שמרו אותו בתיקייה Areo-נתונים.');
+}
+function segBand(r,closed){if(!S.seg)return '';var g=allSegs().filter(function(x){return x.id===S.seg})[0];if(!g)return '';var t=g.topics.filter(function(x){return x.rid===r.id})[0];
+  if(!t)return closed?'':'<div class="segband same">'+esc(g.name)+': חלה המדיניות הרגילה בנושא הזה.</div>';
+  return '<div class="segband"><b>'+esc(g.name)+':</b> '+(t.L&&t.L.green?esc(t.L.green.p)+(t.L.red&&t.L.red.p?' · קו אדום: '+esc(t.L.red.p):''):(t.note?esc(t.note)+' · ':'')+'Areo מכין את העמדה')+(t.L&&!t.ok&&!S.sdec[g.id+t.rid]?' <span class="pill wait">מחכה לאישור</span>':'')+'</div>';
+}
+function segPicker(){var gs=allSegs();if(!gs.length)return '';
+  return '<div class="segpick"><span>מציג מדיניות עבור:</span>'+[{id:'',name:'כל הצדדים'}].concat(gs).map(function(g){return '<button type="button" class="chip" data-segset="'+g.id+'" aria-pressed="'+((S.seg||'')===g.id)+'">'+esc(g.name)+'</button>'}).join('')+'</div>'}
+function srcMix(){var ids=Object.keys(D.src),n={signed:0,draft:0,tpl:0,other:0},ours=0,theirs=0;
+  ids.forEach(function(id){var x=D.src[id],k=x.kind||'signed';if(k==='signed'||k==='agreement'||k==='amendment')n.signed++;else if(k==='draft')n.draft++;else if(k==='template'||k==='form')n.tpl++;else n.other++;if(x.paper==='ours')ours++;else if(x.paper)theirs++});
+  var parts=['<span><b>'+n.signed+'</b> חתומים</span>','<span><b>'+n.draft+'</b> טיוטות ממשא ומתן</span>'];
+  if(n.tpl)parts.push('<span><b>'+n.tpl+'</b> תבניות</span>');if(n.other)parts.push('<span><b>'+n.other+'</b> מסמכים אחרים</span>');
+  parts.push('<span class="sep"></span><span><b>'+ours+'</b> על הנייר שלכם</span>','<span><b>'+theirs+'</b> על הנייר של הצד השני</span>');
+  return '<div class="srcmix"><span class="smk">מה נסרק</span>'+parts.join('')+'</div>'+
+    (!n.draft?'<p class="smhint">אין טיוטות ממשא ומתן, ולכן רוב הפשרות והקווים האדומים הם הצעות של Areo. טיוטות עם הערות של הצד השני יראו על מה באמת ויתרתם.</p>':'');
+}
+/* Approval: each waiting position says what the lawyer must check; decisions carry who and when, and are sent to the chat to be saved in the playbook */
+function getWho(){try{return JSON.parse(localStorage.getItem('areo-approver')||'null')}catch(e){return null}}
+function setWho(w){try{localStorage.setItem('areo-approver',JSON.stringify(w))}catch(e){}S.who=w}
+function refName(ref){var p=String(ref).split(/\s+/),s=D.src[p[0]];return (s?shortName(p[0]):p[0])+(p[1]?' סעיף '+p[1]:'')}
+function apItems(){var out=[];
+  waiting().forEach(function(x){var r=x[0],k=x[1],L=r.L[k],cg=S.chg[r.id+k];
+    var reason=cg?'שינוי שביקשתם':(L.lr&&L.lr.length)||L.st==='pending_legal_review'?'בדיקה משפטית':L.areo?'הצעה של Areo':'מחכה לאישור';
+    var q=(L.lr&&L.lr[0])?L.lr[0]:null;
+    out.push({key:r.id+'|'+k,r:r,k:k,L:L,reason:reason,q:q?q.q:(cg?'בדקו שהשינוי נכון ושלא סותר נושאים קשורים.':L.areo?'אין סעיף כזה בהסכמים שלכם. בדקו שהעמדה שהציעה Areo מתאימה לחברה.':'בדקו שהעמדה מתאימה לחברה.'),refs:q?q.refs:[],cg:cg})});
+  allSegs().filter(function(g){return !g.draft}).forEach(function(g){g.topics.forEach(function(t){var r=ruleById(t.rid);if(!r||!t.L||t.ok||S.sdec[g.id+t.rid])return;
+    out.push({key:'seg:'+g.id+'|'+t.rid,r:r,k:'green',L:t.L.green,seg:g,reason:'קבוצה: '+g.name,q:'בדקו שהעמדה לקבוצה "'+g.name+'" מתאימה. איך מזהים אותה: '+g.how,refs:[]})})});
+  return out;
+}
+var DEC={ok:['בדקתי, תקין','g'],change:['צריך לשנות','y'],reject:['לא מאשר','r']};
+function apCard(it){var d=S.ad[it.key],r=it.r,L=it.L;
+  var h='<article class="apc'+(d?' decided '+DEC[d.d][1]:'')+'"><div class="aph"><span class="aptag">'+esc(it.reason)+'</span><b>'+esc(r.t)+'</b><span class="apl">'+LNAME[it.k]+'</span><button type="button" class="linkbtn" data-topic="'+r.id+'">לנושא ←</button></div>'+
+    '<div class="apq"><small>מה צריך לבדוק</small><p>'+esc(it.q)+'</p>'+(it.refs.length?'<div class="aprefs">'+it.refs.map(function(x){return '<span>'+esc(refName(x))+'</span>'}).join('')+'</div>':'')+'</div>'+
+    '<div class="apbody"><div><small>העמדה</small><p class="sp">'+esc(L.p)+'</p></div>'+(L.cl?'<div><small>הנוסח</small><p class="apcl">'+esc(L.cl)+'</p></div>':'')+
+    (it.cg&&it.cg.state==='pending'?'<div class="apdiff"><small>היה</small><p>'+esc(it.cg.old.p)+'</p><small>למה שונה</small><p>'+esc(it.cg.why)+'</p></div>':'')+'</div>';
+  var sv=S.saved[it.key];
+  if(!d&&sv)h+='<div class="apdone"><span class="apres '+DEC[sv.decision==='approved'?'ok':'reject'][1]+'">'+DEC[sv.decision==='approved'?'ok':'reject'][0]+'</span>'+(sv.note?'<span class="apnote">'+esc(sv.note)+'</span>':'')+'<span class="apsaved">✓ נשמר · '+esc(sv.approver&&sv.approver.name||'')+' · '+dmy(sv.date)+'</span></div>';
+  var sn=S.sent[it.key];
+  if(!d&&!sv&&sn)h+='<div class="apdone"><span class="apres '+DEC[sn.d][1]+'">'+DEC[sn.d][0]+'</span>'+(sn.note?'<span class="apnote">'+esc(sn.note)+'</span>':'')+'<span class="apstat">'+(sn.via==='file'?'בקובץ שהורד. שמרו אותו בתיקייה Areo-נתונים.':'נשמר.')+'</span></div>';
+  else if(!d&&!sv)h+='<div class="apact"><button type="button" class="btn primary small" data-ad="'+it.key+'|ok">בדקתי, תקין</button><button type="button" class="btn soft small" data-ad="'+it.key+'|change">צריך לשנות</button><button type="button" class="btn soft small" data-ad="'+it.key+'|reject">לא מאשר</button></div>';
+  else if(d)h+='<div class="apdone"><span class="apres '+DEC[d.d][1]+'">'+DEC[d.d][0]+'</span>'+(d.d==='change'?'<span class="apnote">נשלח לשינוי במגירה. יחזור לכאן לאישור.</span>':'<input class="apin" data-adnote="'+it.key+'" value="'+esc(d.note||'')+'" placeholder="'+(d.d==='reject'?'למה לא מאשרים? (חובה)':'הערה (לא חובה), למשל: אין מגבלה בדין')+'">')+'<button type="button" class="linkbtn" data-adundo="'+it.key+'">לבטל</button></div>';
+  return h+'</article>';
+}
+function approveHtml(){var c=counts(),items=apItems(),ready=Object.keys(S.ad).filter(function(k){var d=S.ad[k];return d.d!=='change'}),who=S.who;
+  var h='<div><h1>הכרעה ואישור</h1><p class="lead">כאן עורך הדין מכריע על עמדות שמחכות. לכל עמדה כתוב מה צריך לבדוק. כל הכרעה נרשמת עם השם והתאריך, ונשמרת בפלייבוק אחרי השליחה.</p></div>';
+  h+=who?'<div class="whobar"><span>מכריע/ה: <b>'+esc(who.name)+'</b>'+(who.role?' · '+esc(who.role):'')+(who.fromProfile?' <small class="basis">מפרופיל החברה</small>':'')+'</span><button type="button" class="linkbtn" data-whoedit>לשנות</button></div>':
+    '<div class="whobar ask"><b>מי מכריע?</b><input id="whoname" placeholder="שם מלא, פרטי ומשפחה"><input id="whorole" placeholder="תפקיד, למשל: היועצת המשפטית"><button type="button" class="btn primary small" data-whosave>להמשיך</button></div>';
+  var nsv=Object.keys(S.saved).length,pend=Object.keys(S.sent).length;
+  if(S.savedNote)h+='<div class="cact ok"><b>✓ '+S.savedNote+' הכרעות נשמרו בפלייבוק.</b> הן מופיעות למטה, ב"הוכרעו".</div>';
+  h+='<div class="approg"><span><b>'+c.ok+'</b> מתוך '+c.t+' עמדות מאושרות'+(nsv?' · <b>'+nsv+'</b> הכרעות נשמרו ונכנסות לפלייבוק':'')+(pend?' · <b>'+pend+'</b> בקובץ שהורד':'')+'</span><div class="bar"><i style="width:'+Math.round(100*c.ok/c.t)+'%"></i></div></div>';
+  h+=items.length?'<div class="apl2">'+items.map(apCard).join('')+'</div>':'<div class="cact ok"><b>אין עמדות שמחכות.</b> כל המדיניות מאושרת, והסוכנים עובדים לפיה.</div>';
+  if(S.hist.length||true){var past=[];D.rules.forEach(function(r){lanesOf(r).forEach(function(k){var L=r.L[k];if(isOk(r,k)&&!S.chg[r.id+k])past.push({t:r.t,k:k,by:L.signer,at:L.at})})});
+    var seen={},hist=[];S.hist.slice().reverse().concat(past).forEach(function(x){var kk=x.t+'|'+x.k;if(seen[kk])return;seen[kk]=1;hist.push(x)});
+    h+='<details class="more"><summary>הוכרעו <small>'+hist.length+' עמדות, מי הכריע ומתי</small></summary><div class="morein"><div class="histl">'+hist.slice(0,60).map(function(x){return '<div class="hi"><span class="apres '+(x.d?DEC[x.d][1]:'g')+'">'+(x.d?DEC[x.d][0]:'אושר')+'</span><b>'+esc(x.t)+'</b><span>'+LNAME[x.k]+'</span><span class="hm">'+esc(x.by||'')+(x.at?' · '+dmy(x.at):'')+(x.note?' · '+esc(x.note):'')+'</span></div>'}).join('')+'</div></div></details>';}
+  ready=ready.filter(function(k){return !S.sent[k]&&!S.saved[k]});
+  if(ready.length)h+='<div class="apsend"><span><b>'+ready.length+'</b> הכרעות מוכנות. הן עוד לא נשמרו.'+(dbx?'':' השמירה לא זמינה בחלון הזה, ולכן ההכרעות יירדו לקובץ.')+'</span><button type="button" class="btn primary" data-apsend>'+(dbx?'לשמור '+ready.length+' הכרעות':'להוריד קובץ הכרעות ('+ready.length+')')+'</button></div>';
+  return h;
+}
+function canChat(){return !!(room&&typeof room.sendToClaudeSession==='function')}
+/* decisions are saved in the page store at once; Areo moves them into the playbook in the folder and marks them taken in */
+var dbx=null,SNAP=[];S.saved={};
+function pickSaved(){var m={},k=book().key;SNAP.forEach(function(v){if(v&&v.key&&v.intake!=='done'&&(!v.playbook||v.playbook===k))m[v.key]=v});return m}
+try{if(window.claude&&window.claude.use)window.claude.use('db').then(function(x){dbx=x;if(!x)return;
+  x.collection('decisions').onSnapshot(function(snap){SNAP=snap.docs.map(function(d){return d.data()});S.saved=pickSaved();if(S.sec==='approve'||S.sec==='overview')render()},function(){})}).catch(function(){})}catch(e){}
+function docId(k){return String(k).replace(/[^A-Za-z0-9_-]/g,'_')}
+function submitReq(pl,done){var rec={kind:pl.kind,label:pl.label||'',payload:pl,status:'pending',created:new Date().toISOString()};
+  if(dbx){dbx.collection('requests').doc().set(rec).then(function(){done(true)},function(){reqFile(rec,done)});return}
+  reqFile(rec,done)}
+function reqFile(rec,done){offer('בקשה ל-Areo - '+(rec.label||rec.kind).replace(/[\\/:*?"<>|]/g,' ').slice(0,60)+'.json',JSON.stringify(dict2(rec),null,2)).then(function(){done(false)},function(){done(false)})}
+function dict2(r){var o={about:'בקשה מ-Areo Workspace. שמרו את הקובץ בתיקייה Areo-נתונים, והיא תיכנס לפלייבוק בעדכון הבא.'};for(var k in r)o[k]=r[k];return o}
+function saveSent(){try{localStorage.setItem(sentKey(),JSON.stringify(S.sent))}catch(e){}}
+function sendDecisions(){var who=S.who;if(!who){toast('כתבו קודם מי מכריע.');var n=$('#whoname');if(n)n.focus();return}
+  var items=apItems(),keys=Object.keys(S.ad).filter(function(k){return S.ad[k].d!=='change'&&!S.sent[k]});
+  var miss=keys.filter(function(k){return S.ad[k].d==='reject'&&!(S.ad[k].note||'').trim()});
+  if(miss.length){toast('כתבו למה לא מאשרים.');var el=document.querySelector('[data-adnote="'+miss[0]+'"]');if(el)el.focus();return}
+  var today=new Date().toISOString().slice(0,10),list=keys.slice(0,12).map(function(k){var it=items.filter(function(x){return x.key===k})[0]||{},d=S.ad[k];
+    return {key:k,rule_id:it.r?it.r.id:'',topic:it.r?cut(it.r.t,60):'',lane:it.k,segment:it.seg?cut(it.seg.name,40):'',decision:d.d==='ok'?'approved':'rejected',note:cut(d.note||'',200),checked:cut(it.q||'',200)}});
+  var pl={label:'הכרעות לשמירה ('+list.length+')',kind:'approval_decisions',playbook:book().key,approver:{name:cut(who.name,60),role:cut(who.role||'',60)},date:today,decisions:list};
+  var mark=function(via){list.forEach(function(x){var d=S.ad[x.key];S.sent[x.key]={d:d.d,note:d.note||'',by:who.name,at:today,via:via};delete S.ad[x.key]});saveSent();render()};
+  if(dbx){var col=dbx.collection('decisions'),i=0,failed=false;
+    var next=function(){if(i>=list.length){list.forEach(function(x){delete S.ad[x.key]});render();toast('ההכרעות נשמרו.');return}
+      var x=list[i++];col.doc(docId(book().key+'|'+x.key)).set({playbook:book().key,key:x.key,rule_id:x.rule_id,topic:x.topic,lane:x.lane,segment:x.segment,decision:x.decision,note:x.note,checked:x.checked,approver:pl.approver,date:pl.date,intake:'pending',saved_at:new Date().toISOString()}).then(next,function(){if(!failed){failed=true;toast('השמירה נכשלה כאן. ההכרעות יירדו לקובץ.');fileFallback(pl,list.slice(i-1),mark)}})};
+    next();return}
+  fileFallback(pl,list,mark);
+}
+function fileFallback(pl,list,mark){
+  var doc={about:'קובץ הכרעות מ-Areo Workspace. שמרו אותו בתיקייה Areo-נתונים, והוא ייכנס לפלייבוק בעדכון הבא.',created:new Date().toISOString()};for(var k in pl)doc[k]=pl[k];
+  offer('הכרעות פלייבוק '+book().name+' - '+dmy(pl.date)+'.json',JSON.stringify(doc,null,2)).then(function(){mark('file');toast('קובץ ההכרעות ירד. שמרו אותו בתיקייה Areo-נתונים.')});
+}
+function metaLine(){var ids=Object.keys(D.src),signed=0,draft=0,other=0,ours=0,theirs=0;ids.forEach(function(id){var x=D.src[id],kk=x.kind||'';if(kk==='draft')draft++;else if(kk==='signed')signed++;else other++;if(x.paper==='ours')ours++;else if(x.paper==='theirs')theirs++});
+  var kinds=[signed?signed+' חתומים':'',draft?draft+' טיוטות':'',other&&(signed||draft)?other+' אחרים':''].filter(Boolean);
+  var docs=ids.length?'<b>'+ids.length+'</b> '+(signed===ids.length?'הסכמים חתומים':'מסמכים'+(kinds.length>1?' ('+kinds.join(', ')+')':''))+(ours&&ours===ids.length?' על הנייר שלכם':theirs===ids.length?' על הנייר של הצד השני':ours?', '+ours+' על הנייר שלכם':''):'';
+  return [docs,D.cov&&D.cov.units?'<b>'+D.cov.units+'</b> סעיפים נקראו':'',D.date?'עודכן <b>'+dmy(D.date)+'</b>':'',esc(D.side||'')].filter(Boolean).map(function(x){return '<span class="mi">'+x+'</span>'}).join('')}
+function nextHtml(w){var items=[],ar=0;D.rules.forEach(function(r){lanesOf(r).forEach(function(k){if(r.L[k].areo)ar++})});
+  var nsv=Object.keys(S.saved||{}).length,oq=(D.qs||[]).filter(function(q,i){return !(S.qa[i]&&S.qa[i].mode==='sent')}).length;
+  if(w.length)items.push(['n',w.length,w.length===1?'עמדה מחכה לאישור שלכם':'עמדות מחכות לאישור שלכם','לעבור עליהן','data-sec="approve"']);
+  if(oq)items.push(['q',oq,oq===1?'שאלה פתוחה שהמדיניות לא יכלה להכריע':'שאלות פתוחות שהמדיניות לא יכלה להכריע','לענות','data-goq']);
+  if(nsv)items.push(['s',nsv,'הכרעות נשמרו ונכנסות לפלייבוק','',''])
+  if(!items.length)return '';
+  return '<section class="next"><h2>מה עכשיו</h2><div class="nexts">'+items.map(function(x){return '<div class="nx '+x[0]+'"><b>'+x[1]+'</b><span>'+x[2]+'</span>'+(x[3]?'<button type="button" class="linkbtn" '+x[4]+'>'+x[3]+' ←</button>':'')+'</div>'}).join('')+'</div></section>'}
+function knowHtml(){var ids=Object.keys(D.src),draft=ids.filter(function(id){return D.src[id].kind==='draft'}).length,known=ids.some(function(id){return !!D.src[id].kind}),lim=D.limits.slice(0,4);
+  return '<div class="card"><h2>מה כדאי לדעת על המדיניות הזאת</h2><ul class="notes">'+(!draft&&known?'<li><b>אין טיוטות ממשא ומתן.</b> ההסכמים מראים על מה חתמתם, לא על מה הייתם מוותרים, ולכן רוב הפשרות והקווים האדומים הם הצעות של Areo.</li>':'')+
+    lim.filter(function(x){return !/טיוטות, הערות או התכתבות/.test(x)}).map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul>'+
+    (D.suff==='thin'||(!draft&&known)?'<div class="row"><span class="basis">עם עוד הסכמים וטיוטות, הפשרות והקווים האדומים יישענו על הניסיון שלכם.</span><button type="button" class="btn soft small" data-demo>להוסיף הסכמים</button></div>':'')+'</div>'}
+/* downloads: a real Word file, a real Excel file, or both in one zip */
+function xe(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function wr(t,o){o=o||{};var sz=o.sz||22;return '<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>'+(o.b?'<w:b/><w:bCs/>':'')+(o.c?'<w:color w:val="'+o.c+'"/>':'')+'<w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/><w:rtl/></w:rPr><w:t xml:space="preserve">'+xe(t)+'</w:t></w:r>'}
+function wp(runs,o){o=o||{};return '<w:p><w:pPr>'+(o.bdr?'<w:pBdr><w:right w:val="single" w:sz="18" w:space="8" w:color="'+o.bdr+'"/></w:pBdr>':'')+(o.shd?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.shd+'"/>':'')+'<w:bidi/><w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after==null?100:o.after)+'"/>'+(o.ind?'<w:ind w:right="'+o.ind+'"/>':'')+'</w:pPr>'+runs+'</w:p>'}
+var LC={green:'0F9D6E',yellow:'B07A06',red:'C93434'};
+function buildDocx(){
+  var c=counts(),b='';
+  b+=wp(wr('מדיניות חוזית: '+book().name,{b:1,sz:40}),{after:80});
+  b+=wp(wr(D.company+' · '+D.side+' · עודכן '+dmy(D.date),{c:'4F615A'}));
+  b+=wp(wr(D.rules.length+' נושאים, '+c.t+' עמדות, '+c.ok+' אושרו. נבנתה מ-'+D.docs+' הסכמים.',{c:'4F615A'}),{after:300});
+  D.rules.forEach(function(r,i){
+    b+=wp(wr((i+1)+'. '+r.t,{b:1,sz:30}),{before:280,after:60});
+    if(r.sub)b+=wp(wr(r.sub+' · '+(IMPN[r.imp]||'')+(r.kind?' · '+r.kind:''),{c:'4F615A',sz:20}));
+    if(r.rat)b+=wp(wr(idsToNames(r.rat)));
+    if(r.cp)b+=wp(wr('מה הצד השני ירצה: ',{b:1})+wr(r.cp));
+    lanesOf(r).forEach(function(k){var L=r.L[k],src=laneSrcs(L);
+      b+=wp(wr(LANE[k][0],{b:1,c:LC[k],sz:24})+wr('  ·  '+basisText(L)+(isOk(r,k)?'  ·  אושר'+(L.signer?' בידי '+L.signer:''):'  ·  מחכה לבדיקת עורך דין'),{c:'4F615A',sz:20}),{before:160,bdr:LC[k]});
+      b+=wp(wr(L.p),{bdr:LC[k]});
+      if(L.cl)b+=wp(wr('נוסח: ',{b:1})+wr(L.cl),{shd:'F0F3F6',bdr:LC[k]});
+      (L.crit||[]).forEach(function(x){b+=wp(wr('• '+x,{sz:20}),{ind:300,after:40})});
+      if(L.why)b+=wp(wr((k==='red'?'למה זה קו אדום: ':'למה מסכימים: '),{b:1,sz:20})+wr(idsToNames(L.why),{sz:20}));
+      if(L.fx)b+=wp(wr('מה זה אומר לחברה: ',{b:1,sz:20})+wr(L.fx,{sz:20}));
+      src.forEach(function(e){b+=wp(wr(shortName(e.s)+(e.c?', סעיף '+e.c:'')+': ',{b:1,sz:20,c:'4F615A'})+wr(e.q||'',{sz:20,c:'4F615A'}),{ind:300,after:40})});
+    });
+  });
+  var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+b+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1200" w:right="1200" w:bottom="1200" w:left="1200" w:header="708" w:footer="708" w:gutter="0"/><w:bidi/></w:sectPr></w:body></w:document>';
+  var z=new JSZip();
+  z.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+  z.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  z.file('word/document.xml',doc);
+  return z.generateAsync({type:'uint8array',compression:'DEFLATE'});
+}
+function buildXlsx(){
+  var head=['מס','נושא','חשיבות','סוג','עמדה','תיאור העמדה','נוסח','מתי העמדה חלה','מה זה אומר לחברה','בסיס','המקור בהסכמים','סטטוס','אושר בידי','תאריך אישור'];
+  var rows=[head];
+  D.rules.forEach(function(r,i){lanesOf(r).forEach(function(k){var L=r.L[k];
+    rows.push([String(i+1),r.t,IMPN[r.imp]||'',r.kind||'',LANE[k][0],L.p,L.cl||'',(L.crit||[]).join('\n'),L.fx||'',basisText(L),laneSrcs(L).map(function(e){return shortName(e.s)+(e.c?' '+e.c:'')+': '+(e.q||'')}).join('\n'),isOk(r,k)?'אושר':'מחכה לעורך דין',L.signer||'',dmy(L.at)])})});
+  var col=function(i){return String.fromCharCode(65+i)},W=[5,26,14,10,14,40,50,36,36,16,60,14,14,12];
+  var sd=rows.map(function(row,ri){return '<row r="'+(ri+1)+'">'+row.map(function(v,ci){return '<c r="'+col(ci)+(ri+1)+'" t="inlineStr" s="'+(ri?0:1)+'"><is><t xml:space="preserve">'+xe(v)+'</t></is></c>'}).join('')+'</row>'}).join('');
+  var M='http://schemas.openxmlformats.org/spreadsheetml/2006/main',R='http://schemas.openxmlformats.org/officeDocument/2006/relationships',P='http://schemas.openxmlformats.org/package/2006/relationships',X='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  var z=new JSZip();
+  z.file('[Content_Types].xml',X+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>');
+  z.file('_rels/.rels',X+'<Relationships xmlns="'+P+'"><Relationship Id="rId1" Type="'+R+'/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+  z.file('xl/workbook.xml',X+'<workbook xmlns="'+M+'" xmlns:r="'+R+'"><sheets><sheet name="עמדות" sheetId="1" r:id="rId1"/></sheets></workbook>');
+  z.file('xl/_rels/workbook.xml.rels',X+'<Relationships xmlns="'+P+'"><Relationship Id="rId1" Type="'+R+'/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="'+R+'/styles" Target="styles.xml"/></Relationships>');
+  z.file('xl/styles.xml',X+'<styleSheet xmlns="'+M+'"><fonts count="2"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE7F6EF"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1" readingOrder="2"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="top" wrapText="1" readingOrder="2"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>');
+  z.file('xl/worksheets/sheet1.xml',X+'<worksheet xmlns="'+M+'"><sheetViews><sheetView workbookViewId="0" rightToLeft="1"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>'+W.map(function(w,i){return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>'}).join('')+'</cols><sheetData>'+sd+'</sheetData></worksheet>');
+  return z.generateAsync({type:'uint8array',compression:'DEFLATE'});
+}
+var dlNs=null;try{if(window.claude&&window.claude.use)window.claude.use('downloads').then(function(x){dlNs=x}).catch(function(){})}catch(e){}
+function fileBase(){return D.company+' - פלייבוק '+book().name+' - '+dmy(D.date)}
+function offer(name,bytes){
+  if(dlNs)return dlNs.save({filename:name,data:bytes}).then(function(){toast('הקובץ נשמר.')},function(e){if(e&&e.code==='declined')return;toast('לא הצלחנו לשמור את הקובץ כאן.')});
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes]));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500);return Promise.resolve();
+}
+function download(kind){
+  if(typeof JSZip==='undefined'){toast('רכיב ההורדה לא נטען. אפשר לרענן את העמוד.');return}
+  var base=fileBase();
+  if(kind==='docx')return buildDocx().then(function(b){return offer(base+'.docx',b)});
+  if(kind==='xlsx')return buildXlsx().then(function(b){return offer(base+' - טבלת עמדות.xlsx',b)});
+  return Promise.all([buildDocx(),buildXlsx()]).then(function(p){var z=new JSZip();z.file(base+'.docx',p[0]);z.file(base+' - טבלת עמדות.xlsx',p[1]);return z.generateAsync({type:'uint8array',compression:'DEFLATE'})}).then(function(b){return offer(base+'.zip',b)});
+}
+function toast(m){var t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true},3000)}
+function curTheme(){var r=document.documentElement;return r.getAttribute('data-areo')||(r.getAttribute('data-theme')==='light'?'light':'dark')}
+var ICON_MOON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+var ICON_SUN='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+function themeIcon(){return curTheme()==='light'?ICON_MOON:ICON_SUN}
+function theme(){var r=document.documentElement,nx=curTheme()==='light'?'dark':'light';r.setAttribute('data-areo',nx);try{localStorage.setItem('areo-theme',nx)}catch(x){}var b=$('#themebtn');if(b){b.innerHTML=themeIcon();b.setAttribute('aria-label',nx==='light'?'מעבר למצב כהה':'מעבר למצב בהיר')}}
+document.addEventListener('click',function(e){
+  var emn=$('#expm');if(emn&&!emn.hidden&&!e.target.closest('.expw')){emn.hidden=true;var eb=$('#expbtn');if(eb)eb.setAttribute('aria-expanded','false')}
+  if(e.target.id==='scrim'){closeDrawer();return}
+  var t=e.target.closest('button');
+  var menu=$('#pkmenu');if(!t||t.id!=='pickbtn'){if(!menu.hidden&&!(t&&t.closest('#pkmenu'))){menu.hidden=true;$('#pickbtn').setAttribute('aria-expanded','false')}}
+  if(!t)return;
+  if(t.dataset.std){var sd=t.dataset.std.split('|'),rr2=D.rules.filter(function(x){return x.id===sd[0]})[0],mm=cmpModel(rr2),row=mm.rows.filter(function(x){return x.s===sd[1]})[0];
+    openEditor(sd[0],'green',{cl:row.q,why:'יישור הנייר: לאמץ את הנוסח מההסכם עם '+shortName(sd[1])+' כנוסח המועדף.',note:'הנוסח הוחלף בנוסח מההסכם עם '+shortName(sd[1])+'. בדקו שגם תיאור העמדה מתאים לו.'});return}
+  if(t.dataset.amend){var am=t.dataset.amend.split('|'),ra=D.rules.filter(function(x){return x.id===am[0]})[0];
+    var pl={label:'תיקון להסכם: '+cut(shortName(am[1]),30)+' · '+cut(ra.t,40),kind:'draft_amendment',agreement:cut(srcName(am[1]),80),agreement_file:cut((D.src[am[1]]||{}).name||'',120),topic:cut(ra.t,80),rule_id:ra.id,clause_to_add:cut(ra.L.green.cl,900),position:cut(ra.L.green.p,400)};
+    S.amend[ra.id+am[1]]=true;submitReq(pl,function(ok){render();toast(ok?'הבקשה נשמרה. Areo מנסח את התיקון להסכם.':'הבקשה ירדה לקובץ. שמרו אותו בתיקייה Areo-נתונים.')});return}
+  if(t.dataset.ad){var pa=t.dataset.ad.split('|'),key=pa[0]+'|'+pa[1],dd=pa[2];
+    if(dd==='change'){var kk=pa[0].indexOf('seg:')===0?null:pa;if(kk){S.ad[key]={d:'change'};openEditor(pa[0],pa[1])}else{openSegEditor(allSegs().filter(function(x){return x.id===pa[0].slice(4)})[0])}return}
+    S.ad[key]={d:dd,note:''};render();var ni=document.querySelector('[data-adnote="'+key+'"]');if(ni&&dd==='reject')ni.focus();return}
+  if(t.dataset.adundo){delete S.ad[t.dataset.adundo];render();return}
+  if(t.hasAttribute('data-whosave')){var nm=($('#whoname').value||'').trim();if(!fullName(nm)){toast('כתבו שם מלא, פרטי ומשפחה. כל הכרעה נרשמת בשם הזה.');$('#whoname').focus();return}setWho({name:nm,role:($('#whorole').value||'').trim()});render();return}
+  if(t.hasAttribute('data-whoedit')){S.who=null;try{localStorage.removeItem('areo-approver')}catch(e){}render();var wn=$('#whoname');if(wn)wn.focus();return}
+  if(t.hasAttribute('data-apsend')){sendDecisions();return}
+  if(t.hasAttribute('data-goq')){var qc=$('.qcard');if(qc)qc.scrollIntoView({behavior:'smooth',block:'start'});return}
+  if(t.hasAttribute('data-goareo')){S.sec='rules';S.f='areo';S.q='';render();scrollTo(0,0);return}
+  if(t.hasAttribute('data-apfile')){var ks=Object.keys(S.sent).filter(function(k){return S.sent[k].via==='chat'}),its=apItems(),w0=S.sent[ks[0]]||{};
+    var lst=ks.map(function(k){var it=its.filter(function(x){return x.key===k})[0]||{},d=S.sent[k];return {key:k,rule_id:it.r?it.r.id:'',topic:it.r?it.r.t:'',lane:it.k,decision:d.d==='ok'?'approved':'rejected',note:d.note||'',checked:it.q||''}});
+    var pl2={kind:'approval_decisions',playbook:book().key,approver:{name:(S.who&&S.who.name)||w0.by||'',role:(S.who&&S.who.role)||''},date:w0.at||new Date().toISOString().slice(0,10),decisions:lst};
+    fileFallback(pl2,lst,function(){ks.forEach(function(k){S.sent[k].via='file'});saveSent();render()});return}
+  if(t.hasAttribute('data-segnew')){openSegEditor(null);return}
+  if(t.dataset.segsug){var sg=SEGSUG.filter(function(x){return x.key===t.dataset.segsug})[0];openSegEditor({name:sg.name,how:sg.how,topics:Object.keys(sg.topics).map(function(id){return {rid:id,note:sg.topics[id]}})});S.sed=null;return}
+  if(t.dataset.segedit){openSegEditor(allSegs().filter(function(x){return x.id===t.dataset.segedit})[0]);return}
+  if(t.hasAttribute('data-segsave')){saveSeg();return}
+  if(t.dataset.segview){S.seg=t.dataset.segview;S.sec='rules';render();scrollTo(0,0);return}
+  if(t.dataset.segset!=null){S.seg=t.dataset.segset;render();return}
+  if(t.dataset.segok){S.sdec[t.dataset.segok.replace('|','')]='ok';toast('סומן כמאושר. השמירה בפלייבוק נעשית מהכרעה ואישור.');render();return}
+  if(t.dataset.edit){var ep=t.dataset.edit.split('|');openEditor(ep[0],ep[1]);return}
+  if(t.hasAttribute('data-edsend')&&S.ed){sendEdit();return}
+  if(t.dataset.src){var sp=t.dataset.src.split('|');openDrawer(sp[0],sp[1],+sp[2]);return}
+  if(t.hasAttribute('data-drclose')){closeDrawer();return}
+  if(t.dataset.drnav&&S.dr){openDrawer(S.dr[0],S.dr[1],S.dr[2]+(+t.dataset.drnav));return}
+  if(t.hasAttribute('data-drcopy')&&S.dr){var dq=laneSrcs(D.rules.filter(function(x){return x.id===S.dr[0]})[0].L[S.dr[1]])[S.dr[2]];try{navigator.clipboard.writeText(dq.q).then(function(){toast('הנוסח הועתק.')},function(){toast('לא הצלחנו להעתיק.')})}catch(x){toast('לא הצלחנו להעתיק.')}return}
+  if(t.id==='fab'){openAsk();return}
+  if(t.id==='askx'){closeAsk();return}
+  if(t.id==='asksend'){askNow($('#askin').value);return}
+  if(t.dataset.sugg){askNow(t.dataset.sugg);return}
+  if(t.dataset.close&&t.dataset.topic){closeAsk()}
+  if(t.id==='pickbtn'){menu.hidden=!menu.hidden;t.setAttribute('aria-expanded',!menu.hidden);
+    menu.innerHTML=BOOKS.map(function(b,i){return '<button type="button" data-book="'+b.id+'"><span><b>'+esc(b.name)+'</b><br><span class="sub">'+esc(b.sub)+'</span></span>'+(i===CUR?'<span class="pill ok">פתוח</span>':'')+'</button>'}).join('')+'<button type="button" class="add" data-book="new">+ פלייבוק לסוג הסכם נוסף</button>';return}
+  if(t.dataset.book){menu.hidden=true;$('#pickbtn').setAttribute('aria-expanded','false');if(t.dataset.book==='new'){toast('לפלייבוק לסוג הסכם נוסף, כתבו בשיחה: פלייבוק');return}useBook(t.dataset.book);return}
+  if(t.id==='themebtn'||t.id==='themebtn2'){theme();return}
+  if(t.id==='expbtn'){var em=$('#expm');em.hidden=!em.hidden;t.setAttribute('aria-expanded',!em.hidden);return}
+  if(t.dataset.qok!=null){answerQ(+t.dataset.qok,true);return}
+  if(t.dataset.qother!=null){S.qa[t.dataset.qother]={mode:'edit'};render();var ta=$('#qa'+t.dataset.qother);if(ta)ta.focus();return}
+  if(t.dataset.qsend!=null){answerQ(+t.dataset.qsend,false);return}
+  if(t.hasAttribute('data-qall')){S.qall=true;render();return}
+  if(t.dataset.sec==='ask'){openAsk();return}
+  if(t.dataset.sec){S.sec=t.dataset.sec;render();scrollTo(0,0);return}
+  if(t.dataset.topic){var tid=t.dataset.topic;S.sec='rules';S.q='';S.f='all';S.open[tid]=true;render();var el=document.getElementById('rx-'+tid);if(el)el.scrollIntoView({block:'start'});else scrollTo(0,0);return}
+  if(t.dataset.tog){S.open[t.dataset.tog]=!S.open[t.dataset.tog];$('#list').innerHTML=listHtml();var ab=$('[data-all]');if(ab)ab.textContent=D.rules.every(function(r){return S.open[r.id]})?'סגירת הכל':'פתיחת הכל';return}
+  if(t.hasAttribute('data-all')){var all=D.rules.every(function(r){return S.open[r.id]});S.open={};if(!all)D.rules.forEach(function(r){S.open[r.id]=true});$('#list').innerHTML=listHtml();t.textContent=all?'פתיחת הכל':'סגירת הכל';return}
+  if(t.dataset.dl){var lbl=t.innerHTML;t.disabled=true;t.innerHTML='<b>מכינים…</b>';var em=$('#expm');download(t.dataset.dl).then(function(){t.disabled=false;t.innerHTML=lbl;if(em)em.hidden=true},function(){t.disabled=false;t.innerHTML=lbl;toast('לא הצלחנו להכין את הקובץ.')});return}
+  if(t.dataset.copy2){var pr=t.dataset.copy2.split('|'),rr=D.rules.filter(function(x){return x.id===pr[0]})[0],tx=rr&&rr.L[pr[1]].cl;try{navigator.clipboard.writeText(tx).then(function(){toast('הנוסח הועתק.')},function(){toast('לא הצלחנו להעתיק. אפשר לסמן ולהעתיק ידנית.')})}catch(x){toast('לא הצלחנו להעתיק.')}return}
+  if(t.dataset.f){S.f=t.dataset.f;render();return}
+  if(t.dataset.cmp){S.cmp=t.dataset.cmp;render();return}
+  if(t.dataset.cl){S.cl=t.dataset.cl;render();return}
+  if(t.dataset.cmpgo){S.cmp=t.dataset.cmpgo;S.sec='compare';render();scrollTo(0,0);return}
+  if(t.dataset.size!=null){var v=t.dataset.size;if(v)document.documentElement.setAttribute('data-size',v);else document.documentElement.removeAttribute('data-size');try{localStorage.setItem('areo-size',v)}catch(x){}render();return}
+  if(t.hasAttribute('data-askgo')){S.asked=S.ask;render();return}
+  if(t.dataset.ok){var p=t.dataset.ok.split('|');S.dec[p[0]+p[1]]='ok';toast('סומן כמאושר. השמירה בפלייבוק נעשית מהכרעה ואישור.');render();return}
+  if(t.hasAttribute('data-demo')){toast('כתבו את הבקשה בשיחה עם Claude.');return}
+  if(t.dataset.copy){var r2=D.rules.filter(function(x){return x.id===t.dataset.copy})[0];try{navigator.clipboard.writeText(r2.L.green.cl).then(function(){toast('הנוסח הועתק.')},function(){toast('לא הצלחנו להעתיק. אפשר לסמן ולהעתיק ידנית.')})}catch(x){toast('לא הצלחנו להעתיק.')}return}
+});
+document.addEventListener('toggle',function(e){var d=e.target;if(d&&d.dataset&&d.dataset.det)S.det[d.dataset.det]=d.open},true);
+document.addEventListener('change',function(e){var c=e.target;if(c.dataset&&c.dataset.sgt){var w=c.closest('.spk');if(w)w.classList.toggle('on',c.checked);if(c.checked){var n=w.querySelector('.sgnote2');if(n)n.focus()}}});
+document.addEventListener('input',function(e){
+  if(e.target.dataset&&e.target.dataset.adnote){var a2=S.ad[e.target.dataset.adnote];if(a2)a2.note=e.target.value;return}
+  if(e.target.id==='q'){S.q=e.target.value;if(S.sec==='overview'){S.sec='rules';render();var qi=$('#q');if(qi){qi.focus();qi.setSelectionRange(qi.value.length,qi.value.length)}}else $('#list').innerHTML=listHtml()}
+  if(e.target.id==='askq'){S.ask=e.target.value}
+});
+(function(){var ap=document.getElementById('askp');if(ap)ap.addEventListener('wheel',function(e){if(!e.target.closest('#msgs'))e.preventDefault()},{passive:false})})();
+document.addEventListener('keydown',function(e){if(e.target.id==='askin'&&e.key==='Enter'&&!e.shiftKey){e.preventDefault();askNow(e.target.value);return}if(e.key==='Escape'&&!$('#drawer').hidden){closeDrawer();return}if(e.key==='Escape'&&!$('#askp').hidden){closeAsk();return}if(e.target.id==='askq'&&e.key==='Enter'&&!e.shiftKey){e.preventDefault();S.asked=S.ask;render()}});
+if(BOOKS.length)cleanSent();
+function cleanSent(){var n=0;Object.keys(S.sent).forEach(function(k){var p=k.split('|');var saved=false;
+  if(p[0].indexOf('seg:')===0){var g=(D.segs||[]).filter(function(x){return x.id===p[0].slice(4)})[0],t=g&&g.topics.filter(function(x){return x.rid===p[1]})[0];saved=!!(t&&t.ok)}
+  else{var r=D.rules.filter(function(x){return x.id===p[0]})[0];saved=!!(r&&r.L[p[1]]&&r.L[p[1]].ok)}
+  if(saved){delete S.sent[k];n++}});S.savedNote=n;if(n)saveSent()}
+function useBook(key){var i=-1;BOOKS.forEach(function(b,j){if(b.key===key)i=j});if(i<0||i===CUR)return;CUR=i;D=BOOKS[i].data;
+  try{localStorage.setItem('areo-policy-book',key)}catch(e){}
+  ['ad','rej','sdec','qa','amend','chg','det','open','dec'].forEach(function(f){S[f]={}});S.hist=[];S.seg='';S.sed=null;S.ed=null;S.dr=null;S.cl=null;S.cmp=null;S.q='';S.f='all';S.id=null;S.ask='';S.asked='';S.qall=false;S.sec='overview';
+  if(S.who&&S.who.fromProfile)S.who=null;if(!S.who&&D.approver&&fullName(D.approver.name))S.who={name:D.approver.name,role:D.approver.role||'',fromProfile:true};
+  loadSent();cleanSent();S.saved=pickSaved();CH=[];closeAsk();closeDrawer();render();window.scrollTo(0,0)}
+render();
+
+/* Areo one-menu hook: lets the top bar read what this screen shows, and open a place in it */
+window.__areo=function(){try{var w=waiting(),oq=(D.qs||[]).filter(function(q,i){return !(S.qa[i]&&S.qa[i].mode==='sent')});return {company:D.company||'',who:(S.who&&S.who.name)||'',approver:(D.approver&&D.approver.name)||'',book:book().name,empty:!BOOKS.length,waiting:w.length,wtopics:w.map(function(x){return x[0].t}).filter(function(v,i,a){return a.indexOf(v)===i}).slice(0,3),oq:oq.length}}catch(e){return null}};
+window.__areoPolicyText=function(){try{return policyText()}catch(e){return ''}};
+window.__areoLocal=function(q){try{return localAnswer(q).text}catch(e){return ''}};
+window.__areoBooks=function(){try{return {date:D.date||'',docs:D.docs||0,current:book().key,books:BOOKS.map(function(b){return {type:b.type,key:b.key,name:b.name,side:b.side,built:!!b.built,rules:b.data.rules.length,date:b.data.date||'',docs:b.data.docs||0}})}}catch(e){return null}};
+window.__areoBook=function(key){try{useBook(key)}catch(e){}};
+window.__areoGo=function(sec,q){try{if(!BOOKS.length){render();return}S.sec=sec||'overview';render();window.scrollTo(0,0);if(q){var b=document.querySelector('[data-goq]');if(b)b.click()}}catch(e){}};
+})();
+</script>
+</body></html>

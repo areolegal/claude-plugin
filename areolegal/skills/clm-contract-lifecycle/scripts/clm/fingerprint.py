@@ -1,355 +1,160 @@
-"""טביעות אצבע לקבצים בתיקיות המחוברות.
-
-כל קובץ מזוהה לפי SHA-256. קובץ שלא השתנה אינו נקרא שוב, קובץ זהה בשם אחר
-מסומן כפול, וקובץ שהוסר מסומן כך ואינו נמחק מהמאגר. קובץ נעול או לא זמין
-מסומן unreadable, שומר את טביעת האצבע הקודמת, ואינו עוצר את הסריקה.
-
-החרגה (--exclude): נתיב יחסי לתיקייה המחוברת, נתיב שמתחיל בשם התיקייה המחוברת, או נתיב מוחלט.
-לוכסנים ואותיות גדולות מנורמלים, וההתאמה היא לגבול תיקייה או קובץ שלם בלבד.
-
-אף קובץ אינו נעלם בשקט. קובץ מסוג שאינו נקרא נרשם במצב unsupported (ופותח פריט באימות הנתונים); קובצי מערכת,
-קובצי נעילה (~$), נתיב שלא נמצא ותיקיית Areo-נתונים נרשמים בדוח הסריקה. מייל (.eml) נסרק, וכל קובץ מצורף בו נכנס
-כרשומה משלו (container). PDF בלי שכבת טקסט מסומן scanned, ועובר זיהוי טקסט כשיש במחשב tesseract ו-PyMuPDF.
-"""
-import email
-import email.policy
-import hashlib
-import os
-import re
-import shutil
-import subprocess
-import tempfile
-
-EXTS = (".docx", ".pdf", ".doc", ".txt", ".md", ".eml")
-
-
+# -*- coding: utf-8 -*-
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+import email,email.policy,hashlib,os,re,shutil,subprocess,tempfile
+EXTS='.docx','.pdf','.doc','.txt','.md','.eml'
 def sha256_file(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-def _norm(p):
-    return p.replace("\\", "/").lower()
-
-
+	A=hashlib.sha256()
+	with open(path,'rb')as B:
+		for C in iter(lambda:B.read(65536),b''):A.update(C)
+	return A.hexdigest()
+def _norm(p):return p.replace('\\','/').lower()
 def _prepare(excluded):
-    rel, absolute = [], []
-    for e in excluded or ():
-        if not e or not e.strip():
-            continue
-        if os.path.isabs(e):
-            absolute.append(_norm(os.path.normcase(os.path.abspath(e))).rstrip("/"))
-        else:
-            n = _norm(e).strip()
-            while n.startswith("./"):
-                n = n[2:]
-            n = n.strip("/")
-            if n:
-                rel.append(n)
-    return rel, absolute
-
-
-def _under(path, prefix):
-    return path == prefix or path.startswith(prefix + "/")
-
-
-def _is_excluded(full, rel, key, rules):
-    rel_rules, abs_rules = rules
-    r, k = _norm(rel), _norm(key)
-    if any(_under(r, e) or _under(k, e) for e in rel_rules):
-        return True
-    f = _norm(os.path.normcase(os.path.abspath(full)))
-    return any(_under(f, e) for e in abs_rules)
-
-
-SYSTEM_FILES = {"desktop.ini", "thumbs.db", ".ds_store"}
-# תיקיית הנתונים של Areo (אם היא בתוך התיקייה המחוברת) אינה הסכמים, ואינה נסרקת. הדילוג מדווח
-DATA_DIRS = {"areo-נתונים"}
-PAGE_TEXT_MIN = 30  # פחות תווי טקסט מזה בעמוד בממוצע: PDF סרוק, בלי שכבת טקסט
-OCR_MAX_PAGES = 60
-
-
-def _safe_name(name):
-    name = re.sub(r'[\\/:*?"<>|\x00-\x1f]+', "_", name or "").strip(" .")
-    return name or "attachment"
-
-
+	C,D=[],[]
+	for B in excluded or():
+		if not B or not B.strip():continue
+		if os.path.isabs(B):D.append(_norm(os.path.normcase(os.path.abspath(B))).rstrip('/'))
+		else:
+			A=_norm(B).strip()
+			while A.startswith('./'):A=A[2:]
+			A=A.strip('/')
+			if A:C.append(A)
+	return C,D
+def _under(path,prefix):A=prefix;return path==A or path.startswith(A+'/')
+def _is_excluded(full,rel,key,rules):
+	A,B=rules;C,D=_norm(rel),_norm(key)
+	if any(_under(C,A)or _under(D,A)for A in A):return True
+	E=_norm(os.path.normcase(os.path.abspath(full)));return any(_under(E,A)for A in B)
+SYSTEM_FILES={'desktop.ini','thumbs.db','.ds_store'}
+DATA_DIRS={'areo-נתונים'}
+PAGE_TEXT_MIN=30
+OCR_MAX_PAGES=60
+def _safe_name(name):A=name;A=re.sub('[\\\\/:*?"<>|\\x00-\\x1f]+','_',A or'').strip(' .');return A or'attachment'
 def _pymupdf():
-    try:
-        import pymupdf
-        return pymupdf
-    except ImportError:
-        try:
-            import fitz
-            return fitz
-        except ImportError:
-            return None
-
-
+	try:import pymupdf as A;return A
+	except ImportError:
+		try:import fitz;return fitz
+		except ImportError:return
 def pdf_signals(path):
-    """{readable, pages, text_chars, scanned, method}. סרוק: יש עמודים, ובממוצע פחות מ-30 תווי טקסט בעמוד."""
-    pages = chars = None
-    mu = _pymupdf()
-    try:
-        if mu is not None:
-            with mu.open(path) as doc:
-                pages = len(doc)
-                chars = sum(len(p.get_text().strip()) for p in doc)
-            method = "pymupdf"
-        else:
-            from pypdf import PdfReader
-            reader = PdfReader(path)
-            pages = len(reader.pages)
-            chars = sum(len((p.extract_text() or "").strip()) for p in reader.pages)
-            method = "pypdf"
-    except ImportError:
-        return {"readable": None, "method": None}
-    except Exception:  # noqa: BLE001 (PDF פגום או מוצפן: לא קורסים, מסמנים)
-        return {"readable": False, "method": None}
-    return {"readable": True, "pages": pages, "text_chars": chars, "method": method,
-            "scanned": bool(pages) and chars < PAGE_TEXT_MIN * pages}
-
-
+	A=B=None;C=_pymupdf()
+	try:
+		if C is not None:
+			with C.open(path)as D:A=len(D);B=sum(len(A.get_text().strip())for A in D)
+			E='pymupdf'
+		else:from pypdf import PdfReader as G;F=G(path);A=len(F.pages);B=sum(len((A.extract_text()or'').strip())for A in F.pages);E='pypdf'
+	except ImportError:return{'readable':None,'method':None}
+	except Exception:return{'readable':False,'method':None}
+	return{'readable':True,'pages':A,'text_chars':B,'method':E,'scanned':bool(A)and B<PAGE_TEXT_MIN*A}
 def dependencies():
-    """מה מותקן מהתלויות של הסריקה: pymupdf (בדיקת PDF סרוק ורינדור לזיהוי טקסט), pypdf (בדיקה בלבד), tesseract."""
-    try:
-        import pypdf  # noqa: F401
-        has_pypdf = True
-    except ImportError:
-        has_pypdf = False
-    return {"pymupdf": _pymupdf() is not None, "pypdf": has_pypdf, "tesseract": bool(tesseract())}
-
-
+	try:import pypdf;A=True
+	except ImportError:A=False
+	return{'pymupdf':_pymupdf()is not None,'pypdf':A,'tesseract':bool(tesseract())}
 def tesseract():
-    """הנתיב לכלי זיהוי הטקסט tesseract, אם מותקן; אחרת None."""
-    exe = shutil.which("tesseract")
-    if not exe and os.name == "nt":
-        for base in (os.environ.get("ProgramFiles", r"C:\Program Files"), os.environ.get("ProgramFiles(x86)", "")):
-            cand = os.path.join(base, "Tesseract-OCR", "tesseract.exe") if base else ""
-            if cand and os.path.exists(cand):
-                exe = cand
-                break
-    return exe
-
-
+	A=shutil.which('tesseract')
+	if not A and os.name=='nt':
+		for C in(os.environ.get('ProgramFiles','C:\\Program Files'),os.environ.get('ProgramFiles(x86)','')):
+			B=os.path.join(C,'Tesseract-OCR','tesseract.exe')if C else''
+			if B and os.path.exists(B):A=B;break
+	return A
 def _ocr_langs(exe):
-    try:
-        out = subprocess.run([exe, "--list-langs"], capture_output=True, text=True, timeout=30).stdout
-    except (OSError, subprocess.SubprocessError):
-        return "eng"
-    have = {ln.strip() for ln in out.splitlines()}
-    return "+".join(x for x in ("heb", "eng") if x in have) or "eng"
-
-
-def ocr_pdf(path, out_txt):
-    """זיהוי טקסט ל-PDF סרוק: done (נכתב out_txt), unavailable (אין tesseract או אין PyMuPDF), failed."""
-    exe, mu = tesseract(), _pymupdf()
-    if not exe or mu is None:
-        return "unavailable"
-    langs, texts = _ocr_langs(exe), []
-    try:
-        with tempfile.TemporaryDirectory() as tmp, mu.open(path) as doc:
-            for i, page in enumerate(doc):
-                if i >= OCR_MAX_PAGES:
-                    break
-                png = os.path.join(tmp, "p%d.png" % i)
-                page.get_pixmap(dpi=300).save(png)
-                r = subprocess.run([exe, png, "stdout", "-l", langs], capture_output=True, timeout=180)
-                texts.append("--- page %d ---\n%s" % (i + 1, r.stdout.decode("utf-8", "replace").strip()))
-    except (OSError, subprocess.SubprocessError, RuntimeError, ValueError):
-        return "failed"
-    body = "\n\n".join(texts)
-    if not re.sub(r"--- page \d+ ---", "", body).strip():
-        return "failed"
-    os.makedirs(os.path.dirname(out_txt), exist_ok=True)
-    with open(out_txt, "w", encoding="utf-8") as f:
-        f.write(body)
-    return "done"
-
-
-COPY_NAME = re.compile(r"(\bcopy\b|עותק|העתק|\(\d+\)(?=\.[^.]+$))", re.I)
-
-
-def _copy_last(name):
-    """בתוך תיקייה, קובץ ששמו מעיד על עותק ("(copy)", "(עותק)", "(1)") נסרק אחרי המקור, ולכן הוא שמסומן כפול."""
-    return (bool(COPY_NAME.search(name)), name)
-
-
-# A file Areo writes next to its own output (the drafter's "<draft>.report.json"). Skipped only when the document
-# it belongs to is right beside it; otherwise it is an ordinary unreadable file and is reported as one
-AREO_SIDECARS = (".report.json",)
-
-
-def _areo_sidecar(dirpath, name):
-    low = name.lower()
-    for suf in AREO_SIDECARS:
-        if low.endswith(suf):
-            stem = name[:-len(suf)]
-            return any(os.path.isfile(os.path.join(dirpath, stem + ext)) for ext in (".docx", ".doc", ".pdf"))
-    return False
-
-
-def _status(key, sha, previous, seen):
-    if sha in seen:
-        return "duplicate"
-    if key not in previous:
-        return "new"
-    return "changed" if previous[key] != sha else "same"
-
-
+	try:A=subprocess.run([exe,'--list-langs'],capture_output=True,text=True,timeout=30).stdout
+	except(OSError,subprocess.SubprocessError):return'eng'
+	B={A.strip()for A in A.splitlines()};return'+'.join(A for A in('heb','eng')if A in B)or'eng'
+def ocr_pdf(path,out_txt):
+	C=out_txt;A,D=tesseract(),_pymupdf()
+	if not A or D is None:return'unavailable'
+	H,E=_ocr_langs(A),[]
+	try:
+		with tempfile.TemporaryDirectory()as I,D.open(path)as J:
+			for(B,K)in enumerate(J):
+				if B>=OCR_MAX_PAGES:break
+				F=os.path.join(I,'p%d.png'%B);K.get_pixmap(dpi=300).save(F);L=subprocess.run([A,F,'stdout','-l',H],capture_output=True,timeout=180);E.append('--- page %d ---\n%s'%(B+1,L.stdout.decode('utf-8','replace').strip()))
+	except(OSError,subprocess.SubprocessError,RuntimeError,ValueError):return'failed'
+	G='\n\n'.join(E)
+	if not re.sub('--- page \\d+ ---','',G).strip():return'failed'
+	os.makedirs(os.path.dirname(C),exist_ok=True)
+	with open(C,'w',encoding='utf-8')as M:M.write(G)
+	return'done'
+COPY_NAME=re.compile('(\\bcopy\\b|עותק|העתק|\\(\\d+\\)(?=\\.[^.]+$))',re.I)
+def _copy_last(name):return bool(COPY_NAME.search(name)),name
+AREO_SIDECARS='.report.json',
+def _areo_sidecar(dirpath,name):
+	B=name.lower()
+	for A in AREO_SIDECARS:
+		if B.endswith(A):C=name[:-len(A)];return any(os.path.isfile(os.path.join(dirpath,C+A))for A in('.docx','.doc','.pdf'))
+	return False
+def _status(key,sha,previous,seen):
+	A=previous
+	if sha in seen:return'duplicate'
+	if key not in A:return'new'
+	return'changed'if A[key]!=sha else'same'
 def _eml_parts(raw):
-    """(גוף המייל כטקסט, [(שם, בייטים)]) ממייל גולמי. מייל מצורף (message/rfc822) נשמר כקובץ .eml."""
-    msg = email.message_from_bytes(raw, policy=email.policy.default)
-    body = msg.get_body(preferencelist=("plain", "html"))
-    text = ""
-    if body is not None:
-        try:
-            text = body.get_content()
-        except (LookupError, ValueError):
-            text = ""
-        if body.get_content_type() == "text/html":
-            text = re.sub(r"<[^>]+>", " ", text)
-    head = "\n".join("%s: %s" % (h, msg.get(h, "")) for h in ("From", "To", "Date", "Subject"))
-    files = []
-    for part in msg.iter_attachments():
-        name = part.get_filename()
-        if part.get_content_type() == "message/rfc822":
-            inner = part.get_payload()
-            inner = inner[0] if isinstance(inner, list) and inner else inner
-            data = inner.as_bytes() if hasattr(inner, "as_bytes") else bytes(part.get_payload(decode=True) or b"")
-            name = name or ((inner.get("Subject") if hasattr(inner, "get") else None) or "message") + ".eml"
-        else:
-            data = part.get_payload(decode=True) or b""
-        files.append((_safe_name(name or "attachment"), data))
-    return head + "\n\n" + (text or "").strip(), files
-
-
-def _add_eml(entry, raw, work_dir, previous, seen, out, depth=0):
-    """מייל: גוף המייל נשמר כטקסט, וכל קובץ מצורף נכנס לסריקה כרשומה משלו (container = המייל)."""
-    try:
-        text, files = _eml_parts(raw)
-    except Exception:  # noqa: BLE001 (מייל פגום: מסומן ולא עוצר)
-        entry["reason"] = "eml_unreadable"
-        return
-    base = os.path.join(work_dir, "attachments", entry["sha256"][:16]) if work_dir else None
-    if base:
-        os.makedirs(base, exist_ok=True)
-        with open(os.path.join(base, "_message.txt"), "w", encoding="utf-8") as f:
-            f.write(text)
-        entry["text_path"] = os.path.join(base, "_message.txt")
-    entry["attachments"] = []
-    used = set()
-    for name, data in files:
-        stem, ext = os.path.splitext(name)
-        n, i = name, 1
-        while n.lower() in used:
-            i += 1
-            n = "%s (%d)%s" % (stem, i, ext)
-        used.add(n.lower())
-        key = entry["path"] + "/" + n
-        sha = hashlib.sha256(data).hexdigest()
-        full = os.path.join(base, n) if base else None
-        if full:
-            with open(full, "wb") as f:
-                f.write(data)
-        child = {"path": key, "abs": full, "sha256": sha, "container": entry["path"], "duplicate_of": None}
-        entry["attachments"].append(key)
-        if not n.lower().endswith(EXTS):
-            child.update(status="unsupported", reason="file_type")
-            out.append(child)
-            continue
-        child["status"] = _status(key, sha, previous, seen)
-        child["duplicate_of"] = seen.get(sha) if child["status"] == "duplicate" else None
-        seen.setdefault(sha, key)
-        out.append(child)
-        if n.lower().endswith(".eml") and depth < 2 and child["status"] != "duplicate":
-            _add_eml(child, data, work_dir, previous, seen, out, depth + 1)
-        elif n.lower().endswith(".pdf") and full:
-            _add_pdf(child, full, work_dir)
-
-
-def _add_pdf(entry, full, work_dir):
-    """PDF בלי שכבת טקסט: scanned, וזיהוי טקסט כשיש במחשב כלי לכך (ocr: done / unavailable / failed)."""
-    sig = pdf_signals(full)
-    if sig.get("readable") is None:
-        # אין במחשב pymupdf ואין pypdf: אי אפשר לבדוק אם ה-PDF סרוק. זה מסומן, ולא עובר בשקט
-        entry["pdf_check"] = "unavailable"
-        return
-    if not sig.get("scanned"):
-        return
-    entry["scanned"] = True
-    if not work_dir or not entry.get("sha256"):
-        entry["ocr"] = "unavailable"
-        return
-    out_txt = os.path.join(work_dir, "ocr", entry["sha256"] + ".txt")
-    entry["ocr"] = "done" if os.path.exists(out_txt) else ocr_pdf(full, out_txt)
-    if entry["ocr"] == "done":
-        entry["text_path"] = out_txt
-
-
-def scan(folders, previous=None, excluded=(), work_dir=None, report=None):
-    """רשומה לכל קובץ. אף קובץ אינו נעלם בשקט: קובץ מסוג שאינו נקרא מסומן unsupported, ומה שלא נסרק נרשם ב-report:
-    missing (נתיב שלא נמצא), system (קובצי מערכת וקובצי נעילה), data_dirs (תיקיית Areo-נתונים).
-    נתיב יכול להיות תיקייה או קובץ בודד. work_dir (ingest): לשם נכתבים קבצים מצורפים ממיילים וזיהוי טקסט."""
-    previous = previous or {}
-    report = report if report is not None else {}
-    for k in ("missing", "system", "data_dirs"):
-        report.setdefault(k, [])
-    rules = _prepare(excluded)
-    seen, out = {}, []
-    for folder in folders:
-        if not os.path.exists(folder):
-            report["missing"].append(folder)
-            continue
-        if os.path.isfile(folder):
-            parent = os.path.dirname(os.path.abspath(folder))
-            walk = [(parent, [], [os.path.basename(folder)])]
-            folder = parent
-        else:
-            walk = os.walk(folder)
-        top = os.path.basename(os.path.normpath(folder))
-        for dirpath, dirs, files in walk:
-            dirs.sort()
-            for d in [d for d in dirs if d.lower() in DATA_DIRS]:
-                dirs.remove(d)
-                report["data_dirs"].append(os.path.join(dirpath, d))
-            for name in sorted(files, key=_copy_last):
-                full = os.path.join(dirpath, name)
-                rel = os.path.relpath(full, folder).replace("\\", "/")
-                key = top + "/" + rel
-                if name.startswith("~$") or name.lower() in SYSTEM_FILES or _areo_sidecar(dirpath, name):
-                    report["system"].append(key)
-                    continue
-                if _is_excluded(full, rel, key, rules):
-                    continue
-                supported = name.lower().endswith(EXTS)
-                try:
-                    sha = sha256_file(full)
-                except OSError:
-                    out.append({"path": key, "abs": full, "sha256": previous.get(key), "status": "unreadable",
-                                "duplicate_of": None})
-                    continue
-                if not supported:
-                    out.append({"path": key, "abs": full, "sha256": sha, "status": "unsupported", "reason": "file_type",
-                                "duplicate_of": None})
-                    continue
-                status = _status(key, sha, previous, seen)
-                entry = {"path": key, "abs": full, "sha256": sha, "status": status,
-                         "duplicate_of": seen.get(sha) if status == "duplicate" else None}
-                out.append(entry)
-                seen.setdefault(sha, key)
-                if status == "duplicate":
-                    continue
-                if name.lower().endswith(".eml"):
-                    with open(full, "rb") as f:
-                        _add_eml(entry, f.read(), work_dir, previous, seen, out)
-                elif name.lower().endswith(".pdf"):
-                    _add_pdf(entry, full, work_dir)
-    present = {x["path"] for x in out}
-    for key, sha in sorted(previous.items()):
-        if key not in present:
-            out.append({"path": key, "abs": None, "sha256": sha, "status": "removed", "duplicate_of": None})
-    return out
+	D=email.message_from_bytes(raw,policy=email.policy.default);E=D.get_body(preferencelist=('plain','html'));B=''
+	if E is not None:
+		try:B=E.get_content()
+		except(LookupError,ValueError):B=''
+		if E.get_content_type()=='text/html':B=re.sub('<[^>]+>',' ',B)
+	I='\n'.join('%s: %s'%(A,D.get(A,''))for A in('From','To','Date','Subject'));G=[]
+	for C in D.iter_attachments():
+		F=C.get_filename()
+		if C.get_content_type()=='message/rfc822':A=C.get_payload();A=A[0]if isinstance(A,list)and A else A;H=A.as_bytes()if hasattr(A,'as_bytes')else bytes(C.get_payload(decode=True)or b'');F=F or((A.get('Subject')if hasattr(A,'get')else None)or'message')+'.eml'
+		else:H=C.get_payload(decode=True)or b''
+		G.append((_safe_name(F or'attachment'),H))
+	return I+'\n\n'+(B or'').strip(),G
+def _add_eml(entry,raw,work_dir,previous,seen,out,depth=0):
+	N=depth;M=previous;J=out;G=seen;F=work_dir;C=entry
+	try:R,S=_eml_parts(raw)
+	except Exception:C['reason']='eml_unreadable';return
+	D=os.path.join(F,'attachments',C['sha256'][:16])if F else None
+	if D:
+		os.makedirs(D,exist_ok=True)
+		with open(os.path.join(D,'_message.txt'),'w',encoding='utf-8')as K:K.write(R)
+		C['text_path']=os.path.join(D,'_message.txt')
+	C['attachments']=[];O=set()
+	for(P,L)in S:
+		T,U=os.path.splitext(P);B,Q=P,1
+		while B.lower()in O:Q+=1;B='%s (%d)%s'%(T,Q,U)
+		O.add(B.lower());H=C['path']+'/'+B;I=hashlib.sha256(L).hexdigest();E=os.path.join(D,B)if D else None
+		if E:
+			with open(E,'wb')as K:K.write(L)
+		A={'path':H,'abs':E,'sha256':I,'container':C['path'],'duplicate_of':None};C['attachments'].append(H)
+		if not B.lower().endswith(EXTS):A.update(status='unsupported',reason='file_type');J.append(A);continue
+		A['status']=_status(H,I,M,G);A['duplicate_of']=G.get(I)if A['status']=='duplicate'else None;G.setdefault(I,H);J.append(A)
+		if B.lower().endswith('.eml')and N<2 and A['status']!='duplicate':_add_eml(A,L,F,M,G,J,N+1)
+		elif B.lower().endswith('.pdf')and E:_add_pdf(A,E,F)
+def _add_pdf(entry,full,work_dir):
+	C=work_dir;A=entry;D=pdf_signals(full)
+	if D.get('readable')is None:A['pdf_check']='unavailable';return
+	if not D.get('scanned'):return
+	A['scanned']=True
+	if not C or not A.get('sha256'):A['ocr']='unavailable';return
+	B=os.path.join(C,'ocr',A['sha256']+'.txt');A['ocr']='done'if os.path.exists(B)else ocr_pdf(full,B)
+	if A['ocr']=='done':A['text_path']=B
+def scan(folders,previous=None,excluded=(),work_dir=None,report=None):
+	N=work_dir;H=previous;D=report;H=H or{};D=D if D is not None else{}
+	for S in('missing','system','data_dirs'):D.setdefault(S,[])
+	T=_prepare(excluded);I,E={},[]
+	for B in folders:
+		if not os.path.exists(B):D['missing'].append(B);continue
+		if os.path.isfile(B):O=os.path.dirname(os.path.abspath(B));P=[(O,[],[os.path.basename(B)])];B=O
+		else:P=os.walk(B)
+		U=os.path.basename(os.path.normpath(B))
+		for(J,K,V)in P:
+			K.sort()
+			for Q in[A for A in K if A.lower()in DATA_DIRS]:K.remove(Q);D['data_dirs'].append(os.path.join(J,Q))
+			for F in sorted(V,key=_copy_last):
+				C=os.path.join(J,F);R=os.path.relpath(C,B).replace('\\','/');A=U+'/'+R
+				if F.startswith('~$')or F.lower()in SYSTEM_FILES or _areo_sidecar(J,F):D['system'].append(A);continue
+				if _is_excluded(C,R,A,T):continue
+				W=F.lower().endswith(EXTS)
+				try:G=sha256_file(C)
+				except OSError:E.append({'path':A,'abs':C,'sha256':H.get(A),'status':'unreadable','duplicate_of':None});continue
+				if not W:E.append({'path':A,'abs':C,'sha256':G,'status':'unsupported','reason':'file_type','duplicate_of':None});continue
+				L=_status(A,G,H,I);M={'path':A,'abs':C,'sha256':G,'status':L,'duplicate_of':I.get(G)if L=='duplicate'else None};E.append(M);I.setdefault(G,A)
+				if L=='duplicate':continue
+				if F.lower().endswith('.eml'):
+					with open(C,'rb')as X:_add_eml(M,X.read(),N,H,I,E)
+				elif F.lower().endswith('.pdf'):_add_pdf(M,C,N)
+	Y={A['path']for A in E}
+	for(A,G)in sorted(H.items()):
+		if A not in Y:E.append({'path':A,'abs':None,'sha256':G,'status':'removed','duplicate_of':None})
+	return E

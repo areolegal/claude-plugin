@@ -1,0 +1,118 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Areo. All rights reserved. Licensed under the terms at https://areo.co.il/legal/terms
+import argparse,datetime as _dt,json,os,sys
+from pathlib import Path
+LIB=Path(__file__).resolve().parents[1]
+if str(LIB)not in sys.path:sys.path.insert(0,str(LIB))
+from app import clm_view,nego_view,policy_view
+MARKER='/*__AREO_SHELL__*/null'
+TEMPLATE=LIB.parent/'ui'/'app'/'index.html'
+PROFILE='פרופיל-לקוח.json'
+TEMPLATES_DIR='תבניות'
+CLM='areo-clm'
+BASE='areolegal'
+PAGE_LIMIT=16777216
+TOTAL_LIMIT=67108864
+MCP_SERVERS=[{'server':'Gmail','tools':['search_threads','get_message','send_message']},{'server':'Microsoft 365','tools':['outlook_email_search']},{'server':'host:plugin_areolegal_areolegal','tools':['open_mail_draft']}]
+LANGS={'he':'עברית','עברית':'עברית','hebrew':'עברית','en':'English','english':'English','אנגלית':'English'}
+def _json(path):
+	try:return json.loads(Path(path).read_text(encoding='utf-8'))
+	except(OSError,ValueError):return
+def _s(v):return v.strip()if isinstance(v,str)else''
+def _strs(v):
+	if isinstance(v,str):v=[v]
+	return[_s(A)for A in v or[]if _s(A)]if isinstance(v,list)else[]
+def _uniq(xs):
+	A=[]
+	for B in xs:
+		if B and B not in A:A.append(B)
+	return A
+def _people(profile):
+	B=profile;D=B.get('branding')if isinstance(B.get('branding'),dict)else{};E,F=[],set()
+	def C(name,role):
+		A=name;A=_s(A)
+		if A and A not in F:F.add(A);E.append({'name':A,'role':_s(role)})
+	C(D.get('lawyer_name'),D.get('lawyer_role')or'עורך הדין');C(B.get('lawyer_name'),B.get('lawyer_role')or'עורך הדין')
+	for A in D.get('signatories')or[]:
+		if isinstance(A,dict):C(A.get('name'),A.get('role')or'מורשה חתימה')
+		elif isinstance(A,str):C(A,'מורשה חתימה')
+	return E
+def _org(profile):
+	A=profile;B=A.get('sector')
+	if isinstance(B,dict):D=_strs(B.get('sectors'))or _strs(B.get('all'))or _strs(B.get('primary'))
+	else:D=_strs(B)
+	E=[]
+	for C in A.get('regulatory_footprint_primary')or[]:
+		F=_s(C.get('regulator_name'))if isinstance(C,dict)else _s(C)
+		if F:E.append(F)
+	G=A.get('connections')if isinstance(A.get('connections'),dict)else{};H=_s(G.get('email'));I=_s(A.get('display_language'));return{'registration':_s(A.get('registration_number')),'sectors':D,'markets':_strs(A.get('material_operating_jurisdictions')),'regulators':_uniq(E),'language':LANGS.get(I.lower(),I),'email':''if H.lower()in('','none','no','false')else H,'calendar':bool(G.get('calendar'))}
+def _lang(profile):A=_s(profile.get('display_language')).lower();return'en'if A in('en','english','אנגלית')else'he'
+def find_templates(data_dir):
+	C=data_dir;C=Path(C);F,G=[],set()
+	def D(name,typ):
+		A=name;A=_s(A)
+		if A and A.lower()not in G:G.add(A.lower());F.append({'name':A,'type':_s(typ)})
+	H=C/TEMPLATES_DIR
+	if H.is_dir():
+		for A in sorted(H.iterdir(),key=lambda p:p.name):
+			if A.is_dir():
+				E=_json(A/'skeleton.json')
+				if isinstance(E,dict):D(E.get('source_file')or A.name,E.get('family')or A.name)
+				elif(A/'master.docx').is_file():D(A.name,A.name)
+			elif A.suffix.lower()in('.docx','.dotx')and not A.name.startswith('~$'):D(A.name,'')
+	I=_json(C/'template-registry.json')
+	for B in(I.get('documents')if isinstance(I,dict)else None)or[]:
+		if isinstance(B,dict)and B.get('approved_current')and _s(B.get('doc_class'))in('template',''):D(os.path.basename(_s(B.get('file')).replace('\\','/')),B.get('family'))
+	return F
+def _folders(data_dir,profile,templates):
+	G=templates;F=profile;A=data_dir;A=Path(A);B,C=[],{}
+	if(A/'clm-data.json').is_file():
+		try:D=clm_view.page_data(A)
+		except Exception:D={}
+		for M in(D.get('meta')or{}).get('folders')or[]:C.setdefault(M,0)
+		for H in D.get('agreements')or[]:
+			if H.get('parent'):continue
+			I=_s(((H.get('docs')or[{}])[0]or{}).get('path')).replace('\\','/');E=I.split('/')[0]if'/'in I else''
+			if E:C[E]=C.get(E,0)+1
+	N=F.get('connections')if isinstance(F.get('connections'),dict)else{}
+	for J in _strs(N.get('folders')):
+		K=os.path.basename(J.replace('\\','/').rstrip('/'))or J
+		if K not in C:B.append({'name':K,'kind':'agreements','count':None})
+	B=[{'name':A,'kind':'agreements','count':B}for(A,B)in C.items()]+B
+	if G or(A/TEMPLATES_DIR).is_dir():B.append({'name':TEMPLATES_DIR,'kind':'templates','count':len(G)})
+	L=A/'transactions';O=sum(1 for A in L.iterdir()if A.is_dir())if L.is_dir()else 0;B.append({'name':A.name,'kind':'workspace','count':O});return B
+def shell_data(data_dir,products=(BASE,),today=None):
+	C=products;B=data_dir;B=Path(B);A=_json(B/PROFILE);A=A if isinstance(A,dict)else{};C=_uniq([_s(A).lower()for A in C if _s(A)])or[BASE]
+	if BASE not in C:C.insert(0,BASE)
+	E=find_templates(B);D=_s(A.get('organization_name'))or _s(A.get('organization_name_en'))
+	if not D:F=(_json(B/'clm-data.json')or{}).get('meta')or{};D=_s(F.get('company'))if isinstance(F,dict)else''
+	return{'company':D,'lang':_lang(A),'today':_s(today)or _dt.date.today().isoformat(),'products':C,'folders':_folders(B,A,E),'templates':E,'people':_people(A),'org':_org(A),'built_at':_dt.datetime.now().replace(microsecond=0).isoformat(timespec='minutes')}
+def inject(html,data):
+	A=json.dumps(data,ensure_ascii=False,separators=(',',':'));A=A.replace('</','<\\/').replace('<!--','<\\!--').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
+	if html.count(MARKER)!=1:raise ValueError('התבנית אינה מכילה את הסמן %s פעם אחת בדיוק'%MARKER)
+	return html.replace(MARKER,A)
+def capabilities(has_clm=True):return{'db':{},'sample':{},'downloads':True,'mcp':{'servers':[dict(A)for A in MCP_SERVERS]}}
+def _write(path,text):A=path;A=Path(A);A.parent.mkdir(parents=True,exist_ok=True);B=A.with_name(A.name+'.tmp');B.write_text(text,encoding='utf-8');os.replace(str(B),str(A))
+def build(data_dir,out_dir,products=(BASE,),today=None,template=None):
+	J=template;D=out_dir;A=data_dir;A,D=Path(A),Path(D)
+	if not A.is_dir():raise FileNotFoundError('אין תיקייה %s'%A)
+	G=shell_data(A,products,today);K=CLM in G['products'];B=D/'apps';B.mkdir(parents=True,exist_ok=True);C={};policy_view.render(A,B/'policy.html');C['apps/policy.html']=str(B/'policy.html');nego_view.render(A,B/'nego.html');C['apps/nego.html']=str(B/'nego.html');L=[];E=B/'clm.html'
+	if K:clm_view.render(A,E);C['apps/clm.html']=str(E)
+	else:
+		if E.exists():E.unlink()
+		L.append('apps/clm.html')
+	N=Path(J)if J else TEMPLATE;H=D/'index.html';_write(H,inject(N.read_text(encoding='utf-8'),G));F={'index.html':H.stat().st_size};F.update({A:Path(B).stat().st_size for(A,B)in C.items()});I=sum(F.values());M=[A for(A,B)in F.items()if B>PAGE_LIMIT]
+	if M or I>TOTAL_LIMIT:raise ValueError('האפליקציה גדולה מדי לפרסום: %s (סך הכול %d בתים)'%(', '.join(M)or'סך הכול',I))
+	return{'index':str(H),'files':C,'capabilities':capabilities(K),'remove':L,'products':G['products'],'sizes':F,'total_bytes':I}
+def publish_spec(result):
+	A=result;B={'file_path':A['index'],'files':A['files'],'capabilities':A['capabilities'],'sizes':A['sizes'],'total_bytes':A['total_bytes']}
+	if A['remove']:B['remove_on_update']=A['remove']
+	return B
+def main(argv=None):
+	B=argparse.ArgumentParser(description='אפליקציית Areo מהנתונים שב-Areo-נתונים');B.add_argument('--data-dir',required=True,help='תיקיית Areo-נתונים');B.add_argument('--out',required=True,help='תיקיית הפלט, למשל Areo-נתונים/Areo');B.add_argument('--products',default=BASE,help='המוצרים של הלקוח, מופרדים בפסיק (areolegal,areo-clm)');B.add_argument('--today',default=None,help='YYYY-MM-DD (ברירת מחדל: היום)');A=B.parse_args(argv);sys.dont_write_bytecode=True
+	for C in(sys.stdout,sys.stderr):
+		try:C.reconfigure(encoding='utf-8',errors='replace')
+		except(AttributeError,ValueError):pass
+	if not Path(A.data_dir).is_dir():sys.stderr.write('התיקייה אינה קיימת: %s\n'%A.data_dir);return 2
+	D=build(Path(A.data_dir),Path(A.out),[A for A in A.products.split(',')],A.today);print(json.dumps(publish_spec(D),ensure_ascii=False));return 0
+if __name__=='__main__':sys.exit(main())
