@@ -25,7 +25,7 @@
 :root[data-areo="light"] .chip[aria-pressed=true],:root[data-theme="light"]:not([data-areo="dark"]) .chip[aria-pressed=true]{color:#0B6B4F}
 :root[data-areo="light"] .tag.legal,:root[data-theme="light"]:not([data-areo="dark"]) .tag.legal{background:#EFEAFD;color:#4A30A8}
 :root[data-areo="light"] .tag.crit,:root[data-theme="light"]:not([data-areo="dark"]) .tag.crit{background:#FCE6E6;color:#9E2723}
-.themebtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line-strong);background:var(--raised);color:var(--mist);cursor:pointer;display:grid;place-items:center;font-size:16px;line-height:1}
+.themebtn{width:36px;height:36px;border-radius:4px;border:1px solid var(--line-strong);background:var(--raised);color:var(--mist);cursor:pointer;display:grid;place-items:center;font-size:16px;line-height:1}
 .themebtn:hover{color:var(--ink)}
 .topright{display:flex;align-items:center;gap:12px}
 *{box-sizing:border-box}
@@ -41,7 +41,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 .rail i{display:block;height:4px;border-radius:4px;background:var(--line)}
 .rail i.done{background:var(--aurora)}
 .rail i.now{background:linear-gradient(90deg,var(--aurora),var(--aurora) 50%,var(--line) 50%)}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px 26px;display:flex;flex-direction:column;gap:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:28px 26px;display:flex;flex-direction:column;gap:20px}
 @media (max-width:480px){.card{padding:22px 18px}}
 .eyebrow{font-size:13px;color:var(--aurora);font-weight:600;letter-spacing:.02em}
 h1,h2{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.25}
@@ -58,61 +58,66 @@ h2{font-size:24px;font-weight:600}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media (max-width:480px){.row2{grid-template-columns:1fr}}
 input[type=text],input[type=url],input[type=number],textarea,select{width:100%;background:var(--raised);border:1px solid var(--line-strong);color:var(--ink);
-  border-radius:11px;padding:12px 14px;font:inherit;font-size:16px;outline:none;transition:border-color .15s}
+  border-radius:4px;padding:12px 14px;font:inherit;font-size:16px;outline:none;transition:border-color .15s}
 textarea{min-height:76px;resize:vertical}
 input:focus,textarea:focus,select:focus{border-color:var(--aurora);box-shadow:0 0 0 3px var(--aurora-soft)}
 input.ltr{direction:ltr;text-align:right}
-.note{font-size:13.5px;border-radius:10px;padding:8px 12px}
+.note{font-size:13.5px;border-radius:4px;padding:8px 12px}
 .note.warn{background:var(--warn-soft);color:var(--warn)}
 .note.ok{background:var(--aurora-soft);color:var(--aurora)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1px solid var(--line-strong);background:transparent;color:var(--ink);border-radius:999px;padding:8px 15px;font:inherit;font-size:15px;cursor:pointer;transition:all .15s}
+.chips[data-multi] .chip[aria-pressed=true]::before{content:"\2713";margin-inline-end:6px;font-weight:700}
+.agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.agent{border:1px solid var(--line);border-radius:4px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.agent b{font-size:15px}.agent span{color:var(--mist);font-size:13.5px;line-height:1.5}.agent .say{color:var(--aurora);font-size:13px;font-weight:600}
+.typegroup{font-size:13px;color:var(--mist);margin:2px 0 -2px}
+.chip{border:1px solid var(--line-strong);background:transparent;color:var(--ink);border-radius:4px;padding:8px 15px;font:inherit;font-size:15px;cursor:pointer;transition:all .15s}
 .chip:hover{border-color:var(--mist)}
 .chip[aria-pressed=true]{background:var(--aurora-soft);border-color:var(--aurora);color:var(--aurora);font-weight:600}
 .chip:focus-visible,.btn:focus-visible,.linkbtn:focus-visible{outline:2px solid var(--aurora);outline-offset:2px}
 .signer{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:center}
 @media (max-width:480px){.signer{grid-template-columns:1fr 1fr}.signer .linkbtn{grid-column:1/-1;justify-self:start}}
 .actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.btn{border:0;border-radius:12px;padding:13px 26px;font:inherit;font-size:16px;font-weight:700;cursor:pointer}
+.btn{border:0;border-radius:4px;padding:13px 26px;font:inherit;font-size:16px;font-weight:700;cursor:pointer}
 .btn.primary{background:var(--aurora);color:var(--aurora-ink);display:inline-block}
 .btn.primary:hover{filter:brightness(1.06)}
 .btn.primary[disabled]{opacity:.4;cursor:not-allowed}
 .btn.ghost{background:transparent;color:var(--mist);padding-inline:6px}
 .btn.ghost:hover{color:var(--ink)}
 .linkbtn{background:none;border:0;color:var(--aurora);font:inherit;font-size:14.5px;cursor:pointer;padding:4px 0}
-.sum{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.sum{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .sum .grp{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;gap:12px;justify-content:space-between;align-items:flex-start}
 .sum .grp:last-child{border-bottom:0}
 .sum .k{font-size:13px;color:var(--mist);margin-bottom:2px}
 .sum .v{font-weight:600;min-width:0;overflow-wrap:anywhere}
 .regs{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
-.regs li{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 14px;background:var(--raised);border-radius:10px}
-.tag{font-size:12px;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.regs li{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 14px;background:var(--raised);border-radius:4px}
+.tag{font-size:12px;border-radius:4px;padding:2px 10px;white-space:nowrap}
 .tag.c{background:var(--aurora-soft);color:var(--aurora)}
 .tag.l{background:var(--warn-soft);color:var(--warn)}
-.privacy{font-size:13.5px;color:var(--mist);background:var(--raised);border-radius:12px;padding:12px 14px}
+.privacy{font-size:13.5px;color:var(--mist);background:var(--raised);border-radius:4px;padding:12px 14px}
 .privacy b{color:var(--ink)}
 details.payload{font-size:13px;color:var(--mist)}
-details.payload pre{direction:ltr;text-align:left;background:var(--raised);border-radius:10px;padding:12px;overflow-x:auto;color:var(--ink);font-size:12px}
+details.payload pre{direction:ltr;text-align:left;background:var(--raised);border-radius:4px;padding:12px;overflow-x:auto;color:var(--ink);font-size:12px}
 .done-mark{width:56px;height:56px;border-radius:50%;background:var(--aurora-soft);display:grid;place-items:center;color:var(--aurora);font-size:28px;font-weight:700}
-.next{display:flex;gap:14px;align-items:center;padding:14px 16px;border:1px solid var(--line-strong);border-radius:14px}
+.next{display:flex;gap:14px;align-items:center;padding:14px 16px;border:1px solid var(--line-strong);border-radius:6px}
 .next .t{flex:1;min-width:0}
 .next .t b{display:block}
 .next .t span{font-size:14px;color:var(--mist)}
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--raised);border:1px solid var(--line-strong);
-  color:var(--ink);padding:10px 16px;border-radius:10px;font-size:14px;max-width:calc(100% - 32px)}
+  color:var(--ink);padding:10px 16px;border-radius:4px;font-size:14px;max-width:calc(100% - 32px)}
 .proto{font-size:12.5px;color:var(--faint);text-align:center}
 .phase{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mist)}
 .phase b{color:var(--ink);font-weight:600}
 .paths{display:grid;gap:12px}
-.path{display:flex;gap:14px;align-items:flex-start;text-align:start;width:100%;background:var(--raised);border:1px solid var(--line-strong);border-radius:14px;padding:16px;color:var(--ink);font:inherit;cursor:pointer}
+.path{display:flex;gap:14px;align-items:flex-start;text-align:start;width:100%;background:var(--raised);border:1px solid var(--line-strong);border-radius:6px;padding:16px;color:var(--ink);font:inherit;cursor:pointer}
 .path:hover{border-color:var(--aurora)}
-.path .ic{flex:0 0 40px;height:40px;border-radius:10px;background:var(--aurora-soft);color:var(--aurora);display:grid;place-items:center;font-weight:700;font-family:var(--mark)}
+.path .ic{flex:0 0 40px;height:40px;border-radius:4px;background:var(--aurora-soft);color:var(--aurora);display:grid;place-items:center;font-weight:700;font-family:var(--mark)}
 .path b{display:block;font-size:16.5px;margin-bottom:2px}
 .path span{font-size:14px;color:var(--mist)}
-.demo{display:inline-block;font-size:11.5px;border:1px dashed var(--faint);color:var(--faint);border-radius:999px;padding:1px 9px;margin-inline-start:8px;vertical-align:middle}
+.demo{display:inline-block;font-size:11.5px;border:1px dashed var(--faint);color:var(--faint);border-radius:4px;padding:1px 9px;margin-inline-start:8px;vertical-align:middle}
 .types{display:grid;gap:10px}
-.type{display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:start;width:100%;background:var(--raised);border:1px solid var(--line-strong);border-radius:12px;padding:14px 16px;color:var(--ink);font:inherit;cursor:pointer}
+.type{display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:start;width:100%;background:var(--raised);border:1px solid var(--line-strong);border-radius:4px;padding:14px 16px;color:var(--ink);font:inherit;cursor:pointer}
 .type[aria-pressed=true]{border-color:var(--aurora);background:var(--aurora-soft)}
 .type .meta{font-size:13.5px;color:var(--mist);display:block}
 .type .nm{cursor:pointer}
@@ -125,7 +130,7 @@ details.payload pre{direction:ltr;text-align:left;background:var(--raised);borde
 .steps li.ok{color:var(--mist)}.steps li.ok i{border-color:var(--aurora);background:var(--aurora);color:var(--aurora-ink)}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.steps li.on i{animation:none}}
-.pos{border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--raised)}
+.pos{border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--raised)}
 .pos.decided{border-color:var(--line-strong)}
 .pos .hd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .pos .hd b{font-size:16px}
@@ -150,12 +155,12 @@ details.payload pre{direction:ltr;text-align:left;background:var(--raised);borde
 .futag{font-size:12px;color:var(--aurora);font-weight:600}
 .otherin{margin-top:8px}
 .btn.small{padding:7px 14px;font-size:14px}
-.whobar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--raised);border-radius:12px;padding:10px 14px;font-size:14.5px}
+.whobar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--raised);border-radius:4px;padding:10px 14px;font-size:14.5px}
 .whobar.ask{background:var(--aurora-soft)}
 .whobar input{flex:1 1 160px;min-width:140px}
 .aph3{font-family:var(--display);font-size:17px;margin:6px 0 -6px;display:flex;gap:10px;align-items:baseline}
 .aph3 small{font-family:var(--body);font-size:13px;color:var(--mist);font-weight:400}
-.strong{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.strong{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .srow{display:grid;grid-template-columns:minmax(150px,1fr) minmax(0,2.4fr) auto;gap:12px;align-items:start;padding:12px 14px;border-bottom:1px solid var(--line)}
 .srow:last-child{border-bottom:0}
 .srow.chg{background:var(--warn-soft)}
@@ -167,16 +172,16 @@ details.payload pre{direction:ltr;text-align:left;background:var(--raised);borde
 .d.g{background:#38d39f}.d.y{background:#f2b45c}.d.r{background:#f2676c}
 .sact{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
 .okt{font-size:13px;color:var(--aurora);font-weight:700;white-space:nowrap}
-.apc{border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--raised)}
+.apc{border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--raised)}
 .apc.decided{border-color:var(--line-strong)}
 .aph{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 .aph b{font-size:16px}
-.aptag{font-size:12px;font-weight:700;color:#b6a3ff;background:rgba(167,139,250,.14);border-radius:999px;padding:2px 9px}
-.apq{background:var(--warn-soft);border-radius:10px;padding:10px 12px}
+.aptag{font-size:12px;font-weight:700;color:#b6a3ff;background:rgba(167,139,250,.14);border-radius:4px;padding:2px 9px}
+.apq{background:var(--warn-soft);border-radius:4px;padding:10px 12px}
 .apq small{display:block;font-size:12px;font-weight:700;color:var(--mist)}
 .apq p{margin:2px 0 0;font-size:15px}
 .apdone{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.apres{font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.apres{font-size:12.5px;font-weight:700;border-radius:4px;padding:3px 10px;white-space:nowrap}
 .apres.g{background:var(--aurora-soft);color:var(--aurora)}.apres.y,.apres.l{background:var(--warn-soft);color:var(--warn)}.apres.r{background:rgba(242,103,108,.12);color:#f2676c}
 .apin{flex:1;min-width:180px}
 @media (max-width:640px){.srow{grid-template-columns:1fr}.sact{flex-direction:row;align-items:center;justify-content:space-between}}
@@ -212,6 +217,89 @@ if(INIT&&INIT.mode==='approve'){S.step='pb_approve';S.pb.family=INIT.family||S.p
 if(INIT&&INIT.org_name&&!S.name)S.name=INIT.org_name;
 
 var NL='לא מופיע ברשימה';
+/* agreement types: the common ones for the client's sectors first, then the general list; any type can also be typed */
+var TYPES_GEN=['שירותים','סודיות (NDA)','רכש ואספקה','הפצה','רישיון תוכנה','SaaS ומנוי לשירות ענן','פיתוח תוכנה','שכירות','העסקה','ייעוץ','קבלנות','סוכנות','זכיינות','שיתוף פעולה','מסגרת','עיבוד מידע (DPA)','מכר','הלוואה','השקעה'];
+var TYPES_BY={'הייטק':['SaaS ומנוי לשירות ענן','פיתוח תוכנה','רישיון תוכנה','עיבוד מידע (DPA)','משווק (Reseller)','תמיכה ותחזוקה'],
+ 'סייבר':['SaaS ומנוי לשירות ענן','רישיון תוכנה','עיבוד מידע (DPA)','משווק (Reseller)','בדיקות אבטחה'],
+ 'פינטק':['SaaS ומנוי לשירות ענן','מיקור חוץ','עיבוד מידע (DPA)','שיתוף פעולה עם גוף פיננסי'],
+ 'פיננסים':['מיקור חוץ','הלוואה','מימון','עיבוד מידע (DPA)','ניהול תיקים'],
+ 'ביטוח':['סוכנות ביטוח','מיקור חוץ','עיבוד מידע (DPA)'],
+ 'אנרגיה':['הקמה (EPC)','רכישת חשמל (PPA)','תפעול ותחזוקה (O&M)','חכירת קרקע'],
+ 'שירותים':['שירותים','ייעוץ','מיקור חוץ'],
+ 'נדל״ן':['שכירות','ניהול נכס','מכר מקרקעין','תיווך','ליווי פיננסי'],
+ 'ביומד':['ניסוי קליני','העברת חומרים (MTA)','רישיון ידע וטכנולוגיה','ייצור בקבלנות משנה','הפצה'],
+ 'בריאות':['ניסוי קליני','רכש ציוד רפואי','עיבוד מידע (DPA)','שירותים רפואיים'],
+ 'תעשייה':['רכש ואספקה','ייצור בקבלנות משנה','הפצה','ייצור עבור מותג (OEM)'],
+ 'קמעונאות':['ספק לרשת','הפצה','זכיינות','שכירות בקניון','שיווק ופרסום'],
+ 'תקשורת ומדיה':['הפקה','רישיון תוכן','פרסום','משפיענים'],
+ 'תחבורה ולוגיסטיקה':['הובלה','אחסנה','שילוח','ליסינג'],
+ 'מזון ומשקאות':['ספק לרשת','הפצה','ייצור עבור מותג (Private Label)','זכיינות'],
+ 'בנייה ותשתיות':['קבלנות','קבלן משנה','תכנון (אדריכלות והנדסה)','מכר מקרקעין'],
+ 'ביטחון ותעופה':['קבלן משנה','רכש ביטחוני','שיתוף פעולה תעשייתי','רישיון ידע וטכנולוגיה'],
+ 'חקלאות':['אספקת תוצרת','חכירת קרקע','הפצה'],
+ 'חינוך':['שירותים','רישיון תוכן','הסעות'],
+ 'תיירות ומלונאות':['אירוח קבוצות','ניהול מלון','זכיינות','ספק'],
+ 'השכלה גבוהה ומחקר':['מחקר ממומן','רישיון ידע וטכנולוגיה','העברת חומרים (MTA)','שיתוף פעולה מחקרי'],
+ 'רווחה וקהילה':['מענק','שירותים','שיתוף פעולה'],
+ 'שירותים ציבוריים ושלטון מקומי':['רכש במכרז','שירותים','הרשאה לשימוש בנכס']};
+function typeLists(){
+  var secs=(S.sectors&&S.sectors.length?S.sectors:((INIT&&INIT.sectors)||[])),mine=[];
+  secs.forEach(function(x){(TYPES_BY[x]||[]).forEach(function(t){if(mine.indexOf(t)<0)mine.push(t)})});
+  return {mine:mine.slice(0,10),rest:TYPES_GEN.filter(function(t){return mine.indexOf(t)<0})};
+}
+function typeChips(prefix,name){
+  var L=typeLists(),lab=function(t){return prefix+t},cur=S.pb.kindAuto?'':S.pb.family;
+  return (L.mine.length?'<div class="typegroup">נפוצים בתחום שלכם</div>'+chips(L.mine.map(lab),cur,name,false)+'<div class="typegroup">סוגים נוספים</div>':'')+chips(L.rest.map(lab),cur,name,false);
+}
+function isListedType(prefix,f){var L=typeLists();return L.mine.concat(L.rest).some(function(t){return prefix+t===f})}
+/* every agent, with the words that start it, on the done screen */
+var AGENTS=[
+ ['בונה הפלייבוק','המדיניות החוזית שלכם לסוג הסכם: מה מקובל, איפה מתגמשים, ועל מה לא מסכימים. מההסכמים שלכם או מהמקובל בשוק.','פלייבוק'],
+ ['הנושא ונותן','עונה על טיוטה שחזרה מהצד השני לפי הפלייבוק, ומחזיר Word עם עקוב אחר שינויים והערות.','הערות הצד השני'],
+ ['מנסח ההסכמים','טיוטה ראשונה, תיקון להסכם, הודעה או מכתב התראה, על הנייר שלכם.','נסח הסכם'],
+ ['האסטרטג','הכנה למשא ומתן: מאזן הכוחות, סדר הסעיפים, מה הצד השני יטען, וסימולציה.','אסטרטגיית משא ומתן'],
+ ['מעריך הסיכונים','מה ההסכם חושף אתכם אליו, בשמונה תחומים, ואילו סעיפים מסוכנים יחד.','הערכת סיכונים'],
+ ['ניהול חוזים','מאגר ההסכמים החתומים, מועדי חידוש וסיום, והתחייבויות. מוצר נוסף למנוי.','ניהול חוזים'],
+ ['המתרגם','תרגום משפטי עברית-אנגלית ששומר על המונחים המוגדרים, המספור וההפניות.','תרגם את ההסכם']];
+/* the sides of each type, in the words agreements of that type use; mutual only where both sides carry the same duties */
+var SIDE_AUTO='נזהה לפי ההסכמים';
+var SIDES=[
+ [/סודיות|NDA/i,['מגלה המידע','מקבל המידע','הסכם הדדי']],
+ [/הפצ/,['הספק (יצרן או יבואן)','המפיץ']],
+ [/Reseller|משווק/i,['הספק','המשווק']],
+ [/ספק לרשת/,['הספק','הרשת']],
+ [/OEM|Private Label|ייצור/i,['היצרן','המזמין (בעל המותג)']],
+ [/זכיינות|זיכיון/,['נותן הזיכיון','הזכיין']],
+ [/סוכנות ביטוח/,['המבטח','סוכן הביטוח']],
+ [/סוכנות|סוכן/,['המרשה','הסוכן']],
+ [/חכיר|ליסינג/,['המחכיר','החוכר']],
+ [/שכירות/,['המשכיר','השוכר']],
+ [/רישיון|רשיון/,['מעניק הרישיון','בעל הרישיון']],
+ [/SaaS|מנוי|ענן/i,['ספק השירות','הלקוח']],
+ [/עיבוד מידע|DPA/i,['בעל השליטה במידע (הלקוח)','מעבד המידע (הספק)']],
+ [/פיתוח/,['המפתח','המזמין']],
+ [/ניסוי קליני/,['היזם (נותן החסות)','המוסד הרפואי','החוקר או ה-CRO']],
+ [/מחקר ממומן/,['הגוף המממן','המוסד המחקרי']],
+ [/העברת חומרים|MTA/i,['המעביר','המקבל']],
+ [/PPA|רכישת חשמל/i,['היצרן','רוכש החשמל']],
+ [/מכרז/,['הגוף המזמין','המציע']],
+ [/קבלן משנה/,['הקבלן הראשי','קבלן המשנה']],
+ [/EPC|הקמה|קבלנות/,['המזמין','הקבלן']],
+ [/תכנון/,['המתכנן','המזמין']],
+ [/ניהול נכס|ניהול מלון/,['בעל הנכס','חברת הניהול']],
+ [/תיווך/,['המתווך','הלקוח']],
+ [/מכר|רכישה/,['המוכר','הקונה']],
+ [/רכש|אספקה|ספק/,['הספק','הרוכש']],
+ [/העסקה/,['המעסיק','העובד']],
+ [/הלוואה|מימון|ליווי פיננסי/,['המלווה','הלווה']],
+ [/השקעה/,['המשקיע','החברה המגייסת']],
+ [/מענק/,['נותן המענק','מקבל המענק']],
+ [/הרשאה/,['נותן ההרשאה','בעל ההרשאה']],
+ [/הפקה/,['המפיק','המזמין']],
+ [/פרסום|שיווק|משפיענים/,['המפרסם','נותן השירות']],
+ [/שיתוף פעולה|מיזם|מייסדים/,['הסכם הדדי','צד מוביל','צד משתתף']],
+ [/הובלה|אחסנה|שילוח|הסעות|אירוח|תמיכה|תחזוקה|בדיקות|מיקור חוץ|ניהול תיקים|שירות|ייעוץ/,['נותן השירות','מקבל השירות']]];
+function sidesFor(f){f=clean(f);for(var i=0;i<SIDES.length;i++)if(SIDES[i][0].test(f))return SIDES[i][1].slice();return ['הצד שמספק או נותן','הצד שמקבל או רוכש','הסכם הדדי']}
 var COUNTRIES=['ישראל','ארצות הברית','בריטניה','גרמניה','צרפת','הולנד','אירלנד','קפריסין'];
 var FORMS=['חברה פרטית','חברה ציבורית (נסחרת בבורסה)','חברת אג״ח (גייסה אג״ח לציבור)','חברה ממשלתית','גוף ציבורי או משרד ממשלתי','רשות מקומית','תאגיד סטטוטורי','מוסד להשכלה גבוהה או אוניברסיטה','עמותה','חל״צ (חברה לתועלת הציבור)','הקדש או מלכ״ר','חברת חוץ (חברה זרה הרשומה בישראל)','חברה זרה (לא רשומה בישראל)','שותפות','אגודה שיתופית'];
 var CO_FORMS=['חברה פרטית','חברה ציבורית (נסחרת בבורסה)','חברת אג״ח (גייסה אג״ח לציבור)','חברה ממשלתית','חל״צ (חברה לתועלת הציבור)','חברת חוץ (חברה זרה הרשומה בישראל)','חברה זרה (לא רשומה בישראל)'];
@@ -371,7 +459,7 @@ function rail(){
   $('#count').textContent=i<0?(S.step==='done'?'הושלם':''):('שלב '+(i+1)+' מתוך '+QSTEPS.length);
 }
 function chips(list,sel,name,multi,rerender){
-  return '<div class="chips" role="group">'+list.map(function(o){var on=multi?sel.indexOf(o)>=0:sel===o;
+  return '<div class="chips" role="group"'+(multi?' data-multi':'')+'>'+list.map(function(o){var on=multi?sel.indexOf(o)>=0:sel===o;
     return '<button type="button" class="chip" data-chip="'+name+'" data-val="'+esc(o)+'" aria-pressed="'+on+'"'+(rerender?' data-rr="1"':'')+'>'+esc(o)+'</button>'}).join('')+'</div>';
 }
 function actions(nextLabel,canNext,showBack){
@@ -466,18 +554,13 @@ function render(keep){
       actions('המשך',S.sectors.length>0&&S.markets.length>0&&(!needFin()||S.fin.length>0),true)+'</section>';
   }
   else if(S.step==='pb_people'){
-    var ap=S.approver,apBad=clean(ap.name)&&!fullName(ap.name);
-    h='<section class="card"><div class="eyebrow">פלייבוק · חתימה ואישור</div><h2>מי חותם, ומי מאשר את המדיניות החוזית?</h2>'+
+    h='<section class="card"><div class="eyebrow">פלייבוק · מורשי חתימה</div><h2>מי חותם על המסמכים?</h2>'+
       '<p class="lead">נשמר בתיקייה שבחרתם, לא אצלנו. כל מי שיש לו גישה לתיקייה ישתמש באותם פרטים.</p>'+
       '<div class="field"><span class="legend">מי חותם על המסמכים שיוצאים לצד השני?</span><div class="hint">השם הראשון יופיע בבלוק החתימה ועל ההערות במסמכי המשא ומתן.</div>'+S.signers.map(function(x,i){return '<div class="signer"><input type="text" id="sn'+i+'" data-sn="'+i+'" value="'+esc(x.name)+'" placeholder="שם מלא" aria-label="שם החותם">'+
         '<input type="text" id="sr'+i+'" data-sr="'+i+'" value="'+esc(x.role)+'" placeholder="תפקיד" aria-label="תפקיד">'+
         (S.signers.length>1?'<button type="button" class="linkbtn" data-rm="'+i+'">הסרה</button>':'<span></span>')+'</div>'}).join('')+
       '<button type="button" class="linkbtn" data-add style="align-self:flex-start">+ חותם נוסף</button></div>'+
-      '<div class="field"><span class="legend">מי מאשר את המדיניות החוזית?<span class="optional">אפשר להשלים אחר כך</span></span><div class="hint">בדרך כלל היועץ המשפטי או עורך הדין של '+W('החברה','הארגון')+'. השם ימולא אוטומטית כשמאשרים פלייבוק. לפלייבוק מסוים אפשר לקבוע מאשר אחר.</div>'+
-        '<div class="signer"><input type="text" id="apn" value="'+esc(ap.name)+'" placeholder="שם מלא, פרטי ומשפחה" aria-label="שם המאשר"><input type="text" id="apr" value="'+esc(ap.role)+'" placeholder="תפקיד" aria-label="תפקיד המאשר">'+
-        (clean(S.signers[0].name)?'<button type="button" class="linkbtn" data-apsame>כמו החותם הראשון</button>':'<span></span>')+'</div>'+
-        '<div id="apnote">'+(apBad?'<div class="note warn">כתבו שם מלא, פרטי ומשפחה. כל אישור נרשם בשם הזה.</div>':'')+'</div></div>'+
-      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_home">חזרה</button><button type="button" class="btn primary" data-jump="pb_path" data-gonext'+(S.signers.some(function(x){return clean(x.name)})&&!apBad?'':' disabled')+'>המשך</button></div></section>';
+      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_home">חזרה</button><button type="button" class="btn primary" data-jump="pb_path" data-gonext'+(S.signers.some(function(x){return clean(x.name)})?'':' disabled')+'>המשך</button></div></section>';
   }
   else if(S.step==='brand'){
     h='<section class="card"><div class="eyebrow">לוגו, מיתוג ושפה</div><h2>איך התוצרים ייראו, ובאיזו שפה?</h2>'+
@@ -511,6 +594,9 @@ function render(keep){
       '<p class="lead">פרטי '+W('החברה','הארגון')+' נשמרים ב-Areo לכל הארגון. עובד נוסף אצלכם יפתח את Areo והפרופיל כבר יהיה שם. כשהשמירה מסתיימת, תראו אישור בשיחה.'+(S.logo==='אעלה עכשיו'?' זה הזמן לצרף את הלוגו בשיחה, בכפתור הפלוס.':'')+'</p>'+
       '<div class="next"><div class="t"><b>הצעד הבא: הפלייבוק</b><span>המדיניות החוזית שלכם, מתוך ההסכמים שלכם. כל הסוכנים עובדים לפיה.</span></div>'+
       '<button type="button" class="btn primary" data-jump="pb_home">לבנות פלייבוק</button></div>'+
+      '<h3 class="aph3">כל מה ש-Areo עושה<small>כתבו בשיחה את המילים בירוק</small></h3>'+
+      '<div class="agents">'+AGENTS.map(function(a){return '<div class="agent"><b>'+a[0]+'</b><span>'+a[1]+'</span><span class="say">"'+a[2]+'"</span></div>'}).join('')+'</div>'+
+      '<p class="hint">הנושא ונותן, המנסח, האסטרטג ומעריך הסיכונים עובדים לפי הפלייבוק של סוג ההסכם, ולכן מתחילים ממנו.</p>'+
       '<button type="button" class="linkbtn" data-jump="summary" style="align-self:flex-start">חזרה לסיכום</button></section>';
   }
   else if(S.step==='pb_path'){
@@ -523,12 +609,11 @@ function render(keep){
       '</div><div class="actions"><button type="button" class="btn ghost" data-jump="pb_people">חזרה</button><span></span></div></section>';
   }
   else if(S.step==='pb_kind'){
-    var KINDS=['הסכמי שירותים','הסכמי סודיות (NDA)','הסכמי שכירות','הסכמי הפצה','הסכמי רישיון תוכנה','הסכמי רכש ואספקה','הסכמי העסקה','הסכמי שיתוף פעולה'];
     var auto=S.pb.kindAuto;
     h='<section class="card"><div class="eyebrow">פלייבוק</div><h2>לאיזה סוג הסכם הפלייבוק הזה?</h2>'+
       '<p class="lead">לכל סוג הסכם בונים פלייבוק משלו: לשירותים עמדות אחרות מאשר לשכירות. את שאר הסוגים אפשר לבנות אחר כך.</p>'+
-      chips(KINDS,auto?'':S.pb.family,'kind',false)+
-      '<input type="text" id="kindFree" value="'+esc(KINDS.indexOf(S.pb.family)<0&&!auto?S.pb.family:'')+'" placeholder="לא מופיע ברשימה? כתבו כאן את סוג ההסכם">'+
+      typeChips('הסכמי ','kind')+
+      '<div class="field"><label for="kindFree">סוג אחר</label><input type="text" id="kindFree" value="'+esc(!isListedType('הסכמי ',S.pb.family)&&!auto?S.pb.family:'')+'" placeholder="לא מופיע ברשימה? כתבו כאן את סוג ההסכם"></div>'+
       '<button type="button" class="chip" data-kindauto aria-pressed="'+(!!auto)+'" style="align-self:flex-start">יש בתיקייה כמה סוגים, תזהו בשבילי</button>'+
       '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_path">חזרה</button><button type="button" class="btn primary" data-jump="pb_connect"'+((S.pb.family||auto)?'':' disabled')+' data-needkind>המשך</button></div></section>';
   }
@@ -565,7 +650,7 @@ function render(keep){
     var full=S.pb.fpick==='__picked'?('…/'+(S.pb.picked?S.pb.picked.name:'')+'  (Claude מאתר את המיקום המלא)'):S.pb.fpick==='__custom'?clean(S.pb.fcustom):'~/'+(S.pb.fpath||[]).concat([S.pb.fpick]).map(function(x){return FEN[x]||x}).join('/');
     h='<section class="card"><div class="eyebrow">אישור גישה</div><h2>אשרו את הגישה בחלון שנפתח</h2>'+
       '<p class="lead">המערכת פותחת חלון אישור משלה. רק אחרי שתאשרו שם, Claude יכול לקרוא את התיקייה, ורק בשיחה הזאת.</p>'+
-      '<div style="border:1px solid var(--line-strong);border-radius:14px;padding:18px;background:var(--raised);display:flex;flex-direction:column;gap:12px;max-width:420px">'+
+      '<div style="border:1px solid var(--line-strong);border-radius:6px;padding:18px;background:var(--raised);display:flex;flex-direction:column;gap:12px;max-width:420px">'+
         '<b>Claude מבקש גישה לתיקייה</b><span dir="ltr" style="text-align:right;color:var(--mist);font-size:14px">'+esc(full)+'</span>'+
         '<span class="hint">קריאה וכתיבה, בשיחה הזאת בלבד.</span>'+
         '<div style="display:flex;gap:10px"><button type="button" class="btn primary" data-jump="pb_scan" style="padding:9px 20px">אישור</button><button type="button" class="btn ghost" data-jump="pb_connect">דחייה</button></div></div>'+
@@ -573,8 +658,8 @@ function render(keep){
   }
   else if(S.step==='pb_market'){
     h='<section class="card"><div class="eyebrow">לפי המקובל בשוק</div><h2>לאיזה סוג הסכם?</h2>'+
-      '<div class="field"><label for="mtype">סוג ההסכם</label><input type="text" id="mtype" value="'+esc(S.pb.family)+'" placeholder="למשל: הסכם שירותי תוכנה"></div>'+
-      chips(['הסכם שירותים','הסכם סודיות (NDA)','הסכם שכירות','הסכם הפצה','הסכם רישיון תוכנה'],S.pb.family,'mtype',false)+
+      typeChips('הסכם ','mtype')+
+      '<div class="field"><label for="mtype">סוג אחר</label><input type="text" id="mtype" value="'+esc(isListedType('הסכם ',S.pb.family)?'':S.pb.family)+'" placeholder="לא מופיע ברשימה? כתבו כאן את סוג ההסכם"></div>'+
       '<div class="hint">אחר כך: באיזה צד אתם, ואילו מחלקות מעורבות. המחקר משתמש רק במקורות מהרשימה המאושרת, ומוצג לכם לפני שנכנס לפלייבוק.</div>'+
       '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_path">חזרה</button><button type="button" class="btn primary" data-jump="pb_side"'+(S.pb.family?'':' disabled')+' data-need="family">המשך</button></div></section>';
   }
@@ -603,12 +688,13 @@ function render(keep){
       '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_path">חזרה</button><button type="button" class="btn primary" data-jump="pb_side"'+(S.pb.family?'':' disabled')+' data-need="family">המשך</button></div></section>';
   }
   else if(S.step==='pb_side'){
-    var mk=S.pb.path==='market',ROLES=mk?['מקבל השירותים','נותן השירותים','הסכם הדדי']:['מקבלת השירותים','נותנת השירותים','הסכם הדדי'];
-    if(!S.pb.side&&!mk&&S.pb.path!=='upload')S.pb.side='מקבלת השירותים';
+    var mk=S.pb.path==='market',ag=S.pb.path==='agreements',ROLES=sidesFor(S.pb.family);if(ag)ROLES.unshift(SIDE_AUTO);
+    var sideFree=S.pb.side&&ROLES.indexOf(S.pb.side)<0?S.pb.side:'';
     var DEPS=[['כספים והנהלת חשבונות','תשלום, הצמדה, תקרות'],['רכש','הזמנות, מועדי אספקה, ניהול הספק'],['תפעול','אבני דרך, SLA ותחזוקה'],['מחלקה משפטית','הודעות, חידוש וסיום'],['IT ואבטחת מידע','אירועי אבטחה, גישה למערכות'],['ציות ואכיפה','רגולציה, פרטיות, אנטי שוחד'],['ביטוח','פוליסות וערבויות'],['הנהלה בכירה','חריגות מקווים אדומים'],['משאבי אנוש','אי שידול, עובדים מושאלים'],['מכירות','חידוש מול לקוח'],['תציעו לפי ההסכמים','נציג לכם הצעה לאישור']];
     h='<section class="card"><div class="eyebrow">'+esc(S.pb.family||'המדיניות הקיימת')+'</div><h2>באיזה צד החברה, ומי מעורב?</h2>'+
-      '<div class="field"><span class="legend">הצד של החברה בהסכם</span>'+chips(ROLES,S.pb.side,'side',false)+
-      (!mk&&S.pb.path!=='upload'?'<div class="hint">סימנו את מה שעולה משני הסכמים שקראנו: החברה היא מקבלת השירותים. אפשר לתקן.</div>':'')+'</div>'+
+      '<div class="field"><span class="legend">הצד של '+W('החברה','הארגון')+' בהסכם</span>'+chips(ROLES,S.pb.side,'side',false)+
+      '<input type="text" id="sideFree" value="'+esc(sideFree)+'" placeholder="צד אחר? כתבו כאן איך הוא נקרא בהסכמים">'+
+      (ag?'<div class="hint">"'+SIDE_AUTO+'": נקרא שני הסכמים מהתיקייה ונראה באיזה צד אתם. אם לא ברור, נשאל.</div>':'')+'</div>'+
       '<div class="field"><span class="legend">המחלקות המעורבות בהסכמים האלה<span class="optional">אפשר כמה</span></span>'+
       '<div class="chips">'+DEPS.map(function(d){var on=S.pb.deps.indexOf(d[0])>=0;return '<button type="button" class="chip" data-dep="'+esc(d[0])+'" aria-pressed="'+on+'" title="'+esc(d[1])+'">'+esc(d[0])+'</button>'}).join('')+'</div>'+
       '<input type="text" id="depsFree" value="'+esc(S.pb.depsFree)+'" placeholder="לא מופיע ברשימה? כתבו כאן, מופרד בפסיק">'+
@@ -700,7 +786,7 @@ function pbPayload(){
     data_folder:df.mode==='picked'?{mode:'picked',folder_name:clean(df.name),file_count:df.count,sample_files:(df.sample||[]).slice(0,8)}:{mode:df.mode||'connected'},
     signers:S.signers.filter(function(x){return clean(x.name)}).slice(0,8).map(function(x){return {name:clean(x.name),role:clean(x.role)}}),
     policy_approver:clean(S.approver.name)?{name:clean(S.approver.name),role:clean(S.approver.role)}:null,
-    path:S.pb.path,family:clean(S.pb.family),family_auto:!!S.pb.kindAuto,agreements_folder:where,company_side:S.pb.side,
+    path:S.pb.path,family:clean(S.pb.family),family_auto:!!S.pb.kindAuto,agreements_folder:where,company_side:S.pb.side===SIDE_AUTO?null:clean(S.pb.side),side_auto:S.pb.side===SIDE_AUTO,
     departments:deps.slice(0,15),market_comparison:S.pb.path==='agreements'?S.pb.market:(S.pb.path==='market'),client_concern:clean(S.pb.concern).slice(0,500)}};
 }
 function decPayload(){
@@ -722,7 +808,7 @@ function refreshNext(){
   if(S.step==='company')ok=!!clean(S.name)&&(!S.multi||!!clean(S.entities));
   if(S.step==='incorp')ok=!!S.type&&(S.type!==NL||!!clean(S.other.type))&&(!isListedCo()||S.listed.length>0)&&(!isListedCo()||S.listed.indexOf('רישום דואלי')<0||S.dual.length>0);
   if(S.step==='sector')ok=S.sectors.length>0&&S.markets.length>0&&(!needFin()||S.fin.length>0);
-  if(S.step==='pb_people'){var b2=$('[data-gonext]');var bad=clean(S.approver.name)&&!fullName(S.approver.name);ok=S.signers.some(function(x){return clean(x.name)})&&!bad;if(b2)b2.disabled=!ok;var an=$('#apnote');if(an)an.innerHTML=bad?'<div class="note warn">כתבו שם מלא, פרטי ומשפחה. כל אישור נרשם בשם הזה.</div>':''}
+  if(S.step==='pb_people'){var b2=$('[data-gonext]');ok=S.signers.some(function(x){return clean(x.name)});if(b2)b2.disabled=!ok}
   if(S.step==='brand')ok=!!S.logo&&(!needBrand()||!!S.brand);
   if(b.tagName)b.disabled=!ok;
 }
@@ -785,10 +871,10 @@ document.addEventListener('click',function(e){
     var k=t.dataset.chip,val=t.dataset.val;
     if(['sectors','markets','listed','dual','fin'].indexOf(k)>=0){var a=S[k],ix=a.indexOf(val);ix>=0?a.splice(ix,1):a.push(val)}
     else if(k==='lang'){S.lang=val==='English'?'en':'he'}
-    else if(k==='side'){S.pb.side=val}
-    else if(k==='kind'){S.pb.family=val;S.pb.kindAuto=false;var kf=$('#kindFree');if(kf)kf.value='';var ka=$('[data-kindauto]');if(ka)ka.setAttribute('aria-pressed','false');var nb=$('[data-needkind]');if(nb)nb.disabled=false}
+    else if(k==='side'){S.pb.side=val;var sf=$('#sideFree');if(sf)sf.value=''}
+    else if(k==='kind'){S.pb.family=val;S.pb.side='';S.pb.kindAuto=false;var kf=$('#kindFree');if(kf)kf.value='';var ka=$('[data-kindauto]');if(ka)ka.setAttribute('aria-pressed','false');var nb=$('[data-needkind]');if(nb)nb.disabled=false}
     else if(k==='market'){S.pb.market=val==='כן, להשוות'}
-    else if(k==='mtype'){S.pb.family=val;var mi=$('#mtype');if(mi)mi.value=val}
+    else if(k==='mtype'){S.pb.family=val;S.pb.side='';var mi=$('#mtype');if(mi)mi.value=''}
     else S[k]=val;
     t.parentNode.querySelectorAll('.chip').forEach(function(c){
       var on=(['sectors','markets','listed','dual','fin'].indexOf(k)>=0)?S[k].indexOf(c.dataset.val)>=0:(k==='lang'?((S.lang==='en')===(c.dataset.val==='English')):(k==='side'?S.pb.side===c.dataset.val:(k==='market'?(S.pb.market===(c.dataset.val==='כן, להשוות')):((k==='mtype'||k==='kind')?S.pb.family===c.dataset.val:S[k]===c.dataset.val))));
@@ -798,7 +884,6 @@ document.addEventListener('click',function(e){
   if(t.hasAttribute('data-add')){S.signers.push({name:'',role:''});save();render();var n=$('#sn'+(S.signers.length-1));n&&n.focus();return}
   if(t.dataset.rm){S.signers.splice(+t.dataset.rm,1);save();render();return}
   if(t.dataset.toggle==='multi'){S.multi=!S.multi;save();render(true);if(S.multi){var en=$('#entities');en&&en.focus()}return}
-  if(t.hasAttribute('data-apsame')){S.approver={name:S.signers[0].name,role:S.signers[0].role};save();render(true);return}
   if(t.hasAttribute('data-whosave')){var nn=clean(($('#apn2')||{}).value);if(!fullName(nn)){toast('כתבו שם מלא, פרטי ומשפחה. כל אישור נרשם בשם הזה.');var ai=$('#apn2');ai&&ai.focus();return}S.approver={name:nn,role:clean(($('#apr2')||{}).value)};save();render(true);return}
   if(t.hasAttribute('data-whoedit')){S.approver={name:'',role:''};save();render(true);return}
   if(t.hasAttribute('data-okall')){if(t.disabled)return;POS.forEach(function(p){if(!p.legal&&(S.pb.dec[p.id]||{}).st!=='change')S.pb.dec[p.id]={st:'ok'}});save();render(true);return}
@@ -817,17 +902,16 @@ document.addEventListener('input',function(e){
   if(t.id==='name'||t.id==='nameEn'||t.id==='desc'){S[t.id]=t.value}
   else if(t.id==='website'){var had=needBrand();S.website=t.value;if(had!==needBrand()){save();var y3=window.scrollY,pos=t.selectionStart;render(true);window.scrollTo(0,y3);var wi=$('#website');if(wi){wi.focus({preventScroll:true});try{wi.setSelectionRange(pos,pos)}catch(x){}}return}}
   else if(t.id==='reg'){S.reg=t.value;var rs=regState(S.reg),n=$('#regnote');if(n)n.innerHTML=rs?'<div class="note '+(rs.ok?'ok':'warn')+'">'+rs.msg+'</div>':'<div class="hint">ח.פ, מספר עמותה או שותפות, או מספר רישום בחו"ל. אין מספר? אפשר להשאיר ריק.</div>'}
-  else if(t.id==='mtype'){S.pb.family=t.value}
+  else if(t.id==='mtype'){S.pb.family=t.value;S.pb.side='';document.querySelectorAll('[data-chip=mtype]').forEach(function(c){c.setAttribute('aria-pressed','false')});var nb3=$('[data-need]');if(nb3)nb3.disabled=!clean(t.value)}
+  else if(t.id==='sideFree'){S.pb.side=t.value;document.querySelectorAll('[data-chip=side]').forEach(function(c){c.setAttribute('aria-pressed','false')})}
   else if(t.id==='depsFree'){S.pb.depsFree=t.value}
-  else if(t.id==='kindFree'){S.pb.family=t.value;S.pb.kindAuto=false;document.querySelectorAll('[data-chip=kind]').forEach(function(c){c.setAttribute('aria-pressed','false')});var ka2=$('[data-kindauto]');if(ka2)ka2.setAttribute('aria-pressed','false');var nb2=$('[data-needkind]');if(nb2)nb2.disabled=!clean(t.value)}
+  else if(t.id==='kindFree'){S.pb.family=t.value;S.pb.side='';S.pb.kindAuto=false;document.querySelectorAll('[data-chip=kind]').forEach(function(c){c.setAttribute('aria-pressed','false')});var ka2=$('[data-kindauto]');if(ka2)ka2.setAttribute('aria-pressed','false');var nb2=$('[data-needkind]');if(nb2)nb2.disabled=!clean(t.value)}
   else if(t.id==='fcustom'){S.pb.fcustom=t.value;var fb=$('[data-fcustom]');if(fb)fb.disabled=!clean(t.value)}
   else if(t.id==='concern'){S.pb.concern=t.value}
   else if(t.dataset.note){(S.pb.dec[t.dataset.note]=S.pb.dec[t.dataset.note]||{st:'change'}).note=t.value}
   else if(t.dataset.sn!=null){S.signers[+t.dataset.sn].name=t.value}
   else if(t.id==='entities'){S.entities=t.value}
   else if(t.id==='mcs'){S.mcs=t.value}
-  else if(t.id==='apn'){S.approver.name=t.value}
-  else if(t.id==='apr'){S.approver.role=t.value}
   else if(t.dataset.other){S.other[t.dataset.other]=t.value}
   else if(t.dataset.sr!=null){S.signers[+t.dataset.sr].role=t.value}
   save();refreshNext();pbNext();

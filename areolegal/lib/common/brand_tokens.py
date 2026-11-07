@@ -456,7 +456,7 @@ def _theme_block(sel, tk, brand2, accent_rgb):
 # מיקום הלוגו: בצד ההתחלה של הכותרת בשתי הכיוונים (שוליים לוגיים), ומשטח מנוגד כשהוא נבלע ברקע
 LOGO_CSS = (
     '.client-logo{max-height:34px;max-width:190px;width:auto;height:auto;object-fit:contain;flex:0 0 auto;'
-    'margin-inline-end:14px;border-radius:6px}\n'
+    'margin-inline-end:14px;border-radius:3px}\n'
     'html[dir="rtl"] .client-logo{object-position:right center}\n'
     'html[dir="ltr"] .client-logo{object-position:left center}\n'
     '@media print{.client-logo{max-height:28px}}')

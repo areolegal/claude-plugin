@@ -5,15 +5,15 @@
     "email": "neildahan24@gmail.com"
   },
   "metadata": {
-    "description": "AreoLegal — סוויטת סקילים משפטית לניהול פלייבוקים חוזיים ומשא ומתן, בעברית",
-    "version": "1.25.0"
+    "description": "AreoLegal - סוויטת סקילים משפטית לניהול פלייבוקים חוזיים ומשא ומתן, בעברית",
+    "version": "1.26.0"
   },
   "plugins": [
     {
       "name": "areolegal",
       "source": "./areolegal",
-      "description": "פלייבוק חוזי, משא ומתן על הסכמים, פרופיל ארגוני ומסמכי RTL — דורש מנוי פעיל",
-      "version": "1.25.0",
+      "description": "פלייבוק חוזי, משא ומתן על הסכמים, פרופיל ארגוני ומסמכי RTL. דורש מנוי פעיל",
+      "version": "1.26.0",
       "author": {
         "name": "AreoLegal"
       },
