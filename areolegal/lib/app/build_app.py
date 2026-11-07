@@ -91,7 +91,10 @@ def inject(html,data):
 	A=json.dumps(data,ensure_ascii=False,separators=(',',':'));A=A.replace('</','<\\/').replace('<!--','<\\!--').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
 	if html.count(MARKER)!=1:raise ValueError('התבנית אינה מכילה את הסמן %s פעם אחת בדיוק'%MARKER)
 	return html.replace(MARKER,A)
-def capabilities(has_clm=True):return{'db':{},'sample':{},'downloads':True,'mcp':{'servers':[dict(A)for A in MCP_SERVERS]}}
+def capabilities(has_clm=True,with_mail=False):
+	A={'db':{},'sample':{},'downloads':True}
+	if with_mail:A['mcp']={'servers':[dict(A)for A in MCP_SERVERS]}
+	return A
 def _write(path,text):A=path;A=Path(A);A.parent.mkdir(parents=True,exist_ok=True);B=A.with_name(A.name+'.tmp');B.write_text(text,encoding='utf-8');os.replace(str(B),str(A))
 def build(data_dir,out_dir,products=(BASE,),today=None,template=None):
 	J=template;D=out_dir;A=data_dir;A,D=Path(A),Path(D)

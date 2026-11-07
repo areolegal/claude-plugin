@@ -82,7 +82,7 @@ def has_tracked(row):
 def derived_counts(rule,source_log):
 	H={A.get('source_id'):A for A in source_log or[]if isinstance(A,dict)};D,E,F=set(),set(),set()
 	for B in rule.get('evidence')or[]:
-		if B.get('track')not in('green','yellow','red'):continue
+		if not isinstance(B,dict)or B.get('track')not in('green','yellow','red'):continue
 		C=str(B.get('source_ref')or B.get('source_id')or'').split('#')[0];A=H.get(C)
 		if not A or not is_agreement(A):continue
 		F.add(C);I=str(A.get('doc_role')or'')

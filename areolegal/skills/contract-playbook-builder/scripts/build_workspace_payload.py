@@ -342,8 +342,12 @@ def build_gaps(m,rules,lang='he'):
 			if norm_key(B)not in C:C.add(norm_key(B));E.append({'topic':B,'rule_id':D,'origin':'no_evidence'})
 	return E
 def norm_key(t):return re.sub('\\s+',' ',str(t or'')).strip().lower()
+def _old_evidence_as_objects(m):
+	for A in m.get('rules')or[]:
+		if isinstance(A,dict)and isinstance(A.get('evidence'),list)and any(not isinstance(A,dict)for A in A['evidence']):A['evidence']=[A if isinstance(A,dict)else{'quote':str(A)}for A in A['evidence']if A not in(None,'')]
+	return m
 def convert(m,lang='he',model_path=None,profile=None,extract=None):
-	C=extract;B=model_path;A=lang;H=[];F,M=build_sources(m)
+	C=extract;B=model_path;A=lang;m=_old_evidence_as_objects(m);H=[];F,M=build_sources(m)
 	if C is None and B:C=E.find_extract(m,B)
 	if not C:warn('אין קובץ חילוץ (--extract): סיווג הראיה של הציטוטים (ev_kind) הוא unknown')
 	D=build_rules(m,H,A,C);N={A['id']:A for A in D};I=S.record_cells_for(m,B)if B else{};J=S.derive_status(m,I,lang=A);approval_flags(m,D,I,J);G=build_meta(m,A,J,profile);G['gaps']=build_gaps(m,D,A);G['sources_counted']={'agreements':sum(1 for A in F.values()if A.get('is_agreement')),'non_agreements':sum(1 for A in F.values()if A.get('kind')=='internal'and not A.get('is_agreement'))};K={'meta':G,'scope':scope_block(m,A),'sources':F,'friendly':M,'rules':D,'cites':H,'segments':build_segments(m,N,A),'precedents':m.get('previous_agreements_where_language_accepted')or[],'templateFindings':build_findings(m),'queue':build_queue(m)}

@@ -180,15 +180,131 @@ def _type_of(key,entry,model):
 	A=_pick(entry or{},'family_type','contract_type','type')or _pick(model,'contract_type','family_type')
 	if A:return _s(A)
 	B=re.match('^fam_(.+)_[^_]+$',key);return B.group(1)if B else key
+HTML_SKIP_DIRS={'areo','areo-app','apps','node_modules','__pycache__'}
+HTML_MAX_BYTES=41943040
+HTML_MAX_FILES=400
+_DATA_RX=re.compile('\\b(?:const|let|var)\\s+(?:D|DATA|PAYLOAD)\\s*=\\s*(?:/\\*__DATA__\\*/\\s*)?(?=\\{)')
+def find_workspace_html(data_dir):
+	B=data_dir;B=Path(B);A=[]
+	for(F,D,G)in os.walk(str(B)):
+		D[:]=sorted(A for A in D if not A.startswith('.')and A.lower()not in HTML_SKIP_DIRS)
+		for C in sorted(G):
+			E=C.lower()
+			if E.endswith(('.html','.htm'))and'.wizard.'not in E and not C.startswith('.'):
+				A.append(Path(F)/C)
+				if len(A)>=HTML_MAX_FILES:return A
+	return A
+def _is_payload(obj):A=obj;return isinstance(A,dict)and isinstance(A.get('rules'),list)and(isinstance(A.get('meta'),dict)or isinstance(A.get('books'),dict))
+def workspace_payload(text):
+	A=text;import html as G;H=json.JSONDecoder();D=[A]
+	if'&quot;'in A and not _DATA_RX.search(A):D.append(G.unescape(A))
+	for B in D:
+		for E in _DATA_RX.finditer(B):
+			for C in(B[E.end():],None):
+				if C is None:C=B[E.end():].replace('<\\/','</').replace('<\\!--','<!--')
+				try:F,I=H.raw_decode(C)
+				except ValueError:continue
+				if _is_payload(F):return F
+				break
+def _payload_books(payload):
+	B=payload;A=B.get('books')
+	if isinstance(A,dict)and A:return[A for A in A.values()if _is_payload(A)]
+	return[B]
+def _lane_back(t,rid):
+	if not isinstance(t,dict):return
+	A={'position':_s(t.get('pos')),'match_criteria':_strs(t.get('crit'))}
+	for B in('basis','basis_note','company_effect','as_discloser_effect','as_recipient_effect'):
+		if t.get(B):A[B]=t[B]
+	if isinstance(t.get('role_effects'),dict):A['role_effects']=t['role_effects']
+	if _s(t.get('clause')):A['proposed_clause']=_s(t.get('clause'))
+	if t.get('approved')is True:A['ingest_result']={'status':'approved','policy_claim':True,'simulated':False,'signer':_s(t.get('approved_by')),'approved_at':_s(t.get('approved_at'))}
+	return A
+def payload_to_model(b):
+	E=b.get('meta')if isinstance(b.get('meta'),dict)else{};G=b.get('pb')if isinstance(b.get('pb'),dict)else{};R=b.get('scope')if isinstance(b.get('scope'),dict)else{};I=[A for A in R.get('contract_families')or[]if isinstance(A,dict)]
+	if not I and(_s(G.get('family'))or _s(G.get('role'))):I=[{'contract_family_name':_s(G.get('family')),'company_role':_s(G.get('role'))}]
+	W=E.get('company_by_lang')if isinstance(E.get('company_by_lang'),dict)else{};S=[]
+	for(X,B)in(b.get('sources')or{}).items()if isinstance(b.get('sources'),dict)else[]:
+		if not isinstance(B,dict)or B.get('kind')=='external':continue
+		T={'source_id':X,'title':_s(_pick(B,'title','name','label'))}
+		for(J,C)in(('paper','paper'),('doc_role','doc_role'),('signed_at','date'),('counterparty','counterparty'),('short_name','short'),('company_role_in_source','role')):
+			if B.get(C)not in(None,''):T[J]=B[C]
+		S.append(T)
+	Y=[A for A in b.get('cites')or[]if isinstance(A,dict)];K=[]
+	for A in b.get('rules')or[]:
+		if not isinstance(A,dict)or not _s(A.get('id')):continue
+		L=_s(A['id']);M=A.get('tl')if isinstance(A.get('tl'),dict)else{};D={'rule_id':L,'topic_name':_s(A.get('topic')),'clause_issue':_s(A.get('issue')),'traffic_light':{B:A for(B,A)in((A,_lane_back(M.get(A),L))for A in TRACKS)if A}}
+		for(J,C)in(('clause_kind','kind'),('counterparty_objective','they'),('why_address_topic','why'),('clause_number','num')):
+			if A.get(C)not in(None,''):D[J]=A[C]
+		if isinstance(A.get('rat'),dict):D['policy_rationale']=A['rat']
+		N=A.get('presence')
+		if isinstance(N,dict)and _s(N.get('requirement')):D['presence_rule']={'requirement':_s(N.get('requirement'))}
+		if isinstance(A.get('rel'),list):D['related_rule_ids']=A['rel']
+		O=[]
+		for F in A.get('impacts')or[]:
+			if isinstance(F,dict):O.append({'related_rule_id':F.get('related_rule_id'),'direction':F.get('direction'),'impact':F.get('impact'),'action':F.get('action'),'basis':F.get('basis'),'evidence':[{'clause_ref':A.get('clause'),'quote':A.get('quote'),'count':A.get('count')or 1}for A in F.get('evidence')or[]if isinstance(A,dict)]})
+		if O:D['related_clause_impacts']=O
+		U=[A for A in TRACKS if isinstance(M.get(A),dict)and M[A].get('legal_review_open')]
+		if U:D['legal_review_required']=U
+		D['evidence']=[{'track':_s(A.get('track')),'quote':_s(A.get('text')),'source_ref':_s(A.get('src')),'clause_ref':_s(A.get('ref')),'side':_s(A.get('side')),'tag':_s(A.get('tag'))}for A in Y if L in(A.get('rules')or[])];K.append(D)
+	V={A['rule_id']:A for A in K};P=[]
+	for B in b.get('segments')or[]:
+		if isinstance(B,dict)and _s(B.get('segment_id')):P.append({'segment_id':_s(B['segment_id']),'segment_name':_s(B.get('label')),'criteria':B.get('criteria')or'','status':_s(B.get('status'))})
+	for A in b.get('rules')or[]:
+		for H in A.get('variants')or[]if isinstance(A,dict)else[]:
+			if not isinstance(H,dict)or _s(A.get('id'))not in V or not _s(H.get('seg')):continue
+			Z=H.get('tl')if isinstance(H.get('tl'),dict)else{};V[_s(A['id'])].setdefault('segment_variants',[]).append({'segment_id':_s(H['seg']),'traffic_light':{B:{'position':_s(A.get('pos'))}for(B,A)in Z.items()if B in TRACKS and isinstance(A,dict)and _s(A.get('pos'))}})
+	Q={'company_name':_s(W.get('he'))or _s(E.get('company')),'family_id':_s(G.get('id'))or _s(E.get('id')),'playbook_id':_s(E.get('id')),'last_updated':_s(E.get('updated')),'generated_at':_s(E.get('created')),'scope_summary':{'contract_families':I,'limitations':R.get('limitations')or[]},'source_log':S,'rules':K,'validation_queue':[{'id':A.get('item_id'),'topic':A.get('issue'),'question':A.get('question'),'rule_id':A.get('rule_id'),'recommendation':A.get('rec')}for A in b.get('queue')or[]if isinstance(A,dict)]}
+	if P:Q['segmentation_model']={'segments':P}
+	for C in('commercial','coverage'):
+		if isinstance(b.get(C),dict):Q[C]=b[C]
+	return Q
+def _html_label(path):A=re.sub('\\.html?$','',Path(path).name,flags=re.I);A=re.sub('^\\s*Areo\\s+Workspace\\s*[-|:·]\\s*','',A,flags=re.I).strip();return A or Path(path).stem
+def _html_books(data_dir,profile):
+	I=data_dir;J=[]
+	for A in find_workspace_html(I):
+		try:
+			if A.stat().st_size>HTML_MAX_BYTES:continue
+			K=A.read_text(encoding='utf-8',errors='replace')
+		except OSError as C:_warn('לא נקרא %s (%s)'%(A,C));continue
+		if'rules'not in K:continue
+		try:F=workspace_payload(K)
+		except Exception as C:_warn('%s: נתוני הדף לא נקראו (%s)'%(A,C));F=None
+		if not F:continue
+		try:L=A.stat().st_mtime
+		except OSError:L=0
+		for G in _payload_books(F):
+			try:M=payload_to_model(G);D,E=book_data(M,A,profile)
+			except Exception as C:_warn('%s: פלייבוק בדף לא נקרא (%s)'%(A,C));continue
+			B=G.get('meta')if isinstance(G.get('meta'),dict)else{};Q=B.get('labels')if isinstance(B.get('labels'),dict)else{};H=_s(Q.get('he'))or _s(B.get('status_label'))
+			if H:D['status']['label']=H;E=dict(E,label=H)
+			for(R,N)in(('approved','approved_count'),('total','positions_count')):
+				if isinstance(B.get(N),int):D['status'][R]=B[N]
+			if _s(B.get('playbook_status')):E=dict(E,playbook_status=_s(B['playbook_status']))
+			O=(B.get('build_path')or{}).get('n')if isinstance(B.get('build_path'),dict)else None
+			if isinstance(O,int):D['docs']=O
+			try:P=str(A.relative_to(I))
+			except ValueError:P=A.name
+			J.append({'model':M,'data':D,'st':E,'path':P,'abs':str(A),'mtime':L,'label':D['family']or _s(B.get('title'))or _html_label(A)})
+	return J
+def _norm_name(t):return re.sub('\\s+',' ',_s(t)).strip().lower()
 def page_data(data_dir):
-	E=data_dir;E=Path(E);I=_read_json(E/PROFILE_NAME)if(E/PROFILE_NAME).is_file()else None;C,J=[],set()
-	for(F,G)in find_models(E):
-		A=_read_json(G)
-		if not isinstance(A,dict)or not isinstance(A.get('rules'),list):_warn('%s אינו מודל פלייבוק, ולא נכלל'%G);continue
-		L=((A.get('scope_summary')or{}).get('contract_families')or[{}])[0]or{};B=_s(_pick(A,'family_id')or _pick(F,'family_id')or _pick(L,'contract_family_id')or _pick(A,'playbook_id'))or G.parent.name or'playbook';M,H=B,2
-		while B in J:B,H='%s_%d'%(M,H),H+1
-		J.add(B);D,K=book_data(A,G,I);C.append({'key':B,'type':_type_of(B,F,A),'label':D['family']or _s(_pick(F,'family_name','label'))or B,'family':D['family'],'side':D['side']or _s(_pick(F,'company_role')),'status':K['playbook_status'],'status_label':K['label'],'updated':D['date'],'rules':len(D['rules']),'legacy':bool(F.get('legacy')),'built':True,'data':D})
-	N=max(C,key=lambda b:b['updated'])['key']if C else None;return{'company':C[0]['data']['company']if C else _s(_pick(I or{},'organization_name')),'current':N,'books':C}
+	G=data_dir;G=Path(G);L=_read_json(G/PROFILE_NAME)if(G/PROFILE_NAME).is_file()else None;D,I=[],set()
+	for(H,J)in find_models(G):
+		E=_read_json(J)
+		if not isinstance(E,dict)or not isinstance(E.get('rules'),list):_warn('%s אינו מודל פלייבוק, ולא נכלל'%J);continue
+		S=((E.get('scope_summary')or{}).get('contract_families')or[{}])[0]or{};A=_s(_pick(E,'family_id')or _pick(H,'family_id')or _pick(S,'contract_family_id')or _pick(E,'playbook_id'))or J.parent.name or'playbook';M,F=A,2
+		while A in I:A,F='%s_%d'%(M,F),F+1
+		I.add(A);B,K=book_data(E,J,L);D.append({'key':A,'type':_type_of(A,H,E),'label':B['family']or _s(_pick(H,'family_name','label'))or A,'family':B['family'],'side':B['side']or _s(_pick(H,'company_role')),'status':K['playbook_status'],'status_label':K['label'],'updated':B['date'],'rules':len(B['rules']),'legacy':bool(H.get('legacy')),'built':True,'data':B})
+	N={A['key']for A in D}|{_norm_name(A['family'])for A in D if A['family']};N|={_norm_name(A['label'])for A in D if A['label']};P={}
+	for C in sorted(_html_books(G,L),key=lambda h:(h['data']['date'],h['mtime']),reverse=True):
+		O=_s(C['model'].get('family_id'))or _s(C['model'].get('playbook_id'));Q={A for A in(O,_norm_name(C['data']['family']),_norm_name(C['label']))if A}
+		if Q&N:continue
+		R=O or _norm_name(C['data']['family'])or _norm_name(C['label'])
+		if R in P:continue
+		P[R]=C;N|=Q;A=O or re.sub('[^\\w]+','_',C['label']).strip('_')or'playbook';M,F=A,2
+		while A in I:A,F='%s_%d'%(M,F),F+1
+		I.add(A);B,K=C['data'],C['st'];D.append({'key':A,'type':_type_of(A,{},C['model']),'label':C['label'],'family':B['family'],'side':B['side'],'status':K['playbook_status'],'status_label':B['status']['label'],'updated':B['date'],'rules':len(B['rules']),'legacy':True,'from_html':C['path'],'built':True,'data':B})
+	T=max(D,key=lambda b:b['updated'])['key']if D else None;return{'company':D[0]['data']['company']if D else _s(_pick(L or{},'organization_name')),'current':T,'books':D}
 def to_js(obj):A=json.dumps(obj,ensure_ascii=False,separators=(',',':'));return A.replace('</','<\\/').replace('<!--','<\\!--').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
 def render_data(data,out_html,template=None):
 	B=template;A=out_html;C=Path(B)if B else TEMPLATE;D=C.read_text(encoding='utf-8')
@@ -196,11 +312,11 @@ def render_data(data,out_html,template=None):
 	A=Path(A);A.parent.mkdir(parents=True,exist_ok=True);A.write_text(D.replace(MARKER,to_js(data)),encoding='utf-8');return A
 def render(data_dir,out_html,template=None):return render_data(page_data(Path(data_dir)),out_html,template)
 def main(argv=None):
-	import argparse as F;sys.dont_write_bytecode=True;A=F.ArgumentParser(description='מסך המדיניות של Areo, מכל הפלייבוקים שבתיקיית Areo-נתונים');A.add_argument('--data-dir',required=True,help='תיקיית Areo-נתונים');A.add_argument('--out',required=True,help='קובץ ה-HTML שנכתב');A.add_argument('--template',help='תבנית אחרת (ברירת מחדל: ui/app/policy.html)');B=A.parse_args(argv);C,D=Path(B.data_dir),Path(B.out)
-	if not C.is_dir():sys.stderr.write('אין תיקייה %s\n'%C);return 2
+	import argparse as F;sys.dont_write_bytecode=True;B=F.ArgumentParser(description='מסך המדיניות של Areo, מכל הפלייבוקים שבתיקיית Areo-נתונים');B.add_argument('--data-dir',required=True,help='תיקיית Areo-נתונים');B.add_argument('--out',required=True,help='קובץ ה-HTML שנכתב');B.add_argument('--template',help='תבנית אחרת (ברירת מחדל: ui/app/policy.html)');C=B.parse_args(argv);A,D=Path(C.data_dir),Path(C.out)
+	if not A.is_dir():sys.stderr.write('אין תיקייה %s\n'%A);return 2
 	if D.suffix.lower()not in('.html','.htm'):sys.stderr.write('--out צריך להיות קובץ .html\n');return 2
 	from common.cli import guard_out as G,OutputRefused as H
-	try:G(str(D),inputs=[str(A)for(B,A)in find_models(C)])
+	try:G(str(D),inputs=[str(A)for(B,A)in find_models(A)]+sorted({A['abs']for A in _html_books(A,None)}))
 	except H as I:sys.stderr.write('refused: %s\n'%I);return 2
-	E=page_data(C);render_data(E,D,Path(B.template)if B.template else None);print('נכתב %s: %d פלייבוקים%s'%(D,len(E['books']),''.join('\n  %s%s (%d נושאים)'%('* 'if A['key']==E['current']else'  ',A['label'],A['rules'])for A in E['books'])));return 0
+	E=page_data(A);render_data(E,D,Path(C.template)if C.template else None);print('נכתב %s: %d פלייבוקים%s'%(D,len(E['books']),''.join('\n  %s%s (%d נושאים)'%('* 'if A['key']==E['current']else'  ',A['label'],A['rules'])for A in E['books'])));return 0
 if __name__=='__main__':sys.exit(main())
