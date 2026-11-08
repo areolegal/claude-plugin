@@ -519,7 +519,7 @@ function render(keep){
       '<ul class="facts"><li>שאלה אחת בכל מסך, ובסוף סיכום לאישור שלכם.</li>'+
       '<li>פרטי החברה נשמרים ב-Areo לכל הארגון: עובד נוסף אצלכם לא יצטרך למלא אותם שוב. מורשי חתימה ומסמכים לא נשמרים אצלנו.</li>'+
       '<li>אפשר לעצור באמצע ולחזור. מה שמילאתם נשמר בדפדפן.</li></ul>'+
-      '<div class="actions"><span></span><button type="button" class="btn primary" data-go="next">מתחילים</button></div></section>';
+      '<div class="actions">'+(EMB?'<button type="button" class="btn ghost" data-leave>חזרה למערכת</button>':'<span></span>')+'<button type="button" class="btn primary" data-go="next">מתחילים</button></div></section>';
   }
   else if(S.step==='pb_home'){
     var df=S.dataFolder,dfok=df&&(df.mode==='connected'||(df.mode==='picked'&&df.root));

@@ -211,6 +211,14 @@ body.loose .crumbrow,body.loose .tco{display:none}
 .src .act{margin-top:2px;display:flex;gap:6px}
 .sbtn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:9px;padding:5px 11px;font-size:13px;font-weight:600;cursor:pointer}
 .sbtn:hover{border-color:var(--accent);color:var(--accent)}
+/* first run: three steps, each with its own button */
+.welcome .wl{margin:0 0 6px;color:var(--mist);font-size:14.5px}
+.wsteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.wsteps li{display:flex;gap:14px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:14px 16px;background:var(--raised)}
+.wsteps .n{flex:0 0 30px;height:30px;border-radius:4px;display:grid;place-items:center;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+.wsteps li.ok .n{background:var(--accent);color:var(--panel)}
+.wsteps .tx{flex:1;min-width:0}.wsteps .tx b{display:block;font-size:15.5px}.wsteps .tx span{color:var(--mist);font-size:14px}
+.wsteps .ac{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .sbtn.danger:hover{border-color:var(--risk);color:var(--risk)}
 .st2{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--mist)}
 .st2::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--faint)}
@@ -830,7 +838,7 @@ function renderSettings(){
        '<div class="fr" role="row">'+SIC.folder+'<span class="fn">Areo-נתונים<small>תיקיית העבודה: עסקאות, טיוטות והחלטות</small></span><span class="fc">'+(N?nn(N.deals.length,'עסקה אחת','עסקאות'):ws&&ws.count!=null?nn(ws.count,'עסקה אחת','עסקאות'):'')+'</span>'+hintLnk('להחליף','Areo, להחליף את תיקיית העבודה')+'</div>'+
      '</div>'+
      '<h3 class="subh">פלייבוקים <span class="dim">· '+(HASCLM?'לכל סוג הסכם והצד שלנו בו, מכל התיקיות במאגר':'לכל סוג הסכם והצד שלנו בו')+'</span></h3>'+
-     '<div class="rows">'+(pbRows||'<p class="empty">עוד אין פלייבוק. '+esc(say('Areo, לבנות פלייבוק מתיקיית ההסכמים'))+'</p>')+'</div>'+
+     '<div class="rows">'+(pbRows||'<p class="empty">עוד אין פלייבוק. <button class="sbtn" data-flow="playbook">לבנות פלייבוק</button></p>')+'</div>'+
      '<h3 class="subh">מאיפה כל מסך מקבל את המידע</h3>'+
      '<div class="rows">'+
        '<div class="rowx"><span class="k">משא ומתן</span><span class="v">קובצי העסקאות בתיקיית העבודה<small>כל סבב, כל הכרעה וכל מסמך שנשלח</small></span><span></span></div>'+
@@ -1089,7 +1097,15 @@ function renderToday(){
     const dueFirst=turn.filter(x=>x.due).sort((a,b)=>String(a.due).localeCompare(String(b.due)))[0];
     p=[list?list+'.':'',dueFirst?'הראשון: '+dueFirst.cp+', להחזיר עד '+dueFirst.dueTxt+'.':'',sub].filter(Boolean).join(' ');
   }
-  const none=fresh?'עוד אין עסקאות ומדיניות. כדי להתחיל, '+say('Areo, לבנות פלייבוק מתיקיית ההסכמים')+'.':after?'אין סבב, אישור או שאלה פתוחה.':'אין שום דבר שמחכה לך.';
+  const hasProfile=!!SH.company;
+  const wstep=(n,ok,t,s,ac)=>'<li'+(ok?' class="ok"':'')+'><span class="n">'+(ok?'✓':n)+'</span><span class="tx"><b>'+t+'</b><span>'+s+'</span></span><span class="ac">'+ac+'</span></li>';
+  const welcome=fresh?'<section class="blk wide welcome" id="b-welcome"><h2>איך מתחילים</h2><p class="wl">שלושה צעדים, ואפשר לעבוד. כל אחד מתחיל בכפתור, כאן במערכת.</p><ol class="wsteps">'+
+    wstep(1,hasProfile,'פרטי החברה',hasProfile?esc(SH.company):'כמה שאלות קצרות על החברה, פעם אחת לכל הארגון.',hasProfile?'':'<button class="sbtn" data-flow="setup">להתחיל</button>')+
+    wstep(2,false,'פלייבוק','המדיניות החוזית שלכם: מההסכמים, לפי המקובל בשוק, או ממסמך מדיניות קיים.','<button class="sbtn" data-flow="playbook">לבנות פלייבוק</button>')+
+    wstep(3,false,'עבודה שוטפת','טיוטה שקיבלתם מהצד השני, או הסכם חדש על הנייר שלכם.','<button class="sbtn" data-wnego>טיוטה שקיבלתם</button><button class="sbtn" data-wnew>+ הסכם חדש</button>')+
+    '</ol></section>':'';
+  if(fresh){h1=esc('ברוכים הבאים ל-Areo'+(company?', '+company:''));p=''}
+  const none=fresh?'עוד אין עסקאות ומדיניות. מתחילים מהצעדים שלמעלה.':after?'אין סבב, אישור או שאלה פתוחה.':'אין שום דבר שמחכה לך.';
   const THEIRS=after?'לתגובת הצד שכנגד':'אצל הצד השני';
 
   if(!todayEl.__intro&&any){todayEl.__intro=1;todayEl.classList.add('intro');setTimeout(()=>todayEl.classList.remove('intro'),1200)}
@@ -1101,7 +1117,7 @@ function renderToday(){
      '<div class="foot">מתעדכן מ'+andList(NAMES())+'</div></aside>'+
    '<div class="tmain"><div class="tcol"><div class="crumbrow">מבט על · '+esc(wday)+' '+dstr+'</div>'+
      '<header class="hello"><span class="eb">'+esc(eb)+'</span><h1>'+h1+'</h1>'+(p?'<p>'+esc(p)+'</p>':'')+'</header>'+
-     '<div class="grid">'+
+     '<div class="grid">'+welcome+
        '<section class="blk wide" id="b-mine"><h2>מחכה לך <span class="c">'+mine.length+'</span><span class="from">'+NAMES().join(' · ')+'</span></h2>'+(any?(mine.join('')||'<p class="empty">'+esc(none)+'</p>'):loading)+'</section>'+
        areoBlock()+
        (HASCLM?'<section class="blk" id="b-dates"><h2>מועדים ב-90 יום <span class="c">'+dates.length+'</span><span class="from">ניהול חוזים</span></h2>'+(LC?loading:(dates.join('')||'<p class="empty">אין מועדים ב-90 הימים הקרובים.</p>'))+
@@ -1152,10 +1168,18 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{loc
 window.addEventListener('hashchange',sync);
 /* building a playbook happens here, not in the conversation: the playbook steps open over the policy screen,
    and their last button sends the request to Areo. They stay open while switching tabs and close from their own button */
-let PBX=null;
-function pbxSync(){if(PBX)PBX.classList.toggle('on',current()==='policy')}
-window.__areoBuildPlaybook=()=>{if(!PBX){PBX=document.createElement('iframe');PBX.className='pbx';PBX.title='בניית פלייבוק';PBX.src='apps/playbook.html';stage.appendChild(PBX)}
-  if(current()!=='policy')location.hash='policy';pbxSync();return true};
+let PBX=null,PBXK='';
+const FLOWS={playbook:{src:'apps/playbook.html',tab:'policy',title:'בניית פלייבוק'},setup:{src:'apps/setup.html',tab:'today',title:'הקמת Areo'}};
+function pbxSync(){if(PBX)PBX.classList.toggle('on',current()===FLOWS[PBXK].tab)}
+function openFlow(k){const F=FLOWS[k];if(PBX&&PBXK!==k){PBX.remove();PBX=null}
+  if(!PBX){PBX=document.createElement('iframe');PBX.className='pbx';PBX.title=F.title;PBX.src=F.src;stage.appendChild(PBX);PBXK=k}
+  if(current()!==F.tab)location.hash=F.tab;pbxSync();return true}
+window.__areoBuildPlaybook=()=>openFlow('playbook');
+window.__areoSetup=()=>openFlow('setup');
+/* the welcome steps and any other button that starts a flow */
+document.addEventListener('click',e=>{const f=e.target.closest('[data-flow]');if(f){e.preventDefault();openFlow(f.dataset.flow);return}
+  if(e.target.closest('[data-wnew]')){e.preventDefault();openNew();return}
+  if(e.target.closest('[data-wnego]')){e.preventDefault();location.hash='nego';const fr=FRAMES.nego;try{fr&&fr.contentWindow.__areoNewDraft&&fr.contentWindow.__areoNewDraft()}catch(x){}}});
 window.__areoClosePlaybook=()=>{if(PBX){PBX.remove();PBX=null}};
 window.addEventListener('hashchange',pbxSync);
 
@@ -1372,7 +1396,8 @@ const first=current();
 const order=APPS[first]?[first].concat(KEYS.filter(k=>k!==first)):KEYS.slice();
 make(order[0]);
 sync();
-if(SH.start==='playbook'||location.hash==='#playbook')window.__areoBuildPlaybook();
+if(SH.start==='setup')openFlow('setup');
+else if(SH.start==='playbook'||location.hash==='#playbook')window.__areoBuildPlaybook();
 else if(SH.start==='draft')setTimeout(()=>{try{openNew()}catch(e){}},300);
 else if(SH.start==='nego'){location.hash='nego';const f=FRAMES.nego,go=()=>{try{f.contentWindow.__areoNewDraft&&f.contentWindow.__areoNewDraft()}catch(e){}};
   if(f&&f.classList.contains('ready'))go();else if(f)f.addEventListener('load',()=>setTimeout(go,150),{once:true})}

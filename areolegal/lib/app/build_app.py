@@ -98,31 +98,31 @@ def capabilities(has_clm=True,with_mail=False):
 	if with_mail:A['mcp']={'servers':[dict(A)for A in MCP_SERVERS]}
 	return A
 def _write(path,text):A=path;A=Path(A);A.parent.mkdir(parents=True,exist_ok=True);B=A.with_name(A.name+'.tmp');B.write_text(text,encoding='utf-8');os.replace(str(B),str(A))
-def render_playbook(company,out):
+def render_playbook(company,out,mode='playbook'):
 	A=company;B=PLAYBOOK_PAGE.read_text(encoding='utf-8')
 	if B.count(PLAYBOOK_MARKER)!=1:raise ValueError('בעמוד ההקמה אין את הסמן %s פעם אחת בדיוק'%PLAYBOOK_MARKER)
-	C={'mode':'playbook','embedded':True}
+	C={'mode':mode,'embedded':True}
 	if A:C['org_name']=A
 	D=json.dumps(C,ensure_ascii=False).replace('</','<\\/');E='<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>';_write(out,E+B.replace(PLAYBOOK_MARKER,D)+'</body></html>')
 DEFAULT_TITLE='Areo'
 def page_title(title=None):A=' '.join(str(title or'').replace('<','').replace('>','').replace('&','ו').split())[:80];return A or DEFAULT_TITLE
 def build(data_dir,out_dir,products=(BASE,),today=None,template=None,start=None,title=None):
-	L=title;K=template;D=out_dir;A=data_dir;A,D=Path(A),Path(D)
-	if not A.is_dir():raise FileNotFoundError('אין תיקייה %s'%A)
-	E=shell_data(A,products,today,start);M=CLM in E['products'];B=D/'apps';B.mkdir(parents=True,exist_ok=True);C={};policy_view.render(A,B/'policy.html');C['apps/policy.html']=str(B/'policy.html');render_playbook(E['company'],B/'playbook.html');C['apps/playbook.html']=str(B/'playbook.html');nego_view.render(A,B/'nego.html');C['apps/nego.html']=str(B/'nego.html');N=[];F=B/'clm.html'
-	if M:clm_view.render(A,F);C['apps/clm.html']=str(F)
+	L=title;K=template;E=out_dir;B=data_dir;B,E=Path(B),Path(E)
+	if not B.is_dir():raise FileNotFoundError('אין תיקייה %s'%B)
+	D=shell_data(B,products,today,start);M=CLM in D['products'];A=E/'apps';A.mkdir(parents=True,exist_ok=True);C={};policy_view.render(B,A/'policy.html');C['apps/policy.html']=str(A/'policy.html');render_playbook(D['company'],A/'playbook.html');C['apps/playbook.html']=str(A/'playbook.html');render_playbook(D['company'],A/'setup.html',mode='setup');C['apps/setup.html']=str(A/'setup.html');nego_view.render(B,A/'nego.html');C['apps/nego.html']=str(A/'nego.html');N=[];F=A/'clm.html'
+	if M:clm_view.render(B,F);C['apps/clm.html']=str(F)
 	else:
 		if F.exists():F.unlink()
 		N.append('apps/clm.html')
-	P=Path(K)if K else TEMPLATE;H=D/'index.html';I=inject(P.read_text(encoding='utf-8'),E);I=I.replace('<title>%s</title>'%DEFAULT_TITLE,'<title>%s</title>'%page_title(L),1);_write(H,I);G={'index.html':H.stat().st_size};G.update({A:Path(B).stat().st_size for(A,B)in C.items()});J=sum(G.values());O=[A for(A,B)in G.items()if B>PAGE_LIMIT]
+	P=Path(K)if K else TEMPLATE;H=E/'index.html';I=inject(P.read_text(encoding='utf-8'),D);I=I.replace('<title>%s</title>'%DEFAULT_TITLE,'<title>%s</title>'%page_title(L),1);_write(H,I);G={'index.html':H.stat().st_size};G.update({A:Path(B).stat().st_size for(A,B)in C.items()});J=sum(G.values());O=[A for(A,B)in G.items()if B>PAGE_LIMIT]
 	if O or J>TOTAL_LIMIT:raise ValueError('האפליקציה גדולה מדי לפרסום: %s (סך הכול %d בתים)'%(', '.join(O)or'סך הכול',J))
-	return{'index':str(H),'title':page_title(L),'files':C,'capabilities':capabilities(M),'remove':N,'products':E['products'],'sizes':G,'total_bytes':J}
+	return{'index':str(H),'title':page_title(L),'files':C,'capabilities':capabilities(M),'remove':N,'products':D['products'],'sizes':G,'total_bytes':J}
 def publish_spec(result):
 	A=result;B={'file_path':A['index'],'title':A.get('title')or DEFAULT_TITLE,'files':A['files'],'capabilities':A['capabilities'],'sizes':A['sizes'],'total_bytes':A['total_bytes']}
 	if A['remove']:B['remove_on_update']=A['remove']
 	return B
 def main(argv=None):
-	B=argparse.ArgumentParser(description='אפליקציית Areo מהנתונים שב-Areo-נתונים');B.add_argument('--data-dir',required=True,help='תיקיית Areo-נתונים');B.add_argument('--out',required=True,help='תיקיית הפלט, למשל Areo-נתונים/Areo');B.add_argument('--products',default=BASE,help='המוצרים של הלקוח, מופרדים בפסיק (areolegal,areo-clm)');B.add_argument('--today',default=None,help='YYYY-MM-DD (ברירת מחדל: היום)');B.add_argument('--title',default=None,help='רק למערכת נוספת לצד מערכת משותפת: "Areo · <שם>". בלי הדגל: השם הרגיל');B.add_argument('--start',default=None,choices=['playbook','draft','nego'],help='המערכת נפתחת ישר על המשימה שהלקוח ביקש: playbook בניית פלייבוק, draft הסכם חדש, nego טיוטה שקיבלו');A=B.parse_args(argv);sys.dont_write_bytecode=True
+	B=argparse.ArgumentParser(description='אפליקציית Areo מהנתונים שב-Areo-נתונים');B.add_argument('--data-dir',required=True,help='תיקיית Areo-נתונים');B.add_argument('--out',required=True,help='תיקיית הפלט, למשל Areo-נתונים/Areo');B.add_argument('--products',default=BASE,help='המוצרים של הלקוח, מופרדים בפסיק (areolegal,areo-clm)');B.add_argument('--today',default=None,help='YYYY-MM-DD (ברירת מחדל: היום)');B.add_argument('--title',default=None,help='רק למערכת נוספת לצד מערכת משותפת: "Areo · <שם>". בלי הדגל: השם הרגיל');B.add_argument('--start',default=None,choices=['setup','playbook','draft','nego'],help='המערכת נפתחת ישר על המשימה שהלקוח ביקש: playbook בניית פלייבוק, draft הסכם חדש, nego טיוטה שקיבלו');A=B.parse_args(argv);sys.dont_write_bytecode=True
 	for C in(sys.stdout,sys.stderr):
 		try:C.reconfigure(encoding='utf-8',errors='replace')
 		except(AttributeError,ValueError):pass

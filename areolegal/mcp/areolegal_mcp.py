@@ -5,9 +5,9 @@ import json,pathlib,os,sys,urllib.error,urllib.parse,urllib.request
 from pathlib import Path
 DEFAULT_API_URL='https://areo.co.il'
 PROTOCOL_VERSION='2024-11-05'
-PLUGIN_VERSION='1.29.4'
+PLUGIN_VERSION='1.29.5'
 SERVER_INFO={'name':'areolegal','version':'1.0.4'}
-SERVER_INSTRUCTIONS="AreoLegal: write every message the user sees in the user's interface language: Hebrew unless the client profile (display_language) says English. This includes short progress notes between tool calls ('בודק את הטיוטה', 'בונה את המודל'). An English line in a Hebrew conversation looks like a malfunction to the client. כל טקסט שהלקוח רואה, גם הודעת ביניים של שתי מילים, הוא בעברית."
+SERVER_INSTRUCTIONS='AreoLegal: write every message the user sees in the user\'s interface language: Hebrew unless the client profile (display_language) says English. This includes short progress notes between tool calls (\'בודק את הטיוטה\', \'בונה את המודל\'). An English line in a Hebrew conversation looks like a malfunction to the client. כל טקסט שהלקוח רואה, גם הודעת ביניים של שתי מילים, הוא בעברית. When the user asks for Areo ("Areo", "areo", "פתחו את Areo", "המערכת"), the FIRST thing in the reply, before any tool call or skill load, is this line: \'היי, כאן Areo. פותחת לכם את המערכת לצד השיחה, זה לוקח דקה או שתיים.\' Opening the system takes a minute or two, and the client must never wait in front of an empty screen.'
 TIMEOUT=60
 def config_paths():
 	A=[];B=os.environ.get('CLAUDE_PLUGIN_DATA')
