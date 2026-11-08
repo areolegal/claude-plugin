@@ -218,6 +218,11 @@ if(INIT&&INIT.mode==='playbook'&&S.step.indexOf('pb_')!==0){S.step='pb_home'}
 var EMB=!!(INIT&&INIT.embedded);
 if(EMB)document.documentElement.classList.add('emb');
 if(EMB&&['pb_done','pb_approve'].indexOf(S.step)>=0){S.step='pb_home'}
+/* a new build of the system (a new conversation): a flow that was finished or sent before starts over, the answers stay */
+if(EMB&&INIT.run&&S.run!==INIT.run){
+  if(['pb_wait','pb_done','pb_approve','done'].indexOf(S.step)>=0||(INIT.mode==='setup'&&S.step.indexOf('pb_')===0))S.step=INIT.mode==='setup'?'welcome':'pb_home';
+  S.run=INIT.run;S.sent=false;
+}
 /* inside the Areo system: back to the policy screen, not to the setup steps */
 function leave(){try{if(window.parent&&window.parent!==window&&window.parent.__areoClosePlaybook){window.parent.__areoClosePlaybook();return}}catch(e){}try{location.href='policy.html'}catch(e){}}
 if(INIT&&INIT.mode==='approve'){S.step='pb_approve';S.pb.family=INIT.family||S.pb.family;if(INIT.approver&&INIT.approver.name)S.approver=INIT.approver}
