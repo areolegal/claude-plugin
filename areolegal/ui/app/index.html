@@ -1101,7 +1101,7 @@ function renderToday(){
   const wstep=(n,ok,t,s,ac)=>'<li'+(ok?' class="ok"':'')+'><span class="n">'+(ok?'✓':n)+'</span><span class="tx"><b>'+t+'</b><span>'+s+'</span></span><span class="ac">'+ac+'</span></li>';
   const welcome=fresh?'<section class="blk wide welcome" id="b-welcome"><h2>איך מתחילים</h2><p class="wl">שלושה צעדים, ואפשר לעבוד. כל אחד מתחיל בכפתור, כאן במערכת.</p><ol class="wsteps">'+
     wstep(1,hasProfile,'פרטי החברה',hasProfile?esc(SH.company):'כמה שאלות קצרות על החברה, פעם אחת לכל הארגון.',hasProfile?'':'<button class="sbtn" data-flow="setup">להתחיל</button>')+
-    wstep(2,false,'פלייבוק','המדיניות החוזית שלכם: מההסכמים, לפי המקובל בשוק, או ממסמך מדיניות קיים.','<button class="sbtn" data-flow="playbook">לבנות פלייבוק</button>')+
+    (()=>{let bb=null;try{bb=JSON.parse(localStorage.getItem('areo-pb-building')||'null')}catch(x){}if(bb&&bb.at&&Date.now()-bb.at<6*3600*1000)return wstep(2,false,'פלייבוק · בבנייה','Areo בונה עכשיו את '+esc(bb.family||'הפלייבוק')+', בשיחה שליד המערכת. כשיסתיים, הוא יופיע במדיניות.','<button class="sbtn" data-flow="playbook">לראות</button>');return ''})()||wstep(2,false,'פלייבוק','המדיניות החוזית שלכם: מההסכמים, לפי המקובל בשוק, או ממסמך מדיניות קיים.','<button class="sbtn" data-flow="playbook">לבנות פלייבוק</button>')+
     wstep(3,false,'עבודה שוטפת','טיוטה שקיבלתם מהצד השני, או הסכם חדש על הנייר שלכם.','<button class="sbtn" data-wnego>טיוטה שקיבלתם</button><button class="sbtn" data-wnew>+ הסכם חדש</button>')+
     '</ol></section>':'';
   if(fresh){h1=esc('ברוכים הבאים ל-Areo'+(company?', '+company:''));p=''}
@@ -1182,6 +1182,7 @@ document.addEventListener('click',e=>{const f=e.target.closest('[data-flow]');if
   if(e.target.closest('[data-wnego]')){e.preventDefault();location.hash='nego';const fr=FRAMES.nego;try{fr&&fr.contentWindow.__areoNewDraft&&fr.contentWindow.__areoNewDraft()}catch(x){}}});
 window.__areoClosePlaybook=()=>{if(PBX){PBX.remove();PBX=null}};
 window.addEventListener('hashchange',pbxSync);
+window.addEventListener('storage',e=>{if(e.key==='areo-pb-building'){try{renderToday()}catch(x){}}});
 
 /* ---------- שאלו את Areo ---------- */
 const TABNAME={settings:'הגדרות',today:'מבט על',nego:'משא ומתן',clm:'ניהול חוזים',policy:'מדיניות'};

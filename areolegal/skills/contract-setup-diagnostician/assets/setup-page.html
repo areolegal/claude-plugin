@@ -224,7 +224,7 @@ if(INIT&&INIT.mode==='approve'){S.step='pb_approve';S.pb.family=INIT.family||S.p
 if(INIT&&INIT.org_name&&!S.name)S.name=INIT.org_name;
 
 var ROOTS=[['desktop','שולחן העבודה'],['documents','מסמכים'],['downloads','הורדות'],['onedrive','OneDrive'],['gdrive','Google Drive'],['icloud','iCloud'],['dropbox','Dropbox'],['other','מקום אחר']];
-function rootChips(who,cur){return '<div class="field"><span class="legend">איפה התיקייה נמצאת במחשב?</span><div class="chips">'+ROOTS.map(function(r){return '<button type="button" class="chip" data-root="'+who+':'+r[0]+'" aria-pressed="'+(cur===r[0])+'">'+r[1]+'</button>'}).join('')+'</div>'+(cur==='other'?'<div class="hint">אין בעיה. כשתתחילו את הבנייה, Areo תשאל איפה בדיוק.</div>':'<div class="hint">כשתתחילו את הבנייה, Claude יבקש לאשר גישה למקום הזה בחלון קטן. לוחצים אישור (Allow), ו-Areo מוצאת את התיקייה לבד.</div>')+'</div>'}
+function rootChips(){return '<div class="hint">כשתתחילו את הבנייה, Claude יבקש לאשר גישה לתיקיות במחשב בחלון קטן. לוחצים אישור (Allow), ו-Areo מוצאת את התיקייה לבד.</div>'}
 var NL='לא מופיע ברשימה';
 /* agreement types: the common ones for the client's sectors first, then the general list; any type can also be typed */
 var TYPES_GEN=['שירותים','סודיות (NDA)','רכש ואספקה','הפצה','רישיון תוכנה','SaaS ומנוי לשירות ענן','פיתוח תוכנה','שכירות','העסקה','ייעוץ','קבלנות','סוכנות','זכיינות','שיתוף פעולה','מסגרת','עיבוד מידע (DPA)','מכר','הלוואה','השקעה'];
@@ -522,7 +522,7 @@ function render(keep){
       '<div class="actions">'+(EMB?'<button type="button" class="btn ghost" data-leave>חזרה למערכת</button>':'<span></span>')+'<button type="button" class="btn primary" data-go="next">מתחילים</button></div></section>';
   }
   else if(S.step==='pb_home'){
-    var df=S.dataFolder,dfok=df&&(df.mode==='connected'||(df.mode==='picked'&&df.root));
+    var df=S.dataFolder,dfok=!!df;
     h='<section class="card"><div class="eyebrow">פלייבוק · תיקייה</div><h2>איפה Areo ישמור את הפלייבוקים?</h2>'+
       '<p class="lead">בתיקייה הזו נשמרים הפלייבוקים, מורשי החתימה ותיקי העסקאות. הם נשארים אצלכם, כי יש בהם ציטוטים מההסכמים. כל מי שיש לו גישה אליה רואה אותם, ולכן כדאי לבחור את התיקייה המשותפת של המחלקה.</p>'+
       '<div class="paths">'+
@@ -645,7 +645,7 @@ function render(keep){
         '<div class="basis">'+pk.word+' Word · '+pk.pdf+' PDF'+(pk.other?' · '+pk.other+' אחרים':'')+'</div>'+
         (pk.word+pk.pdf===0?'<div class="note warn">אין בתיקייה הזו הסכמים: לא מצאנו בה אף קובץ Word או PDF. בחרו את התיקייה שבה שמורים ההסכמים.</div>':rootChips('ag',pk.root))+'</div>':'')+
       '<div class="privacy">העמוד קורא רק את שם התיקייה ואת שמות הקבצים, לא את התוכן. ההסכמים נקראים בחשבון ה-Claude שלכם ונשארים בתיקייה שלכם. שום דבר לא עולה ל-Areo.</div>'+
-      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_kind">חזרה</button>'+(pk&&pk.word+pk.pdf>0&&pk.root?'<button type="button" class="btn primary" data-pickgo>זו התיקייה</button>':'<span></span>')+'</div></section>';
+      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_kind">חזרה</button>'+(pk&&pk.word+pk.pdf>0?'<button type="button" class="btn primary" data-pickgo>זו התיקייה</button>':'<span></span>')+'</div></section>';
   }
   else if(S.step==='pb_upload'){
     h='<section class="card"><div class="eyebrow">מדיניות קיימת</div><h2>צרפו את מסמך המדיניות</h2>'+
@@ -910,7 +910,7 @@ document.addEventListener('click',function(e){
   if(t.hasAttribute('data-dfconn')){S.dataFolder={mode:'connected'};save();render(true);return}
   if(t.hasAttribute('data-agconn')){var an=$('#agname');S.pb.agName=an?clean(an.value):'';S.pb.agConnected=true;S.pb.picked=null;S.pb.fpick='__connected';S.step='pb_side';save();render();window.scrollTo(0,0);return}
   if(t.dataset.pbwhere){if(t.disabled)return;S.pb.where=t.dataset.pbwhere;save();if(t.dataset.pbwhere==='same'){S.step='pb_side';save()}render();window.scrollTo(0,0);return}
-  if(t.hasAttribute('data-pbstart')){send(pbPayload(),'',function(){S.step='pb_wait';save();render();window.scrollTo(0,0)});return}
+  if(t.hasAttribute('data-pbstart')){send(pbPayload(),'',function(){try{localStorage.setItem('areo-pb-building',JSON.stringify({family:clean(S.pb.family)||'',at:Date.now()}))}catch(e){}S.step='pb_wait';save();render();window.scrollTo(0,0)});return}
   if(t.hasAttribute('data-send')){send(payload(),'',function(){S.sent=true;S.step='done';save();render()});return}
 });
 document.addEventListener('input',function(e){
