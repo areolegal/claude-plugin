@@ -103,7 +103,7 @@ def render_playbook(company,out):
 	if B.count(PLAYBOOK_MARKER)!=1:raise ValueError('בעמוד ההקמה אין את הסמן %s פעם אחת בדיוק'%PLAYBOOK_MARKER)
 	C={'mode':'playbook','embedded':True}
 	if A:C['org_name']=A
-	D=json.dumps(C,ensure_ascii=False).replace('</','<\\/');_write(out,B.replace(PLAYBOOK_MARKER,D))
+	D=json.dumps(C,ensure_ascii=False).replace('</','<\\/');E='<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>';_write(out,E+B.replace(PLAYBOOK_MARKER,D)+'</body></html>')
 def build(data_dir,out_dir,products=(BASE,),today=None,template=None,start=None):
 	J=template;D=out_dir;A=data_dir;A,D=Path(A),Path(D)
 	if not A.is_dir():raise FileNotFoundError('אין תיקייה %s'%A)

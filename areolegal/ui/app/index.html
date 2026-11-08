@@ -901,9 +901,26 @@ function reqsChanged(){setTimeout(()=>{if(current()==='today')renderToday()},0)}
   if(RQDB){try{RQDB.collection('requests').onSnapshot(sn=>{REQS=sn.docs.map(d=>Object.assign({id:d.id},d.data())).filter(r=>r.kind==='draft_new').sort((a,b)=>String(b.created).localeCompare(String(a.created)));reqsChanged()},()=>{RQDB=null;REQS=reqsLocal();reqsChanged()})}catch(e){RQDB=null}}
   if(!RQDB){REQS=reqsLocal();reqsChanged()}})();
 /* the system hands a task to Areo in the conversation beside it (room). Must be called straight from the click */
-let ROOM=null,ROOMMODE='off';
-(async()=>{try{const r=window.claude&&claude.use?await claude.use('room'):null;if(r&&typeof r.sendToClaudeSession==='function'){ROOM=r;try{ROOMMODE=await r.canSendToClaudeSession()}catch(e){ROOMMODE='off'}}}catch(e){}})();
-function chatSend(p){if(!ROOM||['off','no_session','unsupported'].includes(ROOMMODE))return null;try{return Promise.resolve(ROOM.sendToClaudeSession(p,{deliver:'send',attachPresence:false}))}catch(e){return null}}
+/* the answer to "can we send" changes after load (the conversation beside the page connects later), so it is re-read
+   all the time and never blocks a press: a press always tries, and only a refusal falls back */
+let ROOM=null,ROOMMODE='loading',SENDWHY='';
+function roomCheck(){if(!ROOM)return;try{Promise.resolve(ROOM.canSendToClaudeSession()).then(m=>{ROOMMODE=m},()=>{ROOMMODE='check_failed'})}catch(e){ROOMMODE='check_failed'}}
+(async()=>{try{const r=window.claude&&claude.use?await claude.use('room'):null;if(r&&typeof r.sendToClaudeSession==='function'){ROOM=r;roomCheck()}else ROOMMODE='no_room'}catch(e){ROOMMODE='no_room'}})();
+setInterval(roomCheck,4000);window.addEventListener('focus',roomCheck);document.addEventListener('visibilitychange',roomCheck);
+/* what the platform accepts: identifier keys, no invisible characters, at most 4 KiB */
+function cleanSend(v,d){if(typeof v==='string')return v.replace(/[\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF]/g,'').slice(0,900);
+  if(Array.isArray(v))return v.slice(0,40).map(x=>cleanSend(x,d+1));
+  if(v&&typeof v==='object'){const o={};Object.keys(v).slice(0,60).forEach(k=>{if(/^[A-Za-z_][A-Za-z0-9_-]{0,63}$/.test(k)&&v[k]!==undefined)o[k]=d>6?String(v[k]):cleanSend(v[k],d+1)});return o}return v}
+function fitSend(p){let o=cleanSend(p,0);const big=()=>new TextEncoder().encode(JSON.stringify(o)).length>4000;
+  if(big()&&o.answers){['sample_files'].forEach(k=>{for(const a of [o.answers,o.answers.data_folder||{},o.answers.agreements_folder||{}])if(a&&a[k])a[k]=a[k].slice(0,2)})}
+  if(big()&&o.request&&o.request.request_text)o.request.request_text=o.request.request_text.slice(0,400);return o}
+function chatSend(p){SENDWHY='';if(!ROOM){SENDWHY=ROOMMODE||'no_room';return null}
+  const deliver=ROOMMODE==='available_if_opened'?'stage':'send';
+  try{const pr=Promise.resolve(ROOM.sendToClaudeSession(fitSend(p),{deliver,attachPresence:false}));
+    pr.catch(e=>{SENDWHY=(e&&(e.code||e.name))||'refused';try{console.warn('Areo: send to Claude refused',SENDWHY,e&&e.message,'mode',ROOMMODE)}catch(x){}});return pr}
+  catch(e){SENDWHY='threw';return null}}
+/* the screens inside the system send through here, so the send always leaves from the top page */
+window.__areoSend=p=>chatSend(p);window.__areoSendWhy=()=>SENDWHY||ROOMMODE;
 /* for the screens: true when the task went to Areo; otherwise the screen says what to do */
 window.__areoAsk=p=>{const s=chatSend(p);if(!s)return false;s.then(()=>stoast('Areo התחילה לעבוד. ההתקדמות מופיעה בשיחה שליד המערכת.'),()=>stoast('השליחה ל-Areo לא הצליחה. אפשר לנסות שוב.'));return true};
 async function addRequest(rec){

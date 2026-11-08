@@ -833,7 +833,12 @@ function toast(m){var t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(
 /* שליחה ל-Claude: חייבת לצאת ישירות מהלחיצה, בלי await לפניה */
 var room=null,roomMode='off';
 function send(p,label,after){
-  if(room&&roomMode!=='off'&&roomMode!=='no_session'&&roomMode!=='unsupported'){
+  /* inside the Areo system the top page sends: it holds the conversation beside the system */
+  if(EMB){var ps=null;try{ps=window.parent&&window.parent!==window&&window.parent.__areoSend?window.parent.__areoSend(p):null}catch(e){ps=null}
+    var why=function(){try{return window.parent.__areoSendWhy()}catch(e){return ''}};
+    if(ps){ps.then(function(){toast('נשלח ל-Areo. אשרו את השליחה בחלון שנפתח, ו-Areo מתחילה.');after&&after()},function(){showErr('השליחה ל-Areo לא הצליחה. אפשר להעתיק את הפרטים ולהדביק בשיחה.');fallback(p,null,why())});return}
+    showErr('המערכת לא מחוברת עכשיו לשיחה. אפשר להעתיק את הפרטים ולהדביק בשיחה.');fallback(p,null,why());return}
+  if(room){
     var pr;try{pr=room.sendToClaudeSession(p,{deliver:'send',attachPresence:false})}catch(e){pr=Promise.reject(e)}
     pr.then(function(){toast('התקבל.');after&&after()},function(err){
       var code=(err&&(err.code||err.name))||'unknown',msg=(err&&err.message)||'';
@@ -846,9 +851,10 @@ function send(p,label,after){
   fallback(p,null);
 }
 function showErr(m){var n=$('#senderr');if(n){n.textContent=m;n.hidden=false}else toast(m)}
-function fallback(p,after){
+function fallback(p,after,why){
   var text='מעמוד ההקמה של Areo:\n'+JSON.stringify(p);
-  var done=function(){toast('הפרטים הועתקו. הדביקו אותם בשיחה.');manual(text);after&&after()};
+  try{console.warn('Areo: copied instead of sending',why||roomMode)}catch(e){}
+  var done=function(){toast('הפרטים הועתקו. הדביקו אותם בשיחה.'+(why||roomMode?' ('+(why||roomMode)+')':''));manual(text);after&&after()};
   try{navigator.clipboard.writeText(text).then(done,function(){manual(text)})}catch(e){manual(text)}
 }
 function manual(text){var m=$('#manual');if(!m)return;m.hidden=false;var ta=$('#manualtext');ta.value=text;ta.focus();ta.select()}
