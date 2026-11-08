@@ -223,6 +223,8 @@ function leave(){try{if(window.parent&&window.parent!==window&&window.parent.__a
 if(INIT&&INIT.mode==='approve'){S.step='pb_approve';S.pb.family=INIT.family||S.pb.family;if(INIT.approver&&INIT.approver.name)S.approver=INIT.approver}
 if(INIT&&INIT.org_name&&!S.name)S.name=INIT.org_name;
 
+var ROOTS=[['desktop','שולחן העבודה'],['documents','מסמכים'],['downloads','הורדות'],['onedrive','OneDrive'],['gdrive','Google Drive'],['icloud','iCloud'],['dropbox','Dropbox'],['other','מקום אחר']];
+function rootChips(who,cur){return '<div class="field"><span class="legend">איפה התיקייה נמצאת במחשב?</span><div class="chips">'+ROOTS.map(function(r){return '<button type="button" class="chip" data-root="'+who+':'+r[0]+'" aria-pressed="'+(cur===r[0])+'">'+r[1]+'</button>'}).join('')+'</div>'+(cur==='other'?'<div class="hint">אין בעיה. כשתתחילו את הבנייה, Areo תשאל איפה בדיוק.</div>':'<div class="hint">כשתתחילו את הבנייה, Claude יבקש לאשר גישה למקום הזה בחלון קטן. לוחצים אישור (Allow), ו-Areo מוצאת את התיקייה לבד.</div>')+'</div>'}
 var NL='לא מופיע ברשימה';
 /* agreement types: the common ones for the client's sectors first, then the general list; any type can also be typed */
 var TYPES_GEN=['שירותים','סודיות (NDA)','רכש ואספקה','הפצה','רישיון תוכנה','SaaS ומנוי לשירות ענן','פיתוח תוכנה','שכירות','העסקה','ייעוץ','קבלנות','סוכנות','זכיינות','שיתוף פעולה','מסגרת','עיבוד מידע (DPA)','מכר','הלוואה','השקעה'];
@@ -520,16 +522,16 @@ function render(keep){
       '<div class="actions"><span></span><button type="button" class="btn primary" data-go="next">מתחילים</button></div></section>';
   }
   else if(S.step==='pb_home'){
-    var df=S.dataFolder;
+    var df=S.dataFolder,dfok=df&&(df.mode==='connected'||(df.mode==='picked'&&df.root));
     h='<section class="card"><div class="eyebrow">פלייבוק · תיקייה</div><h2>איפה Areo ישמור את הפלייבוקים?</h2>'+
       '<p class="lead">בתיקייה הזו נשמרים הפלייבוקים, מורשי החתימה ותיקי העסקאות. הם נשארים אצלכם, כי יש בהם ציטוטים מההסכמים. כל מי שיש לו גישה אליה רואה אותם, ולכן כדאי לבחור את התיקייה המשותפת של המחלקה.</p>'+
       '<div class="paths">'+
-        '<button type="button" class="path'+(S.connHelp==='data'?' on':'')+'" data-connhelp="data"><span class="ic">1</span><span><b>לחבר תיקייה עכשיו</b><span>למשל התיקייה של המחלקה המשפטית בדרייב המשותף.</span></span></button>'+
-        '<button type="button" class="path'+(df&&df.mode==='connected'&&S.connHelp!=='data'?' on':'')+'" data-dfconn><span class="ic">2</span><span><b>התיקייה כבר מחוברת לשיחה</b><span>חיברתם תיקייה כשפתחתם את השיחה. נשמור בה.</span></span></button>'+
-      '</div>'+
-      (S.connHelp==='data'?'<div class="pos">'+'<ol class="howconn"><li>בשיחה שליד המערכת לוחצים על <b>+</b>, ובוחרים <b>הוספת תיקייה</b> (Add folder).</li><li>בוחרים את התיקייה ומאשרים.</li><li>חוזרים לכאן ולוחצים <b>חיברתי</b>.</li></ol>'+'<button type="button" class="btn primary small" data-dfconn>חיברתי</button>'+(df&&df.mode==='connected'?'<div class="basis">מעולה. Areo תשמור בתיקייה שחיברתם.</div>':'')+'</div>':'')+
-      '<div class="privacy">Claude מבקש מכם לאשר את הגישה לתיקייה, והיא פתוחה רק בשיחה הזאת. שום דבר לא עולה ל-Areo.</div>'+
-      '<div class="actions">'+(EMB?'<button type="button" class="btn ghost" data-leave>חזרה למדיניות</button>':'<button type="button" class="btn ghost" data-jump="done">חזרה</button>')+'<button type="button" class="btn primary" data-jump="pb_people"'+(df?'':' disabled')+'>המשך</button></div></section>';
+        '<button type="button" class="path'+(df&&df.mode==='picked'?' on':'')+'" data-dirpick2><span class="ic">1</span><span><b>לבחור תיקייה מהמחשב</b><span>למשל התיקייה של המחלקה המשפטית בדרייב המשותף.</span></span></button>'+
+        '<button type="button" class="path'+(df&&df.mode==='connected'?' on':'')+'" data-dfconn><span class="ic">2</span><span><b>התיקייה כבר מחוברת לשיחה</b><span>חיברתם תיקייה כשפתחתם את השיחה. נשמור בה.</span></span></button>'+
+      '</div><input type="file" id="dirpick2" webkitdirectory directory multiple hidden>'+
+      (df&&df.mode==='picked'?'<div class="pos"><div class="hd"><b>בחרתם: '+esc(df.name)+'</b><span class="tag c">'+df.count+' קבצים</span></div>'+rootChips('data',df.root)+'</div>':'')+
+      '<div class="privacy">העמוד קורא רק את שם התיקייה ואת שמות הקבצים, לא את התוכן. הגישה שתאשרו פתוחה רק בשיחה הזאת, ושום דבר לא עולה ל-Areo.</div>'+
+      '<div class="actions">'+(EMB?'<button type="button" class="btn ghost" data-leave>חזרה למדיניות</button>':'<button type="button" class="btn ghost" data-jump="done">חזרה</button>')+'<button type="button" class="btn primary" data-jump="pb_people"'+(dfok?'':' disabled')+'>המשך</button></div></section>';
   }
   else if(S.step==='company'){
     var rs=regState(S.reg);
@@ -630,22 +632,20 @@ function render(keep){
       '<p class="lead">הכי טוב: הסכמים חתומים מהשנים האחרונות, מול צדדים שונים, כולל כאלה שניהלתם עליהם משא ומתן. 20 ומעלה.</p>'+
       (S.dataFolder.mode==='picked'&&S.dataFolder.docs===0?'<div class="note warn">בתיקייה '+esc(S.dataFolder.name)+' אין הסכמים: לא מצאנו בה אף קובץ Word או PDF. בחרו "במקום אחר", ובחרו את התיקייה שבה שמורים ההסכמים.</div>':'')+
       '<div class="paths"><button type="button" class="path" data-pbwhere="same"'+(S.dataFolder.mode==='picked'&&S.dataFolder.docs===0?' disabled style="opacity:.45;cursor:not-allowed"':'')+'><span class="ic">1</span><span><b>באותה תיקייה</b><span>'+(S.dataFolder.mode==='picked'?esc(S.dataFolder.name)+', ':'')+'התיקייה שכבר חיברתם. לא צריך אישור נוסף.</span></span></button>'+
-      '<button type="button" class="path" data-pbwhere="other"><span class="ic">2</span><span><b>במקום אחר</b><span>תחברו גם את תיקיית ההסכמים לשיחה, בכפתור + של Claude.</span></span></button></div>'+
+      '<button type="button" class="path" data-pbwhere="other"><span class="ic">2</span><span><b>במקום אחר</b><span>תבחרו את תיקיית ההסכמים מהמחשב, ו-Claude יבקש לאשר גישה אליה.</span></span></button></div>'+
       '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_kind">חזרה</button><span></span></div></section>';
   }
   else if(S.step==='pb_connect'){
     var kname=S.pb.kindAuto?'':S.pb.family,pk=S.pb.picked;
-    h='<section class="card"><div class="eyebrow">ההסכמים שלכם</div><h2>'+(kname?'חברו את התיקייה עם '+esc(kname):'חברו את תיקיית ההסכמים')+'</h2>'+
+    h='<section class="card"><div class="eyebrow">ההסכמים שלכם</div><h2>'+(kname?'בחרו את התיקייה עם '+esc(kname):'בחרו את תיקיית ההסכמים')+'</h2>'+
       '<p class="lead">הכי טוב: הסכמים חתומים מהשנים האחרונות, מול צדדים שונים, כולל כאלה שניהלתם עליהם משא ומתן. 20 ומעלה. '+(kname?'אם יש בתיקייה גם סוגים אחרים, נזהה אותם ונשאיר אותם בחוץ.':'נזהה לבד אילו סוגים יש בתיקייה.')+'</p>'+
-      '<div class="pos">'+'<ol class="howconn"><li>בשיחה שליד המערכת לוחצים על <b>+</b>, ובוחרים <b>הוספת תיקייה</b> (Add folder).</li><li>בוחרים את התיקייה עם ההסכמים ומאשרים.</li><li>חוזרים לכאן ולוחצים <b>חיברתי</b>.</li></ol>'+'<div class="field"><label for="agname">שם התיקייה<span class="optional">כדי ש-Areo תדע איזו</span></label><input type="text" id="agname" value="'+esc((S.pb.agName||''))+'" placeholder="למשל: 03 הסכמי מיקור חוץ"></div>'+
-        '<button type="button" class="btn primary small" data-agconn>חיברתי</button></div>'+
-      (false&&pk?'<div class="pos"><div class="hd"><b>בחרתם: '+esc(pk.name)+'</b><span class="tag c">'+pk.count+' קבצים</span></div>'+
+      '<button type="button" class="btn primary" data-dirpick style="align-self:flex-start">לבחור מהמחשב</button>'+
+      '<input type="file" id="dirpick" webkitdirectory directory multiple hidden>'+
+      (pk?'<div class="pos"><div class="hd"><b>בחרתם: '+esc(pk.name)+'</b><span class="tag c">'+pk.count+' קבצים</span></div>'+
         '<div class="basis">'+pk.word+' Word · '+pk.pdf+' PDF'+(pk.other?' · '+pk.other+' אחרים':'')+'</div>'+
-        (pk.word+pk.pdf===0?'<div class="note warn">אין בתיקייה הזו הסכמים: לא מצאנו בה אף קובץ Word או PDF. בחרו את התיקייה שבה שמורים ההסכמים.</div>':'')+
-        '<details class="payload"><summary>מה יישלח ל-Claude כדי לאתר את התיקייה</summary><pre>'+esc(JSON.stringify(findPayload(),null,2))+'</pre></details></div>':'')+
-      '<div class="privacy">ההסכמים נקראים בחשבון ה-Claude שלכם ונשארים בתיקייה שלכם. שום דבר לא עולה ל-Areo.</div>'+
-      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_kind">חזרה</button><span></span></div>'+
-      '<div class="hint">ההסכמים בענן או בקבצים בודדים? אפשר גם לצרף אותם בשיחה, בכפתור הפלוס, ואז <button type="button" class="linkbtn" data-jump="pb_side">להמשיך</button>.</div></section>';
+        (pk.word+pk.pdf===0?'<div class="note warn">אין בתיקייה הזו הסכמים: לא מצאנו בה אף קובץ Word או PDF. בחרו את התיקייה שבה שמורים ההסכמים.</div>':rootChips('ag',pk.root))+'</div>':'')+
+      '<div class="privacy">העמוד קורא רק את שם התיקייה ואת שמות הקבצים, לא את התוכן. ההסכמים נקראים בחשבון ה-Claude שלכם ונשארים בתיקייה שלכם. שום דבר לא עולה ל-Areo.</div>'+
+      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_kind">חזרה</button>'+(pk&&pk.word+pk.pdf>0&&pk.root?'<button type="button" class="btn primary" data-pickgo>זו התיקייה</button>':'<span></span>')+'</div></section>';
   }
   else if(S.step==='pb_upload'){
     h='<section class="card"><div class="eyebrow">מדיניות קיימת</div><h2>צרפו את מסמך המדיניות</h2>'+
@@ -788,10 +788,10 @@ function animSteps(sel,fin){
 function findPayload(){var pk=S.pb.picked||{};return {label:'חיבור תיקייה',kind:'areo_find_folder',folder_name:clean(pk.name),file_count:pk.count,sample_files:(pk.sample||[]).map(clean)}}
 function pbPayload(){
   var deps=S.pb.deps.concat(clean(S.pb.depsFree)?clean(S.pb.depsFree).split(/\s*,\s*/):[]),pk=S.pb.picked;
-  var where=S.pb.path!=='agreements'?null:(S.pb.where==='same'?{mode:'data_folder'}:S.pb.agConnected?{mode:'connected',folder_name:clean(S.pb.agName||'')}:(pk?{mode:'picked',folder_name:clean(pk.name),file_count:pk.count,sample_files:(pk.sample||[]).slice(0,8)}:{mode:'attached_in_chat'}));
+  var where=S.pb.path!=='agreements'?null:(S.pb.where==='same'?{mode:'data_folder'}:S.pb.agConnected?{mode:'connected',folder_name:clean(S.pb.agName||'')}:(pk?{mode:'picked',folder_name:clean(pk.name),root:pk.root||'',file_count:pk.count,sample_files:(pk.sample||[]).slice(0,8)}:{mode:'attached_in_chat'}));
   var df=S.dataFolder||{};
   return {label:'בניית פלייבוק: '+(clean(S.pb.family)||'לפי מה שנמצא בתיקייה'),kind:'areo_playbook_intake',answers:{
-    data_folder:df.mode==='picked'?{mode:'picked',folder_name:clean(df.name),file_count:df.count,sample_files:(df.sample||[]).slice(0,8)}:{mode:df.mode||'connected'},
+    data_folder:df.mode==='picked'?{mode:'picked',folder_name:clean(df.name),root:df.root||'',file_count:df.count,sample_files:(df.sample||[]).slice(0,8)}:{mode:df.mode||'connected'},
     signers:S.signers.filter(function(x){return clean(x.name)}).slice(0,8).map(function(x){return {name:clean(x.name),role:clean(x.role)}}),
     policy_approver:clean(S.approver.name)?{name:clean(S.approver.name),role:clean(S.approver.role)}:null,
     path:S.pb.path,family:clean(S.pb.family),family_auto:!!S.pb.kindAuto,agreements_folder:where,company_side:S.pb.side===SIDE_AUTO?null:clean(S.pb.side),side_auto:S.pb.side===SIDE_AUTO,
@@ -906,8 +906,8 @@ document.addEventListener('click',function(e){
   if(t.hasAttribute('data-later')){POS.forEach(function(p){if(p.legal&&!(S.pb.dec[p.id]||{}).st)S.pb.dec[p.id]={st:'later'}});save();savePb();return}
   if(t.hasAttribute('data-pbsave')){savePb();return}
   if(t.hasAttribute('data-dirpick2')){var d2=$('#dirpick2');if(d2){d2.value='';d2.click()}return}
-  if(t.dataset.connhelp){S.connHelp=t.dataset.connhelp;save();render(true);return}
-  if(t.hasAttribute('data-dfconn')){S.dataFolder={mode:'connected'};if(!t.classList.contains('path'))S.connHelp='data';else S.connHelp='';save();render(true);return}
+  if(t.dataset.root){var ra=t.dataset.root.split(':');if(ra[0]==='data'&&S.dataFolder)S.dataFolder.root=ra[1];else if(ra[0]==='ag'&&S.pb.picked)S.pb.picked.root=ra[1];save();render(true);return}
+  if(t.hasAttribute('data-dfconn')){S.dataFolder={mode:'connected'};save();render(true);return}
   if(t.hasAttribute('data-agconn')){var an=$('#agname');S.pb.agName=an?clean(an.value):'';S.pb.agConnected=true;S.pb.picked=null;S.pb.fpick='__connected';S.step='pb_side';save();render();window.scrollTo(0,0);return}
   if(t.dataset.pbwhere){if(t.disabled)return;S.pb.where=t.dataset.pbwhere;save();if(t.dataset.pbwhere==='same'){S.step='pb_side';save()}render();window.scrollTo(0,0);return}
   if(t.hasAttribute('data-pbstart')){send(pbPayload(),'',function(){S.step='pb_wait';save();render();window.scrollTo(0,0)});return}
