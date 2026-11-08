@@ -657,7 +657,7 @@ function vHome(){
   const turn=DEALS.filter(d=>status(d)==='turn').sort(byDue),wait=DEALS.filter(d=>status(d)==='wait'),signed=DEALS.filter(d=>status(d)==='signed');
   const ap=S.mailApprove?'<div class="banner"><span><b>Areo צריכה אישור לבדוק את תיבת הדואר ('+(S.mailApprove==='Gmail'?'Gmail':'Outlook')+').</b> <span class="muted">ככה היא מזהה לבד את התשובות של הצד השני.</span></span><button class="btn primary small" data-mailapprove>לאשר</button></div>':'';
   return '<div class="col"><div class="homehead"><div><h1>משא ומתן</h1><p class="lead">'+(COMPANY?esc(COMPANY)+' · ':'')+nn(turn.length+wait.length,'עסקה פתוחה','עסקאות פתוחות')+' · '+nn(signed.length,'נחתמה אחת','נחתמו')+'</p></div>'+themeBtn+'</div>'+
-  ap+(DEALS.length?'':'<div class="empty" id="noDeals">עוד אין עסקאות. כשהצד השני מחזיר טיוטה, כתבו בשיחה: הערות הצד השני</div>')+'<button class="dropstrip" id="dropstrip" data-newround=""><span class="ic">'+IC.upload+'</span><span class="t"><b>קיבלתם טיוטה? גררו אותה לכאן</b><span>Areo תזהה אם זו עסקה חדשה או תשובה בעסקה קיימת, ותקרא אותה מול המדיניות.</span></span></button>'+
+  ap+(DEALS.length?'':'<div class="empty" id="noDeals">עוד אין עסקאות. כשהצד השני מחזיר טיוטה, גררו אותה לכאן.</div>')+'<button class="dropstrip" id="dropstrip" data-newround=""><span class="ic">'+IC.upload+'</span><span class="t"><b>קיבלתם טיוטה? גררו אותה לכאן</b><span>Areo תזהה אם זו עסקה חדשה או תשובה בעסקה קיימת, ותקרא אותה מול המדיניות.</span></span></button>'+
   (DEALS.length?group('תורכם','turn',turn.length,turn.length?'<div class="dcards">'+turn.map(dealCard).join('')+'</div>':'<div class="empty">אין כרגע טיוטה שמחכה לכם.</div>')+
   group('אצל הצד השני','wait',wait.length,wait.length?'<div class="dcards">'+wait.map(dealCard).join('')+'</div>':'<div class="empty">אין טיוטות שמחכות לתשובה. כששולחים סבב, העסקה עוברת לכאן עד שהתשובה מגיעה.</div>')+
   group('נחתמו','',signed.length,signed.length?'<section class="card" style="padding:6px 8px"><div class="tblwrap"><table><thead><tr><th>הצד השני</th><th>הסכם</th><th>נחתם</th><th>מול המדיניות</th><th>המשא ומתן</th></tr></thead><tbody>'+signed.map(d=>{const kc=d.kc||[],ok=kc.filter(k=>k.policy==='match').length;return '<tr class="click" data-deal="'+esc(d.id)+'"><td><b>'+esc(d.counterparty)+'</b></td><td class="muted">'+esc(d.type)+'</td><td style="white-space:nowrap">'+fmtDate(d.signed)+'</td><td>'+(kc.length?'<span class="pill '+(ok===kc.length?'g':'y')+'">'+ok+' מתוך '+kc.length+' לפי המדיניות</span>':'')+'</td><td class="muted">'+(d.history?nn(d.history.rounds,'סבב אחד','סבבים')+' · '+nn(d.history.points.length,'נקודה אחת','נקודות'):'לא תועד')+'</td></tr>'}).join('')+'</tbody></table></div></section>':'<div class="empty">עוד לא נחתם הסכם.</div>'):'')+
@@ -1050,6 +1050,7 @@ function gmailBlock(ok){
 /* ---------- a draft arrives: a new deal, or the next round of an open one ---------- */
 const NR={step:'drop',file:null,paras:[],det:null,err:'',got:0,ctl:null,target:null};
 const norm=s=>String(s||'').replace(/בע"?מ|בעמ|ltd\.?|inc\.?|["'׳״.,\s-]/gi,'');
+window.__areoNewDraft=()=>openNew(null);
 function openNew(target){Object.assign(NR,{step:'drop',file:null,paras:[],det:null,err:'',note:'',link:'',got:0,target:target||null});S.overlay='new';renderNew()}
 function renderNew(){
   let b='';const td=NR.target&&DEALS.find(x=>x.id===NR.target);

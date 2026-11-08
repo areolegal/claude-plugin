@@ -50,6 +50,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .stage{flex:1;position:relative;min-height:0;background:var(--bg)}
 .stage iframe,.stage .today{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg);visibility:hidden;opacity:0}
 .stage iframe.on.ready,.stage .today.on{visibility:visible;opacity:1}
+/* building a playbook: the playbook steps open over the policy screen, inside the system */
+.stage iframe.pbx{z-index:5}.stage iframe.pbx.on{visibility:visible;opacity:1}
 @media (prefers-reduced-motion:no-preference){.stage iframe.on.ready,.stage .today.on{transition:opacity .12s ease-out}}
 .wait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mist);font-size:14px}
 
@@ -898,6 +900,12 @@ function reqsChanged(){setTimeout(()=>{if(current()==='today')renderToday()},0)}
 (async()=>{try{RQDB=window.claude&&claude.use?await claude.use('db'):null}catch(e){RQDB=null}
   if(RQDB){try{RQDB.collection('requests').onSnapshot(sn=>{REQS=sn.docs.map(d=>Object.assign({id:d.id},d.data())).filter(r=>r.kind==='draft_new').sort((a,b)=>String(b.created).localeCompare(String(a.created)));reqsChanged()},()=>{RQDB=null;REQS=reqsLocal();reqsChanged()})}catch(e){RQDB=null}}
   if(!RQDB){REQS=reqsLocal();reqsChanged()}})();
+/* the system hands a task to Areo in the conversation beside it (room). Must be called straight from the click */
+let ROOM=null,ROOMMODE='off';
+(async()=>{try{const r=window.claude&&claude.use?await claude.use('room'):null;if(r&&typeof r.sendToClaudeSession==='function'){ROOM=r;try{ROOMMODE=await r.canSendToClaudeSession()}catch(e){ROOMMODE='off'}}}catch(e){}})();
+function chatSend(p){if(!ROOM||['off','no_session','unsupported'].includes(ROOMMODE))return null;try{return Promise.resolve(ROOM.sendToClaudeSession(p,{deliver:'send',attachPresence:false}))}catch(e){return null}}
+/* for the screens: true when the task went to Areo; otherwise the screen says what to do */
+window.__areoAsk=p=>{const s=chatSend(p);if(!s)return false;s.then(()=>stoast('Areo התחילה לעבוד. ההתקדמות מופיעה בשיחה שליד המערכת.'),()=>stoast('השליחה ל-Areo לא הצליחה. אפשר לנסות שוב.'));return true};
 async function addRequest(rec){
   if(RQDB){try{await RQDB.collection('requests').add(rec);return true}catch(e){if(e&&e.code==='quota_exceeded'){stoast('התור מלא. אפשר למחוק בקשות ישנות.');return false}}}
   const id='l'+Date.now();REQS.unshift(Object.assign({id},rec));reqsSaveLocal();reqsChanged();
@@ -938,12 +946,20 @@ function drawNew(){
           label:t.name.replace(/^הסכמי /,'הסכם ')+' חדש מול '+ND.cp.trim(),type:ND.type,type_name:t.name,side:ND.side||'',counterparty:ND.cp.trim(),
           base:ND.base==='template'?{kind:'template',name:ND.tpl}:ND.base==='ag'?{kind:'agreement',name:ND.ag}:{kind:'playbook'},
           playbook:t.built?t.name:'',terms:ND.terms.trim(),request_text:ndRequest(t,t.built)};
+        const sent=chatSend({label:'ניסוח: '+rec.label,kind:'areo_draft_request',request:rec});
+        if(sent){rec.sent_to_chat=true;ND.sent=true;sent.catch(()=>{if(ND){ND.sent=false;if(ND.done)drawNew()}})}
         addRequest(rec).then(ok=>{if(!ok){b.disabled=false;return}ND.done=true;drawNew()})}
       else if(a==='queue'){closeNew();location.hash='today';setTimeout(()=>{const el=document.getElementById('b-areo');el&&el.scrollIntoView({block:'start',behavior:'smooth'})},250)}
       else if(a==='back'){ND.done=false;drawNew()}
       else if(a==='buildpb'){closeNew();openIn('policy','overview','')}});}
   const pbLine=t.built?'<div class="pbline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span>ינוסח לפי הפלייבוק <b>"'+esc(t.name)+'"</b>'+(t.date?' מ-'+dmy(t.date):'')+'. כל סעיף יעמוד בעמדה המועדפת שלכם.</span></div>'
     :'<div class="pbline no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>לסוג הזה עוד אין פלייבוק. הטיוטה תישען על הבסיס שתבחרו בלבד. <button class="lnk" style="font-weight:700;color:var(--accent)" data-ndact="buildpb">לבנות פלייבוק</button></span></div>';
+  if(ND.done&&ND.sent){
+    sc.innerHTML='<div class="nd" role="dialog" aria-modal="true" aria-label="הסכם חדש"><header><h2>Areo מנסחת עכשיו</h2><button class="hbtn" data-ndact="close" aria-label="סגירה">'+IC2.x+'</button></header><div class="bd">'+
+      '<ol class="steps2"><li>Areo פותחת את '+(ND.base==='template'?'התבנית':ND.base==='ag'?'ההסכם הקודם':'הפלייבוק')+' מהתיקייה, ומנסחת על הנייר שלכם.</li><li>אם יחסר פרט, היא תשאל עליו בשיחה שליד המערכת.</li><li>הטיוטה נשמרת בתיקייה, והבקשה מסומנת כאן כמוכנה, עם שם הקובץ.</li></ol>'+
+      '<div class="f"><span class="lb">מה ביקשתם</span><div class="req">'+esc(ndRequest(t,t.built))+'</div></div>'+
+      '</div><footer><button class="go" data-ndact="queue">לראות ב"מבט על"</button><button class="ghost" data-ndact="close">סגירה</button></footer></div>';
+    ddEnhance(sc);return}
   if(ND.done){
     sc.innerHTML='<div class="nd" role="dialog" aria-modal="true" aria-label="הסכם חדש"><header><h2>הבקשה נכנסה לתור</h2><button class="hbtn" data-ndact="close" aria-label="סגירה">'+IC2.x+'</button></header><div class="bd">'+
       '<ol class="steps2"><li>בפעם הבאה שתבקשו מ-Areo ב-Claude לנסח משהו, או תכתבו "Areo, תריץ את הבקשות", הוא יראה שהבקשה מחכה ויציע להריץ אותה.</li><li>הדרפטר פותח את '+(ND.base==='template'?'התבנית':ND.base==='ag'?'ההסכם הקודם':'הפלייבוק')+' מהתיקייה, ומנסח על הנייר שלכם.</li><li>הטיוטה נשמרת בתיקיית העבודה, והבקשה מסומנת כאן כמוכנה, עם שם הקובץ.</li></ol>'+
@@ -1117,6 +1133,14 @@ function applyRad(){
 if(document.readyState==='complete')applyRad();else window.addEventListener('load',applyRad);
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{location.hash=b.dataset.app}));
 window.addEventListener('hashchange',sync);
+/* building a playbook happens here, not in the conversation: the playbook steps open over the policy screen,
+   and their last button sends the request to Areo. They stay open while switching tabs and close from their own button */
+let PBX=null;
+function pbxSync(){if(PBX)PBX.classList.toggle('on',current()==='policy')}
+window.__areoBuildPlaybook=()=>{if(!PBX){PBX=document.createElement('iframe');PBX.className='pbx';PBX.title='בניית פלייבוק';PBX.src='apps/playbook.html';stage.appendChild(PBX)}
+  if(current()!=='policy')location.hash='policy';pbxSync();return true};
+window.__areoClosePlaybook=()=>{if(PBX){PBX.remove();PBX=null}};
+window.addEventListener('hashchange',pbxSync);
 
 /* ---------- שאלו את Areo ---------- */
 const TABNAME={settings:'הגדרות',today:'מבט על',nego:'משא ומתן',clm:'ניהול חוזים',policy:'מדיניות'};
@@ -1331,5 +1355,9 @@ const first=current();
 const order=APPS[first]?[first].concat(KEYS.filter(k=>k!==first)):KEYS.slice();
 make(order[0]);
 sync();
+if(SH.start==='playbook'||location.hash==='#playbook')window.__areoBuildPlaybook();
+else if(SH.start==='draft')setTimeout(()=>{try{openNew()}catch(e){}},300);
+else if(SH.start==='nego'){location.hash='nego';const f=FRAMES.nego,go=()=>{try{f.contentWindow.__areoNewDraft&&f.contentWindow.__areoNewDraft()}catch(e){}};
+  if(f&&f.classList.contains('ready'))go();else if(f)f.addEventListener('load',()=>setTimeout(go,150),{once:true})}
 setTimeout(()=>order.slice(1).forEach(make),APPS[first]?400:0);
 </script>

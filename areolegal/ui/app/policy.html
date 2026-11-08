@@ -691,7 +691,10 @@ function navHtml(){
   var w=waiting().length,cnt={rules:D.rules.length,sources:Object.keys(D.src).length,questions:D.qs.length,approve:w};
   return SECS.map(function(s){var c=cnt[s[0]];return '<button type="button" class="nv" data-sec="'+s[0]+'"'+(S.sec===s[0]||(S.sec==='topic'&&s[0]==='rules')?' aria-current="page"':'')+'><span>'+s[1]+'</span>'+(c?'<span class="cnt'+(s[0]==='approve'?' w':'')+'">'+c+'</span>':'')+'</button>'}).join('');
 }
-function emptyHtml(){return '<div class="card" style="margin-top:24px"><h1>עוד אין פלייבוק</h1><p class="lead">כתבו בשיחה: פלייבוק. Areo יבנה את המדיניות החוזית מההסכמים שבתיקייה, והיא תופיע כאן.</p></div>'}
+function emptyHtml(){return '<div class="card" style="margin-top:24px"><h1>עוד אין פלייבוק</h1><p class="lead">Areo בונה את המדיניות החוזית מההסכמים שלכם: מה מקובל עליכם, איפה אפשר להתגמש ומה לא מסכימים. עונים כאן על כמה שאלות קצרות, ו-Areo עושה את השאר.</p><div style="margin-top:16px"><button type="button" class="btn primary" data-buildpb>לבנות פלייבוק</button></div></div>'}
+/* the playbook steps open inside the system; a page opened on its own goes to them directly */
+function buildPlaybook(){try{if(window.parent&&window.parent!==window&&window.parent.__areoBuildPlaybook&&window.parent.__areoBuildPlaybook())return}catch(e){}location.href='playbook.html'}
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-buildpb]');if(b){e.preventDefault();buildPlaybook()}});
 function render(){
   if(!BOOKS.length){$('#co').textContent=(P&&P.company)||'';$('#pkname').textContent='מדיניות חוזית';$('#pksub').textContent='עוד אין פלייבוק';$('#nav').innerHTML='';$('#foot').textContent='';$('#fab').hidden=true;$('#view').innerHTML=emptyHtml();return}
   var b=book(),c=counts();
@@ -1323,7 +1326,7 @@ document.addEventListener('click',function(e){
   if(t.dataset.close&&t.dataset.topic){closeAsk()}
   if(t.id==='pickbtn'){menu.hidden=!menu.hidden;t.setAttribute('aria-expanded',!menu.hidden);
     menu.innerHTML=BOOKS.map(function(b,i){return '<button type="button" data-book="'+b.id+'"><span><b>'+esc(b.name)+'</b><br><span class="sub">'+esc(b.sub)+'</span></span>'+(i===CUR?'<span class="pill ok">פתוח</span>':'')+'</button>'}).join('')+'<button type="button" class="add" data-book="new">+ פלייבוק לסוג הסכם נוסף</button>';return}
-  if(t.dataset.book){menu.hidden=true;$('#pickbtn').setAttribute('aria-expanded','false');if(t.dataset.book==='new'){toast('לפלייבוק לסוג הסכם נוסף, כתבו בשיחה: פלייבוק');return}useBook(t.dataset.book);return}
+  if(t.dataset.book){menu.hidden=true;$('#pickbtn').setAttribute('aria-expanded','false');if(t.dataset.book==='new'){buildPlaybook();return}useBook(t.dataset.book);return}
   if(t.id==='themebtn'||t.id==='themebtn2'){theme();return}
   if(t.id==='expbtn'){var em=$('#expm');em.hidden=!em.hidden;t.setAttribute('aria-expanded',!em.hidden);return}
   if(t.dataset.qok!=null){answerQ(+t.dataset.qok,true);return}

@@ -807,7 +807,7 @@ function render(){
   $('#nav').innerHTML=navHtml();
   $('#foot').innerHTML='<span>'+(D.meta.built?'עודכן '+fmt(D.meta.built)+' · ':'')+nn(D.meta.files||0,'קובץ אחד','קבצים')+'</span><span>'+(DB?'נשמר לכל הצוות':'נשמר בדפדפן הזה')+'</span>';
   const V={overview:vOverview,agreements:vAgreements,nego:vNego,cps:vCps,tasks:vTasks,policy:vPolicy,approve:vApprove}[S.view]||vOverview;
-  $('#view').innerHTML=EMPTY?'<section class="hero" id="empty"><span class="eb">ניהול חוזים</span><h1>עוד אין הסכמים במאגר.</h1><p class="lead">כתבו בשיחה: ניהול חוזים</p></section>':V();
+  $('#view').innerHTML=EMPTY?'<section class="hero" id="empty"><span class="eb">ניהול חוזים</span><h1>עוד אין הסכמים במאגר.</h1><p class="lead">Areo קוראת את ההסכמים החתומים שבתיקייה, ובונה מהם לוח אחד: מועדים, חידושים, אחראים ומשימות.</p><p><button class="btn primary" data-act="clmbuild">לבנות את המאגר</button></p></section>':V();
 }
 document.addEventListener('click',e=>{
   const cpth=e.target.closest('[data-copypath]');if(cpth){const p=cpth.dataset.copypath;try{navigator.clipboard.writeText(p).then(()=>toast('הנתיב הועתק: '+p),()=>toast(p))}catch(x){toast(p)}return}
@@ -869,10 +869,12 @@ document.addEventListener('click',e=>{
     goBack();render()}
   else if(act==='addagr'){drawer('<div class="dh"><div class="top"><h2>הוספת הסכם</h2><button class="x" data-close aria-label="סגירה">×</button></div><div style="height:12px"></div></div><div class="db">'+
      '<p style="margin:0">הסכמים נכנסים ללוח מהתיקיות שלכם. כדי להוסיף הסכם, שמרו את הקובץ החתום באחת מהן:</p><div class="flagrow">'+D.meta.folders.map(f=>'<span class="pill n">'+esc(f)+'</span>').join('')+'</div>'+
-     '<p class="muted" style="font-size:14px;margin:0">אחר כך כתבו בשיחה: ניהול חוזים, לעדכן את המאגר. ההסכם ייקרא, יקבל משימות ויושווה לפלייבוק.</p>'+
-     '<div style="display:flex;gap:10px"><button class="btn soft" data-close>סגירה</button></div></div>')}
+     '<p class="muted" style="font-size:14px;margin:0">אחר כך לחצו "לעדכן את המאגר". ההסכם ייקרא, יקבל משימות ויושווה לפלייבוק.</p>'+
+     '<div style="display:flex;gap:10px"><button class="btn primary" data-act="clmbuild">לעדכן את המאגר</button><button class="btn soft" data-close>סגירה</button></div></div>')}
+  else if(act==='clmbuild'){let ok=false;try{ok=!!(window.parent&&window.parent!==window&&window.parent.__areoAsk&&window.parent.__areoAsk({label:'ניהול חוזים: לעדכן את המאגר',kind:'areo_clm_request',action:EMPTY?'build':'update'}))}catch(e){}
+    toast(ok?'Areo מעדכנת את המאגר. הלוח יתעדכן כשהיא תסיים.':'כדי לעדכן את המאגר, כתבו ל-Areo: ניהול חוזים')}
   else if(act==='timeline'){S.view='tasks';S.tview='tl';persist();render()}
-  else if(act==='ready')toast('כתבו בשיחה: לבנות פלייבוק');
+  else if(act==='ready'){let ok=false;try{ok=!!(window.parent&&window.parent!==window&&window.parent.__areoBuildPlaybook&&window.parent.__areoBuildPlaybook())}catch(e){}if(!ok)toast('לבניית פלייבוק: לשונית מדיניות, "לבנות פלייבוק"')}
 });
 document.addEventListener('change',e=>{
   const t=e.target;

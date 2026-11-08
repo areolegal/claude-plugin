@@ -186,6 +186,8 @@ details.payload pre{direction:ltr;text-align:left;background:var(--raised);borde
 .apin{flex:1;min-width:180px}
 @media (max-width:640px){.srow{grid-template-columns:1fr}.sact{flex-direction:row;align-items:center;justify-content:space-between}}
 .path.on{border-color:var(--aurora);background:var(--aurora-soft)}
+/* inside the Areo system: the system already shows the name and the theme button */
+.emb .top .wordmark,.emb #themebtn{display:none}.emb .top{justify-content:flex-end}
 </style>
 
 <div class="shell" dir="rtl" lang="he">
@@ -205,7 +207,6 @@ var INIT=/*__AREO_INIT__*/null;
 var KEY='areo-onboarding-draft';
 var STEPS=['welcome','company','incorp','sector','brand','summary','done'];
 var QSTEPS=['company','incorp','sector','brand','summary'];
-var FTREE=[['שולחן העבודה','Desktop',[['פרויקטים','',[]]]],['מסמכים','Documents',[['הסכמים','38 קבצים',[['ספקים','24 קבצים',[]],['לקוחות','11 קבצים',[]],['שכירות','3 קבצים',[]]]],['משפטי','',[]],['כספים','',[]]]],['הורדות','Downloads',[]],['Areo-playbooks-local','',[]]];
 var FEN={'שולחן העבודה':'Desktop','מסמכים':'Documents','הורדות':'Downloads'};
 var POS=(INIT&&INIT.positions)||[];
 var S={pb:{path:'',family:'',side:'',deps:[],depsFree:'',market:false,concern:'',dec:{},page:0},step:'welcome',name:'',reg:'',nameEn:'',multi:false,entities:'',country:'ישראל',type:'',listed:[],dual:[],sectors:[],fin:[],desc:'',markets:['ישראל'],mcs:'',
@@ -213,6 +214,11 @@ var S={pb:{path:'',family:'',side:'',deps:[],depsFree:'',market:false,concern:''
 try{var saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved&&typeof saved==='object'){Object.assign(S,saved);S.sent=false;if(S.step==='pb_scan')S.step='pb_types';if(S.step==='pb_folder')S.step='pb_connect';if(S.step==='pb_build')S.step='pb_approve';if(!S.pb||!S.pb.dec)S.pb={path:'',family:'',side:'',deps:[],depsFree:'',market:false,concern:'',dec:{},page:0};if(!Array.isArray(S.listed))S.listed=[];['dual','fin'].forEach(function(k){if(!Array.isArray(S[k]))S[k]=[]});if(!S.other)S.other={country:'',type:'',sectors:'',markets:''};if(!S.approver)S.approver={name:'',role:''};}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 if(INIT&&INIT.mode==='playbook'&&S.step.indexOf('pb_')!==0){S.step='pb_home'}
+var EMB=!!(INIT&&INIT.embedded);
+if(EMB)document.documentElement.classList.add('emb');
+if(EMB&&['pb_done','pb_approve'].indexOf(S.step)>=0){S.step='pb_home'}
+/* inside the Areo system: back to the policy screen, not to the setup steps */
+function leave(){try{if(window.parent&&window.parent!==window&&window.parent.__areoClosePlaybook){window.parent.__areoClosePlaybook();return}}catch(e){}try{location.href='policy.html'}catch(e){}}
 if(INIT&&INIT.mode==='approve'){S.step='pb_approve';S.pb.family=INIT.family||S.pb.family;if(INIT.approver&&INIT.approver.name)S.approver=INIT.approver}
 if(INIT&&INIT.org_name&&!S.name)S.name=INIT.org_name;
 
@@ -388,7 +394,7 @@ function clmView(){
       CLMI.types.map(function(t){var o=c.owners[t.code];return '<div class="pos"><div class="hd"><b>'+esc(t.label)+'</b><span class="tag c">'+t.n+' הסכמים</span></div>'+
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">'+
         '<div class="field"><label>עו"ד אחראי</label><input type="text" data-cl="owners.'+t.code+'.lawyer" value="'+esc(o.lawyer)+'" placeholder="שם מלא"></div>'+
-        '<div class="field"><label>גורם עסקי<span class="optional"> רשות</span></label><input type="text" data-cl="owners.'+t.code+'.business" value="'+esc(o.business)+'" placeholder="למשל: אבי לוין, רכש"></div>'+
+        '<div class="field"><label>גורם עסקי<span class="optional"> רשות</span></label><input type="text" data-cl="owners.'+t.code+'.business" value="'+esc(o.business)+'" placeholder="שם ותפקיד, למשל מנהל הרכש"></div>'+
         '<div class="field"><label>גיבוי<span class="optional"> רשות</span></label><input type="text" data-cl="owners.'+t.code+'.backup" value="'+esc(o.backup)+'" placeholder="שם מלא"></div></div></div>'}).join('')+
       (CLMI.types.length>1?'<button type="button" class="linkbtn" data-clsame style="align-self:flex-start">אותם אחראים לכל הסוגים</button>':'')+
       '<div class="field"><span class="legend">מיילים לתזכורות</span><div class="hint">התזכורות על המשימות של כל אחד יגיעו ליומן של המייל שלו. בלי מייל, הוא יראה את המשימות רק בלוח.</div><div class="sum" id="clmails">'+mailsHtml()+'</div></div>'+
@@ -522,12 +528,12 @@ function render(keep){
       '</div><input type="file" id="dirpick2" webkitdirectory directory multiple hidden>'+
       (df&&df.mode==='picked'?'<div class="pos"><div class="hd"><b>בחרתם: '+esc(df.name)+'</b><span class="tag c">'+df.count+' קבצים</span></div><div class="basis">כשתתחילו את הבנייה, ייפתח בשיחה חלון לאישור הגישה לתיקייה.</div></div>':'')+
       '<div class="privacy">העמוד קורא רק את שם התיקייה ואת שמות הקבצים, לא את התוכן, ולא מעלה שום דבר.</div>'+
-      '<div class="actions"><button type="button" class="btn ghost" data-jump="done">חזרה</button><button type="button" class="btn primary" data-jump="pb_people"'+(df?'':' disabled')+'>המשך</button></div></section>';
+      '<div class="actions">'+(EMB?'<button type="button" class="btn ghost" data-leave>חזרה למדיניות</button>':'<button type="button" class="btn ghost" data-jump="done">חזרה</button>')+'<button type="button" class="btn primary" data-jump="pb_people"'+(df?'':' disabled')+'>המשך</button></div></section>';
   }
   else if(S.step==='company'){
     var rs=regState(S.reg);
     h='<section class="card"><div class="eyebrow">'+W('החברה','הארגון')+'</div><h2>'+W('מה שם החברה ומספר הרישום שלה?','מה שם הארגון ומספר הרישום שלו?')+'</h2>'+
-      '<div class="row2"><div class="field"><label for="name">'+W('שם החברה','שם הארגון')+'</label><input type="text" id="name" value="'+esc(S.name)+'" placeholder="דוגמה טכנולוגיות בע&quot;מ" autocomplete="organization"></div>'+
+      '<div class="row2"><div class="field"><label for="name">'+W('שם החברה','שם הארגון')+'</label><input type="text" id="name" value="'+esc(S.name)+'" placeholder="השם הרשום, למשל חברה בע&quot;מ" autocomplete="organization"></div>'+
       '<div class="field"><label for="reg">מספר רישום</label><input type="text" id="reg" class="ltr" inputmode="numeric" value="'+esc(S.reg)+'" placeholder="51-555555-9"></div></div>'+
       '<div id="regnote">'+(rs?'<div class="note '+(rs.ok?'ok':'warn')+'">'+rs.msg+'</div>':'<div class="hint">ח.פ, מספר עמותה, הקדש או שותפות, מספר של גוף ציבורי, או מספר רישום בחו"ל. אין מספר? אפשר להשאיר ריק.</div>')+'</div>'+
       '<div class="field"><label for="nameEn">השם הרשום באנגלית<span class="optional">רשות</span></label><input type="text" id="nameEn" class="ltr" dir="ltr" value="'+esc(S.nameEn)+'" placeholder="Dugma Technologies Ltd"><div class="hint">'+W('כך החברה תופיע','כך הארגון יופיע')+' בהסכמים באנגלית.</div></div>'+
@@ -716,7 +722,7 @@ function render(keep){
     var how=S.pb.path==='agreements'?(S.pb.market?'מההסכמים שלכם, עם השוואה לשוק':'מההסכמים שלכם בלבד'):(S.pb.path==='market'?'לפי המקובל בשוק, עם בדיקה רגולטורית':'מהמדיניות שהעליתם, בלי שינוי עמדות');
     var g2=function(k,vv,step){return '<div class="grp"><div style="min-width:0"><div class="k">'+k+'</div><div class="v">'+(vv||'<span style="color:var(--faint)">לא צוין</span>')+'</div></div>'+(step?'<button type="button" class="linkbtn" data-jump="'+step+'">עריכה</button>':'')+'</div>'};
     h='<section class="card"><div class="eyebrow">סיכום</div><h2>כך נבנה את הפלייבוק</h2><div class="sum">'+
-      g2('סוג ההסכמים',esc(S.pb.family||'לפי המסמך שהעליתם')+(S.pb.path==='agreements'?' · '+(S.pb.family==='הסכמי סודיות (NDA)'?11:S.pb.family==='הסכמי שכירות'?3:24)+' הסכמים':''),S.pb.path==='market'?'pb_market':(S.pb.path==='agreements'?'pb_types':''))+
+      g2('סוג ההסכמים',esc(S.pb.family||'לפי המסמך שהעליתם')+(S.pb.path==='agreements'&&S.pb.picked&&S.pb.picked.count?' · '+S.pb.picked.count+' קבצים':''),S.pb.path==='market'?'pb_market':(S.pb.path==='agreements'?'pb_types':''))+
       g2('הצד של החברה',esc(S.pb.side),'pb_side')+g2('מחלקות',esc(deps.join(', ')),'pb_side')+g2('אופן הבנייה',esc(how),'pb_extra')+
       (S.pb.concern?g2('מה מטריד אתכם',esc(S.pb.concern),'pb_extra'):'')+'</div>'+
       '<div class="hint">בסוף מקבלים שני תוצרים מאותה מדיניות: מסמך Word, וסביבת עבודה שאפשר לחפש בה ולסנן. שניהם בתיקייה שלכם.</div>'+
@@ -726,7 +732,8 @@ function render(keep){
   else if(S.step==='pb_wait'){
     h='<section class="card"><div class="done-mark" aria-hidden="true">✓</div><h2>בונים את הפלייבוק</h2>'+
       '<p class="lead">Areo קורא עכשיו את ההסכמים וקובע את העמדות. זה לוקח כ-10 עד 15 דקות. אם התבקשה גישה לתיקייה, אשרו אותה בחלון שנפתח בשיחה.</p>'+
-      '<p class="hint">כשהבנייה מסתיימת, העמוד הזה מתעדכן לאישור העמדות. אפשר לסגור אותו בינתיים.</p></section>';
+      (EMB?'<p class="hint">כשהבנייה מסתיימת, המערכת מתעדכנת והפלייבוק מופיע במדיניות, עם העמדות לאישור.</p><div class="actions"><button type="button" class="btn primary" data-leave>חזרה למערכת</button></div></section>':
+      '<p class="hint">כשהבנייה מסתיימת, העמוד הזה מתעדכן לאישור העמדות. אפשר לסגור אותו בינתיים.</p></section>');
   }
   else if(S.step==='pb_approve'){
     var strong=POS.filter(function(p){return !p.legal}),legal=POS.filter(function(p){return p.legal}),ap2=S.approver||{};
@@ -787,7 +794,7 @@ function pbPayload(){
     signers:S.signers.filter(function(x){return clean(x.name)}).slice(0,8).map(function(x){return {name:clean(x.name),role:clean(x.role)}}),
     policy_approver:clean(S.approver.name)?{name:clean(S.approver.name),role:clean(S.approver.role)}:null,
     path:S.pb.path,family:clean(S.pb.family),family_auto:!!S.pb.kindAuto,agreements_folder:where,company_side:S.pb.side===SIDE_AUTO?null:clean(S.pb.side),side_auto:S.pb.side===SIDE_AUTO,
-    departments:deps.slice(0,15),market_comparison:S.pb.path==='agreements'?S.pb.market:(S.pb.path==='market'),client_concern:clean(S.pb.concern).slice(0,500)}};
+    origin:EMB?'areo_app':'setup_page',departments:deps.slice(0,15),market_comparison:S.pb.path==='agreements'?S.pb.market:(S.pb.path==='market'),client_concern:clean(S.pb.concern).slice(0,500)}};
 }
 function decPayload(){
   var ap=S.approver||{};
@@ -852,6 +859,7 @@ document.addEventListener('click',function(e){
   if(t.id==='themebtn'){var r=document.documentElement,cur=r.getAttribute('data-areo')||(r.getAttribute('data-theme')==='light'?'light':'dark');
     var nx=cur==='light'?'dark':'light';r.setAttribute('data-areo',nx);try{localStorage.setItem('areo-theme',nx)}catch(e){}return}
   if(t.dataset.go){if(t.dataset.go==='next'&&t.disabled)return;go(t.dataset.go);return}
+  if(t.hasAttribute('data-leave')){leave();return}
   if(t.dataset.jump){if(t.disabled)return;S.step=t.dataset.jump;save();render();window.scrollTo(0,0);return}
   if(t.dataset.pbpath){S.pb.path=t.dataset.pbpath;S.pb.side='';S.pb.family=S.pb.path==='upload'?'':S.pb.family;S.step={agreements:'pb_kind',market:'pb_market',upload:'pb_upload'}[S.pb.path];save();render();return}
   if(t.dataset.fopen){S.pb.fpath=(S.pb.fpath||[]).concat([t.dataset.fopen]);save();render();return}

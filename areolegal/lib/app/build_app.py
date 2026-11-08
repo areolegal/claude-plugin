@@ -7,6 +7,8 @@ if str(LIB)not in sys.path:sys.path.insert(0,str(LIB))
 from app import clm_view,nego_view,policy_view
 MARKER='/*__AREO_SHELL__*/null'
 TEMPLATE=LIB.parent/'ui'/'app'/'index.html'
+PLAYBOOK_PAGE=LIB.parent/'skills'/'contract-setup-diagnostician'/'assets'/'setup-page.html'
+PLAYBOOK_MARKER='/*__AREO_INIT__*/null'
 PROFILE='פרופיל-לקוח.json'
 TEMPLATES_DIR='תבניות'
 CLM='areo-clm'
@@ -81,41 +83,47 @@ def _folders(data_dir,profile,templates):
 	B=[{'name':A,'kind':'agreements','count':B}for(A,B)in C.items()]+B
 	if G or(A/TEMPLATES_DIR).is_dir():B.append({'name':TEMPLATES_DIR,'kind':'templates','count':len(G)})
 	L=A/'transactions';O=sum(1 for A in L.iterdir()if A.is_dir())if L.is_dir()else 0;B.append({'name':A.name,'kind':'workspace','count':O});return B
-def shell_data(data_dir,products=(BASE,),today=None):
+def shell_data(data_dir,products=(BASE,),today=None,start=None):
 	C=products;B=data_dir;B=Path(B);A=_json(B/PROFILE);A=A if isinstance(A,dict)else{};C=_uniq([_s(A).lower()for A in C if _s(A)])or[BASE]
 	if BASE not in C:C.insert(0,BASE)
 	E=find_templates(B);D=_s(A.get('organization_name'))or _s(A.get('organization_name_en'))
 	if not D:F=(_json(B/'clm-data.json')or{}).get('meta')or{};D=_s(F.get('company'))if isinstance(F,dict)else''
-	return{'company':D,'lang':_lang(A),'today':_s(today)or _dt.date.today().isoformat(),'products':C,'folders':_folders(B,A,E),'templates':E,'people':_people(A),'org':_org(A),'built_at':_dt.datetime.now().replace(microsecond=0).isoformat(timespec='minutes')}
+	return{'company':D,'lang':_lang(A),'today':_s(today)or _dt.date.today().isoformat(),'products':C,'folders':_folders(B,A,E),'templates':E,'people':_people(A),'org':_org(A),'start':_s(start)or'','built_at':_dt.datetime.now().replace(microsecond=0).isoformat(timespec='minutes')}
 def inject(html,data):
 	A=json.dumps(data,ensure_ascii=False,separators=(',',':'));A=A.replace('</','<\\/').replace('<!--','<\\!--').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
 	if html.count(MARKER)!=1:raise ValueError('התבנית אינה מכילה את הסמן %s פעם אחת בדיוק'%MARKER)
 	return html.replace(MARKER,A)
 def capabilities(has_clm=True,with_mail=False):
-	A={'db':{},'sample':{},'downloads':True}
+	A={'db':{},'sample':{},'downloads':True,'room':{}}
 	if with_mail:A['mcp']={'servers':[dict(A)for A in MCP_SERVERS]}
 	return A
 def _write(path,text):A=path;A=Path(A);A.parent.mkdir(parents=True,exist_ok=True);B=A.with_name(A.name+'.tmp');B.write_text(text,encoding='utf-8');os.replace(str(B),str(A))
-def build(data_dir,out_dir,products=(BASE,),today=None,template=None):
+def render_playbook(company,out):
+	A=company;B=PLAYBOOK_PAGE.read_text(encoding='utf-8')
+	if B.count(PLAYBOOK_MARKER)!=1:raise ValueError('בעמוד ההקמה אין את הסמן %s פעם אחת בדיוק'%PLAYBOOK_MARKER)
+	C={'mode':'playbook','embedded':True}
+	if A:C['org_name']=A
+	D=json.dumps(C,ensure_ascii=False).replace('</','<\\/');_write(out,B.replace(PLAYBOOK_MARKER,D))
+def build(data_dir,out_dir,products=(BASE,),today=None,template=None,start=None):
 	J=template;D=out_dir;A=data_dir;A,D=Path(A),Path(D)
 	if not A.is_dir():raise FileNotFoundError('אין תיקייה %s'%A)
-	G=shell_data(A,products,today);K=CLM in G['products'];B=D/'apps';B.mkdir(parents=True,exist_ok=True);C={};policy_view.render(A,B/'policy.html');C['apps/policy.html']=str(B/'policy.html');nego_view.render(A,B/'nego.html');C['apps/nego.html']=str(B/'nego.html');L=[];E=B/'clm.html'
-	if K:clm_view.render(A,E);C['apps/clm.html']=str(E)
+	E=shell_data(A,products,today,start);K=CLM in E['products'];B=D/'apps';B.mkdir(parents=True,exist_ok=True);C={};policy_view.render(A,B/'policy.html');C['apps/policy.html']=str(B/'policy.html');render_playbook(E['company'],B/'playbook.html');C['apps/playbook.html']=str(B/'playbook.html');nego_view.render(A,B/'nego.html');C['apps/nego.html']=str(B/'nego.html');L=[];F=B/'clm.html'
+	if K:clm_view.render(A,F);C['apps/clm.html']=str(F)
 	else:
-		if E.exists():E.unlink()
+		if F.exists():F.unlink()
 		L.append('apps/clm.html')
-	N=Path(J)if J else TEMPLATE;H=D/'index.html';_write(H,inject(N.read_text(encoding='utf-8'),G));F={'index.html':H.stat().st_size};F.update({A:Path(B).stat().st_size for(A,B)in C.items()});I=sum(F.values());M=[A for(A,B)in F.items()if B>PAGE_LIMIT]
+	N=Path(J)if J else TEMPLATE;H=D/'index.html';_write(H,inject(N.read_text(encoding='utf-8'),E));G={'index.html':H.stat().st_size};G.update({A:Path(B).stat().st_size for(A,B)in C.items()});I=sum(G.values());M=[A for(A,B)in G.items()if B>PAGE_LIMIT]
 	if M or I>TOTAL_LIMIT:raise ValueError('האפליקציה גדולה מדי לפרסום: %s (סך הכול %d בתים)'%(', '.join(M)or'סך הכול',I))
-	return{'index':str(H),'files':C,'capabilities':capabilities(K),'remove':L,'products':G['products'],'sizes':F,'total_bytes':I}
+	return{'index':str(H),'files':C,'capabilities':capabilities(K),'remove':L,'products':E['products'],'sizes':G,'total_bytes':I}
 def publish_spec(result):
 	A=result;B={'file_path':A['index'],'files':A['files'],'capabilities':A['capabilities'],'sizes':A['sizes'],'total_bytes':A['total_bytes']}
 	if A['remove']:B['remove_on_update']=A['remove']
 	return B
 def main(argv=None):
-	B=argparse.ArgumentParser(description='אפליקציית Areo מהנתונים שב-Areo-נתונים');B.add_argument('--data-dir',required=True,help='תיקיית Areo-נתונים');B.add_argument('--out',required=True,help='תיקיית הפלט, למשל Areo-נתונים/Areo');B.add_argument('--products',default=BASE,help='המוצרים של הלקוח, מופרדים בפסיק (areolegal,areo-clm)');B.add_argument('--today',default=None,help='YYYY-MM-DD (ברירת מחדל: היום)');A=B.parse_args(argv);sys.dont_write_bytecode=True
+	B=argparse.ArgumentParser(description='אפליקציית Areo מהנתונים שב-Areo-נתונים');B.add_argument('--data-dir',required=True,help='תיקיית Areo-נתונים');B.add_argument('--out',required=True,help='תיקיית הפלט, למשל Areo-נתונים/Areo');B.add_argument('--products',default=BASE,help='המוצרים של הלקוח, מופרדים בפסיק (areolegal,areo-clm)');B.add_argument('--today',default=None,help='YYYY-MM-DD (ברירת מחדל: היום)');B.add_argument('--start',default=None,choices=['playbook','draft','nego'],help='המערכת נפתחת ישר על המשימה שהלקוח ביקש: playbook בניית פלייבוק, draft הסכם חדש, nego טיוטה שקיבלו');A=B.parse_args(argv);sys.dont_write_bytecode=True
 	for C in(sys.stdout,sys.stderr):
 		try:C.reconfigure(encoding='utf-8',errors='replace')
 		except(AttributeError,ValueError):pass
 	if not Path(A.data_dir).is_dir():sys.stderr.write('התיקייה אינה קיימת: %s\n'%A.data_dir);return 2
-	D=build(Path(A.data_dir),Path(A.out),[A for A in A.products.split(',')],A.today);print(json.dumps(publish_spec(D),ensure_ascii=False));return 0
+	D=build(Path(A.data_dir),Path(A.out),[A for A in A.products.split(',')],A.today,start=A.start);print(json.dumps(publish_spec(D),ensure_ascii=False));return 0
 if __name__=='__main__':sys.exit(main())
