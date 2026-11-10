@@ -217,6 +217,8 @@ body.loose .crumbrow,body.loose .tco{display:none}
 .wsteps li{display:flex;gap:14px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:14px 16px;background:var(--raised)}
 .wsteps .n{flex:0 0 30px;height:30px;border-radius:4px;display:grid;place-items:center;font-weight:700;background:var(--accent-soft);color:var(--accent)}
 .wsteps li.ok .n{background:var(--accent);color:var(--panel)}
+.wsteps li.next{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.wsteps .sbtn.pri{background:var(--accent);border-color:var(--accent);color:var(--panel)}
 .wsteps .tx{flex:1;min-width:0}.wsteps .tx b{display:block;font-size:15.5px}.wsteps .tx span{color:var(--mist);font-size:14px}
 .wsteps .ac{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .sbtn.danger:hover{border-color:var(--risk);color:var(--risk)}
@@ -1098,10 +1100,10 @@ function renderToday(){
     p=[list?list+'.':'',dueFirst?'הראשון: '+dueFirst.cp+', להחזיר עד '+dueFirst.dueTxt+'.':'',sub].filter(Boolean).join(' ');
   }
   const hasProfile=!!SH.company;
-  const wstep=(n,ok,t,s,ac)=>'<li'+(ok?' class="ok"':'')+'><span class="n">'+(ok?'✓':n)+'</span><span class="tx"><b>'+t+'</b><span>'+s+'</span></span><span class="ac">'+ac+'</span></li>';
+  const wstep=(n,ok,t,s,ac,nx)=>'<li'+(ok?' class="ok"':nx?' class="next"':'')+'><span class="n">'+(ok?'✓':n)+'</span><span class="tx"><b>'+t+'</b><span>'+s+'</span></span><span class="ac">'+ac+'</span></li>';
   const welcome=fresh?'<section class="blk wide welcome" id="b-welcome"><h2>איך מתחילים</h2><p class="wl">שלושה צעדים, ואפשר לעבוד. כל אחד מתחיל בכפתור, כאן במערכת.</p><ol class="wsteps">'+
     wstep(1,hasProfile,'פרטי החברה',hasProfile?esc(SH.company):'כמה שאלות קצרות על החברה, פעם אחת לכל הארגון.',hasProfile?'':'<button class="sbtn" data-flow="setup">להתחיל</button>')+
-    (()=>{let bb=null;try{bb=JSON.parse(localStorage.getItem('areo-pb-building')||'null')}catch(x){}if(bb&&bb.at&&Date.now()-bb.at<6*3600*1000)return wstep(2,false,'פלייבוק · בבנייה','Areo בונה עכשיו את '+esc(bb.family||'הפלייבוק')+', בשיחה שליד המערכת. כשיסתיים, הוא יופיע במדיניות.','<button class="sbtn" data-flow="playbook">לראות</button>');return ''})()||wstep(2,false,'פלייבוק','המדיניות החוזית שלכם: מההסכמים, לפי המקובל בשוק, או ממסמך מדיניות קיים.','<button class="sbtn" data-flow="playbook">לבנות פלייבוק</button>')+
+    ((()=>{let bb=null;try{bb=JSON.parse(localStorage.getItem('areo-pb-building')||'null')}catch(x){}if(bb&&bb.at&&Date.now()-bb.at<6*3600*1000)return wstep(2,false,'פלייבוק · בבנייה','Areo בונה עכשיו את '+esc(bb.family||'הפלייבוק')+', בשיחה שליד המערכת. כשיסתיים, הוא יופיע במדיניות.','<button class="sbtn" data-open="policy" data-a="">לראות</button>');return ''})()||wstep(2,false,'פלייבוק','המדיניות החוזית שלכם: מההסכמים, לפי המקובל בשוק, או ממסמך מדיניות קיים.',(hasProfile?'<button class="sbtn pri" data-flow="playbook">לבנות פלייבוק</button>':'<button class="sbtn" data-flow="playbook">לבנות פלייבוק</button>'),hasProfile))+
     wstep(3,false,'עבודה שוטפת','טיוטה שקיבלתם מהצד השני, או הסכם חדש על הנייר שלכם.','<button class="sbtn" data-wnego>טיוטה שקיבלתם</button><button class="sbtn" data-wnew>+ הסכם חדש</button>')+
     '</ol></section>':'';
   if(fresh){h1=esc('ברוכים הבאים ל-Areo'+(company?', '+company:''));p=''}
@@ -1180,7 +1182,9 @@ window.__areoSetup=()=>openFlow('setup');
 document.addEventListener('click',e=>{const f=e.target.closest('[data-flow]');if(f){e.preventDefault();openFlow(f.dataset.flow);return}
   if(e.target.closest('[data-wnew]')){e.preventDefault();openNew();return}
   if(e.target.closest('[data-wnego]')){e.preventDefault();location.hash='nego';const fr=FRAMES.nego;try{fr&&fr.contentWindow.__areoNewDraft&&fr.contentWindow.__areoNewDraft()}catch(x){}}});
-window.__areoClosePlaybook=()=>{if(PBX){PBX.remove();PBX=null}};
+window.__areoClosePlaybook=msg=>{if(PBX){PBX.remove();PBX=null}
+  /* the end of the opening: back to the overview, with a short welcome */
+  if(msg){location.hash='today';try{renderToday()}catch(e){}stoast(msg,4500)}};
 window.addEventListener('hashchange',pbxSync);
 window.addEventListener('storage',e=>{if(e.key==='areo-pb-building'){try{renderToday()}catch(x){}}});
 

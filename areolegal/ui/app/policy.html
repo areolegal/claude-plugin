@@ -701,7 +701,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 /* the playbook steps (another frame of this system) set the flag: show 'being built' at once */
 window.addEventListener('storage',function(e){if(e.key==='areo-pb-building'&&!BOOKS.length){try{render()}catch(x){}}});
 function render(){
-  if(!BOOKS.length){$('#co').textContent=(P&&P.company)||'';$('#pkname').textContent='מדיניות חוזית';$('#pksub').textContent='עוד אין פלייבוק';$('#nav').innerHTML='';$('#foot').textContent='';$('#fab').hidden=true;$('#view').innerHTML=emptyHtml();return}
+  if(!BOOKS.length){$('#co').textContent=(P&&P.company)||'';$('#pkname').textContent='מדיניות חוזית';$('#pksub').textContent=pbBuilding()?'בבנייה':'עוד אין פלייבוק';$('#nav').innerHTML='';$('#foot').textContent='';$('#fab').hidden=true;$('#view').innerHTML=emptyHtml();return}
   var b=book(),c=counts();
   $('#co').textContent=D.company;$('#pkname').textContent=b.name;$('#pksub').textContent=b.sub;
   $('#nav').innerHTML=navHtml();

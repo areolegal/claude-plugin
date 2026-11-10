@@ -52,6 +52,9 @@ h2{font-size:24px;font-weight:600}
 .facts li{display:flex;gap:12px;align-items:flex-start}
 .facts li::before{content:"";flex:0 0 8px;height:8px;border-radius:50%;background:var(--aurora);margin-top:9px}
 .field{display:flex;flex-direction:column;gap:6px}
+[hidden]{display:none!important}
+/* the JSON a page sends is for support, never shown to the client */
+.payload{display:none!important}
 .field label,.legend{font-weight:600;font-size:15px}
 .hint{font-size:13.5px;color:var(--mist)}
 .optional{font-weight:400;color:var(--faint);font-size:13px;margin-inline-start:6px}
@@ -220,11 +223,14 @@ if(EMB)document.documentElement.classList.add('emb');
 if(EMB&&['pb_done','pb_approve'].indexOf(S.step)>=0){S.step='pb_home'}
 /* a new build of the system (a new conversation): a flow that was finished or sent before starts over, the answers stay */
 if(EMB&&INIT.run&&S.run!==INIT.run){
-  if(['pb_wait','pb_done','pb_approve','done'].indexOf(S.step)>=0||(INIT.mode==='setup'&&S.step.indexOf('pb_')===0))S.step=INIT.mode==='setup'?'welcome':'pb_home';
+  /* onboarding (mode setup) always starts at the company: recognised, or the questions */
+  if(INIT.mode==='setup')S.step=INIT.has_profile?'ob_who':'welcome';
+  else if(['pb_wait','pb_done','pb_approve','done'].indexOf(S.step)>=0)S.step='pb_home';
   S.run=INIT.run;S.sent=false;
 }
+if(EMB&&INIT.mode==='setup'&&INIT.has_profile&&S.step==='welcome'&&!S.newCompany)S.step='ob_who';
 /* inside the Areo system: back to the policy screen, not to the setup steps */
-function leave(){try{if(window.parent&&window.parent!==window&&window.parent.__areoClosePlaybook){window.parent.__areoClosePlaybook();return}}catch(e){}try{location.href='policy.html'}catch(e){}}
+function leave(msg){try{if(window.parent&&window.parent!==window&&window.parent.__areoClosePlaybook){window.parent.__areoClosePlaybook(msg||'');return}}catch(e){}try{location.href='policy.html'}catch(e){}}
 if(INIT&&INIT.mode==='approve'){S.step='pb_approve';S.pb.family=INIT.family||S.pb.family;if(INIT.approver&&INIT.approver.name)S.approver=INIT.approver}
 if(INIT&&INIT.org_name&&!S.name)S.name=INIT.org_name;
 
@@ -526,6 +532,31 @@ function render(keep){
       '<li>אפשר לעצור באמצע ולחזור. מה שמילאתם נשמר בדפדפן.</li></ul>'+
       '<div class="actions">'+(EMB?'<button type="button" class="btn ghost" data-leave>חזרה למערכת</button>':'<span></span>')+'<button type="button" class="btn primary" data-go="next">מתחילים</button></div></section>';
   }
+  else if(S.step==='ob_who'){
+    h='<section class="card"><div class="eyebrow">צעד 1 מתוך 3 · החברה</div><h2>זיהינו שאתם משויכים ל'+esc(INIT.org_name||S.name)+'</h2>'+
+      '<p class="lead">זו החברה שבשבילה אתם עובדים ב-Areo?</p>'+
+      '<div class="paths"><button type="button" class="path" data-obyes><span class="ic">✓</span><span><b>כן, זו החברה</b><span>ממשיכים לשלב הפלייבוק.</span></span></button>'+
+      '<button type="button" class="path" data-obnew><span class="ic">+</span><span><b>חברה אחרת</b><span>להקים חברה חדשה, או לעבוד בשם חברה אחרת.</span></span></button></div></section>';
+  }
+  else if(S.step==='pb_home'&&EMB){
+    var dfe=S.dataFolder&&S.dataFolder.mode==='picked'?S.dataFolder:null,found=dfe&&dfe.books&&dfe.books.length;
+    h='<section class="card"><div class="eyebrow">צעד 2 מתוך 3 · פלייבוק</div><h2>בחרו את התיקייה של המחלקה המשפטית</h2>'+
+      '<p class="lead">התיקייה עם ההסכמים שלכם. אם Areo כבר עבדה איתה, נזהה את הפלייבוקים שבה.</p>'+
+      '<button type="button" class="btn primary" data-dirpick2 style="align-self:flex-start">'+(dfe?'לבחור תיקייה אחרת':'לבחור תיקייה מהמחשב')+'</button>'+
+      '<input type="file" id="dirpick2" webkitdirectory directory multiple hidden>'+
+      (dfe&&dfe.reading?'<div class="pos"><div class="hd"><b>קוראים את '+esc(dfe.name)+'…</b></div></div>':'')+
+      (dfe&&!dfe.reading&&found?'<div class="pos" style="border-color:var(--aurora)"><div class="hd"><b>זיהינו '+(dfe.books.length===1?'פלייבוק':dfe.books.length+' פלייבוקים')+' בתיקייה '+esc(dfe.name)+'</b></div>'+
+        '<div class="basis">'+dfe.books.map(esc).join(' · ')+'</div>'+
+        '<div class="actions" style="margin-top:12px"><button type="button" class="btn ghost" data-jump="pb_people">לבנות פלייבוק נוסף</button><button type="button" class="btn primary" data-obopen>לעבור למערכת</button></div></div>':'')+
+      (dfe&&!dfe.reading&&!found?'<div class="pos"><div class="hd"><b>בחרתם: '+esc(dfe.name)+'</b><span class="tag c">'+dfe.count+' קבצים</span></div><div class="basis">עוד אין בתיקייה פלייבוק. נבנה אותו עכשיו.</div>'+rootChips()+'</div>':'')+
+      '<div class="privacy">העמוד קורא רק את שם התיקייה ואת שמות הקבצים, לא את התוכן של ההסכמים. שום דבר לא עולה ל-Areo.</div>'+
+      '<div class="actions"><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ghost" data-jump="'+(INIT&&INIT.has_profile&&!S.newCompany?'ob_who':'summary')+'">חזרה לחברה</button>'+(dfe?'':'<button type="button" class="btn ghost" data-leave data-hello>לדלג על הפלייבוק</button>')+'</div>'+(dfe&&!dfe.reading&&!found?'<button type="button" class="btn primary" data-jump="pb_people">המשך</button>':'<span></span>')+'</div></section>';
+  }
+  else if(S.step==='ob_open'){
+    h='<section class="card"><div class="done-mark" aria-hidden="true">✓</div><h2>פותחים את המערכת</h2>'+
+      '<p class="lead">Areo טוענת את הפלייבוקים והעסקאות מהתיקייה '+esc((S.dataFolder&&S.dataFolder.name)||'')+'. בעוד רגע המערכת תתעדכן.</p>'+
+      '<p class="hint">אם Claude מבקש לאשר גישה לתיקייה, לוחצים אישור (Allow).</p></section>';
+  }
   else if(S.step==='pb_home'){
     var df=S.dataFolder,dfok=!!df;
     h='<section class="card"><div class="eyebrow">פלייבוק · תיקייה</div><h2>איפה Areo ישמור את הפלייבוקים?</h2>'+
@@ -603,6 +634,16 @@ function render(keep){
       '<div class="actions"><button type="button" class="btn ghost" data-go="back">חזרה</button><button type="button" class="btn primary" data-send>אישור ושמירה</button></div>'+
       '<div id="senderr" class="note warn" hidden></div><div id="manual" hidden class="field"><label for="manualtext">לא הצלחנו לשמור מכאן. העתיקו את הפרטים והדביקו בשיחה:</label><textarea id="manualtext" readonly></textarea></div></section>';
   }
+  else if(S.step==='done'&&EMB){
+    /* inside the system: the next step is a button here, never a word to type in the chat */
+    h='<section class="card"><div class="done-mark" aria-hidden="true">✓</div><h2>פרטי '+W('החברה','הארגון')+' נשמרו</h2>'+
+      '<p class="lead">'+W('החברה','הארגון')+' מוכנה. עובד נוסף אצלכם יפתח את Areo והפרטים כבר יהיו שם.</p>'+
+      '<div class="next" style="border-color:var(--aurora)"><div class="t"><b>הצעד הבא: הפלייבוק</b><span>המדיניות החוזית שלכם: מה מקובל עליכם, איפה אפשר להתגמש ומה לא מסכימים. כל העבודה של Areo נשענת עליה.</span></div>'+
+      '<button type="button" class="btn primary" data-jump="pb_home">להמשיך לפלייבוק</button></div>'+
+      '<div class="next"><div class="t"><b>לעבור ישר למערכת</b><span>אפשר להתחיל לעבוד גם בלי פלייבוק: לגרור טיוטה שקיבלתם מהצד השני, או לבקש הסכם חדש. Areo תעבוד לפי שיקול דעת מקצועי, ואת הפלייבוק אפשר לבנות בכל רגע, בלשונית מדיניות.</span></div>'+
+      '<button type="button" class="btn ghost" data-leave data-hello>לעבור למערכת בלי פלייבוק</button></div>'+
+      '<div class="actions"><button type="button" class="btn ghost" data-leave>חזרה למערכת</button><span></span></div></section>';
+  }
   else if(S.step==='done'){
     h='<section class="card"><div class="done-mark" aria-hidden="true">✓</div><h2>הפרטים התקבלו</h2>'+
       '<p class="lead">פרטי '+W('החברה','הארגון')+' נשמרים ב-Areo לכל הארגון. עובד נוסף אצלכם יפתח את Areo והפרופיל כבר יהיה שם. כשהשמירה מסתיימת, תראו אישור בשיחה.'+(S.logo==='אעלה עכשיו'?' זה הזמן לצרף את הלוגו בשיחה, בכפתור הפלוס.':'')+'</p>'+
@@ -651,6 +692,16 @@ function render(keep){
         (pk.word+pk.pdf===0?'<div class="note warn">אין בתיקייה הזו הסכמים: לא מצאנו בה אף קובץ Word או PDF. בחרו את התיקייה שבה שמורים ההסכמים.</div>':rootChips('ag',pk.root))+'</div>':'')+
       '<div class="privacy">העמוד קורא רק את שם התיקייה ואת שמות הקבצים, לא את התוכן. ההסכמים נקראים בחשבון ה-Claude שלכם ונשארים בתיקייה שלכם. שום דבר לא עולה ל-Areo.</div>'+
       '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_kind">חזרה</button>'+(pk&&pk.word+pk.pdf>0?'<button type="button" class="btn primary" data-pickgo>זו התיקייה</button>':'<span></span>')+'</div></section>';
+  }
+  else if(S.step==='pb_upload'&&EMB){
+    var pf=S.pb.policyFile;
+    h='<section class="card"><div class="eyebrow">צעד 2 מתוך 3 · מדיניות קיימת</div><h2>העלו את מסמך המדיניות</h2>'+
+      '<p class="lead">Areo תהפוך אותו לפלייבוק עובד בלי לשנות אף עמדה. סוגי ההסכמים, הצד והעמדות נקראים מהמסמך עצמו, ולכן אין עוד שאלות.</p>'+
+      '<button type="button" class="btn primary" data-polpick style="align-self:flex-start">'+(pf?'לבחור קובץ אחר':'לבחור קובץ מהמחשב')+'</button>'+
+      '<input type="file" id="polpick" accept=".doc,.docx,.pdf" hidden>'+
+      (pf?'<div class="pos"><div class="hd"><b><bdi>'+esc(pf.name)+'</bdi></b><span class="tag c">נבחר</span></div><div class="basis">כשתתחילו, Claude יבקש לאשר גישה לקובץ בחלון קטן. לוחצים אישור (Allow).</div></div>':'')+
+      '<div class="privacy">העמוד קורא רק את שם הקובץ. המסמך נקרא בחשבון ה-Claude שלכם ולא עולה ל-Areo.</div>'+
+      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_path">חזרה</button>'+(pf?'<button type="button" class="btn primary" data-jump="pb_summary">לסיכום</button>':'<span></span>')+'</div></section>';
   }
   else if(S.step==='pb_upload'){
     h='<section class="card"><div class="eyebrow">מדיניות קיימת</div><h2>צרפו את מסמך המדיניות</h2>'+
@@ -727,7 +778,15 @@ function render(keep){
     var deps=S.pb.deps.concat(clean(S.pb.depsFree)?clean(S.pb.depsFree).split(/\s*,\s*/):[]);
     var how=S.pb.path==='agreements'?(S.pb.market?'מההסכמים שלכם, עם השוואה לשוק':'מההסכמים שלכם בלבד'):(S.pb.path==='market'?'לפי המקובל בשוק, עם בדיקה רגולטורית':'מהמדיניות שהעליתם, בלי שינוי עמדות');
     var g2=function(k,vv,step){return '<div class="grp"><div style="min-width:0"><div class="k">'+k+'</div><div class="v">'+(vv||'<span style="color:var(--faint)">לא צוין</span>')+'</div></div>'+(step?'<button type="button" class="linkbtn" data-jump="'+step+'">עריכה</button>':'')+'</div>'};
+    if(EMB&&S.pb.path==='upload'){
+      h='<section class="card"><div class="eyebrow">סיכום</div><h2>כך נהפוך את המדיניות לפלייבוק</h2><div class="sum">'+
+        g2('מסמך המדיניות','<bdi>'+esc((S.pb.policyFile&&S.pb.policyFile.name)||'')+'</bdi>','pb_upload')+g2('סוגי ההסכמים','Areo תזהה מהמסמך','')+g2('הצד של החברה','Areo תזהה מהמסמך','')+g2('אופן הבנייה','המרה בלי שינוי עמדות','pb_path')+'</div>'+
+        '<div class="hint">מה שחסר במדיניות או סותר את עצמו יסומן לבדיקה שלכם, ולא ישונה לבד.</div>'+
+        '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_upload">חזרה</button><button type="button" class="btn primary" data-pbstart>להתחיל</button></div></section>';
+      v.innerHTML=h;rail();return;
+    }
     h='<section class="card"><div class="eyebrow">סיכום</div><h2>כך נבנה את הפלייבוק</h2><div class="sum">'+
+      (S.pb.path==='agreements'?g2('תיקיית ההסכמים',esc(S.pb.where==='same'?((S.dataFolder&&S.dataFolder.name)||'התיקייה שחיברתם'):((S.pb.picked&&S.pb.picked.name)||'התיקייה שבחרתם')),S.pb.where==='same'?'pb_home':'pb_connect'):'')+
       g2('סוג ההסכמים',esc(S.pb.family||'לפי המסמך שהעליתם')+(S.pb.path==='agreements'&&S.pb.picked&&S.pb.picked.count?' · '+S.pb.picked.count+' קבצים':''),S.pb.path==='market'?'pb_market':(S.pb.path==='agreements'?'pb_types':''))+
       g2('הצד של החברה',esc(S.pb.side),'pb_side')+g2('מחלקות',esc(deps.join(', ')),'pb_side')+g2('אופן הבנייה',esc(how),'pb_extra')+
       (S.pb.concern?g2('מה מטריד אתכם',esc(S.pb.concern),'pb_extra'):'')+'</div>'+
@@ -736,7 +795,7 @@ function render(keep){
       '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_extra">חזרה</button><button type="button" class="btn primary" data-pbstart>להתחיל בבנייה</button></div></section>';
   }
   else if(S.step==='pb_wait'){
-    h='<section class="card"><div class="done-mark" aria-hidden="true">✓</div><h2>בונים את הפלייבוק</h2>'+
+    h='<section class="card"><div class="done-mark" aria-hidden="true">✓</div><h2>'+(S.pb.path==='upload'?'ממירים את המדיניות לפלייבוק':'בונים את הפלייבוק')+'</h2>'+
       '<p class="lead">Areo קורא עכשיו את ההסכמים וקובע את העמדות. זה לוקח כ-10 עד 15 דקות. אם התבקשה גישה לתיקייה, אשרו אותה בחלון שנפתח בשיחה.</p>'+
       (EMB?'<p class="hint">כשהבנייה מסתיימת, המערכת מתעדכנת והפלייבוק מופיע במדיניות, עם העמדות לאישור.</p><div class="actions"><button type="button" class="btn primary" data-leave>חזרה למערכת</button></div></section>':
       '<p class="hint">כשהבנייה מסתיימת, העמוד הזה מתעדכן לאישור העמדות. אפשר לסגור אותו בינתיים.</p></section>');
@@ -800,7 +859,7 @@ function pbPayload(){
     signers:S.signers.filter(function(x){return clean(x.name)}).slice(0,8).map(function(x){return {name:clean(x.name),role:clean(x.role)}}),
     policy_approver:clean(S.approver.name)?{name:clean(S.approver.name),role:clean(S.approver.role)}:null,
     path:S.pb.path,family:clean(S.pb.family),family_auto:!!S.pb.kindAuto,agreements_folder:where,company_side:S.pb.side===SIDE_AUTO?null:clean(S.pb.side),side_auto:S.pb.side===SIDE_AUTO,
-    origin:EMB?'areo_app':'setup_page',departments:deps.slice(0,15),market_comparison:S.pb.path==='agreements'?S.pb.market:(S.pb.path==='market'),client_concern:clean(S.pb.concern).slice(0,500)}};
+    origin:EMB?'areo_app':'setup_page',policy_file:S.pb.path==='upload'&&S.pb.policyFile?{name:clean(S.pb.policyFile.name),size:S.pb.policyFile.size||0}:null,departments:deps.slice(0,15),market_comparison:S.pb.path==='agreements'?S.pb.market:(S.pb.path==='market'),client_concern:clean(S.pb.concern).slice(0,500)}};
 }
 function decPayload(){
   var ap=S.approver||{};
@@ -871,7 +930,11 @@ document.addEventListener('click',function(e){
   if(t.id==='themebtn'){var r=document.documentElement,cur=r.getAttribute('data-areo')||(r.getAttribute('data-theme')==='light'?'light':'dark');
     var nx=cur==='light'?'dark':'light';r.setAttribute('data-areo',nx);try{localStorage.setItem('areo-theme',nx)}catch(e){}return}
   if(t.dataset.go){if(t.dataset.go==='next'&&t.disabled)return;go(t.dataset.go);return}
-  if(t.hasAttribute('data-leave')){leave();return}
+  if(t.hasAttribute('data-leave')){leave(t.hasAttribute('data-hello')?'הכול מוכן. ברוכים הבאים ל-Areo.':'');return}
+  if(t.hasAttribute('data-polpick')){var pp=$('#polpick');if(pp){pp.value='';pp.click()}return}
+  if(t.hasAttribute('data-obyes')){S.step='pb_home';save();render();window.scrollTo(0,0);return}
+  if(t.hasAttribute('data-obnew')){S.newCompany=true;S.name='';S.reg='';S.nameEn='';S.step='company';save();render();window.scrollTo(0,0);return}
+  if(t.hasAttribute('data-obopen')){var dd=S.dataFolder||{};send({label:'פתיחת המערכת מהתיקייה '+clean(dd.name||''),kind:'areo_open_folder',folder_name:clean(dd.name||''),sample_files:(dd.sample||[]).slice(0,8),playbooks:(dd.books||[]).slice(0,10)},'',function(){S.step='ob_open';save();render();window.scrollTo(0,0)});return}
   if(t.dataset.jump){if(t.disabled)return;S.step=t.dataset.jump;save();render();window.scrollTo(0,0);return}
   if(t.dataset.pbpath){S.pb.path=t.dataset.pbpath;S.pb.side='';S.pb.family=S.pb.path==='upload'?'':S.pb.family;S.step={agreements:'pb_kind',market:'pb_market',upload:'pb_upload'}[S.pb.path];save();render();return}
   if(t.dataset.fopen){S.pb.fpath=(S.pb.fpath||[]).concat([t.dataset.fopen]);save();render();return}
@@ -939,10 +1002,19 @@ document.addEventListener('input',function(e){
   save();refreshNext();pbNext();
 });
 document.addEventListener('change',function(e){
+  if(e.target.id==='polpick'){var pfl=(e.target.files||[])[0];if(pfl){S.pb.policyFile={name:pfl.name.slice(0,140),size:pfl.size};save();render(true)}return}
   if(e.target.id==='dirpick2'){
     var f2=Array.prototype.slice.call(e.target.files||[]);if(!f2.length){toast('לא נבחרה תיקייה, או שהיא ריקה.');return}
     var top2=(f2[0].webkitRelativePath||f2[0].name).split('/')[0],nm2=f2.map(function(x){return x.name}).filter(function(n){return n.charAt(0)!=='.'});
-    S.dataFolder={mode:'picked',name:top2,count:nm2.length,docs:nm2.filter(function(n){return /\.(docx?|pdf)$/i.test(n)}).length,sample:nm2.slice(0,8).map(function(n){return n.slice(0,80)})};save();render(true);return;
+    S.dataFolder={mode:'picked',name:top2,count:nm2.length,docs:nm2.filter(function(n){return /\.(docx?|pdf)$/i.test(n)}).length,sample:nm2.slice(0,8).map(function(n){return n.slice(0,80)}),books:[],reading:true};save();render(true);
+    var rel=function(x){return String(x.webkitRelativePath||x.name)};
+    var models=f2.filter(function(x){return /(^|\/)Areo-נתונים\/playbooks\/[^\/]+\/playbook-model\.json$/.test(rel(x))}).map(function(x){return rel(x).split('/').slice(-2)[0]});
+    var legacy=f2.some(function(x){return /Areo Workspace - פלייבוק\.html$/.test(rel(x))});
+    var idxf=f2.filter(function(x){return /(^|\/)Areo-נתונים\/playbooks\/index\.json$/.test(rel(x))})[0];
+    var finish=function(names){var df0=S.dataFolder;if(!df0)return;var u=[];names.forEach(function(n){n=clean(n);if(n&&u.indexOf(n)<0)u.push(n)});if(!u.length&&legacy)u.push('פלייבוק קיים');df0.books=u.slice(0,10);df0.reading=false;save();render(true)};
+    if(idxf&&idxf.text){idxf.text().then(function(s){var names=[];try{var j=JSON.parse(s),en=Array.isArray(j)?j:(j.playbooks||[]);en.forEach(function(e){if(e&&typeof e==='object')names.push(e.label||e.family_label||e.contract_family_name||e.family_name||e.family_id||'')})}catch(e){}finish(names.length?names:models)},function(){finish(models)})}
+    else finish(models);
+    return;
   }
   if(e.target.id==='dirpick'){
     var fl=Array.prototype.slice.call(e.target.files||[]);if(!fl.length){toast('לא נבחרה תיקייה, או שהיא ריקה.');return}

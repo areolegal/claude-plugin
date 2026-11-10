@@ -99,11 +99,11 @@ def capabilities(has_clm=True,with_mail=False):
 	return A
 def _write(path,text):A=path;A=Path(A);A.parent.mkdir(parents=True,exist_ok=True);B=A.with_name(A.name+'.tmp');B.write_text(text,encoding='utf-8');os.replace(str(B),str(A))
 def render_playbook(company,out,mode='playbook'):
-	A=company;B=PLAYBOOK_PAGE.read_text(encoding='utf-8')
-	if B.count(PLAYBOOK_MARKER)!=1:raise ValueError('בעמוד ההקמה אין את הסמן %s פעם אחת בדיוק'%PLAYBOOK_MARKER)
-	C={'mode':mode,'embedded':True,'run':_dt.datetime.now().strftime('%Y%m%d%H%M%S')}
-	if A:C['org_name']=A
-	D=json.dumps(C,ensure_ascii=False).replace('</','<\\/');E='<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>';_write(out,E+B.replace(PLAYBOOK_MARKER,D)+'</body></html>')
+	A=company;C=PLAYBOOK_PAGE.read_text(encoding='utf-8')
+	if C.count(PLAYBOOK_MARKER)!=1:raise ValueError('בעמוד ההקמה אין את הסמן %s פעם אחת בדיוק'%PLAYBOOK_MARKER)
+	B={'mode':mode,'embedded':True,'run':_dt.datetime.now().strftime('%Y%m%d%H%M%S')}
+	if A:B['org_name']=A
+	B['has_profile']=bool(A);D=json.dumps(B,ensure_ascii=False).replace('</','<\\/');E='<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>';_write(out,E+C.replace(PLAYBOOK_MARKER,D)+'</body></html>')
 DEFAULT_TITLE='Areo'
 def page_title(title=None):A=' '.join(str(title or'').replace('<','').replace('>','').replace('&','ו').split())[:80];return A or DEFAULT_TITLE
 def build(data_dir,out_dir,products=(BASE,),today=None,template=None,start=None,title=None):
