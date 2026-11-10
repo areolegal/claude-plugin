@@ -3,7 +3,7 @@
 </style></head><body><title>ניהול חוזים (CLM)</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700&family=Assistant:wght@400;500;600;700&family=Poppins:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Noto+Sans+Hebrew:wght@400;500;600;700&family=David+Libre:wght@400;500;700&display=swap">
 <style>
 /* Same family as the playbook Workspace: side menu, one calm column, tables over charts */
 :root{
@@ -31,7 +31,7 @@
 html,body{height:100%}
 body{margin:0;background:var(--night);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
 button{font:inherit}
-.app{display:grid;grid-template-columns:250px 1fr;min-height:100%}
+.app{display:block;min-height:100%}
 .app>aside{background:var(--panel);border-inline-end:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:14px;position:sticky;top:0;height:100vh;overflow:auto}
 .wordmark{font-family:var(--mark);font-weight:700;font-size:20px;direction:ltr;text-align:right;letter-spacing:-.3px;padding:0 6px}
 .wordmark span{color:var(--mist);font-weight:400}
@@ -311,17 +311,412 @@ button.pli:hover{background:var(--raised)}button.pli:hover span{color:var(--auro
 .pli.zero{color:var(--faint)}.pli.zero i{opacity:.35}
 .pfl small{font-size:12.5px;color:var(--mist)}.nx span{font-size:13px;color:var(--mist)}
 @media (max-width:820px){.app{grid-template-columns:1fr}.app>aside{position:relative;height:auto;flex-direction:column}nav{flex-direction:row;overflow-x:auto}.nv{white-space:nowrap}.asidefoot{display:none}.find{min-width:0;flex:1}.task{grid-template-columns:70px 1fr}.tside{grid-column:1/-1;flex-direction:row;flex-wrap:wrap}.tlh,.tlr{grid-template-columns:120px 1fr}}
+/* page structure without the old sidebar (any look) */
+.ph{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.ph .sub{font-size:14px;color:var(--mist)}.ph .foot{display:flex;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--faint)}
+.row-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.vbody{display:flex;flex-direction:column;gap:16px;min-width:0}
+.ptabs{display:flex;flex-direction:row;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line)}
+.ptabs .tab{background:none;border:0;border-bottom:2.5px solid transparent;padding:9px 12px;color:var(--mist);cursor:pointer;font-size:14.5px;white-space:nowrap}.ptabs .tab[aria-pressed=true]{color:var(--ink);font-weight:600;border-bottom-color:var(--aurora)}
+.ptabs .tcount,.tabs .tcount{font-size:11.5px;font-weight:700;background:var(--raised);color:var(--mist);border-radius:999px;padding:0 7px;margin-inline-start:6px}
+.tcount.w{background:var(--legal-soft);color:var(--legal)}.tcount.r{background:var(--r-soft);color:var(--r)}
+.dslot:empty{display:none}
+.tsearch{display:flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:10px;padding:0 10px;height:36px;background:var(--panel)}
+.tsearch svg{width:15px;height:15px;color:var(--mist)}.tsearch input{border:0;background:none;outline:none;color:var(--ink);font:inherit;min-width:0;flex:1}
+.ttools,.tfl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}.tfl{justify-content:flex-start}
+.tlr{width:100%;border:0;background:none;color:var(--ink);text-align:start;cursor:pointer;font:inherit}
+.k-run,.k-win,.k-dl,.k-now{display:inline-block;width:14px;height:9px;border-radius:3px;margin-inline-end:6px}
+.k-run{background:color-mix(in srgb,var(--aurora) 35%,transparent)}.k-win{background:var(--y-soft);border:1.5px solid var(--y)}.k-dl{background:var(--r);width:3px}.k-now{background:var(--ink);width:2px}
+.hint,.empty{font-size:13px;color:var(--faint);margin:0}.empty{padding:16px}
+.ro{padding:8px 0;font-size:14.5px;font-weight:400}.dbtns2{display:flex;gap:10px;flex-wrap:wrap}.note{font-size:13px;margin:0;font-weight:400}
+.btn.danger{color:var(--r)}
+.chev{width:15px;height:15px;flex:none;fill:none;stroke:var(--mist);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pchev{width:14px;height:14px;fill:none;stroke:var(--mist);stroke-width:2;flex:none;transition:transform .15s;vertical-align:-2px;margin-inline-end:6px}
+.pt.on .pchev{transform:rotate(-90deg)}
+.ptx{display:flex;flex-direction:column;gap:10px;padding:12px 6px 16px}
+
+/* ===== Areo look (mono): light monochrome, the Areo green only where Areo speaks or marks a match ===== */
+html:root[data-look="mono"]{
+  --bg:#FAFAFA;--panel:#FFFFFF;--sub:#F3F3F3;--hover:#F7F7F7;--line:#EBEBEB;--line2:#DCDCDC;--line3:#E6E6E6;
+  --ink:#171717;--ink2:#4D4D4D;--ink3:#8F8F8F;--g:#0B8C66;--gs:#EAF5F0;--gs2:#F2F8F5;--gs3:#EDF6F2;--gsh:#DFF0E8;--gb:#CFE7DC;--gb2:#A9D6C2;--gt:#0A6E50;--gt2:#3D5C50;
+  --amber:#D98A1C;--at:#8A4B05;--ats:#FDF8EE;--atb:#F0D9AE;--atp:#FDF1E1;--red:#C8242F;--rt:#A01D27;--rs:#FCF1F2;--mark:#FFF1A8;--mid:#C9C9C9;--mid2:#D6D6D6;--hover2:#EDEDED;--inkh:#2E2E2E;--onink:#FFFFFF;
+  --r1:6px;--r2:4px;--r3:3px;--ui:'Google Sans','Noto Sans Hebrew',system-ui,sans-serif;
+  --night:var(--bg);--raised:var(--sub);--line-strong:var(--line2);--mist:var(--ink2);--faint:var(--ink3);--aurora:var(--g);--aurora-ink:var(--onink);--aurora-soft:var(--gs);
+  --g-soft:var(--gs);--y:var(--amber);--y-soft:var(--ats);--r:var(--red);--r-soft:var(--rs);--legal:var(--at);--legal-soft:var(--atp);--display:var(--ui);--body:var(--ui);
+  --pf1:var(--ink);--pf2:var(--ink2);--pf3:var(--mid);--pf4:var(--line2);color-scheme:light}
+html:root[data-look="mono"][data-theme="dark"]{--bg:#111214;--panel:#1A1B1E;--sub:#25262A;--hover:#212226;--line:#2C2D31;--line2:#3B3C41;--ink:#ECECEC;--ink2:#B9B9B9;--ink3:#8B8B8B;
+  --g:#2FB98A;--gs:#15291F;--amber:#E2A042;--red:#E5555E;--mark:#5C4A00;--mid:#4A4B50;
+  --onink:#111214;--gt:#5AD3A8;--gt2:#A9CFC1;--at:#EDB565;--rt:#F08A91;--ats:#2A2215;--atb:#4A3A1E;--atp:#3A2A12;--gb:#21503F;--gb2:#2E6E57;--gs2:#13231D;--gs3:#173027;--gsh:#1C3B30;--rs:#2B1719;--line3:#34353A;--hover2:#2A2B2F;--mid2:#45464B;--inkh:#D4D4D4;color-scheme:dark}
+html[data-look="mono"] body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+html[data-look="mono"] :is(h1,h2,h3){font-family:var(--ui);font-weight:500}
+html[data-look="mono"] :focus-visible{outline:2px solid var(--g);outline-offset:2px}
+html[data-look="mono"] .app{display:block}
+html[data-look="mono"] .app>main{padding:28px 32px 72px}
+html[data-look="mono"] .col{max-width:1240px;gap:20px}
+html[data-look="mono"] .vbody{gap:16px}
+html[data-look="mono"] .lead{font-size:13.5px;color:var(--ink2);line-height:1.6;max-width:72ch}
+html[data-look="mono"] .muted{color:var(--ink2)}html[data-look="mono"] .faint{color:var(--ink3)}
+html[data-look="mono"] .empty{padding:20px 16px;text-align:center;color:var(--ink3);font-size:13px}
+html[data-look="mono"] .hint{font-size:12.5px;color:var(--ink3)}
+/* head */
+html[data-look="mono"] .ph h1{font-size:26px;line-height:1.2}
+html[data-look="mono"] .ph .sub{font-size:13.5px;color:var(--ink2);margin-top:4px}
+html[data-look="mono"] .ph .foot{font-size:12px;color:var(--ink3);margin-top:2px;gap:4px 12px}
+html[data-look="mono"] .iconbtn{height:32px;min-width:32px;padding:0 8px;border-radius:var(--r2);border:1px solid var(--line2);background:var(--panel);color:var(--ink2)}
+html[data-look="mono"] .iconbtn:hover{background:var(--hover);color:var(--ink)}
+html[data-look="mono"] .iconbtn svg{width:16px;height:16px}
+/* tabs (page and drawer) */
+html[data-look="mono"] .tabs{display:flex;flex-direction:row;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+html[data-look="mono"] .tabs::-webkit-scrollbar{display:none}
+html[data-look="mono"] .tabs>button{display:inline-flex;align-items:center;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:9px 12px;font-size:13.5px;color:var(--ink3);cursor:pointer;white-space:nowrap;font-weight:400}
+html[data-look="mono"] .tabs>button:hover{color:var(--ink)}
+html[data-look="mono"] .tabs>button[aria-pressed=true]{color:var(--ink);border-bottom-color:var(--ink);font-weight:500}
+html[data-look="mono"] .tcount{display:inline-grid;place-items:center;min-width:20px;height:18px;padding:0 6px;margin-inline-start:7px;border-radius:9px;background:var(--sub);color:var(--ink3);font-size:11.5px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1}
+html[data-look="mono"] .tabs>button[aria-pressed=true] .tcount{background:var(--line3);color:var(--ink)}
+html[data-look="mono"] .tcount.w,html[data-look="mono"] .tabs>button[aria-pressed=true] .tcount.w{background:var(--atp);color:var(--at)}
+html[data-look="mono"] .tcount.r,html[data-look="mono"] .tabs>button[aria-pressed=true] .tcount.r{background:var(--rs);color:var(--rt)}
+/* panels */
+html[data-look="mono"] :is(.panel,.card){background:var(--panel);border:1px solid var(--line);border-radius:var(--r1);box-shadow:0 1px 2px rgba(0,0,0,.025);min-width:0}
+html[data-look="mono"] .card:not(.panel){padding:16px 18px;gap:12px}
+html[data-look="mono"] .card.panel{padding:0;gap:0;display:block}
+html[data-look="mono"] .phd{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);font-weight:500;font-size:13.5px}
+html[data-look="mono"] .phd .m{font-weight:400;color:var(--ink3);font-size:12.5px}
+html[data-look="mono"] .phd .tcount{margin-inline-start:6px}
+html[data-look="mono"] .cardh h2{font-size:16px}html[data-look="mono"] .cardh h3,html[data-look="mono"] .db h3{font-size:14.5px;font-weight:500}
+html[data-look="mono"] .sech{font-size:17px}
+html[data-look="mono"] .pin{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+/* buttons and links */
+html[data-look="mono"] .btn{height:32px;padding:0 12px;border-radius:var(--r2);border:1px solid var(--line2);background:var(--panel);color:var(--ink);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;text-decoration:none}
+html[data-look="mono"] .btn:hover{background:var(--hover)}
+html[data-look="mono"] .btn.primary{background:var(--ink);border-color:var(--ink);color:var(--onink)}
+html[data-look="mono"] .btn.primary:hover{background:var(--inkh)}
+html[data-look="mono"] .btn.small{height:28px;padding:0 10px;font-size:12.5px}
+html[data-look="mono"] .btn.ghost{border-color:transparent;background:transparent;color:var(--ink2)}
+html[data-look="mono"] .btn.ghost:hover{background:var(--sub);color:var(--ink)}
+html[data-look="mono"] .btn.danger{color:var(--red)}
+html[data-look="mono"] .btn svg{width:14px;height:14px}
+html[data-look="mono"] .row-acts .btn.small{height:32px;padding:0 12px;font-size:13px}
+html[data-look="mono"] :is(.linkbtn,.lnk,.backlink){background:none;border:0;padding:0;color:var(--ink2);font-size:12.5px;font-weight:400;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:3px;white-space:nowrap}
+html[data-look="mono"] :is(.linkbtn,.lnk,.backlink):hover{color:var(--ink);text-decoration-color:var(--ink)}
+html[data-look="mono"] .backlink{margin-bottom:4px}
+/* pills: a dot and quiet text */
+html[data-look="mono"] .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:400;color:var(--ink2);white-space:nowrap;background:none;padding:0;border-radius:0}
+html[data-look="mono"] .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--dot,var(--ink3));flex:none}
+html[data-look="mono"] .pill.g{--dot:var(--g)}html[data-look="mono"] .pill.y,html[data-look="mono"] .pill.w{--dot:var(--amber)}html[data-look="mono"] .pill.n{--dot:var(--mid)}
+html[data-look="mono"] .pill.r{--dot:var(--red);color:var(--red)}
+/* chips */
+html[data-look="mono"] .chips{gap:6px}
+html[data-look="mono"] .chip{height:28px;padding:0 11px;border-radius:var(--r2);border:1px solid var(--line);background:var(--panel);font-size:12.5px;color:var(--ink2);display:inline-flex;align-items:center;gap:6px;font-weight:400}
+html[data-look="mono"] .chip:hover{border-color:var(--line2);color:var(--ink)}
+html[data-look="mono"] .chip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--onink);font-weight:400}
+html[data-look="mono"] .chip small{font-weight:500;opacity:.6;color:inherit;margin:0}
+html[data-look="mono"] .chip .sw{display:inline-block;width:9px;height:9px;border-radius:2px}
+html[data-look="mono"] .chip.sm{height:26px;padding:0 9px;font-size:12px}
+html[data-look="mono"] .flagrow{gap:6px;font-size:12.5px}
+/* search with magnifier */
+html[data-look="mono"] .tsearch{height:32px;width:240px;max-width:100%;padding:0 10px;border:1px solid var(--line2);border-radius:var(--r2);background:var(--panel)}
+html[data-look="mono"] .tsearch:focus-within{border-color:var(--g);box-shadow:0 0 0 3px rgba(11,140,102,.12)}
+html[data-look="mono"] .tsearch svg{width:14px;height:14px;color:var(--ink3)}
+html[data-look="mono"] .tsearch input{font-size:13px;height:100%;padding:0}
+html[data-look="mono"] .tsearch input::-webkit-search-cancel-button{opacity:.5}
+/* KPIs */
+html[data-look="mono"] .kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--panel);border:1px solid var(--line);border-radius:var(--r1);box-shadow:0 1px 2px rgba(0,0,0,.025)}
+html[data-look="mono"] .kpi{padding:16px 18px;border:0;border-inline-start:1px solid var(--line);background:none;text-align:start;cursor:pointer;color:var(--ink);font:inherit;min-width:0}
+html[data-look="mono"] .kpi:first-child{border-inline-start:0}
+html[data-look="mono"] .kpi:hover{background:var(--hover)}
+html[data-look="mono"] .kpi .v{font-size:28px;font-weight:500;line-height:1.1;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:8px;min-width:0}
+html[data-look="mono"] .kpi .v.r{color:var(--red)}html[data-look="mono"] .kpi .v.w{color:var(--at)}
+html[data-look="mono"] .kpi .v small{font-size:12px;font-weight:500;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-look="mono"] .kpi .l{font-size:12.5px;color:var(--ink2);margin-top:5px}
+/* two columns */
+html[data-look="mono"] .grid2{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;align-items:start}
+/* portfolio */
+html[data-look="mono"] .pf{display:grid;grid-template-columns:1fr 1fr;gap:0}
+html[data-look="mono"] .pfb{display:grid;grid-template-columns:150px minmax(0,1fr);gap:20px;align-items:center;padding:18px 20px}
+html[data-look="mono"] .pfb+.pfb{border-inline-start:1px solid var(--line)}
+html[data-look="mono"] .pfb svg{width:150px;height:150px}
+html[data-look="mono"] .pfb .seg{fill:none;stroke-width:13;cursor:pointer;transition:opacity .15s}
+html[data-look="mono"] .pfb .seg:hover,html[data-look="mono"] .pfb .seg:focus-visible{opacity:.75;outline:none;stroke-width:13}
+html[data-look="mono"] .pfb .trk{fill:none;stroke-width:13;stroke:var(--sub)}
+html[data-look="mono"] .pfb .big{font:500 22px var(--ui);fill:var(--ink);text-anchor:middle}
+html[data-look="mono"] .pfb .cap{font:400 9.5px var(--ui);fill:var(--ink3);text-anchor:middle}
+html[data-look="mono"] .pfl{display:flex;flex-direction:column;gap:1px;min-width:0}
+html[data-look="mono"] .pft{font-weight:500;font-size:13px;margin-bottom:6px}
+html[data-look="mono"] .pli{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:9px;align-items:center;padding:5px 6px;margin:0;border:0;background:none;border-radius:var(--r3);font-size:13px;color:var(--ink2);text-align:start}
+html[data-look="mono"] button.pli{cursor:pointer}
+html[data-look="mono"] button.pli:hover{background:var(--hover);color:var(--ink)}
+html[data-look="mono"] button.pli:hover span{color:var(--ink)}
+html[data-look="mono"] .pli i{width:10px;height:10px;border-radius:2px}
+html[data-look="mono"] .pli b{font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+html[data-look="mono"] .pli.zero{opacity:.45}
+html[data-look="mono"] .pfl small{font-size:12px;color:var(--ink3);margin-top:6px}
+/* next up */
+html[data-look="mono"] .li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line)}
+html[data-look="mono"] .li:last-child{border-bottom:0}
+html[data-look="mono"] .li:hover{background:var(--hover)}
+html[data-look="mono"] .dt{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:center;border:0;background:none;padding:0;text-align:start;cursor:pointer;color:var(--ink);font:inherit;min-width:0}
+html[data-look="mono"] .day{display:flex;flex-direction:column;align-items:center;border:1px solid var(--line);border-radius:var(--r2);padding:3px 0;line-height:1.15;background:var(--panel)}
+html[data-look="mono"] .day b{font-size:16px;font-weight:500;font-variant-numeric:tabular-nums}
+html[data-look="mono"] .day span{font-size:10.5px;color:var(--ink3)}
+html[data-look="mono"] .day.r b{color:var(--red)}
+html[data-look="mono"] .li .nm{display:flex;flex-direction:column;min-width:0}
+html[data-look="mono"] .li .nm b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-look="mono"] .li .nm span{font-size:12.5px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-look="mono"] .dt:hover .nm b{text-decoration:underline}
+/* what is missing */
+html[data-look="mono"] .miss .rd{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 16px;border-bottom:1px solid var(--line)}
+html[data-look="mono"] .miss .rd i{font-style:normal;width:20px;height:20px;border-radius:50%;background:var(--atp);color:var(--at);display:grid;place-items:center;font-size:12px;font-weight:600}
+html[data-look="mono"] .miss .rd b{font-weight:500;display:block;font-size:13.5px}
+html[data-look="mono"] .miss .rd span{font-size:12.5px;color:var(--ink3)}
+html[data-look="mono"] .miss .ready{font-size:12.5px;color:var(--ink3);padding:10px 16px 14px;margin:0}
+/* drafts */
+html[data-look="mono"] .drow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:12px 16px;border-top:1px solid var(--line)}
+html[data-look="mono"] .phd+.drow{border-top:0}
+html[data-look="mono"] .drow .nm{display:flex;flex-direction:column;gap:2px;min-width:0}
+html[data-look="mono"] .drow .nm b{font-weight:500;font-size:14px}
+html[data-look="mono"] .drow .nm span,html[data-look="mono"] .dwhen{font-size:12.5px;color:var(--ink3)}
+html[data-look="mono"] .dst{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--at);white-space:nowrap}
+html[data-look="mono"] .dst.ok{color:var(--gt)}html[data-look="mono"] .dst.r{color:var(--red)}
+html[data-look="mono"] .dst svg{width:13px;height:13px;color:var(--g)}
+html[data-look="mono"] .pulse{width:8px;height:8px;border-radius:50%;background:var(--amber);animation:clmpulse 1.4s ease-in-out infinite}
+html[data-look="mono"] .pulse.still{animation:none}
+@keyframes clmpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+@media (prefers-reduced-motion:reduce){html[data-look="mono"] .pulse{animation:none}}
+/* tables */
+html[data-look="mono"] .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r1);background:var(--panel)}
+html[data-look="mono"] table{font-size:13.5px;min-width:720px}
+html[data-look="mono"] th{font-weight:500;color:var(--ink3);font-size:12px;background:none;padding:9px 16px;border-bottom:1px solid var(--line)}
+html[data-look="mono"] td{padding:11px 16px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+html[data-look="mono"] td .sub{font-size:12.5px;color:var(--ink3)}
+html[data-look="mono"] tbody tr.click:hover td{background:var(--hover)}
+html[data-look="mono"] tr.child td:first-child::before{border-color:var(--line2)}
+html[data-look="mono"] tr.ended td{color:var(--ink3)}
+html[data-look="mono"] td .pill{margin-inline-start:6px}
+/* timeline */
+html[data-look="mono"] .tl{padding:6px 0;gap:0}
+html[data-look="mono"] .tlh,html[data-look="mono"] .tlr{display:grid;grid-template-columns:190px minmax(0,1fr);gap:14px;align-items:center;padding:0 16px}
+html[data-look="mono"] .tlh{padding-bottom:6px;border-bottom:1px solid var(--line)}
+html[data-look="mono"] .tlh .ax{font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums}
+html[data-look="mono"] .tlr{padding-block:7px;border-bottom:1px solid var(--line)}
+html[data-look="mono"] .tlr:hover{background:var(--hover)}
+html[data-look="mono"] .tlr .nm{display:flex;flex-direction:column;font-size:13px;font-weight:500;min-width:0;line-height:1.35}
+html[data-look="mono"] .tlr .nm small{font-weight:400;font-size:11.5px;color:var(--ink3)}
+html[data-look="mono"] .track{position:relative;height:22px;border-radius:0;background:repeating-linear-gradient(to left,transparent 0,transparent calc(100%/12 - 1px),var(--line) calc(100%/12 - 1px),var(--line) calc(100%/12))}
+html[data-look="mono"] .track>span{position:absolute;top:5px;height:12px}
+html[data-look="mono"] .track .run{background:var(--line3);border-radius:2px}
+html[data-look="mono"] .track .win{background:var(--mark);border:1px solid #D9B100;border-radius:2px}
+html[data-look="mono"] .track .dl{width:3px;top:2px;height:18px;background:var(--red);border-radius:1px}
+html[data-look="mono"] .track .now{width:2px;top:0;bottom:auto;height:22px;background:var(--g);opacity:1}
+html[data-look="mono"] .tlkey{display:flex;gap:18px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--ink2)}
+html[data-look="mono"] .tlkey span{display:flex;align-items:center;gap:7px}
+html[data-look="mono"] .tlkey i{width:14px;height:10px;border-radius:2px;margin:0}
+html[data-look="mono"] .k-run{background:var(--line3)}html[data-look="mono"] .k-win{background:var(--mark);border:1px solid #D9B100}
+html[data-look="mono"] .tlkey .k-dl{background:var(--red);width:3px}html[data-look="mono"] .tlkey .k-now{background:var(--g);width:2px}
+/* policy topics: an accordion */
+html[data-look="mono"] .pt{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(120px,1fr) 64px 64px 72px;gap:14px;align-items:center;padding:10px 16px;border:0;border-bottom:1px solid var(--line);background:none;width:100%;text-align:start;cursor:pointer;font-size:13.5px;color:var(--ink)}
+html[data-look="mono"] .pt:hover{background:var(--hover)}
+html[data-look="mono"] .pt.h{cursor:default;font-size:12px;color:var(--ink3);font-weight:500;padding-block:8px}
+html[data-look="mono"] .pt.h:hover{background:none}
+html[data-look="mono"] .pt .nm{display:flex;flex-direction:column;font-weight:500;min-width:0}
+html[data-look="mono"] .pt .nm small{font-weight:400;font-size:12px;color:var(--ink3)}
+html[data-look="mono"] .ptn{display:inline-flex;align-items:center;gap:0}
+html[data-look="mono"] .pchev{stroke:var(--ink3)}
+html[data-look="mono"] .pt.on{background:var(--gs3);box-shadow:inset -3px 0 0 var(--g)}
+html[data-look="mono"] .pt.on .pchev{stroke:var(--ink)}
+html[data-look="mono"] .pt .c{text-align:center;font:inherit;font-size:13.5px;font-variant-numeric:tabular-nums}
+html[data-look="mono"] .pt .c.g{color:var(--ink)}html[data-look="mono"] .pt .c.r{color:var(--red);font-weight:500}
+html[data-look="mono"] .pt .c.zero{color:var(--ink3);font-size:13px;font-weight:400}
+html[data-look="mono"] .stk{display:flex;gap:2px;height:8px}
+html[data-look="mono"] .stk i{display:block;height:100%;border-radius:1px}
+html[data-look="mono"] .stk .sm{background:var(--g)}html[data-look="mono"] .stk .sd2{background:var(--red)}html[data-look="mono"] .stk .sn{background:var(--line2)}
+html[data-look="mono"] .ptx{background:var(--bg);border-bottom:1px solid var(--line);padding:12px 16px 16px;gap:10px}
+html[data-look="mono"] .ptx:last-child{border-bottom:0}
+html[data-look="mono"] .ptxh{font-size:12.5px;color:var(--ink3)}
+html[data-look="mono"] .panel.dev{border:1px solid var(--line);border-inline-start:1px solid var(--line);border-radius:var(--r1);padding:0;gap:0;display:block;background:var(--panel)}
+html[data-look="mono"] .panel.dev .phd{border:0;padding-bottom:4px}
+html[data-look="mono"] .panel.dev .vs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:0 16px;border:1px solid var(--line);border-radius:var(--r2)}
+html[data-look="mono"] .panel.dev .vs>div{padding:12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+html[data-look="mono"] .panel.dev .vs>div+div{border-inline-start:1px solid var(--line);background:var(--bg)}
+html[data-look="mono"] .panel.dev .vs small{font-size:11.5px;font-weight:400;color:var(--ink3)}
+html[data-look="mono"] .panel.dev .vs small.rl{margin-top:6px}
+html[data-look="mono"] .panel.dev .vs b{font-weight:500}
+html[data-look="mono"] .panel.dev .vs q{display:block;background:none;font-family:var(--ui);font-size:12.5px;color:var(--ink2);quotes:none;margin-top:4px;line-height:1.6;border:0;padding:0}
+html[data-look="mono"] .panel.dev .vs span{font-size:13px}
+html[data-look="mono"] .panel.dev .tmeta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;font-size:12.5px;color:var(--ink2)}
+html[data-look="mono"] .dev0{border:1px solid var(--line);border-radius:var(--r1);background:var(--panel);padding:12px 14px}
+/* tasks */
+html[data-look="mono"] .ttools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+html[data-look="mono"] .tfl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+html[data-look="mono"] div.seg{display:flex;border:1px solid var(--line2);border-radius:var(--r2);overflow:hidden;width:max-content;max-width:100%;padding:0;gap:0;background:var(--panel)}
+html[data-look="mono"] div.seg button{border:0;border-radius:0;background:var(--panel);padding:0 12px;height:30px;font-size:13px;cursor:pointer;color:var(--ink2);box-shadow:none;font-weight:400;white-space:nowrap}
+html[data-look="mono"] div.seg button+button{border-inline-start:1px solid var(--line2)}
+html[data-look="mono"] div.seg button[aria-pressed=true]{background:var(--ink);color:var(--onink);font-weight:400}
+html[data-look="mono"] .tgh{font-size:13px;font-weight:500;color:var(--ink2);display:flex;align-items:center;gap:0;margin:4px 0 -6px}
+html[data-look="mono"] .tgh::after{content:none}
+html[data-look="mono"] .tgh.r{color:var(--rt)}
+html[data-look="mono"] .tlist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r1);background:var(--panel)}
+html[data-look="mono"] .task{display:grid;grid-template-columns:86px minmax(0,1fr) 180px;gap:16px;padding:14px 16px;border:0;border-top:1px solid var(--line);border-radius:0;align-items:start;background:none}
+html[data-look="mono"] .task:first-child{border-top:0}
+html[data-look="mono"] .tlist>.task{border-radius:0}
+html[data-look="mono"] div.seg>button{border-radius:0}
+html[data-look="mono"] .task.late{box-shadow:inset -3px 0 0 var(--red);border-inline-start:0}
+html[data-look="mono"] .task.crit{box-shadow:inset -3px 0 0 var(--amber);border-inline-start:0}
+html[data-look="mono"] .task.done{opacity:1}
+html[data-look="mono"] .task.done .tt{color:var(--ink3);text-decoration:line-through}
+html[data-look="mono"] .twhen{display:flex;flex-direction:column;gap:2px}
+html[data-look="mono"] .twhen b{font-weight:500;font-size:15px;font-variant-numeric:tabular-nums}
+html[data-look="mono"] .twhen small{font-size:12px;color:var(--ink3)}
+html[data-look="mono"] .twhen.soon small{color:var(--at)}html[data-look="mono"] .task.late .twhen small{color:var(--rt)}
+html[data-look="mono"] .tmain{display:flex;flex-direction:column;gap:3px;min-width:0}
+html[data-look="mono"] .ttl{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap}
+html[data-look="mono"] .tt{font-weight:500;font-size:14px;border:0;background:none;padding:0;text-align:start;font-family:inherit;color:inherit;cursor:pointer}
+html[data-look="mono"] .tt:hover{text-decoration:underline}
+html[data-look="mono"] .ta{font-size:12.5px;color:var(--ink3)}
+html[data-look="mono"] .tact{font-size:13px;color:var(--ink2);line-height:1.55}
+html[data-look="mono"] .tmore{font-size:13px}
+html[data-look="mono"] .tmore summary{font-size:12.5px;color:var(--ink2);cursor:pointer;margin-top:4px;font-weight:400;list-style:revert}
+html[data-look="mono"] .tmore .in{display:flex;flex-direction:column;gap:6px;margin-top:6px;font-size:13px;line-height:1.55}
+html[data-look="mono"] .tmore .in p{margin:0}html[data-look="mono"] .tmore .in b{font-weight:500}
+html[data-look="mono"] .quote{display:block;padding:8px 10px;border-inline-start:2px solid var(--line2);background:var(--bg);font-family:'David Libre','Noto Serif Hebrew',serif;font-size:14px;color:var(--ink);quotes:none}
+html[data-look="mono"] .quote small{display:block;font-family:var(--ui);font-size:11.5px;color:var(--ink3);font-weight:400}
+html[data-look="mono"] .saved{font-size:12px;color:var(--ink3);font-weight:400}
+html[data-look="mono"] .tside{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:0}
+html[data-look="mono"] .tacts{display:flex;gap:14px;padding-inline-start:2px}
+html[data-look="mono"] .tgrp{border:1px solid var(--line);border-radius:var(--r1);background:var(--panel)}
+html[data-look="mono"] .tgrp>summary{padding:12px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--ink2);display:flex;align-items:center;list-style:none}
+html[data-look="mono"] .tgrp>summary::-webkit-details-marker{display:none}
+html[data-look="mono"] .tgrp>summary::before{content:"";width:6px;height:6px;border-inline-end:1.5px solid var(--ink3);border-bottom:1.5px solid var(--ink3);transform:rotate(45deg);margin-inline-end:10px;transition:transform .15s}
+html[data-look="mono"] .tgrp[open]>summary::before{transform:rotate(-135deg)}
+html[data-look="mono"] .tgrp .tlist{border:0;border-top:1px solid var(--line);border-radius:0}
+html[data-look="mono"] .db .tlist .task{grid-template-columns:70px minmax(0,1fr) 160px;gap:12px}
+/* the pickers in rows and drawers (own buttons; the list opens fixed on the page, never clipped) */
+html[data-look="mono"] .ddb{width:100%;height:32px;min-height:0;display:flex;align-items:center;gap:8px;padding:0 10px;border:1px solid var(--line2);border-radius:var(--r2);background:var(--panel);font:inherit;font-size:13px;color:var(--ink);cursor:pointer;text-align:start;box-shadow:none}
+html[data-look="mono"] .ddb:hover{border-color:var(--mid)}
+html[data-look="mono"] .ddb[aria-expanded=true],html[data-look="mono"] .ddb:focus-visible{border-color:var(--g);box-shadow:0 0 0 3px rgba(11,140,102,.12);outline:none}
+html[data-look="mono"] .ddb .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-look="mono"] .ddb small{color:var(--ink3);font-size:12px}
+html[data-look="mono"] .ddb .chev{transition:transform .15s;stroke:var(--ink3)}
+html[data-look="mono"] .ddb[aria-expanded=true] .chev{transform:rotate(180deg)}
+html[data-look="mono"] .field .ddb{height:36px;min-height:0;font-size:13.5px}
+html[data-look="mono"] .sd{flex:0 0 7px;height:7px;background:var(--mid)}
+html[data-look="mono"] .sd.c2{background:var(--ink2)}html[data-look="mono"] .sd.y,html[data-look="mono"] .sd.w{background:var(--amber)}html[data-look="mono"] .sd.g{background:var(--g)}html[data-look="mono"] .sd.r{background:var(--red)}
+html[data-look="mono"] .av{flex:0 0 22px;height:22px;background:var(--sub);color:var(--ink2);font:500 10.5px var(--ui)}
+html[data-look="mono"] .av.b{background:var(--atp);color:var(--at)}
+html[data-look="mono"] .pop{border:1px solid var(--line2);border-radius:var(--r1);box-shadow:0 12px 32px rgba(0,0,0,.14);padding:4px;background:var(--panel)}
+html[data-look="mono"] .pop .it{border-radius:var(--r3);padding:8px 10px;font-size:13.5px}
+html[data-look="mono"] .pop .it:hover,html[data-look="mono"] .pop .it:focus-visible{background:var(--sub)}
+html[data-look="mono"] .pop .it[aria-selected=true]{font-weight:500}
+html[data-look="mono"] .pop .ck{color:var(--g)}
+html[data-look="mono"] .pop .sep{font-size:11.5px;color:var(--ink3);font-weight:500}
+/* approve */
+html[data-look="mono"] .who{background:var(--panel);border:1px solid var(--line);border-radius:var(--r1);padding:10px 14px;font-size:13.5px}
+html[data-look="mono"] .who input{height:32px;border:1px solid var(--line2);border-radius:var(--r2);padding:0 10px;font-size:13.5px}
+html[data-look="mono"] .rv{padding:14px 16px;gap:8px}
+html[data-look="mono"] .rv b{font-weight:500}
+html[data-look="mono"] .rv.ok{opacity:.8}
+html[data-look="mono"] .rv .done{color:var(--gt);font-weight:400;font-size:13px}
+html[data-look="mono"] .grp:not(.tgh){font-size:13px;font-weight:500;color:var(--ink2)}
+/* negotiation (outside the system only) */
+html[data-look="mono"] .kcol{background:var(--sub);border-radius:var(--r1)}
+html[data-look="mono"] .ng,html[data-look="mono"] .ngc{border-radius:var(--r1)}
+html[data-look="mono"] .ngw{border-radius:var(--r2);font-weight:500;font-size:12px}
+html[data-look="mono"] .ng.late{border-inline-start:1px solid var(--line);box-shadow:inset -3px 0 0 var(--amber)}
+/* drawers */
+html[data-look="mono"] .scrim{background:rgba(23,23,23,.18)}
+html[data-look="mono"][data-theme="dark"] .scrim{background:rgba(0,0,0,.5)}
+html[data-look="mono"] .drawer{width:min(560px,100%);background:var(--panel);border-inline-start:1px solid var(--line);box-shadow:0 0 40px rgba(0,0,0,.06)}
+html[data-look="mono"] .dh{padding:20px 22px 0;background:var(--panel);border-bottom:1px solid var(--line);gap:6px}
+html[data-look="mono"] .dh h2{font-size:19px}
+html[data-look="mono"] .dh .dk,html[data-look="mono"] .dh .top span.muted{font-size:12.5px;color:var(--ink3)}
+html[data-look="mono"] .dh .x{width:30px;height:30px;border-radius:var(--r2);border:0;background:none;color:var(--ink3);font-size:20px}
+html[data-look="mono"] .dh .x:hover{background:var(--sub);color:var(--ink)}
+html[data-look="mono"] .db{padding:18px 22px 28px;gap:14px;background:var(--panel)}
+html[data-look="mono"] .field{font-size:12.5px;font-weight:500;color:var(--ink2);gap:6px}
+html[data-look="mono"] .field .opt{font-weight:400;color:var(--ink3)}
+html[data-look="mono"] :is(.field input,.field textarea){border:1px solid var(--line2);border-radius:var(--r2);background:var(--panel);padding:8px 10px;font-size:13.5px;color:var(--ink);font-family:var(--ui)}
+html[data-look="mono"] .field input{height:36px}
+html[data-look="mono"] :is(.field input,.field textarea,.mail,.who input):focus{outline:2px solid var(--g);outline-offset:-1px;border-color:transparent}
+html[data-look="mono"] .ro{color:var(--ink);font-size:13.5px;padding:7px 0}.ro small{color:var(--ink3)}
+html[data-look="mono"] .note{font-size:12.5px;color:var(--ink3)}
+html[data-look="mono"] .kv{font-size:13.5px}
+html[data-look="mono"] .facts{border-radius:var(--r1)}
+html[data-look="mono"] .facts dd{font-size:13.5px}
+html[data-look="mono"] .fold{border-radius:var(--r1)}
+html[data-look="mono"] .fold>summary{font-weight:500;font-size:13.5px}
+html[data-look="mono"] .fold>summary::before{color:var(--ink3);font-weight:400}
+html[data-look="mono"] .cl{border-radius:var(--r1);gap:4px}
+html[data-look="mono"] .cl.bad{border-inline-start:1px solid var(--line);box-shadow:inset -3px 0 0 var(--red)}
+html[data-look="mono"] .cl b{font-weight:500}
+html[data-look="mono"] .vs2{border-radius:var(--r2);background:var(--bg);border:1px solid var(--line)}
+html[data-look="mono"] .vs2 small{font-weight:400;color:var(--ink3)}
+html[data-look="mono"] .okline{background:var(--gs);color:var(--gt);border:1px solid var(--gb);border-radius:var(--r2);font-weight:500;font-size:13.5px}
+html[data-look="mono"] .docrow,html[data-look="mono"] .rowbtn,html[data-look="mono"] .ngc{border-radius:var(--r1)}
+html[data-look="mono"] .rowbtn:hover{border-color:var(--line2);background:var(--hover)}
+html[data-look="mono"] .docrow b,html[data-look="mono"] .rowbtn b{font-weight:500}
+html[data-look="mono"] .ficon text{font:600 7.5px var(--ui)}
+html[data-look="mono"] .banner{background:var(--sub);border-radius:var(--r2);font-size:13.5px}
+html[data-look="mono"] .banner span{color:var(--ink2);font-weight:500;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:3px}
+html[data-look="mono"] .banner.r{background:var(--rs)}html[data-look="mono"] .banner.r span{color:var(--rt)}
+html[data-look="mono"] .nextbox{border-radius:var(--r1);border-inline-start:1px solid var(--line);box-shadow:inset -3px 0 0 var(--g)}
+html[data-look="mono"] .nextbox:hover{border-color:var(--line2)}
+html[data-look="mono"] .nb-d{background:var(--panel);border:1px solid var(--line);border-radius:var(--r2)}
+html[data-look="mono"] .nb-d b{font-weight:500}html[data-look="mono"] .nb-t b{font-weight:500}html[data-look="mono"] .nb-t small{font-weight:400;color:var(--ink3)}
+html[data-look="mono"] .ltrack{height:4px;background:var(--sub)}html[data-look="mono"] .lfill{background:var(--ink2)}
+html[data-look="mono"] .lmark{background:var(--amber)}html[data-look="mono"] .lmid{color:var(--at);font-weight:500}
+html[data-look="mono"] .note2{background:var(--sub);border-radius:var(--r2);font-size:13.5px}
+html[data-look="mono"] .mail{border:1px solid var(--line2);border-radius:var(--r2)}
+html[data-look="mono"] .db .rd{border-color:var(--line)}
+html[data-look="mono"] .toast{background:var(--ink);color:var(--onink);border-radius:var(--r2);font-weight:500;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+html[data-look="mono"] .paper{border-radius:var(--r1);font-family:'David Libre','Noto Serif Hebrew',serif}
+html[data-look="mono"] .paper p.ttl{font-family:'David Libre',serif;font-weight:700}
+html[data-look="mono"] .paper p.hl{background:var(--gs3);box-shadow:inset -3px 0 0 var(--g)}
+html[data-look="mono"][data-theme="dark"] .paper p.hl{background:#EDF6F2}
+/* the empty state */
+html[data-look="mono"] .hero{background:var(--panel);border:1px solid var(--line);border-radius:var(--r1);padding:24px}
+html[data-look="mono"] .hero .eb{color:var(--ink3);font-weight:500;font-size:12.5px}
+html[data-look="mono"] .hero h1{font-size:22px;font-weight:500}
+/* narrow screens */
+@media (max-width:1080px){html[data-look="mono"] .pf,html[data-look="mono"] .grid2{grid-template-columns:1fr}html[data-look="mono"] .pfb+.pfb{border-inline-start:0;border-top:1px solid var(--line)}}
+@media (max-width:860px){
+  html[data-look="mono"] .app>main{padding:20px 16px 64px}
+  html[data-look="mono"] .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  html[data-look="mono"] .kpi{border-bottom:1px solid var(--line)}
+  html[data-look="mono"] .kpi:nth-child(4){border-inline-start:0}
+  html[data-look="mono"] .kpi:nth-child(n+4){border-bottom:0}
+  html[data-look="mono"] .tlh,html[data-look="mono"] .tlr{grid-template-columns:110px minmax(0,1fr)}
+  html[data-look="mono"] .pt{grid-template-columns:minmax(0,1fr) 50px 50px}
+  html[data-look="mono"] .pt .stk,html[data-look="mono"] .pt>span:nth-child(2),html[data-look="mono"] .pt>span:last-child{display:none}
+  html[data-look="mono"] .panel.dev .vs{grid-template-columns:1fr}
+  html[data-look="mono"] .panel.dev .vs>div+div{border-inline-start:0;border-top:1px solid var(--line)}
+  html[data-look="mono"] .task,html[data-look="mono"] .db .tlist .task{grid-template-columns:1fr;gap:8px}
+  html[data-look="mono"] .twhen{flex-direction:row;gap:8px;align-items:baseline}
+  html[data-look="mono"] .tside{flex-direction:row;align-items:center;flex-wrap:wrap}
+  html[data-look="mono"] .tside .ddb{width:190px;max-width:100%}
+  html[data-look="mono"] .drow{grid-template-columns:1fr;gap:6px}
+}
+@media (max-width:560px){
+  html[data-look="mono"] .kpis{grid-template-columns:1fr 1fr}
+  html[data-look="mono"] .kpi:nth-child(4){border-inline-start:1px solid var(--line)}
+  html[data-look="mono"] .kpi:nth-child(odd){border-inline-start:0}
+  html[data-look="mono"] .kpi:nth-child(n+4){border-bottom:1px solid var(--line)}
+  html[data-look="mono"] .kpi:last-child{border-bottom:0}
+  html[data-look="mono"] .kpi .v{font-size:24px}
+  html[data-look="mono"] .pfb{grid-template-columns:110px minmax(0,1fr);gap:14px;padding:14px}
+  html[data-look="mono"] .pfb svg{width:110px;height:110px}
+  html[data-look="mono"] .li{grid-template-columns:minmax(0,1fr) auto}
+  html[data-look="mono"] .li .btn{display:none}
+  html[data-look="mono"] .tsearch{width:100%}
+  html[data-look="mono"] .tfl{width:100%}
+  html[data-look="mono"] .ph{align-items:flex-start}
+}
 </style>
 
 <div class="app" dir="rtl" lang="he">
-  <aside>
-    <div class="wordmark">Areo<span>Contracts.</span></div>
-    <div class="product">ניהול חוזים <span class="clmtag">· <bdi>CLM</bdi></span></div>
-    <div class="co" id="co"></div>
-    <nav id="nav" aria-label="מסכים"></nav>
-    <div class="asidefoot" id="foot"></div>
-  </aside>
-  <main><div class="col" id="view"></div></main>
+  <main><div class="col">
+    <header class="ph"><div><h1>ניהול חוזים</h1><div class="sub"><span id="co"></span><span id="psub"></span></div><div class="foot" id="foot"></div></div><div class="row-acts" id="pacts"></div></header>
+    <nav class="tabs ptabs" id="nav" aria-label="מסכים"></nav>
+    <div class="vbody" id="view"></div>
+  </div></main>
 </div>
 <div id="layer" dir="rtl" lang="he"></div>
 <div class="toast" id="toast" dir="rtl" hidden></div>
@@ -360,16 +755,20 @@ function ty(code){return TY[code]||{code:code||'',label:code||'',playbook:null,o
 const STATUSES=['חדש','בטיפול','ממתין לגורם אחר','נדחה עד מועד','הוסלם','הושלם','בוטל'];
 /* State: in the page store when there is one (shared, with name and time), otherwise in this browser */
 const KEY='areo-clm:'+(D.meta.company||'');
-let S={status:{},owner:{},decided:{},manual:[],who:'',view:'overview',mine:false,tview:'list',people:[],emails:{},typeOwner:{},aowner:{},astate:{}};
+let S={status:{},owner:{},decided:{},edit:{},manual:[],who:'',view:'overview',mine:false,tview:'list',people:[],emails:{},typeOwner:{},aowner:{},astate:{}};
 try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){}
-let DB=null;
+let DB=null,RQDB=null;
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function mark(kind,id,value){
   const rec={value,by:S.who||'',at:new Date().toISOString()};
   S[kind][id]=rec;persist();
   if(DB){try{DB.collection('marks').doc(kind+'__'+id).set(Object.assign({kind,id},rec))}catch(e){}}
 }
-(async()=>{try{if(window.claude&&claude.use){DB=await claude.use('db');if(DB){try{DB.collection('settings').onSnapshot(sn=>{(sn.docs||[]).forEach(d=>{const x=d.data?d.data():d;if(x&&x.people){S.people=x.people;S.emails=x.emails||{};S.typeOwner=x.typeOwner||{};S.aowner=x.aowner||{};if(x.docBase!=null)S.docBase=x.docBase}});persist();render()},()=>{})}catch(e){}DB.collection('marks').onSnapshot(sn=>{(sn.docs||[]).forEach(d=>{const x=d.data?d.data():d;if(x&&S[x.kind])S[x.kind][x.id]={value:x.value,by:x.by,at:x.at}});persist();render()},()=>{})}}}catch(e){}})();
+(async()=>{try{if(window.claude&&claude.use){DB=await claude.use('db');if(DB){try{DB.collection('settings').onSnapshot(sn=>{(sn.docs||[]).forEach(d=>{const x=d.data?d.data():d;if(x&&x.people){S.people=x.people;S.emails=x.emails||{};S.typeOwner=x.typeOwner||{};S.aowner=x.aowner||{};if(x.docBase!=null)S.docBase=x.docBase}});persist();render()},()=>{})}catch(e){}DB.collection('marks').onSnapshot(sn=>{(sn.docs||[]).forEach(d=>{const x=d.data?d.data():d;if(x&&S[x.kind])S[x.kind][x.id]={value:x.value,by:x.by,at:x.at}});persist();render()},()=>{});
+  /* manual tasks the team added, from the shared store */
+  try{DB.collection('manual').onSnapshot(sn=>{const L=(sn.docs||[]).map(d=>d.data?d.data():d).filter(x=>x&&x.id);if(!L.length)return;const m={};(S.manual||[]).forEach(t=>{m[t.id]=t});L.forEach(x=>{m[x.id]=x});S.manual=Object.values(m);persist();render()},()=>{})}catch(e){}
+  /* the new-agreement requests the system's top page keeps (kind draft_new) */
+  try{DB.collection('requests').onSnapshot(sn=>{RQDB=(sn.docs||[]).map(d=>Object.assign({id:d.id},d.data?d.data():d));refreshDrafts()},()=>{RQDB=null})}catch(e){}}}}catch(e){}})();
 
 /* People and owners: the default comes from the agreement type (set in setup), the page can change it per item */
 function owner(a){const t=ty(a.type)||{};return Object.assign({},t.owner||{},S.typeOwner[a.type]||{},(a.id&&S.aowner&&S.aowner[a.id])||{})}
@@ -415,8 +814,9 @@ function _reader(id,q){
 }
 function personOf(p){p=String(p||'');const i=p.indexOf(', ');const lawyer=p.indexOf('עו"ד')===0;const name=(i>0?p.slice(0,i):p).replace(/^עו"ד\s*/,'');return {full:p,name:name,role:lawyer?'עורך דין':(i>0?p.slice(i+2):''),lawyer:lawyer,ini:name.split(/\s+/).map(w=>w[0]).join('').slice(0,2)}}
 const STC={'חדש':'','בטיפול':'c2','ממתין לגורם אחר':'y','נדחה עד מועד':'w','הוסלם':'r','הושלם':'g','בוטל':''};
-function ownerBtn(kind,id,val){if(!val)return '<button type="button" class="ddb" data-dd="'+kind+'" data-id="'+id+'" aria-haspopup="listbox" aria-expanded="false"><span class="nm muted">לא הוגדר</span></button>';const p=personOf(val||'');return '<button type="button" class="ddb" data-dd="'+kind+'" data-id="'+id+'" aria-haspopup="listbox" aria-expanded="false" aria-label="אחראי"><span class="av'+(p.lawyer?'':' b')+'">'+esc(p.ini)+'</span><span class="nm">'+esc(p.name)+(p.role?' <small>'+esc(p.role)+'</small>':'')+'</span></button>'}
-function statusBtn(id,st){return '<button type="button" class="ddb" data-dd="status" data-id="'+id+'" aria-haspopup="listbox" aria-expanded="false" aria-label="מעמד"><span class="sd '+STC[st]+'"></span><span class="nm">'+esc(st)+'</span></button>'}
+function ownerBtn(kind,id,val){if(!val)return '<button type="button" class="ddb" data-dd="'+kind+'" data-id="'+id+'" aria-haspopup="listbox" aria-expanded="false"><span class="nm muted">לא הוגדר</span>'+CHEV+'</button>';const p=personOf(val||'');return '<button type="button" class="ddb" data-dd="'+kind+'" data-id="'+id+'" aria-haspopup="listbox" aria-expanded="false" aria-label="אחראי"><span class="av'+(p.lawyer?'':' b')+'">'+esc(p.ini)+'</span><span class="nm">'+esc(p.name)+(p.role?' <small>'+esc(p.role)+'</small>':'')+'</span>'+CHEV+'</button>'}
+const CHEV='<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+function statusBtn(id,st,kind){return '<button type="button" class="ddb" data-dd="'+(kind||'status')+'" data-id="'+id+'" aria-haspopup="listbox" aria-expanded="false" aria-label="מעמד"><span class="sd '+STC[st]+'"></span><span class="nm">'+esc(st)+'</span>'+CHEV+'</button>'}
 let NT={};
 function openPop(btn){
   closePop();const kind=btn.dataset.dd,id=btn.dataset.id;let items='',cur;
@@ -428,10 +828,11 @@ function openPop(btn){
     items=grp('עורכי דין',ps.filter(p=>p.lawyer))+grp('גורמים עסקיים',ps.filter(p=>!p.lawyer))+(fld&&fld!=='lawyer'?it('','לא הוגדר','','<span class="av" style="opacity:.4">−</span>',!cur):'')+
       '<div class="sep"></div><button type="button" class="it" data-addperson="'+kind+'|'+(id||'')+'"><span class="av">+</span><span class="tx">להוסיף אדם<small>שם ומייל לתזכורות</small></span></button>'}
   else if(kind==='astate'){cur=aState(AG[id]);items=ASTATES.map(s=>it(s,esc(s),'','<span class="sd '+(s==='בתוקף'?'g':'')+'"></span>',s===cur)).join('')}
+  else if(kind==='ntstatus'){cur=NT.st;items=STATUSES.map(s=>it(s,esc(s),'','<span class="sd '+STC[s]+'"></span>',s===cur)).join('')}
   else if(kind==='status'){cur=status(allTasks().find(x=>x.id===id));items=STATUSES.map(s=>it(s,esc(s),'','<span class="sd '+STC[s]+'"></span>',s===cur)).join('')}
   else if(kind==='ntagr'){cur=NT.agr;items=D.agreements.map(a=>it(a.id,esc(a.cp),esc(a.title),'',a.id===cur)).join('')}
   const pop=document.createElement('div');pop.className='pop';pop.id='pop';pop.setAttribute('role','listbox');pop.dir='rtl';pop.dataset.kind=kind;pop.dataset.id=id||'';pop.innerHTML=items;document.body.appendChild(pop);
-  const r=btn.getBoundingClientRect(),w=Math.max(r.width,pop.offsetWidth);pop.style.minWidth=r.width+'px';
+  const r=btn.getBoundingClientRect();pop.style.minWidth=r.width+'px';const w=pop.offsetWidth;
   let top=r.bottom+6;if(top+pop.offsetHeight>innerHeight-8)top=Math.max(8,r.top-6-pop.offsetHeight);
   pop.style.top=top+'px';pop.style.left=Math.max(8,Math.min(innerWidth-w-8,r.right-w))+'px';
   btn.setAttribute('aria-expanded','true');openPop.btn=btn;(pop.querySelector('[aria-selected=true]')||pop.querySelector('.it')).focus();
@@ -439,7 +840,8 @@ function openPop(btn){
 function closePop(){const p=$('#pop');if(p)p.remove();if(openPop.btn){openPop.btn.setAttribute('aria-expanded','false');openPop.btn=null}}
 function pick(val){const p=$('#pop');if(!p)return;const kind=p.dataset.kind,id=p.dataset.id;const btn=openPop.btn;closePop();
   if(kind==='owner'){mark('owner',id,val);toast('נשמר');render()}
-  else if(kind==='status'){mark('status',id,val);toast('נשמר');render()}
+  else if(kind==='status'){const was=status(allTasks().find(x=>x.id===id)||{});mark('status',id,val);toast(['הושלם','בוטל'].includes(val)&&!['הושלם','בוטל'].includes(was)?'נשמר. המשימה עברה ל"סגורות".':'נשמר');render();if(DCUR&&$('#layer .drawer')&&!/^(nt|te:)/.test(DCUR.key))DCUR.fn()}
+  else if(kind==='ntstatus'){NT.st=val;btn.outerHTML=statusBtn('',val,'ntstatus')}
   else if(kind==='ntowner'){NT.owner=val;btn.outerHTML=ownerBtn('ntowner','',val)}
   else if(['alaw','abiz','abak'].includes(kind)){const f={alaw:'lawyer',abiz:'business',abak:'backup'}[kind];S.aowner[id]=Object.assign({},S.aowner[id]||{},{[f]:val});saveTeam();toast('נשמר');agrDrawer(id);render()}
   else if(kind==='astate'){mark('astate',id,val);toast('נשמר');agrDrawer(id);render()}
@@ -448,11 +850,13 @@ function pick(val){const p=$('#pop');if(!p)return;const kind=p.dataset.kind,id=p
     if(!NT.owner){NT.owner=owner(a).lawyer;const ob=document.querySelector('.drawer [data-dd=ntowner]');if(ob)ob.outerHTML=ownerBtn('ntowner','',NT.owner)}}}
 function taskOwner(t){const m=S.owner[t.id];if(m)return m.value;const a=AG[t.agr];return a?owner(a).lawyer:''}
 function status(t){const m=S.status[t.id];return m?m.value:'חדש'}
-function allTasks(){return D.tasks.concat(S.manual||[])}
+/* a task read from an agreement keeps its source; what the team changed on the page (title, target date, what to do) is laid over it */
+function edited(t){const m=S.edit&&S.edit[t.id];return m&&m.value&&typeof m.value==='object'?Object.assign({},t,m.value):t}
+function allTasks(){return D.tasks.map(edited).concat(S.manual||[])}
 function closed(t){return ['הושלם','בוטל'].includes(status(t))}
 function bucket(t){
   if(closed(t))return 'done';
-  if(!t.date)return 'event';
+  if(!(t.act_by||t.date))return 'event';
   const n=days(t.act_by||t.date);
   if(n<0)return 'late';if(n<=7)return 'week';if(n<=31)return 'month';if(n<=90)return 'q';return 'later';
 }
@@ -476,49 +880,88 @@ async function save(name,text,type){
 }
 function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
 
-/* ---------- Menu ---------- */
-const SCREENS=[['overview','סקירה'],['agreements','הסכמים'],['nego','משא ומתן'],['cps','צדדים שכנגד'],['tasks','משימות'],['policy','מול המדיניות'],['approve','לאישור']];
+/* ---------- Menu: the screens are page tabs under the title ---------- */
+/* inside the system, negotiation has its own tab in the main menu, so it is not repeated here */
+const EMBED=(()=>{try{return window.parent!==window}catch(e){return true}})();
+const SCREENS=[['overview','סקירה'],['agreements','הסכמים'],['nego','משא ומתן'],['cps','צדדים שכנגד'],['timeline','ציר החידושים'],['policy','מול המדיניות'],['tasks','משימות'],['approve','לאישור']];
 function navHtml(){
-  const late=allTasks().filter(t=>bucket(t)==='late').length,week=allTasks().filter(t=>bucket(t)==='week').length;
-  const c={agreements:[D.agreements.length,''],nego:[(D.negotiations||[]).length,(D.negotiations||[]).some(n=>n.waiting==='us')?'w':''],cps:[cpList().length,''],tasks:[late+week,late?'r':''],policy:[deviations().length,deviations().length?'r':''],approve:[openReview().length,'w']};
-  return SCREENS.map(([k,l])=>'<button class="nv" data-go="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+l+(c[k]&&c[k][0]?'<span class="cnt '+c[k][1]+'">'+c[k][0]+'</span>':'')+'</button>').join('');
+  const T=allTasks(),late=T.filter(t=>bucket(t)==='late').length,open=T.filter(t=>!closed(t)).length,N=D.negotiations||[];
+  const c={agreements:[D.agreements.filter(a=>!a.parent).length,''],nego:[N.length,N.some(n=>n.waiting==='us')?'w':''],cps:[cpList().length,''],tasks:[open,late?'w':''],policy:[deviations().length,''],approve:[openReview().length,'w']};
+  return SCREENS.filter(([k])=>!(EMBED&&k==='nego')).map(([k,l])=>'<button type="button" class="tab" data-go="'+k+'" aria-pressed="'+(S.view===k)+'"'+(S.view===k?' aria-current="page"':'')+'>'+l+(c[k]&&c[k][0]?'<span class="tcount '+c[k][1]+'">'+c[k][0]+'</span>':'')+'</button>').join('');
 }
-function topbar(title){
-  return '<div class="bar0"><span class="crumb">ניהול חוזים · '+esc(D.meta.company)+' · '+title+'</span><div class="tools">'+
-   '<label class="find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="חיפוש בהסכמים ובסעיפים" value="'+esc(S.q||'')+'"></label>'+
-   '<button class="iconbtn" data-act="export" title="ייצוא">ייצוא</button>'+
-   '<button class="iconbtn" data-act="settings" title="הגדרות" aria-label="הגדרות"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>'+
-   '<button class="iconbtn" data-act="theme" aria-label="בהיר או כהה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>'+
-   '</div></div>';
+const IC={gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  find:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  chev:'<svg class="pchev" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>'};
+/* the page head: what is in the repository, and the actions that were in the old top bar */
+function headActs(){
+  return '<button type="button" class="btn soft small ghost" data-act="export" title="ייצוא לקובץ CSV">ייצוא</button>'+
+   '<button type="button" class="iconbtn" data-act="settings" title="הגדרות" aria-label="הגדרות">'+IC.gear+'</button>'+
+   '<button type="button" class="iconbtn" data-act="theme" aria-label="בהיר או כהה">'+IC.moon+'</button>'+
+   (EMPTY?'':'<button type="button" class="btn soft small" data-act="clmbuild">לעדכן את המאגר</button><button type="button" class="btn primary small" data-act="addagr">'+IC.plus+'הוספת הסכם</button>');
 }
+function headSub(){
+  if(EMPTY)return '';
+  const top=D.agreements.filter(a=>!a.parent).length,n90=allTasks().filter(t=>!closed(t)&&(t.act_by||t.date)&&days(t.act_by||t.date)>=0&&days(t.act_by||t.date)<=90).length;
+  return ' · '+nn(top,'הסכם חתום אחד','הסכמים חתומים')+' · '+nn(n90,'מועד אחד','מועדים')+' ב-90 הימים הקרובים';
+}
+/* the search field of a list, with the magnifier inside it */
+function findBox(id,val,ph){return '<label class="tsearch">'+IC.find+'<input id="'+id+'" type="search" placeholder="'+ph+'" aria-label="'+ph+'" value="'+esc(val||'')+'"></label>'}
+
+/* ---------- Drafts: new agreements asked for from the system (the top page keeps the requests) ---------- */
+/* Where the requests are: the top page's reader when it offers one, the shared store, or this browser's copy */
+function requests(){
+  let L=null;
+  try{const f=EMBED&&window.parent.__areoReqs;if(typeof f==='function'){const x=f();if(Array.isArray(x))L=x}}catch(e){}
+  if(!L&&RQDB)L=RQDB;
+  if(!L){try{L=JSON.parse(localStorage.getItem('areo-app-requests')||'[]')}catch(e){L=[]}}
+  return (Array.isArray(L)?L:[]).filter(r=>r&&r.kind==='draft_new'&&r.status!=='cancelled').sort((a,b)=>String(b.created||'').localeCompare(String(a.created||'')));
+}
+/* "מוכנה" only when the request itself says the draft was saved (status done, with the file Areo wrote) */
+function draftsPanel(){
+  const L=requests();if(!L.length)return '';
+  const busy=L.some(r=>r.status!=='done'&&r.status!=='failed');
+  return '<section class="panel drafts"><div class="phd"><span>בניסוח <span class="tcount">'+L.length+'</span></span><span class="m">'+(busy?'Areo שומרת את הטיוטה בתיקיית העבודה':'טיוטות שהוכנו ונשמרו בתיקיית העבודה')+'</span></div>'+
+   L.slice(0,8).map(r=>{const b=r.base||{},base=b.kind==='template'?'לפי התבנית '+(b.name||''):b.kind==='agreement'?'על בסיס '+(b.name||''):'לפי הפלייבוק בלבד';
+     const file=r.result&&r.result.file?String(r.result.file).split(/[\\/]/).pop():'',when=r.created?fmt(String(r.created).slice(0,10)):'';
+     const meta=[r.type_name||'',r.side||'',base,r.playbook&&b.kind!=='playbook'?'פלייבוק '+r.playbook:''].filter(Boolean).join(' · ');
+     const st=r.status==='done'?'<span class="dst ok">'+IC.check+'מוכנה</span><span class="dwhen">'+(file?'<bdi>'+esc(file)+'</bdi>':'נשמרה בתיקיית העבודה')+'</span>'
+       :r.status==='failed'?'<span class="dst r">לא הצליחה</span><span class="dwhen">'+esc(r.error||'אפשר לבקש שוב')+'</span>'
+       :'<span class="dst"><i class="pulse'+(r.status==='working'?'':' still')+'"></i>בניסוח</span><span class="dwhen">'+(when?'נשלחה '+when:'')+(r.by?' · '+esc(r.by):'')+'</span>';
+     return '<div class="drow"><div class="nm"><b>'+esc(r.counterparty||r.label||'בקשת ניסוח')+'</b><span>'+esc(meta)+'</span></div>'+st+'</div>'}).join('')+'</section>';
+}
+let DRSIG='';
+function refreshDrafts(){const el=document.getElementById('drafts');const html=draftsPanel();if(html===DRSIG)return;DRSIG=html;if(el)el.innerHTML=html}
+setInterval(()=>{if(S.view==='overview'||S.view==='agreements')refreshDrafts()},3000);
+window.addEventListener('storage',e=>{if(e.key==='areo-app-requests')refreshDrafts()});
+function draftsSlot(){DRSIG=draftsPanel();return '<div id="drafts" class="dslot">'+DRSIG+'</div>'}
 
 /* ---------- Overview ---------- */
+const MON=['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳'];
+function inDays(n){return n<0?'באיחור '+(-n)+' ימים':n===0?'היום':n===1?'מחר':'בעוד '+n+' ימים'}
 function vOverview(){
   const T=allTasks(),late=T.filter(t=>bucket(t)==='late'),week=T.filter(t=>bucket(t)==='week'),month=T.filter(t=>bucket(t)==='month');
-  const dev=deviations(),rv=openReview();
-  const nxt=T.filter(t=>t.date&&!closed(t)&&days(t.act_by||t.date)>=0).sort((a,b)=>(a.act_by||a.date).localeCompare(b.act_by||b.date))[0];
-  const head=late.length?nn(late.length,'משימה אחת באיחור','משימות באיחור')+(week.length?', ועוד '+nn(week.length,'אחת','')+' השבוע.':'.'):(week.length?nn(week.length,'משימה אחת','משימות')+' לטיפול השבוע.':'השבוע אין משימות לטיפול.');
-  const sub=nxt?'הבאה בתור: '+nxt.label+', '+(AG[nxt.agr]||{}).cp+', עד '+fmt(nxt.act_by||nxt.date)+'.':'';
-  const next=T.filter(t=>t.date&&!closed(t)).sort((a,b)=>(a.act_by||a.date).localeCompare(b.act_by||b.date)).slice(0,6);
-  const ren=D.tasks.filter(t=>t.renewal&&t.date&&days(t.date)>=0&&!closed(t)).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,4);
-  return topbar('סקירה')+
-  '<section class="hero"><span class="eb">נכון להיום, '+fmt(TODAYS)+'</span><h1>'+esc(head)+'</h1><p class="lead">'+esc(sub)+'</p></section>'+
-  '<div class="ledger">'+
-   '<button data-go="tasks"><b class="'+(late.length?'r':'')+'">'+late.length+'</b><span>באיחור</span></button>'+
-   '<button data-go="tasks"><b>'+week.length+'</b><span>לטפל השבוע</span></button>'+
-   '<button data-go="tasks"><b>'+month.length+'</b><span>החודש</span></button>'+
-   '<button data-go="policy"><b class="'+(dev.length?'r':'')+'">'+dev.length+'</b><span>סטיות מהמדיניות</span></button>'+
-   '<button data-go="approve"><b class="w">'+rv.length+'</b><span>מחכים לאישור</span></button></div>'+
+  const dev=deviations(),rv=openReview(),by=(a,b)=>(a.act_by||a.date).localeCompare(b.act_by||b.date);
+  const w1=week.slice().sort(by)[0],next=T.filter(t=>(t.act_by||t.date)&&!closed(t)).sort(by).slice(0,6);
+  const kpi=(go,v,l,cls,small)=>'<button type="button" class="kpi" data-go="'+go+'"><div class="v'+(cls?' '+cls:'')+'">'+v+(small?'<small>'+esc(small)+'</small>':'')+'</div><div class="l">'+l+'</div></button>';
+  return draftsSlot()+
+  '<div class="kpis k5 ledger">'+kpi('tasks',late.length,'באיחור',late.length?'r':'')+kpi('tasks',week.length,'לטפל השבוע','',w1?(AG[w1.agr]||{}).cp:'')+kpi('tasks',month.length,'החודש')+
+   kpi('policy',dev.length,'סטיות מהמדיניות')+kpi('approve',rv.length,'מחכים לאישור',rv.length?'w':'')+'</div>'+
   portfolio()+
-  '<div class="grid2"><section class="card"><div class="cardh"><h2>הבא בתור</h2><button class="linkbtn" data-go="tasks">לכל המשימות</button></div><div class="next">'+
-   next.map(t=>{const n=days(t.act_by||t.date),a=AG[t.agr]||{};return '<button class="nx" data-task="'+t.id+'"><span class="d '+(n<0?'r':'')+'">'+fmt(t.act_by||t.date).replace(/\.\d{4}$/,'')+'<small>'+(n<0?'לפני '+(-n)+' ימים':n===0?'היום':'בעוד '+n+' ימים')+'</small></span><span><b>'+esc(t.label)+'</b><span>'+esc(a.cp||'')+' · '+esc(taskOwner(t))+'</span></span>'+'<span></span>'+'</button>'}).join('')+
-  '</div></section><section class="card"><div class="cardh"><h2>מה חסר</h2><small>מתעדכן בכל סריקה</small></div><div>'+
-   (D.readiness.some(r=>!r.ok)?'':'<p class="muted" style="margin:6px 0">הכול מוכן.</p>')+D.readiness.filter(r=>!r.ok).map(r=>'<div class="rd"><i class="'+(r.ok?'ok':'no')+'">'+(r.ok?'✓':'!')+'</i><div class="x"><b>'+esc(r.label)+'</b><span>'+esc(r.detail)+'</span></div>'+(r.action?'<button class="linkbtn" data-act="ready">'+esc(r.action)+'</button>':'')+'</div>').join('')+(D.readiness.some(r=>r.ok)?'<p class="muted" style="font-size:13px;margin:10px 0 0">מוכן: '+D.readiness.filter(r=>r.ok).map(r=>esc(r.label)).join(', ')+'.</p>':'')+
-  '</div></section></div>';
+  '<div class="grid2 g2"><section class="panel"><div class="phd"><span>הבא בתור</span><button type="button" class="linkbtn" data-go="tasks">לכל המשימות</button></div>'+
+   (next.length?next.map(t=>{const d=t.act_by||t.date,n=days(d),p=pd(d),a=AG[t.agr]||{},o=taskOwner(t);
+     return '<div class="li nxr"><button type="button" class="dt" data-task="'+t.id+'"><span class="day'+(n<0?' r':'')+'"><b>'+p.getDate()+'</b><span>'+MON[p.getMonth()]+'</span></span><span class="nm"><b>'+esc(t.label)+'</b><span>'+esc([a.cp||'',o?personOf(o).name:''].filter(Boolean).join(' · '))+'</span></span></button>'+
+      '<span class="pill '+(n<=7?'r':n<=30?'y':'n')+'">'+inDays(n)+'</span><button type="button" class="btn soft small" data-ics="'+t.id+'">ליומן</button></div>'}).join(''):'<p class="empty">אין מועדים פתוחים.</p>')+
+  '</section><section class="panel miss"><div class="phd"><span>מה חסר</span><span class="m">מתעדכן בכל סריקה</span></div>'+
+   (D.readiness.some(r=>!r.ok)?'':'<p class="empty">הכול מוכן.</p>')+D.readiness.filter(r=>!r.ok).map(r=>'<div class="rd"><i>!</i><div class="x"><b>'+esc(r.label)+'</b><span>'+esc(r.detail)+'</span></div>'+(r.action?'<button type="button" class="linkbtn" data-act="ready">'+esc(r.action)+'</button>':'<span></span>')+'</div>').join('')+
+   (D.readiness.some(r=>r.ok)?'<p class="ready">מוכן: '+D.readiness.filter(r=>r.ok).map(r=>esc(r.label)).join(', ')+'.</p>':'')+
+  '</section></div>';
 }
 /* The portfolio at a glance: how soon each agreement needs a decision, and how much of what was signed matches the policy */
 function arc(cx,cy,r,a0,a1){const p=a=>[cx+r*Math.sin(a),cy-r*Math.cos(a)],[x0,y0]=p(a0),[x1,y1]=p(a1);return 'M'+x0.toFixed(2)+' '+y0.toFixed(2)+' A'+r+' '+r+' 0 '+(a1-a0>Math.PI?1:0)+' 1 '+x1.toFixed(2)+' '+y1.toFixed(2)}
-const PB=[['late','באיחור','var(--r)'],['m1','עד 30 יום','#3f7bd0'],['m3','31 עד 90 יום','#9dbde9'],['far','מעל 90 יום','var(--g)'],['none','בלי מועד פתוח','var(--line-strong)']];
+const PB=[['late','באיחור','var(--r)'],['m1','עד 30 יום','var(--pf1,#3f7bd0)'],['m3','31 עד 90 יום','var(--pf2,#9dbde9)'],['far','מעל 90 יום','var(--pf3,var(--g))'],['none','בלי מועד פתוח','var(--pf4,var(--line-strong))']];
 function aBucket(a){const n=nextTask(a),d=n?days(n.act_by||n.date):null;return d==null?'none':d<0?'late':d<=30?'m1':d<=90?'m3':'far'}
 function portfolio(){
   const top=D.agreements.filter(a=>!a.parent);
@@ -530,12 +973,12 @@ function portfolio(){
   const kc=D.agreements.flatMap(a=>(a.kc||[]).filter(k=>k.rule&&k.policy!=='not_compared'));
   const ok=kc.filter(k=>k.policy==='match').length,dv=kc.length-ok,pct=kc.length?ok/kc.length:0;
   const ring='<path d="'+arc(60,60,46,0,C*.9999)+'" stroke="var(--raised)" class="trk"/>'+(dv?'<path d="'+arc(60,60,46,C*pct+.03,C*.9999-.03)+'" stroke="var(--r)" class="seg" data-go="policy" tabindex="0" role="button"><title>'+dv+' סעיפים סוטים מהמדיניות</title></path>':'')+'<path d="'+arc(60,60,46,.0001,Math.max(.001,C*pct-.03))+'" stroke="var(--g)" class="seg" data-go="policy" tabindex="0" role="button"><title>'+ok+' סעיפים תואמים למדיניות</title></path>';
-  return '<section class="card"><div class="cardh"><h2>תמונת התיק</h2><button class="linkbtn" data-act="timeline">לציר החידושים</button></div><div class="pf">'+
+  return '<section class="panel"><div class="phd"><span>תמונת התיק</span><button type="button" class="linkbtn" data-act="timeline">לציר החידושים</button></div><div class="pf">'+
    '<div class="pfb"><svg viewBox="0 0 120 120" role="img" aria-label="ההסכמים לפי מועד ההחלטה הבא">'+segs+'<text x="60" y="58" class="big">'+tot+'</text><text x="60" y="76" class="cap">הסכמים</text></svg>'+
     '<div class="pfl"><b class="pft">מתי צריך להחליט</b>'+B.map(b=>cnt[b[0]].length?'<button type="button" class="pli" data-seg="'+b[0]+'"><i style="background:'+b[2]+'"></i><span>'+b[1]+'</span><b>'+cnt[b[0]].length+'</b></button>':'<div class="pli zero"><i style="background:'+b[2]+'"></i><span>'+b[1]+'</span><b>0</b></div>').join('')+'<small>לפי המשימה הבאה בכל הסכם</small></div></div>'+
    '<div class="pfb"><svg viewBox="0 0 120 120" role="img" aria-label="סעיפים מול המדיניות">'+ring+'<text x="60" y="60" class="big">'+Math.round(pct*100)+'%</text><text x="60" y="77" class="cap">תואם למדיניות</text></svg>'+
     '<div class="pfl"><b class="pft">מה נחתם מול הפלייבוק</b><button type="button" class="pli" data-go="policy"><i style="background:var(--g)"></i><span>סעיפים תואמים</span><b>'+ok+'</b></button><button type="button" class="pli" data-go="policy"><i style="background:var(--r)"></i><span>סעיפים סוטים</span><b>'+dv+'</b></button>'+
-    '<small>'+D.agreements.filter(a=>!ty(a.type).playbook&&!a.parent).length+' הסכמים בלי פלייבוק לא נספרים</small><button class="linkbtn" data-go="policy" style="align-self:flex-start;margin-top:4px">למסך מול המדיניות</button></div></div>'+
+    '<small>'+D.agreements.filter(a=>!ty(a.type).playbook&&!a.parent).length+' הסכמים בלי פלייבוק לא נספרים</small><button type="button" class="linkbtn" data-go="policy" style="align-self:flex-start;margin-top:6px">למסך מול המדיניות</button></div></div>'+
   '</div></section>';
 }
 
@@ -550,59 +993,66 @@ function vAgreements(){
   const bk=S.abucket&&PB.find(b=>b[0]===S.abucket);if(bk)list=list.filter(a=>aBucket(a)===bk[0]);
   if(S.aflag)list=list.filter(a=>(a.flags||[]).includes(S.aflag));
   if(q)list=list.filter(a=>(a.title+a.cp+JSON.stringify(a.kc)).includes(q));
-  const chips=['<button class="chip" data-af="all" aria-pressed="'+(f==='all')+'">הכול<small>'+D.agreements.filter(a=>!a.parent).length+'</small></button>'].concat(D.types.map(t=>'<button class="chip" data-af="'+t.code+'" aria-pressed="'+(f===t.code)+'">'+esc(t.label)+'<small>'+D.agreements.filter(a=>!a.parent&&a.type===t.code).length+'</small></button>')).join('');
+  const chips=['<button type="button" class="chip" data-af="all" aria-pressed="'+(f==='all')+'">הכול<small>'+D.agreements.filter(a=>!a.parent).length+'</small></button>'].concat(D.types.map(t=>'<button type="button" class="chip" data-af="'+t.code+'" aria-pressed="'+(f===t.code)+'">'+esc(t.label)+'<small>'+D.agreements.filter(a=>!a.parent&&a.type===t.code).length+'</small></button>')).join('');
   const row=(a,child)=>{const o=owner(a),p=policyOf(a),n=nextTask(a);
     return '<tr class="click'+(child?' child':'')+(ended(a)?' ended':'')+'" data-agr="'+a.id+'"><td>'+esc(child?a.title:a.cp)+(!a.role&&!child?' <span class="pill w">הצד שלנו לאישור</span>':'')+(ended(a)?' <span class="pill n">'+esc(aState(a))+'</span>':'')+'<span class="sub">'+esc(child?'':a.title)+'</span></td><td>'+esc(ty(a.type).label)+'</td><td>'+esc(a.value_short||'')+'</td><td class="num">'+(a.end?fmt(a.end):'<span class="faint">לפי ההסכם הראשי</span>')+'</td><td class="num">'+(n?fmt(n.act_by||n.date)+'<span class="sub">'+esc(n.label)+'</span>':'<span class="faint">אין</span>')+'</td><td>'+esc(personOf(o.lawyer).name)+'</td><td>'+(child?'':'<span class="pill '+p[0]+'">'+p[1]+'</span>')+'</td></tr>'};
-  return topbar('הסכמים')+
-  '<div class="cardh"><h1>הסכמים</h1><button class="btn primary small" data-act="addagr">+ הוספת הסכם</button></div><p class="lead">כל הסכם עם התיקונים וההזמנות שלו. לחיצה על שורה פותחת את עיקרי ההסכם, המועדים וההשוואה למדיניות.</p>'+
-  '<div class="chips">'+chips+(bk?'<button class="chip" data-abucket="" aria-pressed="true" title="הסרת הסינון"><i style="display:inline-block;width:9px;height:9px;border-radius:3px;background:'+bk[2]+';margin-inline-end:6px"></i>מתי צריך להחליט: '+bk[1]+' ×</button>':'')+'</div>'+
-  '<div class="flagrow"><span class="muted">סעיפים שכדאי להכיר:</span>'+(D.flags||[]).map(([k,l])=>{const n=D.agreements.filter(a=>!a.parent&&(a.flags||[]).includes(k)).length;return n?'<button class="chip sm" data-aflag="'+k+'" aria-pressed="'+(S.aflag===k)+'">'+esc(l)+'<small>'+n+'</small></button>':''}).join('')+'</div>'+
-  '<div class="tblwrap"><table><thead><tr><th>צד שכנגד</th><th>סוג</th><th>תמורה</th><th>בתוקף עד</th><th>המועד הבא</th><th>עו"ד אחראי</th><th>מול המדיניות</th></tr></thead><tbody>'+
+  const flags=(D.flags||[]).map(([k,l])=>{const n=D.agreements.filter(a=>!a.parent&&(a.flags||[]).includes(k)).length;return n?'<button type="button" class="chip sm" data-aflag="'+k+'" aria-pressed="'+(S.aflag===k)+'">'+esc(l)+'<small>'+n+'</small></button>':''}).join('');
+  return '<p class="lead">כל הסכם עם התיקונים וההזמנות שלו. לחיצה על שורה פותחת את עיקרי ההסכם, המועדים וההשוואה למדיניות.</p>'+
+  '<div class="ttools"><div class="chips">'+chips+(bk?'<button type="button" class="chip" data-abucket="" aria-pressed="true" title="הסרת הסינון"><i class="sw" style="background:'+bk[2]+'"></i>מתי צריך להחליט: '+bk[1]+' ×</button>':'')+'</div>'+findBox('q',S.q,'חיפוש בהסכמים ובסעיפים')+'</div>'+
+  (flags?'<div class="flagrow"><span class="muted">סעיפים שכדאי להכיר:</span>'+flags+'</div>':'')+
+  draftsSlot()+
+  '<div class="tblwrap panel"><table><thead><tr><th>צד שכנגד</th><th>סוג</th><th>תמורה</th><th>בתוקף עד</th><th>המועד הבא</th><th>עו"ד אחראי</th><th>מול המדיניות</th></tr></thead><tbody>'+
   (list.length?list.map(a=>row(a)+D.agreements.filter(c=>c.parent===a.id).map(c=>row(c,true)).join('')).join(''):'<tr><td colspan="7" class="muted">לא נמצאו הסכמים.</td></tr>')+
   '</tbody></table></div>';
 }
 
-/* ---------- Tasks ---------- */
+/* ---------- Tasks: grouped by when to act; closed ones fold away at the bottom ---------- */
+/* a row: the date, the title (opens the edit drawer), the agreement and owner, what to do, and only the status in the row */
 function taskCard(t){
-  const a=AG[t.agr]||{},b=bucket(t),n=days(t.act_by||t.date),st=status(t),m=S.status[t.id];
-  const when=t.date?'<div class="when '+(b==='late'?'r':'')+'"><b>'+fmt(t.act_by||t.date).replace(/\.\d{4}$/,'')+'</b><small>'+(n<0?'באיחור '+(-n)+' ימים':n===0?'היום':'בעוד '+n+' ימים')+'</small></div>':'<div class="when"><small>תלוי באירוע</small></div>';
-  return '<div class="task '+(b==='late'?'late':t.critical?'crit':'')+(closed(t)?' done':'')+'" id="t-'+t.id+'">'+when+
-   '<div class="tmain"><span class="t">'+esc(t.label)+(t.manual?' <span class="pill n">ידנית</span>':'')+(t.obligor==='them'?' <span class="pill n">חובה של הצד השני</span>':'')+'</span>'+
-   '<span class="a">'+esc(a.cp||'')+' · '+esc(a.title?ty(a.type).label:'')+(t.date&&t.act_by&&t.act_by!==t.date?' · המועד בהסכם '+fmt(t.date):'')+'</span>'+
-   (t.action?'<span class="act">'+esc(t.action)+'</span>':'')+
-   ((t.quote||t.if_nothing)?'<details class="more"><summary>מה כתוב בהסכם, ומה אם לא נטפל</summary><div class="in">'+(t.if_nothing?'<div><b>אם לא נטפל:</b> '+esc(t.if_nothing)+'</div>':'')+(t.quote?'<span class="quote"><small>'+esc(t.clause)+'</small>'+esc(t.quote)+'</span><button class="linkbtn" style="align-self:flex-start" data-read="'+t.agr+'" data-q="'+esc(t.quote)+'">לראות בהסכם</button>':'')+'</div></details>':'')+
+  const a=AG[t.agr]||{},b=bucket(t),d=t.act_by||t.date,n=d?days(d):null,st=status(t),m=S.status[t.id],cl=closed(t),o=taskOwner(t);
+  const when='<div class="twhen'+(!cl&&n!=null&&n>=0&&n<=7?' soon':'')+'">'+(d?'<b>'+fmt(d).replace(/\.\d{4}$/,'')+'</b>':'')+'<small>'+(cl?esc(st):n==null?'תלוי באירוע':inDays(n))+'</small></div>';
+  const meta=[a.cp||'',a.title?ty(a.type).label:'',o?personOf(o).name:'',t.date&&t.act_by&&t.act_by!==t.date?'המועד בהסכם '+fmt(t.date):''].filter(Boolean).map(esc).join(' · ');
+  return '<div class="task'+(b==='late'?' late':t.critical&&!cl?' crit':'')+(cl?' done':'')+'" id="t-'+t.id+'">'+when+
+   '<div class="tmain"><div class="ttl"><button type="button" class="tt" data-tedit="'+t.id+'">'+esc(t.label)+'</button>'+(t.manual?'<span class="pill n">ידנית</span>':'')+(t.obligor==='them'?'<span class="pill n">חובה של הצד השני</span>':'')+'</div>'+
+   '<span class="ta">'+meta+'</span>'+
+   (t.action?'<span class="tact">'+esc(t.action)+'</span>':'')+
+   ((t.quote||t.if_nothing)?'<details class="tmore more"><summary>מה כתוב בהסכם, ומה אם לא נטפל</summary><div class="in">'+(t.if_nothing?'<p><b>אם לא נטפל:</b> '+esc(t.if_nothing)+'</p>':'')+(t.quote?'<span class="quote"><small>'+esc(t.clause)+'</small>'+esc(t.quote)+'</span><button type="button" class="linkbtn" style="align-self:flex-start" data-read="'+t.agr+'" data-q="'+esc(t.quote)+'">לראות בהסכם</button>':'')+'</div></details>':'')+
    (m&&m.by?'<span class="saved">'+esc(st)+' · '+esc(m.by)+(m.at?'<span class="areo-by">, '+new Date(m.at).toLocaleDateString('he-IL')+'</span>':'')+'</span>':'')+
-   '</div><div class="tside">'+ownerBtn('owner',t.id,taskOwner(t))+
-   statusBtn(t.id,st)+
-   (t.date?'<button class="btn soft small" data-ics="'+t.id+'">להוסיף ליומן</button>':'')+'</div></div>';
+   '</div><div class="tside">'+statusBtn(t.id,st)+
+   '<div class="tacts"><button type="button" class="lnk linkbtn" data-tedit="'+t.id+'">לערוך</button>'+(d&&!cl?'<button type="button" class="lnk linkbtn" data-ics="'+t.id+'">ליומן</button>':'')+'</div></div></div>';
 }
+function taskList(L){return '<div class="tlist">'+L.map(taskCard).join('')+'</div>'}
+/* which folded groups are open, so a status change does not close them */
+const TOPEN={event:false,done:false};
 function vTasks(){
   let T=allTasks();
   const me=people()[0];
   if(S.mine)T=T.filter(t=>taskOwner(t)===me);
-  const q=(S.q||'').trim();if(q)T=T.filter(t=>(t.label+t.action+(AG[t.agr]||{}).cp).includes(q));
-  const sw='<div class="row" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><div class="seg"><button data-mine="0" aria-pressed="'+!S.mine+'">הצוות</button>'+(me?'<button data-mine="1" aria-pressed="'+!!S.mine+'">שלי ('+esc(personOf(me).name)+')</button>':'')+'</div>'+
-   '<div class="seg"><button data-tv="list" aria-pressed="'+(S.tview==='list')+'">רשימה</button><button data-tv="tl" aria-pressed="'+(S.tview==='tl')+'">ציר חידושים</button></div>'+
-   '<div style="display:flex;gap:8px"><button class="btn soft small" data-act="icsall">כל המועדים ליומן</button><button class="btn primary small" data-act="newtask">+ משימה</button></div></div>';
-  let body;
-  if(S.tview==='tl')body=timeline();
-  else body=BUCKETS.map(([k,l,c])=>{const L=T.filter(t=>bucket(t)===k).sort((a,b)=>((a.act_by||a.date||'9')).localeCompare(b.act_by||b.date||'9'));if(!L.length)return '';
-    const inner=L.map(taskCard).join('');
-    return (k==='event'||k==='done')?'<details class="more"><summary class="grp" style="color:var(--mist)">'+l+' ('+L.length+')</summary><div class="in" style="gap:10px;margin-top:10px">'+inner+'</div></details>':'<div class="grp '+c+'">'+l+' ('+L.length+')</div>'+inner}).join('');
-  return topbar('משימות')+'<h1>משימות</h1><p class="lead">כל מה שצריך לעשות לפי ההסכמים, לפי מועד היעד לטיפול. המועד מחושב מההסכם פחות ימי ההתראה שנקבעו בהגדרות.</p>'+sw+body;
+  const q=(S.tq||'').trim();if(q)T=T.filter(t=>{const a=AG[t.agr]||{};return (t.label+' '+(t.action||'')+' '+(a.cp||'')+' '+(a.title||'')).includes(q)});
+  const sw='<div class="ttools"><div class="tfl"><div class="seg"><button type="button" data-mine="0" aria-pressed="'+!S.mine+'">הצוות</button>'+(me?'<button type="button" data-mine="1" aria-pressed="'+!!S.mine+'">שלי ('+esc(personOf(me).name)+')</button>':'')+'</div>'+
+   findBox('tq',S.tq,'חיפוש משימה או הסכם')+'</div>'+
+   '<div class="chips"><button type="button" class="btn soft small" data-act="icsall">כל המועדים ליומן</button><button type="button" class="btn primary small" data-act="newtask">+ משימה</button></div></div>';
+  const body=BUCKETS.map(([k,l,c])=>{const L=T.filter(t=>bucket(t)===k).sort((a,b)=>((a.act_by||a.date||'9')).localeCompare(b.act_by||b.date||'9'));if(!L.length)return '';
+    return (k==='event'||k==='done')?'<details class="tgrp" data-tg="'+k+'"'+(TOPEN[k]?' open':'')+'><summary>'+l+'<span class="tcount">'+L.length+'</span></summary>'+taskList(L)+'</details>'
+      :'<div class="tgh grp '+c+'">'+l+'<span class="tcount'+(k==='late'?' w':'')+'">'+L.length+'</span></div>'+taskList(L)}).join('');
+  return '<p class="lead">כל מה שצריך לעשות לפי ההסכמים, לפי מועד היעד לטיפול. המועד מחושב מההסכם פחות ימי ההתראה שנקבעו בהגדרות. משימה שנסגרה עוברת ל"סגורות" למטה.</p>'+sw+
+   (body||'<section class="panel"><p class="empty">'+(q||S.mine?'אין משימות שמתאימות לחיפוש.':'אין משימות.')+'</p></section>');
 }
+/* ---------- Renewal timeline: the next 12 months ---------- */
+function vTimeline(){return '<p class="lead">ההסכמים לפי מועד הסיום, ב-12 החודשים הקרובים: חלון ההחלטה על חידוש, והמועד האחרון בהסכם.</p>'+timeline()}
 function timeline(){
   const start=new Date(TODAY.getFullYear(),TODAY.getMonth(),1),end=new Date(start);end.setMonth(end.getMonth()+12);
   const span=end-start,pos=d=>Math.max(0,Math.min(100,(pd(d)-start)/span*100));
   const months=[...Array(12)].map((_,i)=>{const d=new Date(start);d.setMonth(d.getMonth()+i);return (d.getMonth()+1)+'.'+String(d.getFullYear()).slice(2)});
-  const rows=D.agreements.filter(a=>!a.parent&&a.end).map(a=>{
+  const rows=D.agreements.filter(a=>!a.parent&&a.end).sort((x,y)=>x.end.localeCompare(y.end)).map(a=>{
     const ts=D.tasks.filter(t=>t.agr===a.id&&t.renewal&&t.date&&days(t.date)>=0);
     const s=a.signed&&pd(a.signed)>start?pos(a.signed):0,e=pos(a.end);
-    return '<div class="tlr"><span class="nm">'+esc(a.cp)+'<small>'+esc(ty(a.type).label)+' · עד '+fmt(a.end)+'</small></span><div class="track"><span class="run" style="inset-inline-start:'+s+'%;width:'+Math.max(1,e-s)+'%"></span>'+
+    return '<button type="button" class="tlr" data-agr="'+a.id+'"><span class="nm">'+esc(a.cp)+'<small>'+esc(ty(a.type).label)+' · עד '+fmt(a.end)+'</small></span><span class="track"><span class="run" style="inset-inline-start:'+s+'%;width:'+Math.max(1,e-s)+'%"></span>'+
      ts.map(t=>'<span class="win" title="'+esc(t.label)+'" style="inset-inline-start:'+pos(t.act_by||t.date)+'%;width:'+Math.max(1.2,pos(t.date)-pos(t.act_by||t.date))+'%"></span><span class="dl" title="'+esc(t.label+' '+fmt(t.date))+'" style="inset-inline-start:'+pos(t.date)+'%"></span>').join('')+
-     '<span class="now" style="inset-inline-start:'+pos(TODAYS)+'%"></span></div></div>'}).join('');
-  return '<section class="card"><div class="tl"><div class="tlh"><span></span><div class="ax">'+months.map(m=>'<span>'+m+'</span>').join('')+'</div></div>'+rows+'</div>'+
-   '<div class="tlkey"><span><i style="background:color-mix(in srgb,var(--aurora) 35%,transparent)"></i>תקופת ההסכם</span><span><i style="background:var(--y-soft);border:1.5px solid var(--y)"></i>חלון להחלטה</span><span><i style="background:var(--r);width:3px"></i>המועד האחרון בהסכם</span></div></section>';
+     '<span class="now" style="inset-inline-start:'+pos(TODAYS)+'%"></span></span></button>'}).join('');
+  return '<section class="card panel tlp"><div class="tl"><div class="tlh"><span></span><div class="ax">'+months.map(m=>'<span>'+m+'</span>').join('')+'</div></div>'+(rows||'<p class="empty">אין הסכמים עם מועד סיום.</p>')+'</div>'+
+   '<div class="tlkey"><span><i class="k-run"></i>תקופת ההסכם</span><span><i class="k-win"></i>חלון להחלטה על חידוש</span><span><i class="k-dl"></i>המועד האחרון בהסכם</span><span><i class="k-now"></i>היום</span></div></section>'+
+   '<p class="hint">לחיצה על הסכם פותחת את הפרטים שלו.</p>';
 }
 
 /* ---------- Negotiation: deals not signed yet, from the negotiator's state per deal ---------- */
@@ -616,7 +1066,7 @@ function vNego(){
      (n.open?'<span class="tmeta"><span>'+n.open+' נקודות פתוחות</span>'+(n.red?'<span style="color:var(--r)">'+n.red+' מעבר לקו האדום</span>':'')+'</span>':'')+
      '<span style="font-size:14px">'+esc(n.next)+'</span>'+
      '<div class="cardh" style="margin-top:2px"><span class="muted" style="font-size:13px">'+esc(personOf(o.lawyer).name)+'</span><button class="linkbtn" data-nego="'+n.id+'">לפתוח בנושא ונותן</button></div></div>'};
-  return topbar('משא ומתן')+'<h1>משא ומתן</h1><p class="lead">עסקאות שעוד לא נחתמו, לפי השלב. המידע מגיע מהנושא ונותן, מכל עסקה שעובדים עליה איתו. כשהסכם נחתם, הוא עובר להסכמים ומקבל משימות.</p>'+
+  return '<p class="lead">עסקאות שעוד לא נחתמו, לפי השלב. המידע מגיע מהנושא ונותן, מכל עסקה שעובדים עליה איתו. כשהסכם נחתם, הוא עובר להסכמים ומקבל משימות.</p>'+
    '<div class="kan">'+NSTAGES.map(([k,l])=>{const L=N.filter(n=>n.stage===k);return '<section class="kcol"><div class="kh"><b>'+l+'</b><span class="cnt">'+L.length+'</span></div>'+(L.length?L.map(card).join(''):'<p class="muted" style="font-size:13.5px;margin:6px 2px">אין כרגע.</p>')+'</section>'}).join('')+'</div>';
 }
 /* ---------- Counterparties ---------- */
@@ -624,8 +1074,9 @@ function cpList(){const m={};D.agreements.forEach(a=>{(m[a.cp]=m[a.cp]||{cp:a.cp
 function vCps(){
   const q=(S.q||'').trim();let L=cpList();if(q)L=L.filter(c=>c.cp.includes(q));
   L.sort((x,y)=>{const nx=x.ags.map(nextTask).filter(Boolean).map(t=>t.act_by||t.date).sort()[0]||'9',ny=y.ags.map(nextTask).filter(Boolean).map(t=>t.act_by||t.date).sort()[0]||'9';return nx.localeCompare(ny)});
-  return topbar('צדדים שכנגד')+'<h1>צדדים שכנגד</h1><p class="lead">כל מה שיש לנו מול כל צד: הסכמים, עסקאות במשא ומתן, המועד הבא, וסטיות מהמדיניות.</p>'+
-   '<div class="tblwrap"><table><thead><tr><th>צד שכנגד</th><th>הסכמים</th><th>במשא ומתן</th><th>המועד הבא</th><th>סטיות מהמדיניות</th><th>אחראי</th></tr></thead><tbody>'+
+  return '<p class="lead">כל מה שיש לנו מול כל צד: הסכמים, עסקאות במשא ומתן, המועד הבא, וסטיות מהמדיניות.</p>'+
+   '<div class="ttools"><span></span>'+findBox('q',S.q,'חיפוש צד שכנגד')+'</div>'+
+   '<div class="tblwrap panel"><table><thead><tr><th>צד שכנגד</th><th>הסכמים</th><th>במשא ומתן</th><th>המועד הבא</th><th>סטיות מהמדיניות</th><th>אחראי</th></tr></thead><tbody>'+
    L.map(c=>{const ts=c.ags.map(nextTask).filter(Boolean).sort((a,b)=>(a.act_by||a.date).localeCompare(b.act_by||b.date)),n=ts[0],dv=c.ags.reduce((s,a)=>s+(a.kc||[]).filter(k=>k.policy==='differs').length,0),
      types=[...new Set(c.ags.map(a=>ty(a.type).label).concat(c.ngs.map(x=>ty(x.type).label)))],own=c.ags[0]?owner(c.ags[0]).lawyer:owner({type:c.ngs[0].type}).lawyer;
      return '<tr class="click" data-cp="'+esc(c.cp)+'"><td>'+esc(c.cp)+'<span class="sub">'+esc(types.join(', '))+'</span></td><td class="num">'+(c.ags.filter(a=>!a.parent).length||'<span class="faint">אין</span>')+(c.ags.some(a=>a.parent)?'<span class="sub">ועוד '+c.ags.filter(a=>a.parent).length+' תיקון</span>':'')+'</td><td>'+(c.ngs.length?esc(c.ngs.map(x=>(NSTAGES.find(s=>s[0]===x.stage)||[])[1]).join(', ')):'<span class="faint">אין</span>')+'</td>'+
@@ -641,28 +1092,36 @@ function _cpDrawer(cp){
    '<dl class="kv"><dt>מספר רישום</dt><dd>'+esc(info.reg||'לא נמצא בהסכמים')+'</dd>'+(info.country?'<dt>מדינה</dt><dd>'+esc(info.country)+'</dd>':'')+(info.addr?'<dt>כתובת להודעות</dt><dd>'+esc(info.addr)+'</dd>':'')+(info.note?'<dt>הערה</dt><dd>'+esc(info.note)+'</dd>':'')+'</dl>'+
    '<h3>הסכמים ('+c.ags.length+')</h3>'+(c.ags.length?c.ags.map(a=>'<button class="rowbtn" data-agr="'+a.id+'"><span><b>'+esc(a.title)+'</b><small>'+esc(ty(a.type).label)+(a.end?' · בתוקף עד '+fmt(a.end):'')+'</small></span><span class="pill '+policyOf(a)[0]+'">'+policyOf(a)[1]+'</span></button>').join(''):'<p class="muted">אין הסכמים חתומים.</p>')+
    (c.ngs.length?'<h3>במשא ומתן</h3>'+c.ngs.map(n=>'<button class="rowbtn" data-go="nego"><span><b>'+esc(n.title)+'</b><small>'+esc((NSTAGES.find(s=>s[0]===n.stage)||[])[1])+(n.round?' · סבב '+n.round:'')+'</small></span></button>').join(''):'')+
-   '<h3>משימות פתוחות</h3>'+(T.length?T.map(taskCard).join(''):'<p class="muted">אין משימות פתוחות.</p>')+
-   (dv.length?'<h3>סטיות מהמדיניות</h3>'+dv.map(({a,k})=>'<div class="dev"><b>'+esc(k.label)+'</b><span>'+esc(k.summary)+'</span><span class="muted" style="font-size:13px">'+esc((D.topics[k.rule]||{}).g||'')+'</span></div>').join(''):'')+
+   '<h3>משימות פתוחות</h3>'+(T.length?taskList(T):'<p class="muted">אין משימות פתוחות.</p>')+
+   (dv.length?'<h3>סטיות מהמדיניות</h3>'+dv.map(({a,k})=>'<div class="dev dev0"><b>'+esc(k.label)+'</b><span>'+esc(k.summary)+'</span><span class="muted" style="font-size:13px">'+esc((D.topics[k.rule]||{}).g||'')+'</span></div>').join(''):'')+
   '</div>');
 }
 
-/* ---------- Policy ---------- */
+/* ---------- Policy: topics against the signed agreements; a topic opens its deviations right under its row ---------- */
+function devCard(a,k){const tp=D.topics[k.rule]||{},n=nextTask(a);
+  return '<section class="panel dev"><div class="phd"><span>'+esc(a.cp)+' · '+esc(k.label)+'</span><button type="button" class="linkbtn" data-agr="'+a.id+'">להסכם</button></div>'+
+   '<div class="vs"><div><small>נחתם ('+esc(k.clause)+')</small><b>'+esc(k.summary)+'</b>'+(k.quote?'<q class="quote">'+esc(k.quote)+'</q>':'')+'</div><div><small>המדיניות: העמדה המועדפת</small><b>'+esc(tp.g||'אין עמדה בפלייבוק')+'</b>'+(tp.r?'<small class="rl">קו אדום</small><span>'+esc(tp.r)+'</span>':'')+'</div></div>'+
+   '<div class="tmeta"><span>'+(n&&n.renewal?'הזדמנות לתקן: בחידוש, עד '+fmt(n.act_by||n.date):'אין חידוש קרוב')+'</span><button type="button" class="btn soft small" data-newtask="'+a.id+'" data-topic="'+esc(k.label)+'">ליצור משימה לפתוח את הסעיף מחדש</button></div></section>'}
 function vPolicy(){
   const rows={};
   D.agreements.forEach(a=>(a.kc||[]).forEach(k=>{if(!k.rule)return;const r=rows[k.rule]||(rows[k.rule]={rule:k.rule,match:0,differs:0,none:0,items:[]});r[k.policy==='differs'?'differs':k.policy==='match'?'match':'none']++;r.items.push({a,k})}));
   const list=Object.values(rows).sort((x,y)=>y.differs-x.differs||x.rule.localeCompare(y.rule));
   const sel=S.prule&&rows[S.prule]?rows[S.prule]:null;
   const noPb=D.types.filter(t=>!t.playbook);
-  const devs=deviations().filter(x=>!sel||x.k.rule===sel.rule);
-  return topbar('מול המדיניות')+'<h1>מול המדיניות</h1><p class="lead">כל הסכם חתום מושווה לעמדות שבפלייבוק, סעיף אחר סעיף. סטייה היא סעיף שנחתם מעבר למה שהמדיניות מאפשרת היום.</p>'+
-  '<section class="card"><div class="cardh"><h2>לפי נושא בפלייבוק</h2><small>'+esc(D.playbook_name)+'</small></div><div>'+
-   '<div class="pt h"><span>נושא</span><span class="c">תואם</span><span class="c">סוטה</span><span class="c">לא הושווה</span></div>'+
-   list.map(r=>'<button class="pt" data-prule="'+r.rule+'"'+(sel===r?' style="background:var(--raised)"':'')+'><span class="nm">'+esc((D.topics[r.rule]||{}).name||r.rule)+'<small>'+esc(((D.topics[r.rule]||{}).g||'').slice(0,90))+'</small></span><span class="c g'+(r.match?'':' zero')+'">'+(r.match||'אין')+'</span><span class="c r'+(r.differs?'':' zero')+'">'+(r.differs||'אין')+'</span><span class="c'+(r.none?'':' zero')+'">'+(r.none||'אין')+'</span></button>').join('')+
+  const all=deviations();
+  const row=r=>{const on=sel===r,tot=(r.match+r.differs+r.none)||1,tp=D.topics[r.rule]||{};
+    const devs=all.filter(x=>x.k.rule===r.rule);
+    return '<button type="button" class="pt'+(on?' on':'')+'" data-prule="'+(on?'':r.rule)+'" aria-expanded="'+on+'"><span class="nm"><span class="ptn">'+IC.chev+esc(tp.name||r.rule)+'</span><small>'+esc((tp.g||'').slice(0,90))+'</small></span>'+
+     '<span class="stk" aria-hidden="true"><i class="sm" style="width:'+(r.match/tot*100)+'%"></i><i class="sd2" style="width:'+(r.differs/tot*100)+'%"></i><i class="sn" style="width:'+(r.none/tot*100)+'%"></i></span>'+
+     '<span class="c g'+(r.match?'':' zero')+'">'+(r.match||'אין')+'</span><span class="c r'+(r.differs?'':' zero')+'">'+(r.differs||'אין')+'</span><span class="c'+(r.none?'':' zero')+'">'+(r.none||'אין')+'</span></button>'+
+     (on?'<div class="ptx"><div class="ptxh">'+(devs.length?(devs.length===1?'סטייה אחת':devs.length+' סטיות')+' בנושא הזה':'אין סטיות בנושא הזה.')+'</div>'+devs.map(({a,k})=>devCard(a,k)).join('')+'</div>':'')};
+  return '<p class="lead">כל הסכם חתום מושווה לעמדות שבפלייבוק, סעיף אחר סעיף. סטייה היא סעיף שנחתם מעבר למה שהמדיניות מאפשרת היום. לחיצה על נושא פותחת את הסטיות שלו.</p>'+
+  '<section class="card panel ptopics"><div class="phd"><span>לפי נושא בפלייבוק</span><span class="m">'+esc(D.playbook_name)+'</span></div><div>'+
+   '<div class="pt h"><span>נושא</span><span class="stkh">תואם · סוטה · לא הושווה</span><span class="c">תואם</span><span class="c">סוטה</span><span class="c">לא הושווה</span></div>'+
+   (list.length?list.map(row).join(''):'<p class="empty">עוד אין סעיפים שהושוו לפלייבוק.</p>')+
   '</div></section>'+
-  '<div class="cardh"><h2>'+(sel?'סטיות בנושא: '+esc((D.topics[sel.rule]||{}).name||sel.rule):'כל הסטיות')+'</h2>'+(sel?'<button class="linkbtn" data-prule="">להציג הכול</button>':'')+'</div>'+
-  (devs.length?devs.map(({a,k})=>{const tp=D.topics[k.rule]||{};return '<div class="dev"><div class="cardh"><b>'+esc(a.cp)+' · '+esc(k.label)+'</b><button class="linkbtn" data-agr="'+a.id+'">להסכם</button></div><div class="vs"><div><small>נחתם ('+esc(k.clause)+')</small>'+esc(k.summary)+'<span class="quote" style="margin-top:4px">'+esc(k.quote)+'</span></div><div><small>המדיניות: העמדה המועדפת</small>'+esc(tp.g||'אין עמדה בפלייבוק')+(tp.r?'<small style="margin-top:6px">קו אדום</small>'+esc(tp.r):'')+'</div></div>'+
-   '<div class="tmeta"><span>'+(nextTask(a)&&nextTask(a).renewal?'הזדמנות לתקן: בחידוש, עד '+fmt(nextTask(a).act_by):'אין חידוש קרוב')+'</span><button class="linkbtn" data-newtask="'+a.id+'" data-topic="'+esc(k.label)+'">ליצור משימה לפתוח את הסעיף מחדש</button></div></div>'}).join(''):'<div class="card muted">אין סטיות'+(sel?' בנושא הזה':'')+'.</div>')+
-  (noPb.length?'<section class="card"><div class="cardh"><h2>סוגי הסכמים בלי פלייבוק</h2></div><p class="lead">'+noPb.map(t=>esc(t.label)+' ('+D.agreements.filter(a=>a.type===t.code).length+')').join(', ')+': אין להם עדיין מדיניות, ולכן הם לא מושווים.</p><div><button class="btn soft small" data-act="ready">לבנות פלייבוק</button></div></section>':'');
+  (sel?'':'<h2 class="sech">כל הסטיות</h2>'+(all.length?all.map(({a,k})=>devCard(a,k)).join(''):'<section class="panel"><p class="empty">אין סטיות.</p></section>'))+
+  (noPb.length?'<section class="card panel"><div class="phd"><span>סוגי הסכמים בלי פלייבוק</span></div><div class="pin"><p class="lead">'+noPb.map(t=>esc(t.label)+' ('+D.agreements.filter(a=>a.type===t.code).length+')').join(', ')+': אין להם עדיין מדיניות, ולכן הם לא מושווים.</p><div><button type="button" class="btn soft small" data-act="ready">לבנות פלייבוק</button></div></div></section>':'');
 }
 
 /* ---------- Approve ---------- */
@@ -672,10 +1131,10 @@ function vApprove(){
   /* groups in the order they first appear, by the label the repository gave each item */
   const keys=[...new Set(all.map(gl))];
   const groups=keys.map(k=>{const L=all.filter(r=>gl(r)===k);if(!L.length)return '';
-    return '<div class="grp">'+esc(k)+' ('+L.filter(r=>!S.decided[r.id]).length+')</div>'+L.map(r=>{const dd=S.decided[r.id],a=AG[r.agr]||{};
-      return '<div class="rv'+(dd?' ok':'')+'"><b>'+esc(r.text)+'</b>'+(r.quote?'<span class="quote"><small>'+esc(r.clause)+'</small>'+esc(r.quote)+'</span>':'')+
-       (dd?'<span class="done">✓ '+esc(dd.value)+(dd.by?' · '+esc(dd.by):'')+' · '+new Date(dd.at).toLocaleDateString('he-IL')+' <button class="linkbtn" data-undo="'+r.id+'">לבטל</button></span>':'<div class="opts">'+r.options.map(o=>'<button class="btn soft small" data-dec="'+r.id+'" data-val="'+esc(o)+'">'+esc(o)+'</button>').join('')+(a.id?'<button class="linkbtn" data-agr="'+a.id+'">להסכם</button>':'')+'</div>')+'</div>'}).join('')}).join('')+(all.length?'':'<div class="card muted">אין פרטים שמחכים לאישור.</div>');
-  return topbar('לאישור')+'<h1>לאישור</h1><p class="lead">פרטים שצריך לאשר כדי שהנתונים יהיו נכונים: מי אנחנו בהסכם, מה קרה עם מועד שחלף, האם תיקון נחתם. כל החלטה נשמרת עם השם והתאריך.</p>'+
+    return '<div class="grp tgh">'+esc(k)+'<span class="tcount'+(L.some(r=>!S.decided[r.id])?' w':'')+'">'+L.filter(r=>!S.decided[r.id]).length+'</span></div>'+L.map(r=>{const dd=S.decided[r.id],a=AG[r.agr]||{};
+      return '<div class="rv panel'+(dd?' ok':'')+'"><b>'+esc(r.text)+'</b>'+(r.quote?'<span class="quote"><small>'+esc(r.clause)+'</small>'+esc(r.quote)+'</span>':'')+
+       (dd?'<span class="done">✓ '+esc(dd.value)+(dd.by?' · '+esc(dd.by):'')+' · '+new Date(dd.at).toLocaleDateString('he-IL')+' <button class="linkbtn" data-undo="'+r.id+'">לבטל</button></span>':'<div class="opts">'+r.options.map(o=>'<button type="button" class="btn soft small" data-dec="'+r.id+'" data-val="'+esc(o)+'">'+esc(o)+'</button>').join('')+(a.id?'<button class="linkbtn" data-agr="'+a.id+'">להסכם</button>':'')+'</div>')+'</div>'}).join('')}).join('')+(all.length?'':'<section class="panel"><p class="empty">אין פרטים שמחכים לאישור.</p></section>');
+  return '<p class="lead">פרטים שצריך לאשר כדי שהנתונים יהיו נכונים: מי אנחנו בהסכם, מה קרה עם מועד שחלף, האם תיקון נחתם. כל החלטה נשמרת עם השם והתאריך.</p>'+
    '<div class="who">מי מאשר: <input id="who" value="'+esc(S.who)+'" placeholder="שם מלא"> <span class="muted">'+(open.length?open.length+' פרטים פתוחים':'הכול אושר')+'</span></div>'+groups;
 }
 
@@ -686,7 +1145,7 @@ let DSTACK=[],DCUR=null,DBACK=false;
 function showD(key,label,fn){
   const open=!!$('#layer .drawer');
   if(!open)DSTACK=[];
-  else if(DCUR&&!DBACK&&DCUR.key!==key){if(DCUR.key==='nt'){NT.l=($('#nt-l')||{}).value||NT.l||'';NT.d=($('#nt-d')||{}).value||NT.d||'';NT.x=($('#nt-x')||{}).value||NT.x||'';DCUR.fn=()=>_nt(NT.agr,null,true)}DSTACK.push(DCUR)}
+  else if(DCUR&&!DBACK&&DCUR.key!==key){if(DCUR.key==='nt'||DCUR.key.indexOf('te:')===0){ntKeep();const id=NT.id;DCUR.fn=()=>_nt(NT.agr,null,true,id)}DSTACK.push(DCUR)}
   DBACK=false;DCUR={key,label,fn};fn();
 }
 function goBack(){const p=DSTACK.pop();if(!p){closeDrawer();return}DBACK=true;showD(p.key,p.label,p.fn)}
@@ -717,7 +1176,7 @@ function _agrDrawer(id,tab){
   const dv=(a.kc||[]).filter(k=>k.policy==='differs'),ok=(a.kc||[]).filter(k=>k.policy!=='differs');
   const ngs=(D.negotiations||[]).filter(n=>n.cp===a.cp&&!a.parent);
   const dated=T.filter(t=>t.date&&!closed(t)),undated=T.filter(t=>!t.date),done=T.filter(t=>t.date&&closed(t));
-  const tabs=[['sum','תמצית'],['cl','סעיפים'+(dv.length?' <span class="cnt r">'+dv.length+'</span>':'')],['dates','מועדים'+(dated.length?' <span class="cnt">'+dated.length+'</span>':'')],['docs','מסמכים']];
+  const tabs=[['sum','תמצית'],['cl','סעיפים'+(dv.length?'<span class="tcount r">'+dv.length+'</span>':'')],['dates','מועדים'+(dated.length?'<span class="tcount">'+dated.length+'</span>':'')],['docs','מסמכים']];
   const st=aStatus(a),n=nextTask(a);let b='';
   if(tab==='sum'){
     const facts=[['הצד שלנו',a.role?esc(a.role):'<span class="pill w">לאישור</span>'],['תמורה',esc(a.value||'לא צוין')+(a.pay?'<small>'+esc(a.pay)+'</small>':'')],
@@ -748,9 +1207,9 @@ function _agrDrawer(id,tab){
       ((a.not_found||[]).length?'<p class="nf"><b>נבדק ולא נמצא בהסכם:</b> '+esc(a.not_found.join(', '))+'</p>':'');
     if(!(a.kc||[]).length&&!(a.not_found||[]).length)b+='<p class="muted">לא נמצאו בהסכם סעיפי מפתח.</p>';}
   if(tab==='dates'){
-    b=(dated.length?dated.sort((x,y)=>(x.act_by||x.date).localeCompare(y.act_by||y.date)).map(taskCard).join(''):'<p class="muted">אין מועדים פתוחים.</p>')+
+    b=(dated.length?taskList(dated.sort((x,y)=>(x.act_by||x.date).localeCompare(y.act_by||y.date))):'<p class="muted">אין מועדים פתוחים.</p>')+
       (undated.length?'<details class="fold"><summary>'+(undated.length===1?'התחייבות אחת':undated.length+' התחייבויות')+' בלי תאריך</summary><div class="in">'+undated.map(t=>'<div class="hrow"><span>'+esc(t.label)+'</span><small>'+esc(t.clause||'')+'</small></div>').join('')+'</div></details>':'')+
-      (done.length?'<details class="fold"><summary>'+done.length+' סגורות</summary><div class="in">'+done.map(taskCard).join('')+'</div></details>':'')+
+      (done.length?'<details class="fold"><summary>'+done.length+' סגורות</summary><div class="in">'+taskList(done)+'</div></details>':'')+
       '<div><button class="btn soft small" data-newtask="'+id+'">+ משימה להסכם הזה</button></div>';}
   if(tab==='docs'){
     const docRow=(ag,x,sub)=>'<div class="docrow">'+fileIcon(x.path||x.file)+'<div class="x"><b>'+esc(sub||x.file)+'</b><span>'+esc(x.kind)+(x.date?' · '+fmt(x.date):'')+'</span></div><div class="dbtns"><button class="btn primary small" data-read="'+ag.id+'">צפייה</button>'+(x.orig?'<button class="btn soft small" data-dl="'+esc(x.orig)+'" data-fn="'+esc(x.file)+'">הורדה</button>':'')+(docLinks(x.path||'').web?docBtns(x.path):'')+'</div></div>';
@@ -759,7 +1218,7 @@ function _agrDrawer(id,tab){
       (docLinks('x.docx').web||location.protocol==='file:'?'':'<p class="muted" style="font-size:13px;margin:4px 0 0">כדי לפתוח ישירות ב-Word, חברו בהגדרות את כתובת התיקייה בענן. <button class="linkbtn" data-act="settings">להגדרות</button></p>');}
   drawer('<div class="dh"><div class="top"><div><span class="muted" style="font-size:13px">'+esc(a.number)+' · '+esc(ty(a.type).label)+'</span><h2>'+esc(a.title)+'</h2></div><button class="x" data-close aria-label="סגירה">×</button></div>'+
     '<div class="hstat"><span class="pill '+st[0]+'">'+esc(st[1])+(st[0]==='y'&&n?' · עד '+fmt(n.act_by||n.date):'')+'</span>'+(a.parent?'':lifeBar(a))+'</div>'+
-    '<div class="tabs">'+tabs.map(([k,l])=>'<button data-atab="'+k+'" data-id="'+id+'" aria-pressed="'+(k===tab)+'">'+l+'</button>').join('')+'</div></div><div class="db">'+b+'</div>');
+    '<div class="tabs">'+tabs.map(([k,l])=>'<button type="button" class="tab" data-atab="'+k+'" data-id="'+id+'" aria-pressed="'+(k===tab)+'">'+l+'</button>').join('')+'</div></div><div class="db">'+b+'</div>');
 }
 function settingsDrawer(){showD('settings','להגדרות',()=>_settingsDrawer())}
 function _settingsDrawer(){
@@ -787,26 +1246,67 @@ function _personDrawer(ctx){
    '<div style="display:flex;gap:10px"><button class="btn primary" data-act="addperson">הוספה</button><button class="btn soft" data-back>ביטול</button></div></div>');
 }
 
+/* One drawer for a new task and for editing one: title, agreement, target date, owner, status, what to do.
+   A task read from an agreement keeps its agreement; only a task added by hand can be deleted */
+function ntKeep(){const v=id=>{const e=$('#'+id);return e?e.value:null};const l=v('nt-l'),d=v('nt-d'),x=v('nt-x');if(l!=null)NT.l=l;if(d!=null)NT.d=d;if(x!=null)NT.x=x}
 function newTaskDrawer(agr,topic,restore){showD('nt','למשימה החדשה',()=>_nt(agr,topic,restore))}
-function _nt(agr,topic,restore){
-  if(!restore)NT={agr:agr||'',owner:agr?owner(AG[agr]).lawyer:'',l:topic?'פתיחה מחדש של '+topic:'',d:'',x:''};const a=AG[NT.agr];
-  drawer('<div class="dh"><div class="top"><h2>משימה חדשה</h2><button class="x" data-close aria-label="סגירה">×</button></div><div style="height:12px"></div></div><div class="db">'+
+function editTaskDrawer(id){showD('te:'+id,'לעריכת המשימה',()=>_nt(null,null,false,id))}
+function _nt(agr,topic,restore,id){
+  const t=id?allTasks().find(x=>x.id===id):null;if(id&&!t)return;
+  if(!restore)NT=t?{id:t.id,agr:t.agr||'',owner:taskOwner(t),l:t.label||'',d:t.act_by||t.date||'',x:t.action||'',st:status(t),manual:!!t.manual}
+    :{agr:agr||'',owner:agr?owner(AG[agr]).lawyer:'',l:topic?'פתיחה מחדש של '+topic:'',d:'',x:''};
+  const a=AG[NT.agr],fixedAgr=!!(t&&!t.manual);
+  drawer('<div class="dh"><div class="top"><div><span class="muted dk">'+(t?esc((a||{}).cp||'ניהול חוזים'):'ניהול חוזים')+'</span><h2>'+(t?'עריכת משימה':'משימה חדשה')+'</h2></div><button type="button" class="x" data-close aria-label="סגירה">×</button></div><div style="height:12px"></div></div><div class="db">'+
    '<label class="field">נושא המשימה<input id="nt-l" value="'+esc(NT.l||'')+'" placeholder="לדוגמה: קבלת אישור ביטוח מעודכן מהספק"></label>'+
-   '<div class="field">הסכם<button type="button" class="ddb" data-dd="ntagr" aria-haspopup="listbox" aria-expanded="false"><span class="nm">'+(a?esc(a.cp)+' <small>'+esc(a.title)+'</small>':'<span class="muted">בחירת הסכם</span>')+'</span></button></div>'+
-   '<div class="row2"><label class="field">תאריך יעד<input id="nt-d" type="date" lang="he" value="'+esc(NT.d||'')+'"></label>'+
-   '<div class="field">אחראי'+(NT.owner?ownerBtn('ntowner','',NT.owner):'<button type="button" class="ddb" data-dd="ntowner" aria-haspopup="listbox" aria-expanded="false"><span class="nm muted">בחירת אחראי</span></button>')+'</div></div>'+
-   '<label class="field"><span>תיאור <span class="muted" style="font-size:13px;font-weight:400">(רשות)</span></span><textarea id="nt-x" placeholder="פרטים נוספים, הפניה לסעיף, או למי לפנות">'+esc(NT.x||'')+'</textarea></label>'+
-   '<p class="muted" style="font-size:13.5px;margin:0">האחראי יקבל תזכורת ביומן לפי תאריך היעד.</p>'+
-   '<div><button class="btn primary" data-act="addtask">יצירת משימה</button></div></div>');
+   '<div class="field">הסכם'+(fixedAgr?'<div class="ro">'+(a?esc(a.cp)+' <small>'+esc(a.title)+'</small>':'')+'</div>':'<button type="button" class="ddb" data-dd="ntagr" aria-haspopup="listbox" aria-expanded="false"><span class="nm">'+(a?esc(a.cp)+' <small>'+esc(a.title)+'</small>':'<span class="muted">בחירת הסכם</span>')+'</span>'+CHEV+'</button>')+'</div>'+
+   '<div class="row2"><label class="field"><span>תאריך יעד <span class="muted opt">(רשות)</span></span><input id="nt-d" type="date" lang="he" value="'+esc(NT.d||'')+'"></label>'+
+   '<div class="field">אחראי'+(NT.owner?ownerBtn('ntowner','',NT.owner):'<button type="button" class="ddb" data-dd="ntowner" aria-haspopup="listbox" aria-expanded="false"><span class="nm muted">בחירת אחראי</span>'+CHEV+'</button>')+'</div></div>'+
+   (t?'<div class="field">סטטוס'+statusBtn('',NT.st,'ntstatus')+'</div>':'')+
+   '<label class="field"><span>מה לעשות <span class="muted opt">(רשות)</span></span><textarea id="nt-x" placeholder="פרטים נוספים, הפניה לסעיף, או למי לפנות">'+esc(NT.x||'')+'</textarea></label>'+
+   (t?(fixedAgr&&t.date&&NT.d!==t.date?'<p class="muted note">המועד בהסכם: '+fmt(t.date)+'.</p>':''):'<p class="muted note">האחראי יקבל תזכורת ביומן לפי תאריך היעד.</p>')+
+   '<div class="dbtns2"><button type="button" class="btn primary" data-act="'+(t?'savetask':'addtask')+'">'+(t?'לשמור':'יצירת משימה')+'</button><button type="button" class="btn soft" data-back>ביטול</button>'+(t&&t.manual?'<button type="button" class="btn soft danger" data-tdel="'+esc(t.id)+'">למחוק</button>':'')+'</div>'+
+   (fixedAgr?'<p class="muted note">המשימה נוצרה מההסכם. מה שמשנים כאן נשמר אצלכם, וההסכם עצמו לא משתנה.</p>':'')+'</div>');
+}
+function saveTask(){
+  ntKeep();const t=allTasks().find(x=>x.id===NT.id);if(!t)return closeDrawer();
+  const l=(NT.l||'').trim(),d=NT.d||'',x=(NT.x||'').trim();
+  if(!l){toast('חסר נושא למשימה.');$('#nt-l')&&$('#nt-l').focus();return}
+  const at=new Date().toISOString();
+  if(t.manual){
+    if(!NT.agr){toast('חסר הסכם.');return}
+    const nt=Object.assign({},t,{label:l,agr:NT.agr,date:d||null,act_by:d||null,action:x});
+    S.manual=(S.manual||[]).map(m=>m.id===t.id?nt:m);persist();
+    if(DB){try{DB.collection('manual').doc(t.id).set(Object.assign({},nt,{by:S.who,at}))}catch(e){}}
+  }else{
+    const o=D.tasks.find(y=>y.id===t.id)||{},v={};
+    if(l!==(o.label||''))v.label=l;if(x!==(o.action||''))v.action=x;if(d&&d!==(o.act_by||o.date||''))v.act_by=d;
+    const cur=(S.edit[t.id]||{}).value||{};if(JSON.stringify(cur)!==JSON.stringify(v))mark('edit',t.id,v);
+  }
+  if(NT.owner&&NT.owner!==taskOwner(t))mark('owner',t.id,NT.owner);
+  const was=status(t);if(NT.st&&NT.st!==was)mark('status',t.id,NT.st);
+  render();if(DSTACK.length)goBack();else closeDrawer();
+  toast(NT.st!==was&&['הושלם','בוטל'].includes(NT.st)?'המשימה עודכנה ועברה ל"סגורות".':'המשימה עודכנה.');
+}
+function delTask(id){
+  const t=(S.manual||[]).find(x=>x.id===id);if(!t)return;
+  S.manual=S.manual.filter(x=>x.id!==id);delete S.status[id];delete S.owner[id];persist();
+  if(DB){try{DB.collection('manual').doc(id).delete()}catch(e){}}
+  render();if(DSTACK.length)goBack();else closeDrawer();toast('המשימה נמחקה.');
 }
 
 
 /* ---------- Render and events ---------- */
 function render(){
+  if(S.view==='tasks'&&S.tview==='tl'){S.view='timeline';S.tview='list'}
+  if(EMBED&&S.view==='nego')S.view='overview';
   $('#co').textContent=D.meta.company;
-  $('#nav').innerHTML=navHtml();
+  $('#psub').textContent=headSub();
+  $('#pacts').innerHTML=headActs();
+  $('#nav').innerHTML=EMPTY?'':navHtml();$('#nav').hidden=EMPTY;
+  /* on a narrow screen the tab row scrolls: keep the open tab in view */
+  try{const nv=$('#nav'),on=nv.querySelector('[aria-pressed=true]');if(on&&nv.scrollWidth>nv.clientWidth){const r=on.getBoundingClientRect(),b=nv.getBoundingClientRect();if(r.left<b.left||r.right>b.right)nv.scrollLeft+=r.left<b.left?r.left-b.left-16:r.right-b.right+16}}catch(e){}
   $('#foot').innerHTML='<span>'+(D.meta.built?'עודכן '+fmt(D.meta.built)+' · ':'')+nn(D.meta.files||0,'קובץ אחד','קבצים')+'</span><span>'+(DB?'נשמר לכל הצוות':'נשמר בדפדפן הזה')+'</span>';
-  const V={overview:vOverview,agreements:vAgreements,nego:vNego,cps:vCps,tasks:vTasks,policy:vPolicy,approve:vApprove}[S.view]||vOverview;
+  const V={overview:vOverview,agreements:vAgreements,nego:vNego,cps:vCps,timeline:vTimeline,tasks:vTasks,policy:vPolicy,approve:vApprove}[S.view]||vOverview;
   $('#view').innerHTML=EMPTY?'<section class="hero" id="empty"><span class="eb">ניהול חוזים</span><h1>עוד אין הסכמים במאגר.</h1><p class="lead">Areo קוראת את ההסכמים החתומים שבתיקייה, ובונה מהם לוח אחד: מועדים, חידושים, אחראים ומשימות.</p><p><button class="btn primary" data-act="clmbuild">לבנות את המאגר</button></p></section>':V();
 }
 document.addEventListener('click',e=>{
@@ -824,6 +1324,9 @@ document.addEventListener('click',e=>{
   if($('#pop')&&!e.target.closest('#pop'))closePop();
   const sg=e.target.closest('[data-seg]');if(sg){S.abucket=sg.dataset.seg;S.af='all';S.view='agreements';persist();render();scrollTo(0,0);return}
   const ab=e.target.closest('[data-abucket]');if(ab){S.abucket='';persist();render();return}
+  const te=e.target.closest('[data-tedit]');if(te){editTaskDrawer(te.dataset.tedit);return}
+  /* deleting a task added by hand: a second press confirms */
+  const tdl=e.target.closest('[data-tdel]');if(tdl){if(tdl.dataset.sure){delTask(tdl.dataset.tdel)}else{tdl.dataset.sure='1';tdl.textContent='למחוק? ללחוץ שוב';setTimeout(()=>{if(tdl.isConnected){delete tdl.dataset.sure;tdl.textContent='למחוק'}},4000)}return}
   const t=e.target.closest('[data-go],[data-aflag],[data-cp],[data-nego],[data-agr],[data-task],[data-af],[data-mine],[data-tv],[data-prule],[data-dec],[data-undo],[data-atab],[data-close],[data-act],[data-ics],[data-newtask]');if(!t)return;
   const ds=t.dataset;
   if('close' in ds){closeDrawer();return}
@@ -831,7 +1334,7 @@ document.addEventListener('click',e=>{
   if(ds.newtask!==undefined){newTaskDrawer(ds.newtask,ds.topic);return}
   if(ds.agr){agrDrawer(ds.agr);return}
   if(ds.atab){agrDrawer(ds.id,ds.atab);return}
-  if(ds.task){S.view='tasks';S.tview='list';persist();render();const el=$('#t-'+ds.task);if(el){el.scrollIntoView({block:'center'});el.style.outline='2px solid var(--aurora)';setTimeout(()=>el.style.outline='',1600)}return}
+  if(ds.task){S.view='tasks';S.tview='list';S.tq='';S.mine=false;persist();render();const el=$('#t-'+ds.task);if(el){const g=el.closest('details');if(g)g.open=true;el.scrollIntoView({block:'center'});el.style.outline='2px solid var(--aurora)';setTimeout(()=>el.style.outline='',1600)}return}
   if(ds.af){S.af=ds.af;render();return}
   if(ds.aflag){S.aflag=S.aflag===ds.aflag?'':ds.aflag;render();return}
   if(ds.cp){cpDrawer(ds.cp);return}
@@ -873,14 +1376,17 @@ document.addEventListener('click',e=>{
      '<div style="display:flex;gap:10px"><button class="btn primary" data-act="clmbuild">לעדכן את המאגר</button><button class="btn soft" data-close>סגירה</button></div></div>')}
   else if(act==='clmbuild'){let ok=false;try{ok=!!(window.parent&&window.parent!==window&&window.parent.__areoAsk&&window.parent.__areoAsk({label:'ניהול חוזים: לעדכן את המאגר',kind:'areo_clm_request',action:EMPTY?'build':'update'}))}catch(e){}
     toast(ok?'Areo מעדכנת את המאגר. הלוח יתעדכן כשהיא תסיים.':'כדי לעדכן את המאגר, כתבו ל-Areo: ניהול חוזים')}
-  else if(act==='timeline'){S.view='tasks';S.tview='tl';persist();render()}
+  else if(act==='timeline'){S.view='timeline';persist();closeDrawer();render();scrollTo(0,0)}
+  else if(act==='savetask')saveTask();
   else if(act==='ready'){let ok=false;try{ok=!!(window.parent&&window.parent!==window&&window.parent.__areoBuildPlaybook&&window.parent.__areoBuildPlaybook())}catch(e){}if(!ok)toast('לבניית פלייבוק: לשונית מדיניות, "לבנות פלייבוק"')}
 });
 document.addEventListener('change',e=>{
   const t=e.target;
 });
+/* the folded task groups remember whether they are open */
+document.addEventListener('toggle',e=>{const g=e.target;if(g&&g.dataset&&g.dataset.tg)TOPEN[g.dataset.tg]=g.open},true);
 document.addEventListener('input',e=>{
-  if(e.target.id==='q'){S.q=e.target.value;const pos=e.target.selectionStart;if(S.view==='overview')S.view='agreements';render();const i=$('#q');i.focus();i.setSelectionRange(pos,pos)}
+  if(e.target.id==='q'||e.target.id==='tq'){const id=e.target.id;S[id]=e.target.value;const pos=e.target.selectionStart;if(S.view==='overview')S.view='agreements';render();const i=$('#'+id);if(i){i.focus();try{i.setSelectionRange(pos,pos)}catch(x){}}}
   if(e.target.id==='who'){S.who=e.target.value;persist()}
   if(e.target.dataset&&e.target.dataset.docbase!==undefined){S.docBase=e.target.value.trim();clearTimeout(saveTeam.h);saveTeam.h=setTimeout(saveTeam,500)}
   if(e.target.dataset&&e.target.dataset.email!==undefined){S.emails[e.target.dataset.email]=e.target.value.trim();clearTimeout(saveTeam.h);saveTeam.h=setTimeout(saveTeam,500)}
@@ -897,5 +1403,8 @@ document.addEventListener('keydown',e=>{
 window.addEventListener('scroll',e=>{const t=e.target;if(t&&t.closest&&t.closest('#pop'))return;closePop()},true);window.addEventListener('resize',()=>closePop());
 try{const th=localStorage.getItem('areo_theme');if(th)document.documentElement.dataset.theme=th}catch(e){}
 render();
+/* for the system's overview ("המשימות שלך"): the same task store, the same records with name and time */
+window.__areoTaskStatus=function(id,st){try{if(!allTasks().some(t=>t.id===id))return false;mark('status',id,st||'הושלם');render();return true}catch(e){return false}};
+window.__areoOpenTask=function(id){try{S.view='tasks';persist();render();if(id)editTaskDrawer(id);else newTaskDrawer('');return true}catch(e){return false}};
 </script>
 </body></html>

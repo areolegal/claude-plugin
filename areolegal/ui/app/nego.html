@@ -22,7 +22,7 @@
 </style></head><body><title>Areo משא ומתן</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700&family=Assistant:wght@400;500;600;700&family=Poppins:wght@400;700&family=Frank+Ruhl+Libre:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Noto+Sans+Hebrew:wght@400;500;600;700&family=David+Libre:wght@400;500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 /* Areo family. Home = the deals; a deal = one working screen: queue of changes, the agreement on paper, one focused panel */
@@ -458,6 +458,358 @@ textarea:focus{outline:none;border-color:var(--aurora)}
   main{padding:14px max(16px,env(safe-area-inset-right,0px)) 50px max(16px,env(safe-area-inset-left,0px))}
   .dcards{grid-template-columns:1fr}
 }
+/* ===== mono: the Areo look (light monochrome, Areo green only where Areo speaks or a decision matches the policy). The shell sets data-look="mono" ===== */
+html[data-look="mono"]:root{
+  --bg:#FAFAFA;--panel:#FFFFFF;--sub:#F3F3F3;--hover:#F7F7F7;--line:#EBEBEB;--line2:#DCDCDC;--line3:#E6E6E6;
+  --ink:#171717;--ink2:#4D4D4D;--ink3:#8F8F8F;--g:#0B8C66;--gs:#EAF5F0;--gs2:#F2F8F5;--gs3:#EDF6F2;--gsh:#DFF0E8;--gb:#CFE7DC;--gb2:#A9D6C2;--gt:#0A6E50;--gt2:#3D5C50;
+  --amber:#D98A1C;--at:#8A4B05;--ats:#FDF8EE;--atb:#F0D9AE;--atp:#FDF1E1;--red:#C8242F;--rt:#A01D27;--rs:#FCF1F2;--mark:#FFF1A8;--mid:#C9C9C9;--mid2:#D6D6D6;--hover2:#EDEDED;--inkh:#2E2E2E;--onink:#FFFFFF;
+  --r1:6px;--r2:4px;--r3:3px;
+  --ui:'Google Sans','Noto Sans Hebrew',system-ui,sans-serif;--doc:'David Libre','Noto Serif Hebrew',David,serif;
+  /* the screen's own names, on the same values */
+  --night:var(--bg);--raised:var(--sub);--line-strong:var(--line2);--mist:var(--ink2);--faint:var(--ink3);
+  --aurora:var(--g);--aurora-ink:var(--onink);--aurora-soft:var(--gs);--g-soft:var(--gs);--y:var(--amber);--y-soft:var(--atp);--r:var(--red);--r-soft:var(--rs);
+  --legal:var(--ink);--legal-soft:var(--sub);--desk:var(--hover2);--canvas:var(--hover2);--paper:var(--panel);--paper-ink:var(--ink);--paper-mist:var(--ink3);--paper-line:var(--line);
+  --ins:var(--g);--ins-bg:transparent;--del:var(--red);--rev:var(--red);--sel:var(--gs3);
+  --display:var(--ui);--body:var(--ui);--legaltype:var(--doc);
+  color-scheme:light}
+html[data-look="mono"][data-theme="dark"]:root{
+  --bg:#111214;--panel:#1A1B1E;--sub:#25262A;--hover:#212226;--line:#2C2D31;--line2:#3B3C41;--line3:#34353A;
+  --ink:#ECECEC;--ink2:#B9B9B9;--ink3:#8B8B8B;--g:#2FB98A;--gs:#15291F;--gs2:#13231D;--gs3:#173027;--gsh:#1C3B30;--gb:#21503F;--gb2:#2E6E57;--gt:#5AD3A8;--gt2:#A9CFC1;
+  --amber:#E2A042;--at:#EDB565;--ats:#2A2215;--atb:#4A3A1E;--atp:#3A2A12;--red:#E5555E;--rt:#F08A91;--rs:#2B1719;--mark:#5C4A00;--mid:#4A4B50;--mid2:#45464B;--hover2:#2A2B2F;--inkh:#D4D4D4;--onink:#111214;
+  color-scheme:dark}
+html[data-look="mono"] body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+html[data-look="mono"] :is(h1,h2,h3){font-family:var(--ui);font-weight:500}
+html[data-look="mono"] :focus-visible{outline:2px solid var(--g);outline-offset:2px}
+html[data-look="mono"] .num,html[data-look="mono"] .ptext,html[data-look="mono"] .statusbar{font-variant-numeric:tabular-nums}
+
+/* no sub-sidebar: the shell holds the main menu; this screen's places sit at the top of the page (home = all the deals, the drop strip = a draft you received) */
+html[data-look="mono"] body .app{display:block!important;grid-template-columns:minmax(0,1fr)!important}
+html[data-look="mono"] body .app>aside{display:none!important}
+html[data-look="mono"] main{padding:28px 32px 72px;padding-left:max(32px,env(safe-area-inset-left,0px));min-width:0}
+html[data-look="mono"] body[data-view="deal"] main{padding:18px 24px 24px;padding-left:max(24px,env(safe-area-inset-left,0px))}
+html[data-look="mono"] .col{max-width:1240px;gap:20px}
+
+/* buttons, links, chips, pills */
+html[data-look="mono"] .btn{height:32px;padding:0 12px;border-radius:var(--r2);border:1px solid var(--line2);background:var(--panel);color:var(--ink);font-size:13px;font-weight:500;gap:7px;filter:none}
+html[data-look="mono"] .btn:hover{background:var(--hover);border-color:var(--line2);filter:none}
+html[data-look="mono"] .btn svg{width:14px;height:14px}
+html[data-look="mono"] :is(.btn.primary,.btn.legal){background:var(--ink);border-color:var(--ink);color:var(--onink)}
+html[data-look="mono"] :is(.btn.primary,.btn.legal):hover{background:var(--inkh);border-color:var(--inkh)}
+html[data-look="mono"] .btn.soft{background:var(--panel);border-color:var(--line2);color:var(--ink)}
+html[data-look="mono"] .btn.ghost{background:transparent;border-color:transparent;color:var(--ink2)}
+html[data-look="mono"] .btn.ghost:hover{background:var(--sub);color:var(--ink)}
+html[data-look="mono"] .btn.small{height:28px;padding:0 10px;font-size:12.5px}
+html[data-look="mono"] .btn.big{height:38px;padding:0 14px;font-size:13.5px;border-radius:var(--r2);justify-content:center}
+html[data-look="mono"] .btn:disabled{opacity:.45;cursor:default}
+html[data-look="mono"] .btn.primary:disabled:hover{background:var(--ink)}
+html[data-look="mono"] .linkbtn{color:var(--ink2);font-size:12.5px;font-weight:400;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:3px}
+html[data-look="mono"] .linkbtn:hover{color:var(--ink);text-decoration-color:var(--ink)}
+html[data-look="mono"] .iconbtn{width:32px;min-width:32px;height:32px;padding:0;border:1px solid var(--line2);border-radius:var(--r2);background:var(--panel);color:var(--ink2);font-size:13px}
+html[data-look="mono"] .iconbtn:hover{color:var(--ink);background:var(--hover)}
+html[data-look="mono"] .iconbtn svg{width:15px;height:15px}
+html[data-look="mono"] .chip{height:28px;padding:0 11px;border-radius:var(--r2);border:1px solid var(--line);background:var(--panel);font-size:12.5px;color:var(--ink2);display:inline-flex;align-items:center}
+html[data-look="mono"] .chip:hover{border-color:var(--line2);color:var(--ink)}
+html[data-look="mono"] .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--onink);font-weight:500}
+html[data-look="mono"] .pill{background:none;border:0;padding:0;border-radius:0;font-size:12px;font-weight:400;color:var(--ink2);gap:6px;line-height:1.5}
+html[data-look="mono"] .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--dot,var(--ink3));flex:none}
+html[data-look="mono"] :is(.pill.g,.pill.a){--dot:var(--g)}html[data-look="mono"] .pill.y{--dot:var(--amber)}html[data-look="mono"] .pill.r{--dot:var(--red);color:var(--red)}html[data-look="mono"] .pill.n{--dot:var(--mid)}html[data-look="mono"] .pill.w{--dot:var(--ink)}html[data-look="mono"] .pill.f{--dot:var(--ink2);border:0}
+html[data-look="mono"] .dcard .chips .pill{font-size:11.5px;padding:2px 8px;border-radius:var(--r3);background:var(--sub);color:var(--ink2)}
+html[data-look="mono"] .dcard .chips .pill::before{display:none}
+html[data-look="mono"] .dcard .chips .pill.y{background:var(--atp);color:var(--at)}
+html[data-look="mono"] .muted{color:var(--ink2)}html[data-look="mono"] .faint{color:var(--ink3)}
+html[data-look="mono"] .lead{color:var(--ink2);font-size:13.5px;margin-top:4px}
+html[data-look="mono"] .empty{border:1px solid var(--line);border-radius:var(--r1);background:var(--panel);padding:24px 16px;text-align:center;color:var(--ink3);font-size:13px}
+html[data-look="mono"] .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r1);box-shadow:0 1px 2px rgba(0,0,0,.025);padding:16px}
+html[data-look="mono"] .card h2{font-size:16px}html[data-look="mono"] .card h3{font-size:14.5px}
+html[data-look="mono"] .cardh small{color:var(--ink3);font-size:12.5px}
+html[data-look="mono"] :is(.dot){width:8px;height:8px}html[data-look="mono"] .dot.g{background:var(--g)}html[data-look="mono"] .dot.y{background:var(--amber)}html[data-look="mono"] .dot.r{background:var(--red)}
+html[data-look="mono"] .note{background:var(--sub);border-radius:var(--r2);color:var(--ink2);font-size:13px}
+html[data-look="mono"] .note a{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+html[data-look="mono"] #toast{background:var(--ink);color:var(--onink);border-radius:var(--r2);font-size:13.5px;font-weight:400;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(0,0,0,.18);max-width:calc(100% - 32px)}
+html[data-look="mono"] #toast::before{content:"";width:6px;height:6px;border-radius:50%;background:#3FD3A0;flex:none}
+html[data-look="mono"] .segtip{background:var(--ink);color:var(--onink);border-radius:var(--r2);font-weight:400;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+
+/* home: the header, what now, the drop strip, the two columns, the signed agreements */
+html[data-look="mono"] .homehead{align-items:flex-end;border:0;padding:0;background:none}
+html[data-look="mono"] .homehead h1{font-size:26px;font-weight:500;line-height:1.2;letter-spacing:0}
+html[data-look="mono"] .col:has(>.homehead)::before{display:none!important;content:none!important}
+html[data-look="mono"] .hero{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;padding:20px 22px;background:var(--gs);border:1px solid var(--gb);border-radius:var(--r1);color:var(--ink)}
+html[data-look="mono"] .hero>div:first-child{display:flex;flex-direction:column;gap:6px;max-width:66ch;min-width:0}
+html[data-look="mono"] .hero .k{font-size:12px;color:var(--gt);font-weight:500;display:flex;align-items:center;gap:7px}
+html[data-look="mono"] .hero .k::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--g)}
+html[data-look="mono"] .hero h2{font-size:20px;line-height:1.35;text-wrap:balance}
+html[data-look="mono"] .hero p{font-size:13.5px;color:var(--gt2);line-height:1.6}
+html[data-look="mono"] .hero .btn{border-color:var(--gb)}
+html[data-look="mono"] .hero .btn.primary{border-color:var(--ink)}
+html[data-look="mono"] .row-acts{display:flex;gap:8px;flex-wrap:wrap}
+html[data-look="mono"] .dropstrip{gap:14px;padding:14px 16px;border:1px dashed var(--line2);border-radius:var(--r1);background:var(--panel)}
+html[data-look="mono"] .dropstrip:hover,html[data-look="mono"] .dropstrip.over{border-color:var(--ink3);background:var(--panel)}
+html[data-look="mono"] .dropstrip .ic{width:34px;height:34px;border-radius:var(--r2);background:var(--sub);color:var(--ink)}
+html[data-look="mono"] .dropstrip .ic svg{width:17px;height:17px}
+html[data-look="mono"] .dropstrip b{font-family:var(--ui);font-size:14px;font-weight:500}
+html[data-look="mono"] .dropstrip .t span{font-size:12.5px;color:var(--ink3)}
+html[data-look="mono"][data-drag="on"] #dropstrip{position:fixed;inset:16px;z-index:60;width:auto;flex-direction:column;justify-content:center;text-align:center;border:1px dashed var(--ink3);background:var(--panel);font-size:16px;box-shadow:0 20px 60px rgba(0,0,0,.12)}
+html[data-look="mono"] .board{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+html[data-look="mono"] .board .dcards{grid-template-columns:minmax(0,1fr)}
+@media (max-width:999px){html[data-look="mono"] .board{grid-template-columns:minmax(0,1fr)}}
+html[data-look="mono"] .group{gap:10px}
+html[data-look="mono"] .grouph{gap:8px}
+html[data-look="mono"] .grouph h2{font-size:16px}
+html[data-look="mono"] .grouph .faint{font-size:13px!important;color:var(--ink3)}
+html[data-look="mono"] .sdot{width:6px;height:6px;background:var(--ink3)}
+html[data-look="mono"] .sdot.turn{background:var(--amber)}html[data-look="mono"] .sdot.wait{background:var(--mid)}html[data-look="mono"] .sdot.signed{background:var(--g)}
+html[data-look="mono"] .dcards{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+html[data-look="mono"] .dcard{display:flex;flex-direction:column;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r1);padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.025);transition:border-color .15s,box-shadow .15s}
+html[data-look="mono"] .dcard:hover{border-color:var(--line2);box-shadow:0 4px 14px rgba(0,0,0,.05)}
+html[data-look="mono"] .dcard h3{font-size:16px}
+html[data-look="mono"] .dcard .sub{font-size:12.5px;color:var(--ink3);margin-top:1px}
+html[data-look="mono"] .dcard .when{font-size:12.5px;min-height:18px;margin-top:0}
+html[data-look="mono"] .dcard .state{font-size:13.5px;font-weight:500}
+html[data-look="mono"] .duet{font-size:12.5px;color:var(--ink3);font-weight:400}
+html[data-look="mono"] .duet.soon{color:var(--at);font-weight:500}html[data-look="mono"] .duet.late{color:var(--red);font-weight:500}
+html[data-look="mono"] .meter{gap:3px;height:6px}
+html[data-look="mono"] .meter i{border-radius:1px;background:var(--sub);box-shadow:inset 0 0 0 1px var(--line2);opacity:1}
+html[data-look="mono"] :is(.meter i.ok,.meter i.th,.meter i.w){background:var(--ink);box-shadow:none;opacity:1}
+html[data-look="mono"] .meter i.y{background:var(--amber);box-shadow:none}
+html[data-look="mono"] .tblwrap{overflow-x:auto}
+html[data-look="mono"] table{font-size:13.5px}
+html[data-look="mono"] th{font-weight:500;color:var(--ink3);font-size:12px;padding:9px 16px;border-bottom:1px solid var(--line)}
+html[data-look="mono"] td{padding:11px 16px;border-bottom:1px solid var(--line)}
+html[data-look="mono"] td b{font-weight:500}
+html[data-look="mono"] tr.click:hover td{background:var(--hover)}
+html[data-look="mono"] .group>.card:has(table){padding:0}
+html[data-look="mono"] .banner{gap:12px;padding:10px 14px;border-radius:var(--r2);border:1px solid var(--atb);background:var(--ats);font-size:13.5px}
+html[data-look="mono"] .banner b{font-weight:500}
+html[data-look="mono"] .banner.sent{border-color:var(--line);background:var(--panel)}
+html[data-look="mono"] .banner.ok{border-color:var(--gb);background:var(--gs)}
+html[data-look="mono"] .banner .muted{color:var(--ink3)}
+
+/* a deal: the bar, the agreement as in Word, the list of changes */
+html[data-look="mono"] .dbar{background:var(--bg);gap:12px;padding-block:0 12px;margin-top:0}
+html[data-look="mono"] .dbar.stuck{box-shadow:none}
+html[data-look="mono"] .dname h1{font-size:20px;line-height:1.2}
+html[data-look="mono"] .dname span{font-size:12.5px;color:var(--ink3)}
+html[data-look="mono"] .dbar .dact{gap:6px}
+html[data-look="mono"] .rchip{height:26px;padding:0 10px;border:1px solid var(--line);border-radius:var(--r3);background:var(--panel);font-size:12px;color:var(--ink2)}
+html[data-look="mono"] .rchip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--onink);font-weight:500}
+html[data-look="mono"] .banners{margin:0 0 12px}
+html[data-look="mono"] .wbgrid{grid-template-columns:minmax(0,1fr) 384px;gap:14px;margin-top:0}
+@media (max-width:1240px){html[data-look="mono"] .wbgrid{grid-template-columns:minmax(0,1fr) 340px}}
+html[data-look="mono"] .word{border:1px solid var(--line);border-radius:var(--r1);background:var(--panel);overflow:hidden}
+html[data-look="mono"] .ribbon{position:static;gap:2px;padding:5px 8px;border-bottom:1px solid var(--line);background:var(--panel);border-radius:0;box-shadow:none}
+html[data-look="mono"] .rtab{font-size:12px;font-weight:600;color:var(--ink);padding:5px 8px;border-bottom:2px solid var(--ink)}
+html[data-look="mono"] .rgroup{gap:1px;padding-inline:5px;border-inline-start:1px solid var(--line)}
+html[data-look="mono"] .ribbon button{height:28px;padding:0 8px;border:0;border-radius:var(--r3);font-size:12.5px;color:var(--ink)}
+html[data-look="mono"] .ribbon button:hover:not(:disabled){background:var(--sub);border-color:transparent}
+html[data-look="mono"] .ribbon button:disabled{color:var(--ink3);opacity:.55}
+html[data-look="mono"] .ribbon button svg{width:14px;height:14px}
+html[data-look="mono"] .ribbon .acc-btn svg{color:var(--g)}
+html[data-look="mono"] .trk{font-size:12px;color:var(--ink2)}
+html[data-look="mono"] .trk i{width:7px;height:7px;background:var(--g)}
+html[data-look="mono"] .menu{top:32px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r2);box-shadow:0 8px 24px rgba(0,0,0,.1);min-width:170px;padding:4px}
+html[data-look="mono"] .menu button{border-radius:var(--r3);font-size:12.5px;padding:6px 10px}
+html[data-look="mono"] .menu button:hover{background:var(--sub)}
+html[data-look="mono"] .menu button[aria-checked="true"]{color:var(--ink);font-weight:500}
+html[data-look="mono"] .menu button[aria-checked="true"]::after{content:"✓";margin-inline-start:8px;color:var(--g)}
+html[data-look="mono"] .canvas{background:var(--hover2);padding:28px 24px}
+html[data-look="mono"] .page{background:var(--panel);color:var(--ink);font-family:var(--doc);font-size:16px;line-height:1.8;box-shadow:0 1px 3px rgba(0,0,0,.08),0 0 0 1px rgba(0,0,0,.04)}
+html[data-look="mono"] .page.withmk{background:linear-gradient(to left,var(--panel) calc(100% - 236px),var(--hover2) calc(100% - 236px))}
+/* no room for the comment column: the comments show as marks in the text, the page is plain */
+@media (max-width:1100px){html[data-look="mono"] .page.withmk{background:var(--panel)}}
+@container (max-width:880px){html[data-look="mono"] .page.withmk{background:var(--panel)}}
+html[data-look="mono"] .page .pp{border-radius:2px}
+html[data-look="mono"] .page .pp[data-d]:hover{background:var(--hover)}
+/* the change being worked on: a light green tint and a thin green line at its start, here and in the list */
+html[data-look="mono"] .page .pp.on,html[data-look="mono"] .page .pp.on:hover,html[data-look="mono"] .docxcanvas p.docxsel{background:var(--gs3);box-shadow:inset -3px 0 0 var(--g);border-radius:0}
+html[data-look="mono"] .page .pp.chg::before{background:var(--ink2);width:2px}
+html[data-look="mono"] .page.simple .pp.chg::before{background:var(--red)}
+html[data-look="mono"] .page ins{color:var(--g);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px;background:none}
+html[data-look="mono"] .page del{color:var(--red);text-decoration-color:var(--red)}
+html[data-look="mono"] .page .cm{background:none;color:var(--ink3);width:auto;height:auto}
+html[data-look="mono"] .page .cm svg{width:13px;height:13px}
+html[data-look="mono"] .page.docfmt :is(.pp,table.dtbl){font-family:var(--doc)}
+html[data-look="mono"] .page.docfmt table.dtbl td{border-color:var(--ink2)}
+html[data-look="mono"] .bal{background:var(--panel);border:1px solid var(--line3);border-inline-start:3px solid var(--g);border-radius:var(--r3);padding:8px 10px;font-family:var(--ui);font-size:12.5px;line-height:1.55;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.04)}
+html[data-look="mono"] .bal:hover{border-color:var(--line2);border-inline-start-color:var(--g)}
+html[data-look="mono"] .bal.on{border-color:var(--mid);border-inline-start-color:var(--ink);box-shadow:0 3px 10px rgba(0,0,0,.08)}
+html[data-look="mono"] .bh .av{background:var(--ink);color:var(--onink);font-size:9.5px;font-weight:600}
+html[data-look="mono"] .bh b{font-weight:500;font-size:12px}
+html[data-look="mono"] .bh small{color:var(--ink3);font-size:11px}
+html[data-look="mono"] .bal .res{color:var(--g);font-weight:500}
+html[data-look="mono"] .bal .int{color:var(--at);background:var(--ats)}
+html[data-look="mono"] .hov{top:-15px;gap:1px;background:var(--panel);border:1px solid var(--line2);border-radius:var(--r3);padding:2px;box-shadow:0 2px 6px rgba(0,0,0,.08);font-family:var(--ui)}
+html[data-look="mono"][data-app] .hov button,html[data-look="mono"] .hov button{width:auto!important;min-width:26px;height:22px;padding:0 6px!important;border:0;background:none;border-radius:2px;display:inline-flex;align-items:center;justify-content:center;font-size:12px!important;font-weight:500;color:var(--ink2);white-space:nowrap;box-shadow:none;gap:0}
+html[data-look="mono"][data-app] .hov button::after{content:none!important}
+html[data-look="mono"] .hov button:first-child{background:none;border:0;color:var(--ink2)}
+html[data-look="mono"] .hov button:hover{background:var(--sub);color:var(--ink)}
+html[data-look="mono"] .hov button span{max-width:0;overflow:hidden;transition:max-width .15s,margin .15s}
+html[data-look="mono"] .hov button:hover span,html[data-look="mono"] .hov button:focus-visible span{max-width:90px;margin-inline-start:5px}
+html[data-look="mono"] .hov svg{width:14px;height:14px;flex:none}
+html[data-look="mono"] .hov .ours svg{color:var(--g)}html[data-look="mono"] .hov .ours:hover{color:var(--g)}
+html[data-look="mono"] .statusbar{gap:16px;padding:5px 12px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink3);background:var(--panel);border-radius:0}
+html[data-look="mono"] .statusbar span:first-child{color:var(--ink2)}
+html[data-look="mono"] .docxwait{color:var(--ink3);font-family:var(--ui)}
+html[data-look="mono"] .side,html[data-look="mono"] .wbgrid>aside.side.side{background:var(--panel);border:1px solid var(--line);border-radius:var(--r1);box-shadow:none}
+/* wide screens: the agreement and the list are two panels of the screen's height, each scrolling inside itself */
+@media (min-width:981px){
+  html[data-look="mono"] .wbgrid .word,html[data-look="mono"] .wbgrid>aside.side.side{height:calc(100vh - var(--dbar-h,60px) - 60px);min-height:480px;max-height:none;position:relative;top:auto;overflow:hidden;display:flex;flex-direction:column}
+  html[data-look="mono"] .wbgrid .canvas{flex:1;overflow:auto}
+  html[data-look="mono"] .wbgrid .side .items{flex:1;overflow-y:auto;min-height:0}
+  html[data-look="mono"] .wbgrid .side .items::after{content:"";display:block;height:calc(100% - 120px)}
+}
+html[data-look="mono"] .sh{position:static;padding:14px 14px 12px;gap:10px;border-bottom:1px solid var(--line);background:var(--panel)}
+html[data-look="mono"] .sht b{font-weight:500;font-size:14px}
+html[data-look="mono"] .sht .chip{height:26px;padding:0 9px;font-size:12px}
+html[data-look="mono"] .psegs{height:auto;gap:3px}
+html[data-look="mono"] .psegs button,html[data-look="mono"] .psegs button:hover{height:8px;border-radius:1px;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line2);opacity:1;transition:none}
+html[data-look="mono"] .psegs button.ok{background:var(--ink);box-shadow:none}
+html[data-look="mono"] .psegs button.th,html[data-look="mono"] .psegs button.th.on{background:var(--mid);box-shadow:none;opacity:1}
+html[data-look="mono"] .psegs button.y{background:var(--amber);box-shadow:none}
+html[data-look="mono"] .psegs button.on,html[data-look="mono"] .psegs button.on:not(.ok):not(.y):not(.th){height:8px;outline:2px solid var(--ink);outline-offset:2px}
+html[data-look="mono"] .psegs button.on:not(.ok):not(.y):not(.th){background:var(--panel)}
+html[data-look="mono"] .qline{display:flex;align-items:center;gap:7px;width:100%;text-align:start;font-size:12.5px;color:var(--at);padding:2px 0;cursor:pointer;background:none;border:0}
+html[data-look="mono"] .qline::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--amber);flex:none}
+html[data-look="mono"] .qline:hover{text-decoration:underline}
+html[data-look="mono"] .qdone{flex-direction:row;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 11px;border:0;border-radius:var(--r2);background:var(--gs);font-size:13px}
+html[data-look="mono"] .items{padding:0}
+html[data-look="mono"] .item{border-radius:0;border-bottom:1px solid var(--line)}
+html[data-look="mono"] .item.on{background:var(--gs3);box-shadow:inset -3px 0 0 var(--g);margin:0}
+html[data-look="mono"] .ihd{grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 14px;border-radius:0}
+html[data-look="mono"] .item:not(.on) .ihd:hover{background:var(--hover)}
+html[data-look="mono"] .item.on .ihd:hover{background:var(--gsh)}
+html[data-look="mono"] .ihd .n{width:22px;height:22px;border-radius:50%;border:1px solid var(--line2);background:var(--panel);display:grid;place-items:center;font-family:var(--ui);font-size:11.5px;font-weight:400;line-height:1;color:var(--ink2);font-variant-numeric:tabular-nums}
+html[data-look="mono"] :is(.item.s-ok,.item.s-th,.item.done) .ihd .n{background:var(--ink);border-color:var(--ink);color:var(--onink)}
+html[data-look="mono"] .item.s-y .ihd .n{border-color:var(--amber);color:var(--at)}
+html[data-look="mono"] .item.on .ihd .n{box-shadow:0 0 0 2px var(--gs3),0 0 0 3px var(--g)}
+html[data-look="mono"] .ihd b{font-weight:500;font-size:13.5px}
+html[data-look="mono"] .ihd .tt span{font-size:12px;color:var(--ink3)}
+html[data-look="mono"] .st,html[data-look="mono"] .ihd .st{font-size:11px;font-weight:400;padding:2px 7px;border-radius:var(--r3);background:var(--sub);color:var(--ink2);line-height:1.4;margin-top:0}
+html[data-look="mono"] .st.y{background:var(--atp);color:var(--at)}html[data-look="mono"] .st.th{background:var(--sub);color:var(--ink2)}html[data-look="mono"] .st.f{background:var(--panel);border:0;box-shadow:inset 0 0 0 1px var(--line2);color:var(--ink2)}html[data-look="mono"] .st.w{background:var(--sub);color:var(--ink)}
+html[data-look="mono"] .ibd{padding-block:2px 14px;padding-inline:48px 14px;gap:10px}
+@media (max-width:860px){html[data-look="mono"] .ibd{padding-inline:14px}}
+html[data-look="mono"] .ibd .why,html[data-look="mono"] .why{font-size:13.5px;line-height:1.65}
+html[data-look="mono"] .why .sm{font-size:12.5px;color:var(--ink3)}
+html[data-look="mono"] .flag{gap:8px;font-size:12.5px;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r2);background:var(--bg);line-height:1.55}
+html[data-look="mono"] .flag b{font-weight:500}
+html[data-look="mono"] .flag svg{color:var(--ink2);width:15px;height:15px}
+html[data-look="mono"] .ask{border:1px solid var(--atb);background:var(--ats);border-radius:var(--r2);padding:10px 12px;gap:6px;font-size:13px;line-height:1.55}
+html[data-look="mono"] .ask b{color:var(--ink);font-weight:500}
+html[data-look="mono"] .decide-row{gap:6px}
+html[data-look="mono"] .decide-row .alt{gap:6px}
+html[data-look="mono"] .decide-row .alt .btn{justify-content:center}
+html[data-look="mono"] .decided{gap:10px;padding:8px 10px;border-radius:var(--r2);background:var(--sub);color:var(--ink);font-weight:400;font-size:12.5px;flex-wrap:wrap}
+html[data-look="mono"] .decided.th{background:var(--sub);color:var(--ink)}
+html[data-look="mono"] .decided svg{width:13px;height:13px;color:var(--ink)}
+html[data-look="mono"] .areo-by{display:inline;color:var(--ink3)}
+html[data-look="mono"] .decided .areo-by{display:block;margin:2px 0 0;padding-inline-start:19px;font-size:11.5px}
+html[data-look="mono"] .gonext{display:flex}
+html[data-look="mono"] .gonext .btn{flex:1;justify-content:center}
+html[data-look="mono"] .gonext .btn svg{width:14px;height:14px}
+html[data-look="mono"] .acc{border-top:0;border-bottom:1px solid var(--line)}
+html[data-look="mono"] .acc:last-child{border-bottom:0}
+html[data-look="mono"] .acc summary{align-items:center;gap:8px;padding:9px 0;font-size:13px;font-weight:500}
+html[data-look="mono"] .acc summary small{font-weight:400;color:var(--ink3);font-size:12px}
+html[data-look="mono"] .acc summary::after{content:"+";color:var(--ink3);font-weight:400}
+html[data-look="mono"] .acc[open] summary::after{content:"\2212"}
+html[data-look="mono"] .accb{padding-bottom:12px;gap:8px;font-size:13px;line-height:1.6}
+html[data-look="mono"] :is(textarea,input:not([type=checkbox]):not([type=radio]):not([type=file]),select){font-family:var(--ui);font-size:13.5px;color:var(--ink);border:1px solid var(--line2);border-radius:var(--r2);background:var(--panel)}
+html[data-look="mono"] textarea{padding:8px 10px;min-height:76px;line-height:1.6}
+html[data-look="mono"] :is(textarea,input,select):focus{outline:2px solid var(--g);outline-offset:-1px;border-color:transparent}
+html[data-look="mono"] textarea.doc{font-family:var(--doc);font-size:15px;min-height:130px;line-height:1.7}
+html[data-look="mono"] .editacts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+html[data-look="mono"] .editacts .faint{font-size:12px}
+html[data-look="mono"] .tone{gap:4px}
+html[data-look="mono"] .tone button{height:26px;padding:0 8px;border:1px solid var(--line);border-radius:var(--r3);background:var(--panel);font-size:12px;color:var(--ink);gap:5px}
+html[data-look="mono"] .tone button:hover{border-color:var(--line2);color:var(--ink)}
+html[data-look="mono"] .tone button svg{width:11px;height:11px;color:var(--g)}
+html[data-look="mono"] .lv{grid-template-columns:62px minmax(0,1fr);padding:6px 8px;border-radius:var(--r3);font-size:12.5px}
+html[data-look="mono"] .lv.cur{background:var(--sub)}
+html[data-look="mono"] .lv b{font-weight:500;font-size:12.5px}
+html[data-look="mono"] .askbox{border:0;background:none;overflow:visible}
+html[data-look="mono"] .askbox form{padding:0;gap:6px}
+html[data-look="mono"] .askbox input{height:30px;padding:0 8px;border:1px solid var(--line2);border-radius:var(--r2);background:var(--panel);font-size:13px}
+html[data-look="mono"] .askbox .a{margin-top:8px;padding:9px 11px;background:var(--bg);border:0;border-radius:var(--r3);border-inline-start:2px solid var(--g);font-size:13px;line-height:1.6}
+html[data-look="mono"] .sugg{gap:2px}
+html[data-look="mono"] .sugg button{color:var(--ink2);font-size:12.5px;padding:3px 0;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:3px}
+html[data-look="mono"] .sugg button:hover{color:var(--ink)}
+html[data-look="mono"] .diff{font-family:var(--doc);font-size:15.5px;line-height:1.8;padding:10px 12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--r3)}
+html[data-look="mono"] .diff ins{color:var(--g)}html[data-look="mono"] .diff del{color:var(--red)}
+html[data-look="mono"] .focus{max-width:760px}
+html[data-look="mono"] .focus .side{height:auto;max-height:none}
+html[data-look="mono"] .focus .items{overflow:visible}
+
+/* a signed negotiation */
+html[data-look="mono"] .back{color:var(--ink2);font-size:13px}
+html[data-look="mono"] .back:hover{color:var(--ink)}
+html[data-look="mono"] .dfacts{font-size:13px;color:var(--ink3)}
+html[data-look="mono"] .dfacts b{color:var(--ink);font-weight:500}
+html[data-look="mono"] .oc{border:1px solid var(--line);border-radius:var(--r2);background:var(--panel);padding:12px 14px}
+html[data-look="mono"] .oc b{font-weight:500;font-size:14px}
+html[data-look="mono"] .oc p{font-size:13px;color:var(--ink2)}
+html[data-look="mono"] .desk{background:var(--hover2);border-radius:var(--r1);padding:28px 24px}
+html[data-look="mono"] .paper{background:var(--panel);color:var(--ink);font-family:var(--doc);border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,.08),0 0 0 1px rgba(0,0,0,.04)}
+html[data-look="mono"] .paper .hdr,html[data-look="mono"] .paper .foot{font-family:var(--ui);color:var(--ink3);border-color:var(--line)}
+
+/* the drawer, the round's finish and the draft that arrived */
+html[data-look="mono"] .scrim{background:rgba(23,23,23,.18);backdrop-filter:none}
+html[data-look="mono"][data-theme="dark"] .scrim{background:rgba(0,0,0,.5)}
+html[data-look="mono"] .modal{background:var(--panel);border:1px solid var(--line);border-radius:var(--r1);box-shadow:0 20px 60px rgba(0,0,0,.12);padding:20px;gap:14px;width:min(640px,100%)}
+html[data-look="mono"] .drawer{background:var(--panel);border-inline-start:1px solid var(--line);box-shadow:0 0 40px rgba(0,0,0,.06);gap:16px}
+html[data-look="mono"] .mh h2{font-size:18px}
+html[data-look="mono"] .mh p{font-size:13px;color:var(--ink2)}
+html[data-look="mono"] .drawer .card{padding:14px 16px;box-shadow:none}
+html[data-look="mono"] .drawer .card h3{font-size:14px}
+html[data-look="mono"] .fld label,html[data-look="mono"] .fld>span,html[data-look="mono"] .mailf .fld span{font-size:12.5px;color:var(--ink2);font-weight:500}
+html[data-look="mono"] .fld :is(input,select){padding:7px 10px;font-size:13.5px}
+html[data-look="mono"] .due{font-size:13px;color:var(--ink2)}
+html[data-look="mono"] .due input{padding:2px 6px;font-size:13px;border:1px solid var(--line2);border-radius:var(--r2);background:var(--panel)}
+html[data-look="mono"] .opt{border:1px solid var(--line2);border-radius:var(--r2);padding:10px 12px}
+html[data-look="mono"] .opt:has(input:checked){border-color:var(--ink);background:var(--sub)}
+html[data-look="mono"] .opt input{accent-color:var(--ink)}
+html[data-look="mono"] .opt b{font-weight:500}
+html[data-look="mono"] .opt span span{font-size:12.5px;color:var(--ink3)}
+html[data-look="mono"] .drop{border:1px dashed var(--line2);border-radius:var(--r1);background:var(--panel)}
+html[data-look="mono"] .drop:hover,html[data-look="mono"] .drop.over{border-color:var(--ink3);background:var(--panel)}
+html[data-look="mono"] .drop svg{color:var(--ink);width:28px;height:28px}
+html[data-look="mono"] .drop b{font-family:var(--ui);font-size:16px;font-weight:500}
+html[data-look="mono"] .bar{height:4px;border-radius:2px;background:var(--sub)}
+html[data-look="mono"] .bar i{background:var(--ink);border-radius:2px}
+html[data-look="mono"] .live{font-size:13px;color:var(--ink2)}
+html[data-look="mono"] .pulse{background:var(--g)}
+html[data-look="mono"] .fs{border-top:1px solid var(--line)}
+html[data-look="mono"] .fs .ix{width:24px;height:24px;font-family:var(--ui);font-weight:500;font-size:12px;background:var(--sub);color:var(--ink);border:0}
+html[data-look="mono"] .fs.done .ix{background:var(--ink);color:var(--onink)}
+html[data-look="mono"] .fs.now .ix{background:var(--panel);box-shadow:inset 0 0 0 1px var(--ink);color:var(--ink)}
+html[data-look="mono"] .fs h3{font-size:14px}
+html[data-look="mono"] .lrow{border-top:1px solid var(--line);font-size:13.5px}
+html[data-look="mono"] .lrow small{color:var(--ink3);font-size:12.5px}
+html[data-look="mono"] .file{border:1px solid var(--line);border-radius:var(--r2);background:var(--panel)}
+html[data-look="mono"] .file b{font-weight:500}
+html[data-look="mono"] .file span{color:var(--ink3);font-size:12.5px}
+html[data-look="mono"] :is(.file,.attach) .ic{background:var(--ink);color:var(--onink);font-family:var(--ui);font-weight:600;border-radius:var(--r3)}
+html[data-look="mono"] .mailpick,html[data-look="mono"] .attach{border:1px solid var(--line);border-radius:var(--r2)}
+html[data-look="mono"] .mailpick.none{border-style:dashed}
+html[data-look="mono"] .drafted{border:1px solid var(--gb);background:var(--gs);border-radius:var(--r2);font-size:13px}
+html[data-look="mono"] .drafted svg{color:var(--g)}
+
+/* phones and narrow windows: one column, the list under the agreement, the page scrolls */
+@media (max-width:980px){
+  html[data-look="mono"] .wbgrid{grid-template-columns:minmax(0,1fr)}
+  html[data-look="mono"] .wbgrid>aside.side.side{height:auto;max-height:none;position:static}
+}
+@media (max-width:900px){
+  html[data-look="mono"] main,html[data-look="mono"] body[data-view="deal"] main{padding:20px 16px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  html[data-look="mono"] .hero{padding:18px}
+  html[data-look="mono"] .dcards{grid-template-columns:minmax(0,1fr)}
+  html[data-look="mono"] .homehead h1{font-size:23px}
+}
+@media (max-width:700px){
+  html[data-look="mono"] .dbar{gap:8px}
+  html[data-look="mono"] .dbar .dact{margin-inline-start:0}
+  html[data-look="mono"] .canvas{padding:16px 10px}
+  html[data-look="mono"] .modal{padding:16px}
+}
+/* ===== end mono ===== */
 </style>
 
 <div class="app" dir="rtl" lang="he">
@@ -502,6 +854,7 @@ const IC={
   cm:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v12H8l-4 4z"/></svg>',
   info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5 9-10"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7l10 10M17 7 7 17"/></svg>',
 };
 const TRACK={green:['g','ירוק'],yellow:['y','צהוב'],red:['r','אדום']};
 
@@ -509,10 +862,28 @@ const TRACK={green:['g','ירוק'],yellow:['y','צהוב'],red:['r','אדום']
 const pos=x=>x.op==='insert_paragraph'?x.after_para+.5:x.para;
 function prepRound(deal,r){
   Object.assign(r,{counterparty:deal.counterparty,type:deal.type,company:deal.company,role:deal.role});
-  r.paras=r.paras||[];r.decisions=r.decisions||[];r.byPara={};r.inserts={};
-  r.decisions.forEach(x=>{if(x.op==='insert_paragraph')(r.inserts[x.after_para]=r.inserts[x.after_para]||[]).push(x);else r.byPara[x.para]=x});
-  r.changes=r.decisions.filter(x=>x.op!=='accept'||x.concession).sort((a,b)=>pos(a)-pos(b));
+  r.paras=r.paras||[];r.decisions=r.decisions||[];
+  syncRound(deal,r);
   return r;
+}
+/* the round's changes: Areo's decisions, plus a clause the lawyer changed on its own (double click on the text).
+   That change lives in the round's marks (key mine-<paragraph>), the same store as every other decision */
+const MINE='mine-';
+const isReal=x=>x&&(x.op!=='accept'||x.concession);
+function headOf(r,i){for(let j=i;j>=0;j--){const p=r.paras[j];if(p&&p.k==='head')return String(p.t||'').replace(/^[\d.\s‏]+/,'').trim()}return ''}
+function mineDecs(d,r){
+  const pre=rkey(d,r)+'__'+MINE,ids=new Set();
+  Object.keys(S.marks).forEach(k=>{if(k.indexOf(pre)!==0)return;const m=S.marks[k];if(m&&m.user&&!m.dropped)ids.add(+k.slice(pre.length))});
+  if(S.pend&&S.pend.k===rkey(d,r))ids.add(S.pend.para);
+  return [...ids].filter(i=>r.paras[i]&&r.paras[i].k!=='tbl').sort((a,b)=>a-b).map(i=>({id:MINE+i,op:'replace',para:i,new_text:r.paras[i].t,mine:true,topic:headOf(r,i),
+    summary:'שינוי שלכם בסבב הזה',plain_effect:'שינוי שיזמתם בסבב הזה. הוא נכנס להסכם בעקוב אחר שינויים, כמו התיקונים של Areo.'}));
+}
+function syncRound(d,r){
+  r.byPara={};r.inserts={};
+  r.decisions.forEach(x=>{if(x.op==='insert_paragraph')(r.inserts[x.after_para]=r.inserts[x.after_para]||[]).push(x);else r.byPara[x.para]=x});
+  let mine=[];try{mine=mineDecs(d,r).filter(x=>!isReal(r.byPara[x.para]))}catch(e){/* before the state is loaded */}
+  mine.forEach(x=>{r.byPara[x.para]=x});
+  r.changes=r.decisions.filter(isReal).concat(mine).sort((a,b)=>pos(a)-pos(b));
 }
 const DEALS=[];
 function addDeal(d){d.rounds=(d.rounds||[]).map(r=>prepRound(d,r));DEALS.push(d);return d}
@@ -605,14 +976,14 @@ function stOf(x,d,r){
   const m=mark(x.id,d,r);
   if(m.choice==='theirs')return 'th';
   if(x.ask&&!answered(x.id,d,r))return 'y';
-  return (m.reviewed||m.choice)?'ok':'open';
+  return (m.reviewed||m.choice||x.mine)?'ok':'open';
 }
 const ST={ok:'הוחלט',y:'שאלה פתוחה',th:'הנוסח שלהם',open:''};
 const THEIR={green:'בתוך העמדה שלנו',yellow:'בתחום הפשרה',red:'מעבר לקו האדום'};
 const FLAGWHY=x=>x.concession?'ויתור על עמדה במדיניות.':x.position_basis==='proposed_unapproved'?'העמדה במדיניות עוד לא אושרה.':x.ask?'נשען על עובדה עסקית שלא אומתה.':'אין לסעיף עמדה במדיניות, וההצעה היא של Areo.';
 function counts(d,r){
-  r=r||latest(d);const c={all:r.changes.length,reviewed:0,flag:0,asks:0};
-  r.changes.forEach(x=>{const m=mark(x.id,d,r),dec=m.reviewed||m.choice;if(dec)c.reviewed++;if(x.lawyer&&!dec)c.flag++;if(x.ask&&!answered(x.id,d,r))c.asks++});
+  r=r||latest(d);const ch=r.changes.filter(x=>!(x.mine&&!mark(x.id,d,r).user)),c={all:ch.length,reviewed:0,flag:0,asks:0};
+  ch.forEach(x=>{const m=mark(x.id,d,r),dec=m.reviewed||m.choice||x.mine;if(dec)c.reviewed++;if(x.lawyer&&!dec)c.flag++;if(x.ask&&!answered(x.id,d,r))c.asks++});
   return c;
 }
 const ready=(d,r)=>{const c=counts(d,r);return !c.flag&&!c.asks};
@@ -634,7 +1005,27 @@ const STYLE='כתוב בעברית, בשפה משפטית ברורה ומנומ�
 
 /* ---------- render ---------- */
 const themeBtn='';
+/* the list of changes scrolls inside its panel (wide screens) or with the page (narrow ones) */
+const scrollsY=el=>!!el&&/(auto|scroll)/.test(getComputedStyle(el).overflowY);
+function sideScroller(){const sd=document.querySelector('.side');if(!sd)return null;const it=sd.querySelector('.items');return scrollsY(it)?it:scrollsY(sd)?sd:null}
+/* the chosen change goes to the top of the list */
+function listTop(){
+  const it=document.querySelector('.side .item.on');if(!it)return;const sc=sideScroller();
+  if(sc&&sc.scrollHeight>sc.clientHeight+1){const sh=sc.classList.contains('side')?sc.querySelector('.sh'):null;sc.scrollTop+=it.getBoundingClientRect().top-sc.getBoundingClientRect().top-(sh?sh.offsetHeight:0);return}
+  const top=(document.querySelector('.dbar')||{offsetHeight:0}).offsetHeight+12,a=it.getBoundingClientRect().top;
+  if(focusOn()?Math.abs(a-top)>4:(a<top||a>innerHeight-120))window.scrollBy(0,a-top);
+}
+/* a section of the open change (the comment, the wording): its header exactly at the top of the list */
+function scrollToAcc(k){
+  const ac=document.querySelector('.side .item.on details[data-acc="'+k+'"]');if(!ac)return;const sc=sideScroller();
+  if(sc&&sc.scrollHeight>sc.clientHeight+1){const sh=sc.classList.contains('side')?sc.querySelector('.sh'):null;sc.scrollTop+=ac.getBoundingClientRect().top-sc.getBoundingClientRect().top-(sh?sh.offsetHeight:0)-8;return}
+  const top=(document.querySelector('.dbar')||{offsetHeight:0}).offsetHeight+8;window.scrollBy(0,ac.getBoundingClientRect().top-top);
+}
 function render(){
+  if(S.pend&&(S.view!=='deal'||S.sel!==MINE+S.pend.para))S.pend=null;
+  DEALS.forEach(d=>d.rounds.forEach(r=>syncRound(d,r)));
+  /* a redraw keeps the list and the document where they stood */
+  const vk=S.view+'|'+S.deal+'|'+S.round+'|'+S.mode,sc0=sideScroller(),cv0=document.querySelector('.canvas'),keep=S._vk===vk?[sc0&&sc0.scrollTop,cv0&&cv0.scrollTop]:null;S._vk=vk;
   const open=DEALS.filter(d=>status(d)!=='signed');
   const nh=$('#navhome');nh.innerHTML=IC.home+'<span class="lbl">כל העסקאות</span><span class="cnt">'+DEALS.length+'</span>';nh.title='כל העסקאות';
   if(S.view==='home')nh.setAttribute('aria-current','page');else nh.removeAttribute('aria-current');
@@ -642,13 +1033,16 @@ function render(){
   $('#cofoot').textContent=COMPANY+' · חסוי';
   if(S.view==='deal'&&dl())$('#main').innerHTML=dl().status==='signed'?vSigned(dl()):vDeal(dl(),rd());
   else{S.view='home';$('#main').innerHTML=vHome()}
-  document.querySelector('.app').classList.toggle('rail',S.view==='deal');
+  document.querySelector('.app').classList.toggle('rail',S.view==='deal');document.body.dataset.view=S.view;
+  if(keep){const sc=sideScroller(),cv=document.querySelector('.canvas');if(sc&&keep[0]!=null)sc.scrollTop=keep[0];if(cv&&keep[1]!=null)cv.scrollTop=keep[1]}
   measureBars();
   layoutBalloons();
   mountDocx();
   if(typeof ensureWatch==='function')ensureWatch();
-  if(S._scroll){S._scroll=false;const el=document.querySelector('.pp.on');el&&el.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});}
-  if(S._side){S._side=false;const it=document.querySelector('.item.on');const sd=document.querySelector('.side');if(it&&sd){const a=it.getBoundingClientRect(),b=sd.getBoundingClientRect(),sh=sd.querySelector('.sh'),off=(sh?sh.offsetHeight:0)+6;if(sd.scrollHeight>sd.clientHeight){if(a.top<b.top+off||a.bottom>b.bottom)sd.scrollTop+=a.top-b.top-off}else{const wa=it.getBoundingClientRect();const top=(document.querySelector('.dbar')||{offsetHeight:0}).offsetHeight+12;if(wa.top<top||wa.top>innerHeight-120)window.scrollBy(0,wa.top-top)}}}
+  if(S._scroll){S._scroll=false;const el=document.querySelector('.pp.on'),cv=document.querySelector('.canvas');
+    if(el&&scrollsY(cv)&&cv.scrollHeight>cv.clientHeight+1){const a=el.getBoundingClientRect(),b=cv.getBoundingClientRect();if(a.top<b.top+20||a.bottom>b.bottom-20)cv.scrollTop+=a.top-b.top-b.height/3}
+    else if(el)el.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});}
+  if(S._side){S._side=false;listTop()}
 }
 
 /* home: every negotiation, grouped by whose turn it is */
@@ -656,12 +1050,26 @@ function vHome(){
   const byDue=(a,b)=>(dueOf(a)||'9999').localeCompare(dueOf(b)||'9999');
   const turn=DEALS.filter(d=>status(d)==='turn').sort(byDue),wait=DEALS.filter(d=>status(d)==='wait'),signed=DEALS.filter(d=>status(d)==='signed');
   const ap=S.mailApprove?'<div class="banner"><span><b>Areo צריכה אישור לבדוק את תיבת הדואר ('+(S.mailApprove==='Gmail'?'Gmail':'Outlook')+').</b> <span class="muted">ככה היא מזהה לבד את התשובות של הצד השני.</span></span><button class="btn primary small" data-mailapprove>לאשר</button></div>':'';
-  return '<div class="col"><div class="homehead"><div><h1>משא ומתן</h1><p class="lead">'+(COMPANY?esc(COMPANY)+' · ':'')+nn(turn.length+wait.length,'עסקה פתוחה','עסקאות פתוחות')+' · '+nn(signed.length,'נחתמה אחת','נחתמו')+'</p></div>'+themeBtn+'</div>'+
-  ap+(DEALS.length?'':'<div class="empty" id="noDeals">עוד אין עסקאות. כשהצד השני מחזיר טיוטה, גררו אותה לכאן.</div>')+'<button class="dropstrip" id="dropstrip" data-newround=""><span class="ic">'+IC.upload+'</span><span class="t"><b>קיבלתם טיוטה? גררו אותה לכאן</b><span>Areo תזהה אם זו עסקה חדשה או תשובה בעסקה קיימת, ותקרא אותה מול המדיניות.</span></span></button>'+
-  (DEALS.length?group('תורכם','turn',turn.length,turn.length?'<div class="dcards">'+turn.map(dealCard).join('')+'</div>':'<div class="empty">אין כרגע טיוטה שמחכה לכם.</div>')+
-  group('אצל הצד השני','wait',wait.length,wait.length?'<div class="dcards">'+wait.map(dealCard).join('')+'</div>':'<div class="empty">אין טיוטות שמחכות לתשובה. כששולחים סבב, העסקה עוברת לכאן עד שהתשובה מגיעה.</div>')+
-  group('נחתמו','',signed.length,signed.length?'<section class="card" style="padding:6px 8px"><div class="tblwrap"><table><thead><tr><th>הצד השני</th><th>הסכם</th><th>נחתם</th><th>מול המדיניות</th><th>המשא ומתן</th></tr></thead><tbody>'+signed.map(d=>{const kc=d.kc||[],ok=kc.filter(k=>k.policy==='match').length;return '<tr class="click" data-deal="'+esc(d.id)+'"><td><b>'+esc(d.counterparty)+'</b></td><td class="muted">'+esc(d.type)+'</td><td style="white-space:nowrap">'+fmtDate(d.signed)+'</td><td>'+(kc.length?'<span class="pill '+(ok===kc.length?'g':'y')+'">'+ok+' מתוך '+kc.length+' לפי המדיניות</span>':'')+'</td><td class="muted">'+(d.history?nn(d.history.rounds,'סבב אחד','סבבים')+' · '+nn(d.history.points.length,'נקודה אחת','נקודות'):'לא תועד')+'</td></tr>'}).join('')+'</tbody></table></div></section>':'<div class="empty">עוד לא נחתם הסכם.</div>'):'')+
+  return '<div class="col"><div class="homehead"><div><h1>משא ומתן</h1><p class="lead">'+(COMPANY?esc(COMPANY)+' · ':'')+nn(turn.length+wait.length,'עסקה פתוחה','עסקאות פתוחות')+' · '+nn(signed.length,'נחתמה אחת','נחתמו')+'</p></div>'+themeBtn+'<div class="row-acts"><button class="btn soft" data-newround="">'+IC.upload+'טיוטה שקיבלתם</button></div></div>'+
+  ap+(DEALS.length?hero(turn):'<div class="empty" id="noDeals">עוד אין עסקאות. כשהצד השני מחזיר טיוטה, גררו אותה לכאן.</div>')+'<button class="dropstrip" id="dropstrip" data-newround=""><span class="ic">'+IC.upload+'</span><span class="t"><b>קיבלתם טיוטה? גררו אותה לכאן</b><span>Areo תזהה אם זו עסקה חדשה או תשובה בעסקה קיימת, ותקרא אותה מול המדיניות.</span></span></button>'+
+  (DEALS.length?'<div class="board">'+group('לתגובתנו','turn',turn.length,turn.length?'<div class="dcards">'+turn.map(dealCard).join('')+'</div>':'<div class="empty">אין כרגע טיוטה שמחכה לכם.</div>')+
+  group('לתגובת הצד שכנגד','wait',wait.length,wait.length?'<div class="dcards">'+wait.map(dealCard).join('')+'</div>':'<div class="empty">אין טיוטות שמחכות לתשובה. כששולחים סבב, העסקה עוברת לכאן עד שהתשובה מגיעה.</div>')+'</div>'+
+  group('נחתמו','signed',signed.length,signed.length?'<section class="card" style="padding:6px 8px"><div class="tblwrap"><table><thead><tr><th>הצד השני</th><th>הסכם</th><th>נחתם</th><th>מול המדיניות</th><th>המשא ומתן</th></tr></thead><tbody>'+signed.map(d=>{const kc=d.kc||[],ok=kc.filter(k=>k.policy==='match').length;return '<tr class="click" data-deal="'+esc(d.id)+'"><td><b>'+esc(d.counterparty)+'</b></td><td class="muted">'+esc(d.type)+'</td><td style="white-space:nowrap">'+fmtDate(d.signed)+'</td><td>'+(kc.length?'<span class="pill '+(ok===kc.length?'g':'y')+'">'+ok+' מתוך '+kc.length+' לפי המדיניות</span>':'')+'</td><td class="muted">'+(d.history?nn(d.history.rounds,'סבב אחד','סבבים')+' · '+nn(d.history.points.length,'נקודה אחת','נקודות'):'לא תועד')+'</td></tr>'}).join('')+'</tbody></table></div></section>':'<div class="empty">עוד לא נחתם הסכם.</div>'):'')+
   '</div>';
+}
+/* what now: the one deal to open first, from the deals themselves (their replies, what is left, the return date) */
+function hero(turn){
+  const H=(h2,p,acts)=>'<section class="hero"><div><span class="k">מה עכשיו</span><h2>'+h2+'</h2>'+(p?'<p>'+p+'</p>':'')+'</div>'+(acts?'<div class="row-acts">'+acts+'</div>':'')+'</section>';
+  const live=turn.filter(d=>d.rounds.length);
+  const rep=live.find(d=>S.replies[d.id]);
+  if(rep)return H('התשובה של '+esc(rep.counterparty)+' הגיעה.','Areo תפתח סבב '+(latest(rep).n+1)+' ותציג רק מה שהם שינו.','<button class="btn primary" data-openreply="'+esc(rep.id)+'">לפתוח סבב '+(latest(rep).n+1)+'</button>');
+  const todo=live.filter(d=>{const c=counts(d);return c.all-c.reviewed||c.asks});
+  if(todo.length){const d=todo[0],c=counts(d),left=c.all-c.reviewed,du=dueOf(d);
+    return H((todo.length===1?'טיוטה אחת מחכה לכם':todo.length+' טיוטות מחכות לכם')+'. הכי דחוף: '+esc(d.counterparty)+(du?', להחזיר עד '+fmtDate(du):'')+'.',
+      (left?nn(left,'שינוי אחד','שינויים')+' להכרעה, כל אחד עם ההצעה של Areo.&rlm;':'')+(c.asks?(left?' ':'')+nn(c.asks,'שאלה פתוחה אחת','שאלות פתוחות')+' לפני השליחה.':''),
+      '<button class="btn primary" data-deal="'+esc(d.id)+'">להמשיך עם '+esc(d.counterparty)+'</button>'+(todo[1]?'<button class="btn soft" data-deal="'+esc(todo[1].id)+'">'+esc(todo[1].counterparty)+'</button>':''))}
+  if(live.length){const d=live[0];return H('כל השינויים מול '+esc(d.counterparty)+' הוכרעו. נשאר לשלוח.','בסיום הסבב מורידים את הקבצים, שולחים, ומסמנים כאן שנשלח.','<button class="btn primary" data-deal="'+esc(d.id)+'">לסיום הסבב</button>')}
+  return H('אין טיוטה שמחכה לכם.','כשהצד השני מחזיר טיוטה, גררו אותה לכאן. כשתיבת הדואר מחוברת, Areo מזהה את התשובה לבד.','');
 }
 const group=(t,k,n,body)=>'<section class="group"><div class="grouph"><span class="sdot '+k+'"></span><h2>'+t+'</h2><span class="faint" style="font-size:14px">'+n+'</span></div>'+body+'</section>';
 function dealCard(d){
@@ -696,7 +1104,7 @@ function vDeal(d,r){
   else if(!isLatest)banner='<div class="banner sent"><span><b>סבב '+r.n+', לקריאה בלבד.</b></span></div>';
   const head='<div class="dbar"><button class="iconbtn" data-home aria-label="כל העסקאות" title="כל העסקאות">'+IC.back+'</button><div class="dname"><h1>'+esc(d.counterparty)+'</h1><span>'+esc(d.type)+' · סבב '+r.n+'</span></div>'+
     (d.rounds.length>1?'<span class="rounds">'+d.rounds.map((z,i)=>'<button class="rchip" data-round="'+i+'" aria-pressed="'+(z===r)+'">סבב '+z.n+'</button>').join('')+'</span>':'')+
-    '<span class="dact">'+(focusOn()?'<button class="btn ghost small" data-focus="0">להציג את ההסכם</button>':'')+'<button class="btn ghost small" data-about>על העסקה</button>'+(!locked?'<button class="btn primary small" data-finish>לסיים את הסבב</button>':'')+'</span></div>'+(banner?'<div class="banners">'+banner+'</div>':'');
+    '<span class="dact">'+(focusOn()?'<button class="btn ghost small" data-focus="0">להציג את ההסכם</button>':'')+(!locked&&(r.their_changes||[]).length?'<button class="btn ghost small" data-about>'+nn(r.their_changes.length,'שינוי אחד','שינויים')+' מאז הסבב הקודם</button>':'')+'<button class="btn ghost small" data-about>על העסקה</button>'+(!locked?'<button class="btn primary small" data-finish>לסיים את הסבב</button>':'')+'</span></div>'+(banner?'<div class="banners">'+banner+'</div>':'');
   if(focusOn())return head+'<div class="focus">'+side(d,r,c,locked)+'</div>';
   return head+'<div class="wbgrid"><div class="center">'+wordView(d,r,locked)+'</div>'+side(d,r,c,locked)+'</div>';
 }
@@ -718,7 +1126,7 @@ function mountDocx(){const host=document.querySelector('.docxhost');if(!host)ret
     .then(()=>{DOCX_CACHE[key]=box;const h=document.querySelector('.docxhost[data-docx="'+key+'"]');if(h){h.replaceChildren(box);docxMark(box)}const pc=box.querySelectorAll('section.docx').length;const el=document.getElementById('docxpages');if(el&&pc)el.textContent=pc+' עמודים'})
     .catch(()=>{const h=document.querySelector('.docxhost');if(h)h.innerHTML='<p class="docxwait">לא הצלחנו לפתוח את הקובץ כאן.</p>'})}
 function wordView(d,r,locked){
-  const x=r.changes.find(z=>z.id===S.sel),idx=r.changes.indexOf(x),m=x?mark(x.id,d,r):{},dec=m.reviewed||m.choice;
+  const x=r.changes.find(z=>z.id===S.sel),idx=r.changes.indexOf(x),m=x?mark(x.id,d,r):{},dec=m.reviewed||m.choice||(x&&x.mine);
   const mode=(MODES.find(z=>z[0]===S.mode)||MODES[0]),markup=S.mode==='track'||S.mode==='send';
   const wc=r.paras.reduce((n,p)=>n+p.t.split(/\s+/).filter(Boolean).length,0);
   const ribbon='<div class="ribbon" role="toolbar" aria-label="סקירה"><span class="rtab">סקירה</span>'+
@@ -752,7 +1160,7 @@ function rowHtml(d,r,p,locked,markup){
   }
   if(changed&&S.mode!=='send')hov=hovHtml(d,r,x,locked);
   const on=changed&&S.sel===x.id&&S.mode!=='send';
-  let h='<div class="row"><div class="pp '+p.k+fcls(p)+(on?' on':'')+(chg?' chg':'')+'"'+(changed?' data-d="'+x.id+'"':'')+'>'+hov+nmh(p)+body+cm+'</div>'+(markup?'<div class="mk">'+bal+'</div>':'')+'</div>';
+  let h='<div class="row"><div class="pp '+p.k+fcls(p)+(on?' on':'')+(chg?' chg':'')+'"'+(changed?' data-d="'+x.id+'"':'')+' data-pi="'+p.i+'">'+hov+nmh(p)+body+cm+'</div>'+(markup?'<div class="mk">'+bal+'</div>':'')+'</div>';
   (r.inserts[p.i]||[]).forEach(y=>{
     const nt=newTextOf(r,y,d);if(nt==null||S.mode==='theirs')return;const ys=S.sel===y.id&&S.mode!=='send';
     h+='<div class="row"><div class="pp clause'+fcls({al:'j',n:y.n,lv:y.lv})+(ys?' on':'')+(S.mode!=='clean'?' chg':'')+'" data-d="'+y.id+'">'+(S.mode!=='send'?hovHtml(d,r,y,locked):'')+nmh(y)+((S.mode==='clean'||S.mode==='simple')?esc(nt):'<ins>'+esc(nt)+'</ins>')+((S.mode==='simple'||markup)&&bubbleOf(y,d,r)?'<span class="cm'+(markup?' cmalt':'')+'">'+IC.cm+'</span>':'')+'</div>'+(markup?'<div class="mk"></div>':'')+'</div>';
@@ -767,18 +1175,17 @@ function side(d,r,c,locked){
   const F=[['all','הכול'],['todo','נשארו'],['f','שיקול דעת']];
   const list=r.changes.filter(x=>{const s=stOf(x,d,r);return S.qf==='all'||x.id===S.sel||(S.qf==='todo'?s==='open'||s==='y':x.lawyer)});
   const left=c.all-c.reviewed;
-  let top='<div class="sh"><div class="sht"><b>'+(left?'נשארו '+left+' מתוך '+c.all:'הכול הוחלט ✓')+'</b><span class="chips">'+F.map(([f,t])=>'<button class="chip" data-qf="'+f+'" aria-pressed="'+(S.qf===f)+'">'+t+'</button>').join('')+'</span></div>'+
+  let top='<div class="sh"><div class="sht"><b>'+(left?'נשארו '+left+' מתוך '+c.all:'כל השינויים הוכרעו')+'</b><span class="chips">'+F.map(([f,t])=>'<button class="chip" data-qf="'+f+'" aria-pressed="'+(S.qf===f)+'">'+t+'</button>').join('')+'</span></div>'+
     '<div class="psegs">'+r.changes.map(x=>{const s=stOf(x,d,r);return '<button class="'+(s==='open'?'':s)+(x.id===S.sel?' on':'')+'" data-go="'+x.id+'" aria-label="'+esc(x.topic||where(r,x))+'" data-tip="'+esc(segTip(x,d,r))+'"'+'></button>'}).join('')+'</div>';
-  if(!locked&&c.asks){const a=r.changes.find(z=>z.ask&&!answered(z.id,d,r));top+='<button class="qask" data-go="'+a.id+'"><b>'+(c.asks===1?'שאלה פתוחה אחת':c.asks+' שאלות פתוחות')+'</b><span>'+esc(a.ask.gap)+'</span></button>'}
+  if(!locked&&c.asks){const a=r.changes.find(z=>z.ask&&!answered(z.id,d,r));top+='<button class="qline" data-go="'+a.id+'" title="'+esc(a.ask.gap||'')+'">'+(c.asks===1?'שאלה פתוחה אחת':c.asks+' שאלות פתוחות')+': '+esc(a.topic||where(r,a))+'</button>'}
   else if(!locked&&!left)top+='<div class="qdone"><span>הכול הוחלט. נשארו הקבצים, המייל והשליחה.</span><button class="btn primary small" data-finish>לסיים את הסבב</button></div>';
-  if(!locked&&r.their_changes&&r.their_changes.length)top+='<button class="qchg" data-about><b>מה הם שינו מאז הסבב הקודם</b><span>'+r.their_changes.slice(0,2).map(t=>esc(t.summary)).join(' · ')+(r.their_changes.length>2?' ועוד '+(r.their_changes.length-2):'')+'</span></button>';
   top+='</div>';
   return '<aside class="side" aria-label="השינויים בסבב">'+top+'<div class="items">'+(list.length?list.map(x=>item(d,r,x,locked)).join(''):'<p class="faint" style="padding:14px;font-size:14px">'+(S.qf==='todo'?'לא נשאר כלום. אפשר לסיים את הסבב.':'אין כאן כלום.')+'</p>')+'</div></aside>';
 }
 function item(d,r,x,locked){
-  const s=stOf(x,d,r),n=r.changes.indexOf(x)+1,on=x.id===S.sel,m=mark(x.id,d,r),dec=m.reviewed||m.choice;
+  const s=stOf(x,d,r),n=r.changes.indexOf(x)+1,on=x.id===S.sel,m=mark(x.id,d,r),dec=m.reviewed||m.choice||x.mine;
   const pill=s==='y'?'<span class="st y">שאלה פתוחה</span>':s==='th'?'<span class="st th">הנוסח שלהם</span>':s==='open'&&x.lawyer?'<span class="st f">שיקול דעת</span>':'';
-  let h='<div class="item'+(on?' on':'')+(s==='ok'?' done':'')+'"><button class="ihd" data-go="'+x.id+'" aria-expanded="'+on+'"><span class="n">'+(s==='ok'?'✓':n)+'</span><span class="tt"><b>'+esc(x.topic||where(r,x))+'</b><span>'+esc(where(r,x))+(THEIR[x.their_track]&&on?' · הנוסח שלהם '+THEIR[x.their_track]:'')+'</span></span>'+pill+'</button>';
+  let h='<div class="item s-'+s+(on?' on':'')+(s==='ok'?' done':'')+'"><button class="ihd" data-go="'+x.id+'" aria-expanded="'+on+'"><span class="n">'+(s==='ok'||s==='th'?'✓':n)+'</span><span class="tt"><b>'+esc(x.topic||where(r,x))+'</b><span>'+esc(where(r,x))+(THEIR[x.their_track]&&on?' · הנוסח שלהם '+THEIR[x.their_track]:'')+'</span></span>'+pill+'</button>';
   if(!on)return h+'</div>';
   const ru=(x.rule_ids||[]).map(id=>rule(id,r)).filter(Boolean)[0],orig=x.op==='insert_paragraph'?'':((r.paras[x.para]||{}).t||''),nt=newTextOf(r,x,d),changed=x.op!=='accept';
   h+='<div class="ibd">';
@@ -787,15 +1194,17 @@ function item(d,r,x,locked){
   h+='<p class="why">'+esc(x.concession?'ויתור מתוכנן: '+x.concession:(x.plain_effect||x.summary||''))+(x.position_effect?'<span class="sm">'+esc(x.position_effect)+'</span>':'')+'</p>';
   if(!locked){
     if(x.lawyer&&!dec)h+='<div class="flag">'+IC.info+'<span><b>דורש את שיקול דעתכם.</b> '+FLAGWHY(x)+'</span></div>';
-    if(dec){const lab=m.choice==='theirs'?'קיבלנו את הנוסח שלהם':m.choice==='fallback'?'ירדנו לעמדת הנסיגה':m.text!=null?'השארנו, עם הנוסח שערכתם':x.concession?'הוויתור מקובל':'השארנו את התיקון';h+='<div class="decided'+(m.choice==='theirs'?' th':'')+'"><span>'+IC.check+' '+lab+(m.at?'<span class="areo-by">הוכרע'+(m.by?' על ידי '+esc(m.by):'')+', '+fmtDate(m.at)+'</span>':'')+'</span><button class="linkbtn" data-undo="'+x.id+'">לשנות</button></div>'}
-    else{const fb=fallbackText(r,x);h+='<div class="decide-row"><button class="btn primary big" data-keep="'+x.id+'">'+IC.check+(x.concession?'הוויתור מקובל, להמשיך':'להשאיר ולהמשיך')+'</button>'+(changed?'<div class="alt"><button class="btn soft small" data-choice="theirs" data-id="'+x.id+'">לקבל את שלהם</button><button class="btn soft small" data-choice="fallback" data-id="'+x.id+'" '+(fb?'':'disabled title="אין במדיניות עמדת נסיגה לסעיף הזה"')+'>עמדת נסיגה</button></div>':'')+'</div>'}
+    if(dec&&!(x.mine&&m.text==null)){const lab=x.mine?'השינוי שלכם נכנס להסכם':m.choice==='theirs'?'קיבלנו את הנוסח שלהם':m.choice==='fallback'?'ירדנו לעמדת הנסיגה':m.text!=null?'השארנו, עם הנוסח שערכתם':x.concession?'הוויתור מקובל':'השארנו את התיקון';h+='<div class="decided'+(m.choice==='theirs'?' th':'')+'"><span>'+IC.check+' '+lab+(m.at?'<span class="areo-by">הוכרע'+(m.by?' על ידי '+esc(m.by):'')+', '+fmtDate(m.at)+'</span>':'')+'</span>'+(x.mine?'':'<button class="linkbtn" data-undo="'+x.id+'">לשנות</button>')+'</div>';
+      /* the decision stays on screen; moving on is the lawyer's click */
+      const nx=nextOpen(d,r,x);h+='<div class="gonext">'+(nx?'<button class="btn primary big" data-go="'+nx.id+'">לסעיף הבא: '+esc(nx.topic||where(r,nx))+IC.down+'</button>':'<button class="btn primary big" data-finish>לסיים את הסבב</button>')+'</div>'}
+    else if(!dec){const fb=fallbackText(r,x);h+='<div class="decide-row"><button class="btn primary big" data-keep="'+x.id+'">'+IC.check+(x.concession?'הוויתור מקובל':'להשאיר את שלנו')+'</button>'+(changed?'<div class="alt"><button class="btn soft small" data-choice="theirs" data-id="'+x.id+'">לקבל את שלהם</button><button class="btn soft small" data-choice="fallback" data-id="'+x.id+'" '+(fb?'':'disabled title="אין במדיניות עמדת נסיגה לסעיף הזה"')+'>עמדת נסיגה</button></div>':'')+'</div>'}
   }
   const acc=(k,title,peek,body)=>'<details class="acc" data-acc="'+k+'"'+(S.acc.has(k)?' open':'')+'><summary><span>'+title+'</span>'+(peek?'<small>'+esc(peek)+'</small>':'')+'</summary><div class="accb">'+body+'</div></details>';
   let more='';
   if(changed){
     const b=bubbleOf(x,d,r);
     more+=acc('bubble','ההערה לצד השני',nt==null?'אין, קיבלתם את הנוסח שלהם':b.slice(0,46)+(b.length>46?'...':''),nt==null?'':'<textarea id="bubble" data-bubble="'+x.id+'" '+(locked?'readonly':'')+' aria-label="ההערה לצד השני">'+esc(b)+'</textarea>'+(locked?'':'<div class="tone" data-tonebar>'+[['softer','רך יותר'],['firmer','תקיף יותר'],['shorter','קצר יותר'],['english','באנגלית']].map(([k,t])=>'<button data-tone="'+k+'">'+IC.spark+t+'</button>').join('')+'</div>'));
-    more+=acc('edit','לערוך את הנוסח','','<textarea id="newtext" data-edit="'+x.id+'" style="font-family:var(--legaltype);min-height:140px" '+(locked?'readonly':'')+' aria-label="הנוסח שלנו">'+esc(nt==null?orig:nt)+'</textarea><span class="faint" style="font-size:13px">נכנס להסכם ולקובץ ה-Word כשיוצאים מהשדה.</span>');
+    more+=acc('edit','לערוך את הנוסח','','<textarea id="newtext" class="doc" data-edit="'+x.id+'" dir="rtl" '+(locked?'readonly':'')+' aria-label="הנוסח שלנו">'+esc(nt==null?orig:nt)+'</textarea>'+(locked?'':'<div class="editacts"><button class="btn primary small" data-saveedit="'+x.id+'">לשמור</button>'+(x.mine||m.text!=null?'<button class="btn soft small" data-dropedit="'+x.id+'">לבטל את השינוי</button>':'')+'<span class="faint">טקסט בלבד. נכנס להסכם ולקובץ ה-Word כשלוחצים לשמור או יוצאים מהשדה.</span></div>'));
   }
   if(x.internal_comment||(x.reserve||[]).length)more+=acc('inner','פנימי, לא נשלח','',(x.internal_comment?'<p>'+esc(x.internal_comment)+'</p>':'')+((x.reserve||[]).length?'<p><b>שמור בצד לסבב הבא:</b> '+esc(x.reserve.join('; '))+'</p>':''));
   more+=acc('policy','המדיניות',ru?ru.title:'אין עמדה במדיניות',ru?[['g','ירוק',ru.green],['y','צהוב',ru.yellow],['r','אדום',ru.red]].filter(z=>z[2]).map(z=>'<div class="lv'+(x.offered_now&&TRACK[x.offered_now]&&TRACK[x.offered_now][0]===z[0]?' cur':'')+'"><b><span class="dot '+z[0]+'"></span>'+z[1]+'</b><span>'+esc(z[2])+'</span></div>').join('')+(ru.basis?'<span class="faint" style="font-size:13px">'+esc(ru.basis)+'</span>':''):'<p class="muted">ההצעה היא שיקול הדעת המקצועי של Areo, ולכן היא מסומנת כדורשת את שיקול דעתכם.</p>');
@@ -805,8 +1214,8 @@ function item(d,r,x,locked){
 /* like accept / reject in Word: two small buttons on the change itself */
 function hovHtml(d,r,x,locked){
   if(locked||S.mode==='theirs'||x.op==='accept')return '';
-  const m=mark(x.id,d,r);if(m.reviewed||m.choice)return '';
-  return '<span class="hov"><button data-keep="'+x.id+'" title="להשאיר את התיקון">'+IC.check+'</button><button data-choice="theirs" data-id="'+x.id+'" title="לקבל את הנוסח שלהם">↶</button></span>';
+  const m=mark(x.id,d,r);if(m.reviewed||m.choice||x.mine)return '';
+  return '<span class="hov"><button class="ours" data-keep="'+x.id+'" title="להשאיר את התיקון שלנו" aria-label="להשאיר את התיקון שלנו">'+IC.check+'<span>להשאיר שלנו</span></button><button class="theirs" data-choice="theirs" data-id="'+x.id+'" title="לקבל את הנוסח שלהם" aria-label="לקבל את הנוסח שלהם">'+IC.x+'<span>לקבל שלהם</span></button></span>';
 }
 
 /* a signed negotiation: what came out of it, and the text */
@@ -845,7 +1254,7 @@ function finish(){
     '<textarea id="email" style="min-height:150px" aria-label="מייל הליווי">'+esc(S.email[rkey(d,r)]!=null?S.email[rkey(d,r)]:defaultEmail(d,r))+'</textarea>'+
     '<div class="chips"><button class="btn soft small" data-copyemail>'+IC.copy+'להעתיק את התוכן</button><button class="btn soft small" data-email>'+IC.spark+'Areo תנסח</button></div>'+
     mailBlock(ok)+'<span class="faint" style="font-size:13px">שולחים מתוכנת המייל שלכם? את העותק לשליחה מורידים בשלב "הקבצים", ומסמנים כאן "נשלח".</span>';
-  const s5=sent?'<span class="muted">סומן כנשלח ב-'+fmtDate(sent)+'.</span>':'<div class="mf"><label class="due">לצפות לתשובה עד <input type="date" id="expect" value="'+plusDays(7)+'"></label><button class="btn primary" data-marksent '+(ok?'':'disabled')+'>נשלח לצד השני</button></div><span class="faint" style="font-size:13.5px">שלחתם את העותק ואת המייל? סמנו, והעסקה תעבור ל"אצל הצד השני".</span>';
+  const s5=sent?'<span class="muted">סומן כנשלח ב-'+fmtDate(sent)+'.</span>':'<div class="mf"><label class="due">לצפות לתשובה עד <input type="date" id="expect" value="'+plusDays(7)+'"></label><button class="btn primary" data-marksent '+(ok?'':'disabled')+'>נשלח לצד השני</button></div><span class="faint" style="font-size:13.5px">שלחתם את העותק ואת המייל? סמנו, והעסקה תעבור לעמודה "לתגובת הצד שכנגד".</span>';
   openOverlay('<div class="scrim" id="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="fnt"><div class="mh"><div><h2 id="fnt">לסיים את סבב '+r.n+' מול '+esc(d.counterparty)+'</h2><p class="muted" style="font-size:14px">'+(ok?'אפשר לשלוח.':'לפני השליחה: '+[c.asks?nn(c.asks,'שאלה פתוחה','שאלות פתוחות'):'',c.flag?nn(c.flag,'שינוי אחד שדורש','שינויים שדורשים')+' את שיקול דעתכם':''].filter(Boolean).join(' ו'))+'</p></div><button class="iconbtn" data-close aria-label="סגירה">✕</button></div><div class="fsteps">'+
   step(1,'שאלות פתוחות',!c.asks,!!c.asks,s1)+step(2,'מה שדורש את שיקול דעתכם',!c.flag,!c.asks&&!!c.flag,s2)+step(3,'הקבצים',false,ok,s3,'<small class="faint" style="font-size:13px;font-weight:500">Word, בעקוב אחר שינויים</small>')+step(4,'מייל ליווי',false,false,s4)+step(5,'שליחה',!!sent,ok&&!sent,s5)+'</div></div></div>');
 }
@@ -1139,7 +1548,46 @@ async function writeEmail(){
 /* ---------- moving around ---------- */
 function openDeal(id){S.deal=id;S.view='deal';S.round=null;S.sel=null;S.tab='bubble';S.qf='all';render();scrollTo(0,0)}
 function go(id,scroll){S.sel=id;S.view='deal';S._scroll=scroll!==false;S._side=true;render()}
-function nextOpen(){const d=dl(),r=rd(),i=r.changes.findIndex(x=>x.id===S.sel);const rest=r.changes.slice(i+1).concat(r.changes.slice(0,i));const n=rest.find(x=>stOf(x,d,r)==='open');if(n)go(n.id);else{render();toast('עברתם על כל השינויים')}}
+/* the next change still waiting for the lawyer, after this one (and from the top when the end is reached) */
+function nextOpen(d,r,x){const i=r.changes.indexOf(x);const rest=r.changes.slice(i+1).concat(i>0?r.changes.slice(0,i):[]);return rest.find(z=>{const s=stOf(z,d,r);return s==='open'||s==='y'})||null}
+/* a decision stays on its change: the result shows, and the button to the next one */
+function afterDecide(id){const d=dl(),r=rd(),x=r&&r.changes.find(z=>z.id===id);S.sel=id;S._side=true;render();toast(x&&nextOpen(d,r,x)?'נשמר. ההסכם עודכן.':'נשמר. אין עוד שינויים שמחכים להכרעה.')}
+/* the wording of a change, edited in the panel (plain text): into the round's marks, like every decision */
+function saveEdit(id,v){
+  const d=dl(),r=d&&rd(),x=r&&r.changes.find(z=>z.id===id);if(!x)return;
+  if(x.mine){const orig=(r.paras[x.para]||{}).t||'';if(String(v).trim()===orig.trim()){dropEdit(id);return}setMark(id,{user:true,dropped:false,text:v,reviewed:true});S.pend=null}
+  else{const m=mark(id);setMark(id,{text:v,choice:m.choice==='theirs'?null:m.choice,reviewed:true})}
+  S.sel=id;render();toast('הנוסח עודכן בהסכם.');
+}
+function dropEdit(id){
+  const d=dl(),r=d&&rd(),x=r&&r.changes.find(z=>z.id===id);if(!x)return;
+  if(x.mine){if(mark(id).user)setMark(id,{user:false,dropped:true,text:null});S.pend=null;S.sel=null;render();toast('השינוי בוטל.');return}
+  setMark(id,{text:null});render();toast('הנוסח חזר להצעה של Areo.');
+}
+/* double click: on a comment balloon opens the comment to the other side, on the text opens its wording.
+   Read from the click count, since the first click already redraws the page */
+function onDbl(e){
+  const d=dl(),r=d&&rd();if(!r||S.view!=='deal')return;
+  const locked=r!==latest(d)||!!sentAt(d,r),clear=()=>{try{getSelection().removeAllRanges()}catch(x){}};
+  const bal=e.target.closest('.bal[data-d]');
+  if(bal){const x=r.changes.find(z=>z.id===bal.dataset.d);if(!x)return;clear();S.sel=x.id;S.acc=new Set(['bubble']);if(S.qf!=='all')S.qf='all';render();
+    scrollToAcc('bubble');const ta=$('#bubble');if(ta&&!ta.readOnly){ta.focus({preventScroll:true});ta.setSelectionRange(ta.value.length,ta.value.length)}return}
+  const pp=e.target.closest('.page .pp');if(!pp||S.mode==='send')return;
+  if(locked){toast('הסבב הזה לקריאה בלבד.');return}
+  let id=pp.dataset.d;
+  if(!id){const i=+pp.dataset.pi,p=r.paras[i];if(isNaN(i)||!p||p.k==='tbl'||p.k==='title')return;const ex=r.byPara[i];if(isReal(ex))id=ex.id;else{S.pend={k:rkey(d,r),para:i};id=MINE+i}}
+  clear();S.sel=id;S.acc=new Set(['edit']);if(S.qf!=='all')S.qf='all';render();
+  scrollToAcc('edit');const ta=document.querySelector('[data-edit="'+id+'"]');if(ta&&!ta.readOnly){ta.focus({preventScroll:true});ta.setSelectionRange(ta.value.length,ta.value.length)}
+}
+document.addEventListener('click',e=>{
+  const t=e.target;if(!t.closest||!t.closest('.page'))return;
+  if(t.closest('button')){if(e.detail<2)S._btnAt=Date.now();return}
+  if(e.detail!==2)return;e.stopPropagation();
+  if(Date.now()-(S._btnAt||0)<700)return;
+  onDbl(e);
+},true);
+/* a click on "לשמור" or "לבטל" leaves the text field first: that is not a save of its own */
+document.addEventListener('pointerdown',e=>{S._editBtn=!!(e.target.closest&&e.target.closest('[data-saveedit],[data-dropedit]'))},true);
 function rerenderOverlay(){if(S.overlay==='finish')finish();else if(S.overlay==='about')about()}
 
 document.addEventListener('click',async e=>{
@@ -1168,8 +1616,10 @@ document.addEventListener('click',async e=>{
   if('newcomment' in ds){S.acc.add('bubble');render();const ta=$('#bubble');if(ta){ta.focus();ta.scrollIntoView({block:'nearest'})}return}
   if((t.classList.contains('pp')||t.classList.contains('bal'))&&ds.d){S.sel=ds.d;S._side=true;render();return}
   if('step' in ds){const i=r.changes.findIndex(x=>x.id===S.sel)+(+ds.step);if(r.changes[i])go(r.changes[i].id);return}
-  if('keep' in ds){S.sel=ds.keep;setMark(ds.keep,{reviewed:true});nextOpen();return}
-  if('choice' in ds){const cid=ds.id||S.sel;S.sel=cid;setMark(cid,{choice:ds.choice,text:null,reviewed:true});nextOpen();return}
+  if('keep' in ds){setMark(ds.keep,{reviewed:true});afterDecide(ds.keep);return}
+  if('choice' in ds){const cid=ds.id||S.sel;setMark(cid,{choice:ds.choice,text:null,reviewed:true});afterDecide(cid);return}
+  if('saveedit' in ds){S._editBtn=false;const ta=document.querySelector('[data-edit="'+ds.saveedit+'"]');if(ta)saveEdit(ds.saveedit,ta.value);return}
+  if('dropedit' in ds){S._editBtn=false;dropEdit(ds.dropedit);return}
   if('undo' in ds){setMark(ds.undo,{choice:null,text:null,reviewed:false});render();return}
   if('tone' in ds){const x=r.changes.find(z=>z.id===S.sel);if(x)rewrite(x,ds.tone);return}
   if('sugg' in ds){const x=r.changes.find(z=>z.id===S.sel);$('#askq').value=ds.sugg;if(x)askAreo(x,ds.sugg);return}
@@ -1190,7 +1640,7 @@ document.addEventListener('click',async e=>{
   if('mailrefresh' in ds){S.mail=null;loadMail();return}
   if('copysubj' in ds){const v=$('#msubj').value;try{await navigator.clipboard.writeText(v);toast('הנושא הועתק')}catch(err){$('#msubj').select();toast('סמנו והעתיקו')}return}
   if('copyemail' in ds){const v=$('#email').value;try{await navigator.clipboard.writeText(v);toast('הועתק')}catch(err){$('#email').select();toast('סמנו והעתיקו')}return}
-  if('marksent' in ds){const ex=$('#expect');if(ex&&ex.value)setBag('expect',rkey(d,r)+'__expect',ex.value);setBag('sent',rkey(d,r)+'__sent',new Date().toISOString());closeOverlay();S.view='home';render();scrollTo(0,0);toast('נשלח. העסקה עברה ל"אצל הצד השני"');return}
+  if('marksent' in ds){const ex=$('#expect');if(ex&&ex.value)setBag('expect',rkey(d,r)+'__expect',ex.value);setBag('sent',rkey(d,r)+'__sent',new Date().toISOString());closeOverlay();S.view='home';render();scrollTo(0,0);toast('נשלח. העסקה עברה לעמודה "לתגובת הצד שכנגד"');return}
 });
 document.addEventListener('submit',e=>{const f=e.target.closest('[data-ask]');if(!f)return;e.preventDefault();const x=rd().changes.find(z=>z.id===f.dataset.ask),q=$('#askq').value.trim();if(x&&q)askAreo(x,q)});
 document.addEventListener('change',e=>{
@@ -1198,7 +1648,7 @@ document.addEventListener('change',e=>{
   if(t.id==='file')onFile(t.files[0]);
   if(t.dataset.item){setBag('items',t.dataset.item,t.checked);about()}
   if(t.dataset.bubble){setMark(t.dataset.bubble,{bubble:t.value});toast('ההערה נשמרה')}
-  if(t.dataset.edit){const m=mark(t.dataset.edit);setMark(t.dataset.edit,{text:t.value,choice:m.choice==='theirs'?null:m.choice,reviewed:true});render()}
+  if(t.dataset.edit&&!S._editBtn)saveEdit(t.dataset.edit,t.value);
   if(t.id==='email'){S.email[rkey(dl(),rd())]=t.value}
   if(t.dataset.contact){setBag('contact',t.dataset.contact,t.value.trim());S.confirmSend=false;ensureWatch();if(S.overlay==='finish')finish()}
   if(t.id==='msubj'){setBag('subject',rkey(dl(),rd()),t.value)}
@@ -1216,6 +1666,8 @@ function measureBars(){const b=document.querySelector('.dbar');if(b)document.doc
 function stuck(){const b=document.querySelector('.dbar'),rb=document.querySelector('.ribbon');if(b)b.classList.toggle('stuck',scrollY>4);if(rb&&b)rb.classList.toggle('stuck',rb.getBoundingClientRect().top<=b.getBoundingClientRect().bottom+1)}
 addEventListener('scroll',stuck,{passive:true});
 addEventListener('resize',()=>measureBars());
+/* crossing the phone width redraws the deal: one change at a time on a phone, the agreement beside the list elsewhere */
+try{const mq=matchMedia('(max-width:700px)'),f=()=>{if(S.focus==null&&S.view==='deal')render()};mq.addEventListener?mq.addEventListener('change',f):mq.addListener(f)}catch(e){}
 /* Word keeps comment balloons in the margin, level with their text, and never lets them push the text */
 function layoutBalloons(){
   const pg=document.querySelector('.page.withmk'),col=pg&&pg.querySelector('.mkcol');if(!col)return;
