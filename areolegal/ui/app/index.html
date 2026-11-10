@@ -1183,6 +1183,7 @@ document.addEventListener('click',e=>{const f=e.target.closest('[data-flow]');if
   if(e.target.closest('[data-wnew]')){e.preventDefault();openNew();return}
   if(e.target.closest('[data-wnego]')){e.preventDefault();location.hash='nego';const fr=FRAMES.nego;try{fr&&fr.contentWindow.__areoNewDraft&&fr.contentWindow.__areoNewDraft()}catch(x){}}});
 window.__areoClosePlaybook=msg=>{if(PBX){PBX.remove();PBX=null}
+  if(msg){try{localStorage.setItem('areo-onboard-done','1')}catch(e){}}
   /* the end of the opening: back to the overview, with a short welcome */
   if(msg){location.hash='today';try{renderToday()}catch(e){}stoast(msg,4500)}};
 window.addEventListener('hashchange',pbxSync);
@@ -1402,6 +1403,14 @@ const order=APPS[first]?[first].concat(KEYS.filter(k=>k!==first)):KEYS.slice();
 make(order[0]);
 sync();
 if(SH.start==='setup')openFlow('setup');
+/* a system that never went through the opening: once the screens are loaded and nothing is in it yet, the opening steps open by themselves */
+else if(!SH.start&&location.hash!=='#playbook'){let tries=0;const chk=()=>{tries++;let done=false;try{done=localStorage.getItem('areo-onboard-done')==='1'}catch(e){}
+  if(done||PBX)return;const N=read('nego'),P0=read('policy'),C=HASCLM?read('clm'):null;
+  if(!(ready('nego')&&ready('policy')&&(!HASCLM||ready('clm')))){if(tries<40)setTimeout(chk,250);return}
+  /* any activity (a deal, a playbook, a signed agreement): the regular overview, never the opening */
+  const active=(N&&N.deals.length)||(P0&&!P0.empty)||(C&&(C.tasks.length||C.review||(C.ags&&C.ags.length)));
+  if(active){try{localStorage.setItem('areo-onboard-done','1')}catch(e){}return}
+  openFlow('setup')};setTimeout(chk,400)}
 else if(SH.start==='playbook'||location.hash==='#playbook')window.__areoBuildPlaybook();
 else if(SH.start==='draft')setTimeout(()=>{try{openNew()}catch(e){}},300);
 else if(SH.start==='nego'){location.hash='nego';const f=FRAMES.nego,go=()=>{try{f.contentWindow.__areoNewDraft&&f.contentWindow.__areoNewDraft()}catch(e){}};

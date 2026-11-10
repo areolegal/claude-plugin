@@ -230,6 +230,7 @@ if(EMB&&INIT.run&&S.run!==INIT.run){
 }
 if(EMB&&INIT.mode==='setup'&&INIT.has_profile&&S.step==='welcome'&&!S.newCompany)S.step='ob_who';
 /* inside the Areo system: back to the policy screen, not to the setup steps */
+function onboardDone(){try{localStorage.setItem('areo-onboard-done','1')}catch(e){}}
 function leave(msg){try{if(window.parent&&window.parent!==window&&window.parent.__areoClosePlaybook){window.parent.__areoClosePlaybook(msg||'');return}}catch(e){}try{location.href='policy.html'}catch(e){}}
 if(INIT&&INIT.mode==='approve'){S.step='pb_approve';S.pb.family=INIT.family||S.pb.family;if(INIT.approver&&INIT.approver.name)S.approver=INIT.approver}
 if(INIT&&INIT.org_name&&!S.name)S.name=INIT.org_name;
@@ -934,7 +935,7 @@ document.addEventListener('click',function(e){
   if(t.hasAttribute('data-polpick')){var pp=$('#polpick');if(pp){pp.value='';pp.click()}return}
   if(t.hasAttribute('data-obyes')){S.step='pb_home';save();render();window.scrollTo(0,0);return}
   if(t.hasAttribute('data-obnew')){S.newCompany=true;S.name='';S.reg='';S.nameEn='';S.step='company';save();render();window.scrollTo(0,0);return}
-  if(t.hasAttribute('data-obopen')){var dd=S.dataFolder||{};send({label:'פתיחת המערכת מהתיקייה '+clean(dd.name||''),kind:'areo_open_folder',folder_name:clean(dd.name||''),sample_files:(dd.sample||[]).slice(0,8),playbooks:(dd.books||[]).slice(0,10)},'',function(){S.step='ob_open';save();render();window.scrollTo(0,0)});return}
+  if(t.hasAttribute('data-obopen')){var dd=S.dataFolder||{};send({label:'פתיחת המערכת מהתיקייה '+clean(dd.name||''),kind:'areo_open_folder',folder_name:clean(dd.name||''),sample_files:(dd.sample||[]).slice(0,8),playbooks:(dd.books||[]).slice(0,10)},'',function(){onboardDone();S.step='ob_open';save();render();window.scrollTo(0,0)});return}
   if(t.dataset.jump){if(t.disabled)return;S.step=t.dataset.jump;save();render();window.scrollTo(0,0);return}
   if(t.dataset.pbpath){S.pb.path=t.dataset.pbpath;S.pb.side='';S.pb.family=S.pb.path==='upload'?'':S.pb.family;S.step={agreements:'pb_kind',market:'pb_market',upload:'pb_upload'}[S.pb.path];save();render();return}
   if(t.dataset.fopen){S.pb.fpath=(S.pb.fpath||[]).concat([t.dataset.fopen]);save();render();return}
@@ -978,7 +979,7 @@ document.addEventListener('click',function(e){
   if(t.hasAttribute('data-dfconn')){S.dataFolder={mode:'connected'};save();render(true);return}
   if(t.hasAttribute('data-agconn')){var an=$('#agname');S.pb.agName=an?clean(an.value):'';S.pb.agConnected=true;S.pb.picked=null;S.pb.fpick='__connected';S.step='pb_side';save();render();window.scrollTo(0,0);return}
   if(t.dataset.pbwhere){if(t.disabled)return;S.pb.where=t.dataset.pbwhere;save();if(t.dataset.pbwhere==='same'){S.step='pb_side';save()}render();window.scrollTo(0,0);return}
-  if(t.hasAttribute('data-pbstart')){send(pbPayload(),'',function(){try{localStorage.setItem('areo-pb-building',JSON.stringify({family:clean(S.pb.family)||'',at:Date.now()}))}catch(e){}S.step='pb_wait';save();render();window.scrollTo(0,0)});return}
+  if(t.hasAttribute('data-pbstart')){send(pbPayload(),'',function(){onboardDone();try{localStorage.setItem('areo-pb-building',JSON.stringify({family:clean(S.pb.family)||'',at:Date.now()}))}catch(e){}S.step='pb_wait';save();render();window.scrollTo(0,0)});return}
   if(t.hasAttribute('data-send')){send(payload(),'',function(){S.sent=true;S.step='done';save();render()});return}
 });
 document.addEventListener('input',function(e){
