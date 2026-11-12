@@ -94,7 +94,9 @@ input.ltr{direction:ltr;text-align:right}
 .sum .k{font-size:13px;color:var(--mist);margin-bottom:2px}
 .sum .v{font-weight:600;min-width:0;overflow-wrap:anywhere}
 .regs{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
-.regs li{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 14px;background:var(--raised);border-radius:4px}
+.regs li{display:flex;flex-direction:column;gap:2px;padding:10px 14px;background:var(--raised);border-radius:4px}
+.regs li b{font-weight:600;font-size:14.5px}.regs li span{font-size:13.5px;color:var(--mist)}
+.privacy.prev{border:1px solid var(--line-strong);background:var(--warn-soft);color:var(--ink)}.privacy.prev b{color:var(--warn)}
 .tag{font-size:12px;border-radius:4px;padding:2px 10px;white-space:nowrap}
 .tag.c{background:var(--aurora-soft);color:var(--aurora)}
 .tag.l{background:var(--warn-soft);color:var(--warn)}
@@ -107,6 +109,11 @@ details.payload pre{direction:ltr;text-align:left;background:var(--raised);borde
 .next .t{flex:1;min-width:0}
 .next .t b{display:block}
 .next .t span{font-size:14px;color:var(--mist)}
+.next.col{flex-direction:column;align-items:stretch}
+.agents3{display:flex;flex-direction:column;gap:8px}
+.ag3{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:4px;padding:10px 12px;min-width:0}
+.ic3{flex:none;width:32px;height:32px;border-radius:4px;background:var(--raised);color:var(--ink);display:flex;align-items:center;justify-content:center}
+.t3{display:flex;flex-direction:column;gap:2px;min-width:0}.t3 b{font-size:14.5px}.t3 span{font-size:13px;color:var(--mist);line-height:1.5}
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--raised);border:1px solid var(--line-strong);
   color:var(--ink);padding:10px 16px;border-radius:4px;font-size:14px;max-width:calc(100% - 32px)}
 .proto{font-size:12.5px;color:var(--faint);text-align:center}
@@ -214,8 +221,10 @@ var QSTEPS=['company','incorp','sector','brand','summary'];
 var FEN={'שולחן העבודה':'Desktop','מסמכים':'Documents','הורדות':'Downloads'};
 var POS=(INIT&&INIT.positions)||[];
 var S={pb:{path:'',family:'',side:'',deps:[],depsFree:'',market:false,concern:'',dec:{},page:0},step:'welcome',name:'',reg:'',nameEn:'',multi:false,entities:'',country:'ישראל',type:'',listed:[],dual:[],sectors:[],fin:[],desc:'',markets:['ישראל'],mcs:'',
-  dataFolder:null,other:{country:'',type:'',sectors:'',markets:''},signers:[{name:'',role:''}],approver:{name:'',role:''},logo:'',brand:'',website:'',lang:'he',sent:false};
-try{var saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved&&typeof saved==='object'){Object.assign(S,saved);S.sent=false;if(S.step==='pb_scan')S.step='pb_types';if(S.step==='pb_folder')S.step='pb_connect';if(S.step==='pb_build')S.step='pb_approve';if(!S.pb||!S.pb.dec)S.pb={path:'',family:'',side:'',deps:[],depsFree:'',market:false,concern:'',dec:{},page:0};if(!Array.isArray(S.listed))S.listed=[];['dual','fin'].forEach(function(k){if(!Array.isArray(S[k]))S[k]=[]});if(!S.other)S.other={country:'',type:'',sectors:'',markets:''};if(!S.approver)S.approver={name:'',role:''};}}catch(e){}
+  dataFolder:null,other:{country:'',type:'',sectors:'',markets:'',fin:''},tradable:'',xreg:'',signers:[{name:'',role:''}],approver:{name:'',role:''},logo:'',brand:'',website:'',lang:'he',sent:false};
+try{var saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved&&typeof saved==='object'){Object.assign(S,saved);S.sent=false;if(S.step==='pb_scan')S.step='pb_types';if(S.step==='pb_folder')S.step='pb_connect';if(S.step==='pb_build')S.step='pb_approve';if(!S.pb||!S.pb.dec)S.pb={path:'',family:'',side:'',deps:[],depsFree:'',market:false,concern:'',dec:{},page:0};if(!Array.isArray(S.listed))S.listed=[];['dual','fin'].forEach(function(k){if(!Array.isArray(S[k]))S[k]=[]});if(!S.other)S.other={country:'',type:'',sectors:'',markets:'',fin:''};if(!S.approver)S.approver={name:'',role:''};}}catch(e){}
+/* drafts from before 1.31: the renamed financial activities, and an insurer is now the sector, not an activity */
+try{if(S.other.fin==null)S.other.fin='';if(S.xreg==null)S.xreg='';if(S.tradable==null)S.tradable='';S.fin=S.fin.map(function(x){return x==='מנהל קרנות נאמנות'?'מנהל קרנות נאמנות או השקעה':(x==='נותן שירות בנכס פיננסי'?'נותן שירות בנכס פיננסי (כולל נכסים דיגיטליים)':x)});var mbx=S.fin.indexOf('מבטח');if(mbx>=0){S.fin.splice(mbx,1);if(S.sectors.indexOf('ביטוח')<0)S.sectors.push('ביטוח')}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 if(INIT&&INIT.mode==='playbook'&&S.step.indexOf('pb_')!==0){S.step='pb_home'}
 var EMB=!!(INIT&&INIT.embedded);
@@ -282,6 +291,11 @@ var AGENTS=[
  ['מעריך הסיכונים','מה ההסכם חושף אתכם אליו, בשמונה תחומים, ואילו סעיפים מסוכנים יחד.','הערכת סיכונים'],
  ['ניהול חוזים','מאגר ההסכמים החתומים, מועדי חידוש וסיום, והתחייבויות. מוצר נוסף למנוי.','ניהול חוזים'],
  ['המתרגם','תרגום משפטי עברית-אנגלית ששומר על המונחים המוגדרים, המספור וההפניות.','תרגם את ההסכם']];
+/* the three agents on the done screen inside the system: work that starts without a playbook */
+var AGENTS3=[
+ ['המנסח','מנסח טיוטת הסכם מההסכמים שלכם, או לפי המקובל בשוק.','<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'],
+ ['מעריך הסיכונים','מעריך את הסיכונים החוזיים בהסכם מסוים.','<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M12 8v5"/><path d="M12 16h.01"/>'],
+ ['הנושא ונותן','מחיל את הפלייבוק על הסכם של הצד השני, או על טיוטה שלכם שעברה לצד השני. בלי פלייבוק, ההערות לפי מקובלות השוק.','<path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/>']];
 /* the sides of each type, in the words agreements of that type use; mutual only where both sides carry the same duties */
 var SIDE_AUTO='נזהה לפי ההסכמים';
 var SIDES=[
@@ -327,16 +341,22 @@ var CO_FORMS=['חברה פרטית','חברה ציבורית (נסחרת בבו�
 var LISTED=['ישראל','נאסד״ק','ניו יורק (NYSE)','לונדון','רישום דואלי'];
 var DUAL=['נאסד״ק','ניו יורק (NYSE)','לונדון (LSE)','פרנקפורט'];
 var SECTORS=['הייטק','פינטק','פיננסים','ביטוח','אנרגיה','שירותים','נדל״ן','ביומד','בריאות','תעשייה','קמעונאות','תקשורת ומדיה','תחבורה ולוגיסטיקה','מזון ומשקאות','בנייה ותשתיות','ביטחון ותעופה','סייבר','חקלאות','חינוך','תיירות ומלונאות','השכלה גבוהה ומחקר','רווחה וקהילה','שירותים ציבוריים ושלטון מקומי'];
-var FIN=['מנהל תיקים','יועץ השקעות','משווק השקעות','מנהל קרנות נאמנות','חתם','נאמן לאיגרות חוב','זירת סוחר','מימון המונים','חברת דירוג אשראי','מבטח','קרן פנסיה או גמל','נותן שירותים פיננסיים מוסדר','תאגיד בנקאי','חברת כרטיסי אשראי'];
+var FIN=['מנהל תיקים','יועץ השקעות','משווק השקעות','מנהל קרנות נאמנות או השקעה','חתם','נאמן לאיגרות חוב','זירת סוחר','חבר בורסה','מימון המונים','חברת דירוג אשראי','סוכן ביטוח','קרן פנסיה או גמל','נותן שירותים פיננסיים מוסדר','אשראי חוץ בנקאי','ניכיון צ׳קים','נותן שירות בנכס פיננסי (כולל נכסים דיגיטליים)','שירותי תשלום וסליקה','ליסינג','תאגיד בנקאי','חברת כרטיסי אשראי'];
 var MARKETS=['ישראל','האיחוד האירופי','בריטניה','ארצות הברית'];
 var LOGO=['אעלה עכשיו','אוסיף מאוחר יותר','בלי לוגו'];
 var LR=(INIT&&INIT.legal)||{};
 function isOrg(){return !!S.type&&S.type!==NL&&CO_FORMS.indexOf(S.type)<0}
 function W(c,o){return isOrg()?o:c}
-function isListedCo(){return S.type==='חברה ציבורית (נסחרת בבורסה)'||S.type==='חברת אג״ח (גייסה אג״ח לציבור)'}
+/* forms that may or may not be traded: a government company, a statutory corporation, a foreign company */
+var TRADE_FORMS=['חברה ממשלתית','תאגיד סטטוטורי','חברת חוץ (חברה זרה הרשומה בישראל)','חברה זרה (לא רשומה בישראל)'];
+function canTrade(){return TRADE_FORMS.indexOf(S.type)>=0}
+function isListedCo(){return S.type==='חברה ציבורית (נסחרת בבורסה)'||S.type==='חברת אג״ח (גייסה אג״ח לציבור)'||(canTrade()&&S.tradable==='כן')}
 function needFin(){return S.sectors.some(function(x){return x==='פיננסים'||x==='פינטק'||x==='ביטוח'})}
+/* insurance alone is enough for the regulator; the activity is a must only for finance and fintech */
+function finRequired(){return S.sectors.some(function(x){return x==='פיננסים'||x==='פינטק'})}
 function needMcs(){return S.markets.indexOf('האיחוד האירופי')>=0||S.markets.indexOf('ארצות הברית')>=0}
-function needBrand(){return S.logo==='אעלה עכשיו'||!!clean(S.website)}
+/* the website is asked only to take the brand colours, so only when the client chose to brand */
+function needBrand(){return S.brand==='כן'}
 function fullName(n){return String(n||'').trim().split(/\s+/).filter(function(w){return w.length>1}).length>=2}
 function fu(inner){return '<div class="fu"><span class="futag">לפי התשובה שלכם</span>'+inner+'</div>'}
 function otherBox(k,on){return on?'<input type="text" class="otherin" data-other="'+k+'" value="'+esc(S.other[k]||'')+'" placeholder="כתבו את האפשרות שלכם" aria-label="אפשרות אחרת">':''}
@@ -346,7 +366,11 @@ var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){re
 function clean(s){var o='';s=String(s||'');for(var k=0;k<s.length;k++){var c=s.charCodeAt(k);if((c<32&&c!==9&&c!==10&&c!==13)||c===127||c===173||(c>=8203&&c<=8207)||(c>=8234&&c<=8238)||(c>=8288&&c<=8303)||c===65279)continue;o+=s[k]}return o.trim()}
 
 /* מספר רישום ישראלי: 9 ספרות עם ספרת ביקורת (כמו תעודת זהות) */
+function regIL(){return S.country==='ישראל'||/^חברת חוץ/.test(S.type)}
+function regHint(){return regIL()?'ח.פ, מספר עמותה, הקדש או שותפות, או מספר של גוף ציבורי. אין מספר? אפשר להשאיר ריק.':'מספר הרישום במדינת ההתאגדות, כפי שהוא כתוב שם. אין מספר? אפשר להשאיר ריק.'}
+function regNote(){var rs=regState(S.reg);return rs?'<div class="note '+(rs.ok?'ok':'warn')+'">'+rs.msg+'</div>':'<div class="hint">'+regHint()+'</div>'}
 function regState(v){
+  if(!regIL())return null;
   var d=String(v||'').replace(/\D/g,'');
   if(!d) return null;
   if(d.length!==9) return {ok:false,msg:'מספר רישום בישראל הוא 9 ספרות. אפשר להמשיך, ונבדוק שוב בסיכום.'};
@@ -488,27 +512,38 @@ function actions(nextLabel,canNext,showBack){
     '<button type="button" class="btn primary" data-go="next"'+(canNext?'':' disabled')+'>'+nextLabel+'</button></div>';
 }
 
-/* תצוגה מקדימה בלבד: הרשימה הסופית נבנית בסקריפט ההקמה ונבדקת */
+/* תצוגה מקדימה בלבד: הרשימה הסופית נבנית בסקריפט ההקמה ונבדקת. ליד כל רגולטור, למה הוא ברשימה */
 function regulators(){
-  var r=[];var add=function(n,c){if(!r.some(function(x){return x[0]===n}))r.push([n,c])};
+  var r=[];var add=function(n,why){if(!r.some(function(x){return x[0]===n}))r.push([n,why])};
+  var il=S.country==='ישראל'||/^חברת חוץ/.test(S.type),ilm=il||S.markets.indexOf('ישראל')>=0;
   var pub=['חברה ממשלתית','גוף ציבורי או משרד ממשלתי','רשות מקומית','תאגיד סטטוטורי'].indexOf(S.type)>=0;
-  if(S.country==='ישראל'){add('הרשות להגנת הפרטיות','חל');add('רשות המסים','חל');
-    add(S.type==='עמותה'?'רשם העמותות':(S.type==='הקדש או מלכ״ר'?'רשם ההקדשות':(S.type==='שותפות'?'רשם השותפויות':(S.type==='אגודה שיתופית'?'רשם האגודות השיתופיות':'רשם החברות, רשות התאגידים'))),'חל');}
-  if(pub)add('חוק חובת המכרזים: ועדת המכרזים','חל');
+  var type=S.type===NL?clean(S.other.type):S.type;
+  if(il){add('הרשות להגנת הפרטיות','חלה על כל גוף שמחזיק מידע אישי של לקוחות או עובדים.');add('רשות המסים',W('חלה על כל חברה פעילה בישראל.','חלה על כל ארגון פעיל בישראל.'));
+    if(type)add(S.type==='עמותה'?'רשם העמותות':(S.type==='הקדש או מלכ״ר'?'רשם ההקדשות':(S.type==='שותפות'?'רשם השותפויות':(S.type==='אגודה שיתופית'?'רשם האגודות השיתופיות':'רשם החברות, רשות התאגידים'))),'לפי צורת ההתאגדות: '+type+'.');}
+  if(pub)add('חוק חובת המכרזים: ועדת המכרזים','גוף ציבורי מתקשר לפי חוק חובת המכרזים.');
   var ex=isListedCo()?S.listed.concat(S.listed.indexOf('רישום דואלי')>=0?S.dual:[]):[];
-  if(ex.indexOf('ישראל')>=0)add('רשות ניירות ערך','חל');
-  if(ex.some(function(x){return /נאסד|NYSE/.test(x)}))add('הרשות לניירות ערך בארה"ב (SEC)','חל');
-  if(ex.some(function(x){return /לונדון/.test(x)}))add('הרשות להתנהלות פיננסית בבריטניה (FCA)','חל');
-  if(needFin()&&S.fin.length){add('רשות שוק ההון, ביטוח וחיסכון','סביר');if(S.fin.indexOf('תאגיד בנקאי')>=0||S.fin.indexOf('חברת כרטיסי אשראי')>=0)add('בנק ישראל, הפיקוח על הבנקים','חל');if(S.fin.some(function(x){return /תיקים|השקעות|קרנות|חתם|זירת/.test(x)}))add('רשות ניירות ערך','חל')}
-  if(S.sectors.indexOf('בריאות')>=0||S.sectors.indexOf('ביומד')>=0)add('משרד הבריאות','סביר');
-  if(S.sectors.indexOf('אנרגיה')>=0)add('רשות החשמל','סביר');
-  if(S.sectors.indexOf('תקשורת ומדיה')>=0)add('משרד התקשורת','סביר');
-  if(S.sectors.indexOf('ביטחון ותעופה')>=0)add('משרד הביטחון, אגף הפיקוח על יצוא ביטחוני','סביר');
-  if(S.markets.indexOf('האיחוד האירופי')>=0)add('רשויות הגנת המידע באיחוד (GDPR)','סביר');
-  if(S.markets.indexOf('בריטניה')>=0)add('ICO, הממונה על המידע בבריטניה','סביר');
-  if(S.markets.indexOf('ארצות הברית')>=0)add('FTC ורגולטורים במדינות','סביר');
+  if(ex.indexOf('ישראל')>=0||(ex.indexOf('רישום דואלי')>=0))add('רשות ניירות ערך',W('ניירות הערך של החברה נסחרים בבורסה בתל אביב.','ניירות הערך של הארגון נסחרים בבורסה בתל אביב.'));
+  if(ex.some(function(x){return /נאסד|NYSE/.test(x)}))add('הרשות לניירות ערך בארה"ב (SEC)','ניירות הערך נסחרים בבורסה בארצות הברית.');
+  if(ex.some(function(x){return /לונדון/.test(x)}))add('הרשות להתנהלות פיננסית בבריטניה (FCA)','ניירות הערך נסחרים בבורסה בלונדון.');
+  var fin=needFin()?S.fin.filter(function(x){return x!==NL}):[];
+  var acts=function(re){return fin.filter(function(x){return re.test(x)})};
+  if(ilm){
+    var isa=acts(/תיקים|השקעות|קרנות|חתם|זירת|נאמן לאיגרות|מימון המונים|דירוג|חבר בורסה/);
+    if(isa.length)add('רשות ניירות ערך','בגלל העיסוק: '+isa.join(', ')+'.');
+    var cm=acts(/סוכן ביטוח|פנסיה|נותן שירותים פיננסיים|אשראי חוץ|ניכיון|נכס פיננסי|תשלום|ליסינג/);
+    if(cm.length)add('רשות שוק ההון, ביטוח וחיסכון','בגלל העיסוק: '+cm.join(', ')+'.');
+    else if(S.sectors.indexOf('ביטוח')>=0)add('רשות שוק ההון, ביטוח וחיסכון','בגלל תחום הביטוח.');
+    var boi=acts(/תאגיד בנקאי|כרטיסי אשראי|תשלום וסליקה/);
+    if(boi.length)add('בנק ישראל, הפיקוח על הבנקים','בגלל העיסוק: '+boi.join(', ')+'.');
+    var sec=function(names,reg){var hit=S.sectors.filter(function(x){return names.indexOf(x)>=0});if(hit.length)add(reg,'לפי תחום הפעילות: '+hit.join(', ')+'.')};
+    sec(['בריאות','ביומד'],'משרד הבריאות');sec(['אנרגיה'],'רשות החשמל');sec(['תקשורת ומדיה'],'משרד התקשורת');sec(['ביטחון ותעופה'],'משרד הביטחון, אגף הפיקוח על יצוא ביטחוני');
+  }
+  if(S.markets.indexOf('האיחוד האירופי')>=0)add('רשויות הגנת המידע באיחוד (GDPR)','לפי הפעילות באיחוד האירופי.');
+  if(S.markets.indexOf('בריטניה')>=0)add('ICO, הממונה על המידע בבריטניה','לפי הפעילות בבריטניה.');
+  if(S.markets.indexOf('ארצות הברית')>=0)add('FTC ורגולטורים במדינות','לפי הפעילות בארצות הברית.');
   return r;
 }
+function xregs(){return clean(S.xreg).split(/\s*[,\n]\s*/).map(function(x){return clean(x).slice(0,80)}).filter(Boolean).slice(0,6)}
 
 function payload(){
   /* the answers go out in the format of answers.json that build_profile.py reads, field for field */
@@ -516,11 +551,12 @@ function payload(){
   var multiO=function(k,a){return a.map(function(v){return o(k,v)}).filter(Boolean)};
   var mk=multiO('markets',S.markets);if(needMcs())clean(S.mcs).split(/\s*,\s*/).forEach(function(x){x=clean(x);if(x&&mk.indexOf(x)<0)mk.push(x)});
   return {label:'הקמת Areo: פרטי '+W('החברה','הארגון')+' לשמירה',kind:'areo_setup_answers',answers:{
-    organization_name:clean(S.name),organization_name_en:clean(S.nameEn),registration_number:clean(S.reg).replace(/\D/g,''),
+    organization_name:clean(S.name),organization_name_en:clean(S.nameEn),registration_number:regIL()?clean(S.reg).replace(/\D/g,''):clean(S.reg).slice(0,40),
     incorporation_country:o('country',S.country),organization_type:o('type',S.type),
     listed_in:isListedCo()?S.listed.slice(0,5):[],dual_listed_in:isListedCo()&&S.listed.indexOf('רישום דואלי')>=0?S.dual.slice(0,4):[],
-    sectors:multiO('sectors',S.sectors).slice(0,12),activity_description:clean(S.desc).slice(0,400),financial_activity:needFin()?S.fin.slice(0,8):[],
-    markets:mk.slice(0,12),logo:S.logo,website:clean(S.website),brand_theme:needBrand()?S.brand:'',display_language:S.lang==='en'?'en':'he',
+    sectors:multiO('sectors',S.sectors).slice(0,12),financial_activity:needFin()?multiO('fin',S.fin).slice(0,10):[],
+    markets:mk.slice(0,12),logo:S.logo,website:needBrand()?clean(S.website):'',brand_theme:S.brand,display_language:S.lang==='en'?'en':'he',
+    user_declared_regulators:xregs(),
     entities:S.multi?clean(S.entities).split(/\n+/).map(clean).filter(Boolean).slice(0,10):[]}};
 }
 function render(keep){
@@ -571,11 +607,8 @@ function render(keep){
       '<div class="actions">'+(EMB?'<button type="button" class="btn ghost" data-leave>חזרה למדיניות</button>':'<button type="button" class="btn ghost" data-jump="done">חזרה</button>')+'<button type="button" class="btn primary" data-jump="pb_people"'+(dfok?'':' disabled')+'>המשך</button></div></section>';
   }
   else if(S.step==='company'){
-    var rs=regState(S.reg);
-    h='<section class="card"><div class="eyebrow">'+W('החברה','הארגון')+'</div><h2>'+W('מה שם החברה ומספר הרישום שלה?','מה שם הארגון ומספר הרישום שלו?')+'</h2>'+
-      '<div class="row2"><div class="field"><label for="name">'+W('שם החברה','שם הארגון')+'</label><input type="text" id="name" value="'+esc(S.name)+'" placeholder="השם הרשום, למשל חברה בע&quot;מ" autocomplete="organization"></div>'+
-      '<div class="field"><label for="reg">מספר רישום</label><input type="text" id="reg" class="ltr" inputmode="numeric" value="'+esc(S.reg)+'" placeholder="51-555555-9"></div></div>'+
-      '<div id="regnote">'+(rs?'<div class="note '+(rs.ok?'ok':'warn')+'">'+rs.msg+'</div>':'<div class="hint">ח.פ, מספר עמותה, הקדש או שותפות, מספר של גוף ציבורי, או מספר רישום בחו"ל. אין מספר? אפשר להשאיר ריק.</div>')+'</div>'+
+    h='<section class="card"><div class="eyebrow">'+W('החברה','הארגון')+'</div><h2>'+W('מה שם החברה?','מה שם הארגון?')+'</h2>'+
+      '<div class="field"><label for="name">'+W('שם החברה','שם הארגון')+'</label><input type="text" id="name" value="'+esc(S.name)+'" placeholder="השם הרשום, למשל חברה בע&quot;מ" autocomplete="organization"><div class="hint">את מספר הרישום נשאל אחרי מדינת ההתאגדות.</div></div>'+
       '<div class="field"><label for="nameEn">השם הרשום באנגלית<span class="optional">רשות</span></label><input type="text" id="nameEn" class="ltr" dir="ltr" value="'+esc(S.nameEn)+'" placeholder="Dugma Technologies Ltd"><div class="hint">'+W('כך החברה תופיע','כך הארגון יופיע')+' בהסכמים באנגלית.</div></div>'+
       '<div class="field"><div class="chips"><button type="button" class="chip" data-toggle="multi" aria-pressed="'+S.multi+'">אני מייצג כמה ישויות</button></div>'+
         (S.multi?fu('<label for="entities">אילו ישויות נוספות?</label><textarea id="entities" placeholder="שם הישות, מספר רישום">'+esc(S.entities)+'</textarea><div class="hint">שורה לכל ישות. השאלות כאן הן על הישות הראשונה, ועל כל ישות נוספת נשאל אחר כך.</div>'):'')+'</div>'+
@@ -585,19 +618,20 @@ function render(keep){
     h='<section class="card"><div class="eyebrow">התאגדות</div><h2>'+W('איפה ואיך החברה מאוגדת?','איפה ואיך הארגון מאוגד?')+'</h2>'+
       '<div class="field"><span class="legend">'+W('באיזו מדינה החברה רשומה?','באיזו מדינה התאגד הארגון?')+'</span>'+chips(COUNTRIES.concat([NL]),S.country,'country',false,true)+otherBox('country',S.country===NL)+'<div class="hint">המדינה קובעת את דין החברות והדיווח, לא את כל הרגולציה.</div></div>'+
       '<div class="field"><span class="legend">'+W('מהי צורת ההתאגדות של החברה?','מהי צורת ההתאגדות של הארגון?')+'</span>'+chips(FORMS.concat([NL]),S.type,'type',false,true)+otherBox('type',S.type===NL)+
+        (canTrade()?fu('<span class="legend">'+W('האם ניירות הערך של החברה נסחרים בבורסה?','האם ניירות הערך של הארגון נסחרים בבורסה?')+'</span>'+chips(['כן','לא'],S.tradable,'tradable',false,true)):'')+
         (isListedCo()?fu('<span class="legend">היכן נסחרות המניות או אגרות החוב?<span class="optional">אפשר לסמן כמה</span></span>'+chips(LISTED,S.listed,'listed',true,true)+
           (S.listed.indexOf('רישום דואלי')>=0?fu('<span class="legend">באילו בורסות נסחרת '+W('החברה','הארגון')+' ברישום הדואלי?</span>'+chips(DUAL,S.dual,'dual',true)+'<div class="hint">בורסה אמריקאית מוסיפה את ה-SEC, ולונדון מוסיפה את ה-FCA.</div>'):'')):'')+'</div>'+
-      actions('המשך',!!S.type&&(S.type!==NL||!!clean(S.other.type))&&(!isListedCo()||S.listed.length>0)&&(S.listed.indexOf('רישום דואלי')<0||!isListedCo()||S.dual.length>0),true)+'</section>';
+      '<div class="field"><label for="reg">מספר רישום<span class="optional">רשות</span></label><input type="text" id="reg" class="ltr" dir="ltr"'+(regIL()?' inputmode="numeric" placeholder="51-555555-9"':'')+' value="'+esc(S.reg)+'"><div id="regnote">'+regNote()+'</div></div>'+
+      actions('המשך',incorpOk(),true)+'</section>';
   }
   else if(S.step==='sector'){
     h='<section class="card"><div class="eyebrow">תחום ושווקים</div><h2>'+W('במה החברה עוסקת, ואיפה היא פועלת?','במה הארגון עוסק, ואיפה הוא פועל?')+'</h2>'+
       '<div class="field"><span class="legend">תחומי הפעילות<span class="optional">אפשר לסמן כמה</span></span>'+chips(SECTORS.concat([NL]),S.sectors,'sectors',true,true)+otherBox('sectors',S.sectors.indexOf(NL)>=0)+
-        (needFin()?fu('<span class="legend">מה העיסוק הפיננסי המדויק?</span>'+chips(FIN,S.fin,'fin',true)+'<div class="hint">העיסוק קובע איזה רישיון ואיזה רגולטור חלים.</div>'):'')+'</div>'+
-      '<div class="field"><label for="desc">תיאור קצר של הפעילות<span class="optional">רשות</span></label><textarea id="desc" placeholder="במילים שלכם, למשל מה '+W('החברה מוכרת','הארגון עושה')+' ולמי">'+esc(S.desc)+'</textarea></div>'+
-      '<div class="field"><span class="legend">באילו אזורים '+W('החברה פועלת','הארגון פועל')+', מוכר או מחזיק לקוחות ועובדים?</span>'+chips(MARKETS.concat([NL]),S.markets,'markets',true,true)+otherBox('markets',S.markets.indexOf(NL)>=0)+
+        (needFin()?fu('<span class="legend">מה העיסוק הפיננסי המדויק?<span class="optional">'+(finRequired()?'אפשר לסמן כמה':'אפשר לדלג')+'</span></span>'+chips(FIN.concat([NL]),S.fin,'fin',true,true)+otherBox('fin',S.fin.indexOf(NL)>=0)+'<div class="hint">העיסוק קובע איזה רישיון ואיזה רגולטור חלים.</div>'):'')+'</div>'+
+      '<div class="field"><span class="legend">באילו אזורים יש '+W('לחברה','לארגון')+' פעילות, מכירות, לקוחות או עובדים?</span>'+chips(MARKETS.concat([NL]),S.markets,'markets',true,true)+otherBox('markets',S.markets.indexOf(NL)>=0)+
         (needMcs()?fu('<label for="mcs">באילו מדינות באזור, ובארה"ב באילו מדינות?<span class="optional">אפשר לדלג</span></label><input type="text" id="mcs" value="'+esc(S.mcs)+'" placeholder="למשל: גרמניה, צרפת, קליפורניה"><div class="hint">מדינות מופרדות בפסיק. אם הפעילות בכל האזור, השאירו ריק.</div>'):'')+
         '<div class="hint">האזורים קובעים אילו רגולטורים חלים על ההסכמים שלכם.</div></div>'+
-      actions('המשך',S.sectors.length>0&&S.markets.length>0&&(!needFin()||S.fin.length>0),true)+'</section>';
+      actions('המשך',S.sectors.length>0&&S.markets.length>0&&(!finRequired()||S.fin.length>0),true)+'</section>';
   }
   else if(S.step==='pb_people'){
     h='<section class="card"><div class="eyebrow">פלייבוק · מורשי חתימה</div><h2>מי חותם על המסמכים?</h2>'+
@@ -610,11 +644,11 @@ function render(keep){
   }
   else if(S.step==='brand'){
     h='<section class="card"><div class="eyebrow">לוגו, מיתוג ושפה</div><h2>איך התוצרים ייראו, ובאיזו שפה?</h2>'+
-      '<div class="field"><span class="legend">להוסיף את הלוגו של '+W('החברה','הארגון')+'?</span>'+chips(LOGO,S.logo,'logo',false,true)+'<div class="hint">הלוגו יופיע בסביבות העבודה ובמסמכים שתפיקו.'+(S.logo==='אעלה עכשיו'?' את הקובץ מצרפים בשיחה, בכפתור הפלוס, אחרי השמירה.':'')+'</div></div>'+
-      '<div class="field"><label for="website">אתר '+W('החברה','הארגון')+'<span class="optional">רשות</span></label><input type="url" id="website" class="ltr" dir="ltr" value="'+esc(S.website)+'" placeholder="example.co.il"><div class="hint">נשתמש בו רק לצבעי המותג, אם תבחרו למתג.</div>'+
-        (needBrand()?fu('<span class="legend">למתג את סביבות העבודה בצבעים שלכם?</span>'+chips(['כן','לא'],S.brand,'brand',false)+'<div class="hint">ניקח את הצבעים מהלוגו או מהאתר, והלוגו יופיע ליד סימן Areo. אפשר לשנות בכל עת.</div>'):'')+'</div>'+
-      '<div class="field"><span class="legend">באיזו שפה להציג את Areo?</span>'+chips(['עברית','English'],S.lang==='en'?'English':'עברית','lang',false)+'</div>'+
-      actions('לסיכום',!!S.logo&&(!needBrand()||!!S.brand),true)+'</section>';
+      '<div class="field"><span class="legend">להוסיף את הלוגו של '+W('החברה','הארגון')+'?</span>'+chips(LOGO,S.logo,'logo',false,true)+'<div class="hint">הלוגו יופיע בסביבות העבודה ובמסמכים שתפיקו. קובץ PNG, JPG או SVG.'+(S.logo==='אעלה עכשיו'?' את הקובץ מצרפים בשיחה, בכפתור הפלוס, אחרי השמירה.':'')+'</div></div>'+
+      '<div class="field"><span class="legend">למתג את סביבות העבודה בצבעים שלכם?</span>'+chips(['כן','לא'],S.brand,'brand',false,true)+'<div class="hint">ניקח את הצבעים מהלוגו או מהאתר. אפשר לשנות בכל עת.</div>'+
+        (needBrand()?fu('<label for="website">אתר '+W('החברה','הארגון')+'<span class="optional">רשות</span></label><input type="url" id="website" class="ltr" dir="ltr" value="'+esc(S.website)+'" placeholder="example.co.il"><div class="hint">נשתמש בו רק לצבעי המותג.</div>'):'')+'</div>'+
+      '<div class="field"><span class="legend">באיזו שפה להציג את Areo (שפת הממשק ושפת התוצרים)?</span>'+chips(['עברית','English'],S.lang==='en'?'English':'עברית','lang',false)+'</div>'+
+      actions('לסיכום',!!S.logo&&!!S.brand,true)+'</section>';
   }
   else if(S.step==='summary'){
     var rs2=regState(S.reg),regs=regulators(),p=payload();
@@ -622,14 +656,16 @@ function render(keep){
     var pv=function(k,v){return v===NL?(clean(S.other[k])||NL):v};
     h='<section class="card"><div class="eyebrow">סיכום</div><h2>כך נבנה הפרופיל. הכול נכון?</h2>'+
       '<div class="sum">'+
-      g(W('החברה','הארגון'),esc(S.name)+(S.reg?' · '+esc(S.reg):'')+(S.nameEn?'<br><span dir="ltr">'+esc(S.nameEn)+'</span>':'')+(S.multi&&clean(S.entities)?'<br><span style="font-weight:400">ישויות נוספות: '+esc(clean(S.entities).split(/\n+/).join('; '))+'</span>':''),'company')+
-      g('התאגדות',esc(pv('country',S.country))+' · '+esc(pv('type',S.type))+(isListedCo()&&S.listed.length?' · נסחרת: '+esc(S.listed.join(', '))+(S.listed.indexOf('רישום דואלי')>=0&&S.dual.length?' ('+esc(S.dual.join(', '))+')':''):''),'incorp')+
-      g('תחום ושווקים',esc(S.sectors.map(function(x){return pv('sectors',x)}).join(', '))+(needFin()&&S.fin.length?'<br>עיסוק פיננסי: '+esc(S.fin.join(', ')):'')+'<br>'+esc(S.markets.map(function(x){return pv('markets',x)}).join(', '))+(needMcs()&&clean(S.mcs)?' ('+esc(S.mcs)+')':'')+(S.desc?'<br><span style="font-weight:400">'+esc(S.desc)+'</span>':''),'sector')+
-      g('לוגו, מיתוג ושפה',esc(S.logo||'')+(needBrand()&&S.brand?' · מיתוג: '+esc(S.brand):'')+(S.website?' · <span dir="ltr">'+esc(S.website)+'</span>':'')+' · '+(S.lang==='en'?'English':'עברית'),'brand')+
+      g(W('החברה','הארגון'),esc(S.name)+(S.nameEn?'<br><span dir="ltr">'+esc(S.nameEn)+'</span>':'')+(S.multi&&clean(S.entities)?'<br><span style="font-weight:400">ישויות נוספות: '+esc(clean(S.entities).split(/\n+/).join('; '))+'</span>':''),'company')+
+      g('התאגדות',esc(pv('country',S.country))+' · '+esc(pv('type',S.type))+(isListedCo()&&S.listed.length?' · נסחרת: '+esc(S.listed.join(', '))+(S.listed.indexOf('רישום דואלי')>=0&&S.dual.length?' ('+esc(S.dual.join(', '))+')':''):'')+(clean(S.reg)?'<br>מספר רישום: <span dir="ltr">'+esc(clean(S.reg))+'</span>':''),'incorp')+
+      g('תחום ושווקים',esc(S.sectors.map(function(x){return pv('sectors',x)}).join(', '))+(needFin()&&S.fin.length?'<br>עיסוק פיננסי: '+esc(S.fin.map(function(x){return pv('fin',x)}).join(', ')):'')+'<br>'+esc(S.markets.map(function(x){return pv('markets',x)}).join(', '))+(needMcs()&&clean(S.mcs)?' ('+esc(S.mcs)+')':''),'sector')+
+      g('לוגו, מיתוג ושפה',esc(S.logo||'')+(S.brand?' · מיתוג: '+esc(S.brand):'')+(needBrand()&&clean(S.website)?' · <span dir="ltr">'+esc(clean(S.website))+'</span>':'')+' · '+(S.lang==='en'?'English':'עברית'),'brand')+
       '</div>'+(rs2&&!rs2.ok?'<div class="note warn">'+rs2.msg+'</div>':'')+
-      '<div class="field"><span class="legend">הרגולטורים שהסוכנים יבדקו מולם</span><ul class="regs">'+
-        regs.map(function(x){return '<li><span>'+esc(x[0])+'</span><span class="tag '+(x[1]==='חל'?'c':'l')+'">'+x[1]+'</span></li>'}).join('')+'</ul>'+
-        '<div class="hint">תצוגה מקדימה. Areo יאמת את הרשימה בבניית הפרופיל, ואפשר להוסיף או להסיר אחר כך.</div></div>'+
+      '<div class="field"><span class="legend">'+W('הרגולטורים העיקריים הרלוונטיים לחברה','הרגולטורים העיקריים הרלוונטיים לארגון')+'</span>'+
+        '<div class="privacy prev"><b>הערכה ראשונית בלבד.</b> הרשימה נגזרת מהתשובות שלכם ואינה ייעוץ משפטי. Areo תאמת אותה בבניית הפרופיל, ואפשר להוסיף או להסיר רגולטור בכל עת.</div>'+
+        '<ul class="regs">'+(regs.length?regs.map(function(x){return '<li><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></li>'}).join(''):'<li><span>מהתשובות לא עלה רגולטור מסוים. אפשר להוסיף אחד כאן למטה.</span></li>')+'</ul>'+
+        '<label for="xreg" style="margin-top:6px">רגולטור נוסף הרלוונטי לכם<span class="optional">רשות</span></label><input type="text" id="xreg" value="'+esc(S.xreg)+'" placeholder="למשל: רשות התעופה האזרחית">'+
+        '<div class="hint">כמה רגולטורים? מפרידים בפסיק.</div></div>'+
       '<div class="privacy"><b>מה נשמר ואיפה:</b> הפרטים האלה נשמרים ב-Areo, לכל הארגון. מורשי חתימה, פלייבוקים ומסמכים נשמרים רק בתיקייה שלכם, בשלב הפלייבוק.</div>'+
       '<details class="payload"><summary>מה נשמר בפרופיל</summary><pre>'+esc(JSON.stringify(p,null,2))+'</pre></details>'+
       '<div class="actions"><button type="button" class="btn ghost" data-go="back">חזרה</button><button type="button" class="btn primary" data-send>אישור ושמירה</button></div>'+
@@ -638,11 +674,13 @@ function render(keep){
   else if(S.step==='done'&&EMB){
     /* inside the system: the next step is a button here, never a word to type in the chat */
     h='<section class="card"><div class="done-mark" aria-hidden="true">✓</div><h2>פרטי '+W('החברה','הארגון')+' נשמרו</h2>'+
-      '<p class="lead">'+W('החברה','הארגון')+' מוכנה. עובד נוסף אצלכם יפתח את Areo והפרטים כבר יהיו שם.</p>'+
+      '<p class="lead">'+W('החברה הוקמה ב-Areo.','הארגון הוקם ב-Areo.')+' הצעד המומלץ הבא: יצירת פלייבוק (המדיניות החוזית שלכם).</p>'+
       '<div class="next" style="border-color:var(--aurora)"><div class="t"><b>הצעד הבא: הפלייבוק</b><span>המדיניות החוזית שלכם: מה מקובל עליכם, איפה אפשר להתגמש ומה לא מסכימים. כל העבודה של Areo נשענת עליה.</span></div>'+
       '<button type="button" class="btn primary" data-jump="pb_home">להמשיך לפלייבוק</button></div>'+
-      '<div class="next"><div class="t"><b>לעבור ישר למערכת</b><span>אפשר להתחיל לעבוד גם בלי פלייבוק: לגרור טיוטה שקיבלתם מהצד השני, או לבקש הסכם חדש. Areo תעבוד לפי שיקול דעת מקצועי, ואת הפלייבוק אפשר לבנות בכל רגע, בלשונית מדיניות.</span></div>'+
-      '<button type="button" class="btn ghost" data-leave data-hello>לעבור למערכת בלי פלייבוק</button></div>'+
+      '<div class="next col"><div class="t"><b>לעבור למערכת, אפשר להתחיל לעבוד גם בלי פלייבוק</b></div>'+
+      '<div class="agents3">'+AGENTS3.map(function(a){return '<div class="ag3"><span class="ic3" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+a[2]+'</svg></span><span class="t3"><b>'+a[0]+'</b><span>'+a[1]+'</span></span></div>'}).join('')+'</div>'+
+      (INIT&&INIT.has_clm?'':'<div class="hint">ניהול חוזים (CLM), מערכת לניהול כל ההסכמים בארגון, הוא מוצר נפרד.</div>')+
+      '<button type="button" class="btn ghost" data-leave data-hello style="align-self:flex-start">לעבור למערכת בלי פלייבוק</button></div>'+
       '<div class="actions"><button type="button" class="btn ghost" data-leave>חזרה למערכת</button><span></span></div></section>';
   }
   else if(S.step==='done'){
@@ -874,15 +912,16 @@ function go(dir){
   S.step=STEPS[Math.max(0,Math.min(STEPS.length-1,i+(dir==='back'?-1:1)))];
   save();render();window.scrollTo(0,0);
 }
+function incorpOk(){return !!S.type&&(S.type!==NL||!!clean(S.other.type))&&(!canTrade()||!!S.tradable)&&(!isListedCo()||S.listed.length>0)&&(S.listed.indexOf('רישום דואלי')<0||!isListedCo()||S.dual.length>0)}
 function canNext(){var b=$('[data-go=next]');return b&&!b.disabled}
 function refreshNext(){
   var b=$('[data-go=next]')||{};
   var ok=true;
   if(S.step==='company')ok=!!clean(S.name)&&(!S.multi||!!clean(S.entities));
-  if(S.step==='incorp')ok=!!S.type&&(S.type!==NL||!!clean(S.other.type))&&(!isListedCo()||S.listed.length>0)&&(!isListedCo()||S.listed.indexOf('רישום דואלי')<0||S.dual.length>0);
-  if(S.step==='sector')ok=S.sectors.length>0&&S.markets.length>0&&(!needFin()||S.fin.length>0);
+  if(S.step==='incorp')ok=incorpOk();
+  if(S.step==='sector')ok=S.sectors.length>0&&S.markets.length>0&&(!finRequired()||S.fin.length>0);
   if(S.step==='pb_people'){var b2=$('[data-gonext]');ok=S.signers.some(function(x){return clean(x.name)});if(b2)b2.disabled=!ok}
-  if(S.step==='brand')ok=!!S.logo&&(!needBrand()||!!S.brand);
+  if(S.step==='brand')ok=!!S.logo&&!!S.brand;
   if(b.tagName)b.disabled=!ok;
 }
 
@@ -985,9 +1024,10 @@ document.addEventListener('click',function(e){
 document.addEventListener('input',function(e){
   var t=e.target;
   if(clmInput(t))return;
-  if(t.id==='name'||t.id==='nameEn'||t.id==='desc'){S[t.id]=t.value}
-  else if(t.id==='website'){var had=needBrand();S.website=t.value;if(had!==needBrand()){save();var y3=window.scrollY,pos=t.selectionStart;render(true);window.scrollTo(0,y3);var wi=$('#website');if(wi){wi.focus({preventScroll:true});try{wi.setSelectionRange(pos,pos)}catch(x){}}return}}
-  else if(t.id==='reg'){S.reg=t.value;var rs=regState(S.reg),n=$('#regnote');if(n)n.innerHTML=rs?'<div class="note '+(rs.ok?'ok':'warn')+'">'+rs.msg+'</div>':'<div class="hint">ח.פ, מספר עמותה או שותפות, או מספר רישום בחו"ל. אין מספר? אפשר להשאיר ריק.</div>'}
+  if(t.id==='name'||t.id==='nameEn'){S[t.id]=t.value}
+  else if(t.id==='website'){S.website=t.value}
+  else if(t.id==='xreg'){S.xreg=t.value}
+  else if(t.id==='reg'){S.reg=t.value;var n=$('#regnote');if(n)n.innerHTML=regNote()}
   else if(t.id==='mtype'){S.pb.family=t.value;S.pb.side='';document.querySelectorAll('[data-chip=mtype]').forEach(function(c){c.setAttribute('aria-pressed','false')});var nb3=$('[data-need]');if(nb3)nb3.disabled=!clean(t.value)}
   else if(t.id==='sideFree'){S.pb.side=t.value;document.querySelectorAll('[data-chip=side]').forEach(function(c){c.setAttribute('aria-pressed','false')})}
   else if(t.id==='depsFree'){S.pb.depsFree=t.value}

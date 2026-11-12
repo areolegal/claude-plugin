@@ -98,25 +98,25 @@ def capabilities(has_clm=True,with_mail=False):
 	if with_mail:A['mcp']={'servers':[dict(A)for A in MCP_SERVERS]}
 	return A
 def _write(path,text):A=path;A=Path(A);A.parent.mkdir(parents=True,exist_ok=True);B=A.with_name(A.name+'.tmp');B.write_text(text,encoding='utf-8');os.replace(str(B),str(A))
-def render_playbook(company,out,mode='playbook'):
-	A=company;C=PLAYBOOK_PAGE.read_text(encoding='utf-8')
+def render_playbook(company,out,mode='playbook',has_clm=False):
+	B=company;C=PLAYBOOK_PAGE.read_text(encoding='utf-8')
 	if C.count(PLAYBOOK_MARKER)!=1:raise ValueError('בעמוד ההקמה אין את הסמן %s פעם אחת בדיוק'%PLAYBOOK_MARKER)
-	B={'mode':mode,'embedded':True,'run':_dt.datetime.now().strftime('%Y%m%d%H%M%S')}
-	if A:B['org_name']=A
-	B['has_profile']=bool(A);D=json.dumps(B,ensure_ascii=False).replace('</','<\\/');E='<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>';_write(out,E+C.replace(PLAYBOOK_MARKER,D)+'</body></html>')
+	A={'mode':mode,'embedded':True,'run':_dt.datetime.now().strftime('%Y%m%d%H%M%S')}
+	if B:A['org_name']=B
+	A['has_profile']=bool(B);A['has_clm']=bool(has_clm);D=json.dumps(A,ensure_ascii=False).replace('</','<\\/');E='<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>';_write(out,E+C.replace(PLAYBOOK_MARKER,D)+'</body></html>')
 DEFAULT_TITLE='Areo'
 def page_title(title=None):A=' '.join(str(title or'').replace('<','').replace('>','').replace('&','ו').split())[:80];return A or DEFAULT_TITLE
 def build(data_dir,out_dir,products=(BASE,),today=None,template=None,start=None,title=None):
-	L=title;K=template;E=out_dir;B=data_dir;B,E=Path(B),Path(E)
+	M=title;L=template;E=out_dir;B=data_dir;B,E=Path(B),Path(E)
 	if not B.is_dir():raise FileNotFoundError('אין תיקייה %s'%B)
-	D=shell_data(B,products,today,start);M=CLM in D['products'];A=E/'apps';A.mkdir(parents=True,exist_ok=True);C={};policy_view.render(B,A/'policy.html');C['apps/policy.html']=str(A/'policy.html');render_playbook(D['company'],A/'playbook.html');C['apps/playbook.html']=str(A/'playbook.html');render_playbook(D['company'],A/'setup.html',mode='setup');C['apps/setup.html']=str(A/'setup.html');nego_view.render(B,A/'nego.html');C['apps/nego.html']=str(A/'nego.html');N=[];F=A/'clm.html'
-	if M:clm_view.render(B,F);C['apps/clm.html']=str(F)
+	D=shell_data(B,products,today,start);H=CLM in D['products'];A=E/'apps';A.mkdir(parents=True,exist_ok=True);C={};policy_view.render(B,A/'policy.html');C['apps/policy.html']=str(A/'policy.html');render_playbook(D['company'],A/'playbook.html');C['apps/playbook.html']=str(A/'playbook.html');render_playbook(D['company'],A/'setup.html',mode='setup',has_clm=H);C['apps/setup.html']=str(A/'setup.html');nego_view.render(B,A/'nego.html');C['apps/nego.html']=str(A/'nego.html');N=[];F=A/'clm.html'
+	if H:clm_view.render(B,F);C['apps/clm.html']=str(F)
 	else:
 		if F.exists():F.unlink()
 		N.append('apps/clm.html')
-	P=Path(K)if K else TEMPLATE;H=E/'index.html';I=inject(P.read_text(encoding='utf-8'),D);I=I.replace('<title>%s</title>'%DEFAULT_TITLE,'<title>%s</title>'%page_title(L),1);_write(H,I);G={'index.html':H.stat().st_size};G.update({A:Path(B).stat().st_size for(A,B)in C.items()});J=sum(G.values());O=[A for(A,B)in G.items()if B>PAGE_LIMIT]
-	if O or J>TOTAL_LIMIT:raise ValueError('האפליקציה גדולה מדי לפרסום: %s (סך הכול %d בתים)'%(', '.join(O)or'סך הכול',J))
-	return{'index':str(H),'title':page_title(L),'files':C,'capabilities':capabilities(M),'remove':N,'products':D['products'],'sizes':G,'total_bytes':J}
+	P=Path(L)if L else TEMPLATE;I=E/'index.html';J=inject(P.read_text(encoding='utf-8'),D);J=J.replace('<title>%s</title>'%DEFAULT_TITLE,'<title>%s</title>'%page_title(M),1);_write(I,J);G={'index.html':I.stat().st_size};G.update({A:Path(B).stat().st_size for(A,B)in C.items()});K=sum(G.values());O=[A for(A,B)in G.items()if B>PAGE_LIMIT]
+	if O or K>TOTAL_LIMIT:raise ValueError('האפליקציה גדולה מדי לפרסום: %s (סך הכול %d בתים)'%(', '.join(O)or'סך הכול',K))
+	return{'index':str(I),'title':page_title(M),'files':C,'capabilities':capabilities(H),'remove':N,'products':D['products'],'sizes':G,'total_bytes':K}
 def publish_spec(result):
 	A=result;B={'file_path':A['index'],'title':A.get('title')or DEFAULT_TITLE,'files':A['files'],'capabilities':A['capabilities'],'sizes':A['sizes'],'total_bytes':A['total_bytes']}
 	if A['remove']:B['remove_on_update']=A['remove']

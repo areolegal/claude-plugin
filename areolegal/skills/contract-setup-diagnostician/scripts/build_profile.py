@@ -5,10 +5,11 @@ from datetime import date
 SCHEMA_VERSION='1.0'
 CORE_VERSION='2.1.0'
 PRIMARY_DISPLAY=['הרשות להגנת הפרטיות','רשות התחרות','רשות ניירות ערך','רשות שוק ההון, ביטוח וחיסכון','בנק ישראל, הפיקוח על הבנקים','SEC','FCA','EDPB and the national data protection authorities · מפקחות על הגנת המידע האישי והעברתו באיחוד האירופי','ICO · מפקח על הגנת המידע האישי בבריטניה','FTC and the state privacy regulators · מפקחים על הגנת הצרכן והפרטיות בארצות הברית, פדרלית ובמדינות','רשם העמותות','רשם ההקדשות','המועצה להשכלה גבוהה ות״ת','רשות החברות הממשלתיות','משרד הפנים, הממונה על המחוז','Charity Commission','IRS, 501(c)(3)','Office for Students']
-SEC_ISA={'מנהל תיקים','יועץ השקעות','משווק השקעות','מנהל קרנות נאמנות','חתם','נאמן לאיגרות חוב','זירת סוחר','מימון המונים','רכז הצעה, מימון המונים','חברת דירוג אשראי'}
-CMISA={'מבטח','קרן פנסיה או גמל','נותן שירותים פיננסיים מוסדר'}
+SEC_ISA={'מנהל תיקים','יועץ השקעות','משווק השקעות','מנהל קרנות נאמנות','מנהל קרנות נאמנות או השקעה','חתם','נאמן לאיגרות חוב','זירת סוחר','מימון המונים','רכז הצעה, מימון המונים','חברת דירוג אשראי','חבר בורסה'}
+CMISA={'מבטח','סוכן ביטוח','קרן פנסיה או גמל','נותן שירותים פיננסיים מוסדר','אשראי חוץ בנקאי','ניכיון צ׳קים',"ניכיון צ'קים",'נותן שירות בנכס פיננסי (כולל נכסים דיגיטליים)','נותן שירות בנכס פיננסי','שירותי תשלום וסליקה'}
 BOI={'תאגיד בנקאי','חברת כרטיסי אשראי'}
-SECTOR_REGULATORS={'אנרגיה':['רשות החשמל','משרד האנרגיה','המשרד להגנת הסביבה'],'ביומד':['משרד הבריאות','רשות החדשנות'],'בריאות':['משרד הבריאות'],'מזון ומשקאות':['משרד הבריאות','הרשות להגנת הצרכן ולסחר הוגן'],'תקשורת ומדיה':['משרד התקשורת'],'נדל״ן':['רשם הקבלנים','רשות מקרקעי ישראל'],'בנייה ותשתיות':['רשם הקבלנים','רשות מקרקעי ישראל','המשרד להגנת הסביבה'],'ביטחון ותעופה':['אפ״י','BIS and DDTC · מפקחים על בקרת היצוא הביטחוני והדו-שימושי של ארצות הברית'],'תחבורה ולוגיסטיקה':['משרד התחבורה'],'חינוך':['משרד החינוך','הרשות להגנת הצרכן ולסחר הוגן'],'קמעונאות':['הרשות להגנת הצרכן ולסחר הוגן'],'תיירות ומלונאות':['הרשות להגנת הצרכן ולסחר הוגן'],'תעשייה':['המשרד להגנת הסביבה','רשות החדשנות'],'הייטק':['רשות החדשנות'],'סייבר':['רשות החדשנות']}
+FIN_POTENTIAL={'ליסינג':'רשות שוק ההון, ביטוח וחיסכון','שירותי תשלום וסליקה':'בנק ישראל, הפיקוח על הבנקים'}
+SECTOR_REGULATORS={'ביטוח':['רשות שוק ההון, ביטוח וחיסכון'],'אנרגיה':['רשות החשמל','משרד האנרגיה','המשרד להגנת הסביבה'],'ביומד':['משרד הבריאות','רשות החדשנות'],'בריאות':['משרד הבריאות'],'מזון ומשקאות':['משרד הבריאות','הרשות להגנת הצרכן ולסחר הוגן'],'תקשורת ומדיה':['משרד התקשורת'],'נדל״ן':['רשם הקבלנים','רשות מקרקעי ישראל'],'בנייה ותשתיות':['רשם הקבלנים','רשות מקרקעי ישראל','המשרד להגנת הסביבה'],'ביטחון ותעופה':['אפ״י','BIS and DDTC · מפקחים על בקרת היצוא הביטחוני והדו-שימושי של ארצות הברית'],'תחבורה ולוגיסטיקה':['משרד התחבורה'],'חינוך':['משרד החינוך','הרשות להגנת הצרכן ולסחר הוגן'],'קמעונאות':['הרשות להגנת הצרכן ולסחר הוגן'],'תיירות ומלונאות':['הרשות להגנת הצרכן ולסחר הוגן'],'תעשייה':['המשרד להגנת הסביבה','רשות החדשנות'],'הייטק':['רשות החדשנות'],'סייבר':['רשות החדשנות']}
 SECTOR_NOT_IL={'BIS and DDTC · מפקחים על בקרת היצוא הביטחוני והדו-שימושי של ארצות הברית'}
 SECTOR_IL_MARKET_ONLY={'רשם הקבלנים','רשות מקרקעי ישראל'}
 MARKET_REGULATORS={'האיחוד האירופי':[('EDPB and the national data protection authorities · מפקחות על הגנת המידע האישי והעברתו באיחוד האירופי','Likely'),('European AI Office · מפקח על פיתוח ושימוש במערכות בינה מלאכותית באיחוד האירופי','Likely')],'בריטניה':[('ICO · מפקח על הגנת המידע האישי בבריטניה','Potential'),('SFO · חוקר ותובע שוחד ומרמה חמורה בבריטניה','Likely')],'ארצות הברית':[('FTC and the state privacy regulators · מפקחים על הגנת הצרכן והפרטיות בארצות הברית, פדרלית ובמדינות','Potential'),('DOJ · אוכף את איסור השוחד של גורמים זרים','Likely'),('OFAC','Likely'),('BIS','Likely')]}
@@ -35,7 +36,7 @@ EU_NAMES={'eu','european union','האיחוד האירופי','איחוד איר
 NOT_LISTED={'לא נסחרת','לא','not traded','not listed','none','no','-'}
 STATUS_LABELS={'he':{'Confirmed':'מאומת','Likely':'סביר','Potential':'אפשרי','UserDeclared':'הוצהר על ידכם'},'en':{'Confirmed':'Verified','Likely':'Likely','Potential':'Possible','UserDeclared':'Declared by you'}}
 LOGO_LABELS={'he':{'attached':'צורף','later':'יתווסף מאוחר יותר','none':'בלי לוגו'},'en':{'attached':'Attached','later':'To be added later','none':'No logo'}}
-EN_LABELS={'country':{'ישראל':'Israel','ארצות הברית':'United States','בריטניה':'United Kingdom','גרמניה':'Germany','צרפת':'France','הולנד':'Netherlands','אירלנד':'Ireland','קפריסין':'Cyprus'},'form':{'חברה פרטית':'Private company','חברה ציבורית (נסחרת בבורסה)':'Public company (listed on a stock exchange)','חברת אג״ח (גייסה אג״ח לציבור)':'Bond issuer (raised bonds from the public)','חברה ממשלתית':'Government company','גוף ציבורי או משרד ממשלתי':'Public body or government ministry','רשות מקומית':'Local authority (municipality or local council)','תאגיד סטטוטורי':'Statutory corporation','מוסד להשכלה גבוהה או אוניברסיטה':'University or higher education institution','עמותה':'Non-profit association (amuta)','חל״צ (חברה לתועלת הציבור)':'Public benefit company (PBC)','הקדש או מלכ״ר':'Charity, trust, foundation or other non-profit','חברת חוץ (חברה זרה הרשומה בישראל)':'Foreign company registered in Israel','חברה זרה (לא רשומה בישראל)':'Foreign company (not registered in Israel)','שותפות':'Partnership','אגודה שיתופית':'Cooperative society','גוף ציבורי (משרד ממשלתי, רשות מקומית, תאגיד סטטוטורי)':'Public body (government ministry, local authority, statutory corporation)','עמותה או חל״צ':'Non-profit association or public benefit company'},'listed':{'ישראל':'Israel (TASE)','נאסד״ק':'Nasdaq','ניו יורק (NYSE)':'New York (NYSE)','לונדון':'London','רישום דואלי':'Dual listing'},'dual':{'נאסד״ק':'Nasdaq','ניו יורק (NYSE)':'New York (NYSE)','לונדון (LSE)':'London (LSE)','פרנקפורט':'Frankfurt'},'sector':{'הייטק':'High-tech','פינטק':'Fintech','פיננסים':'Finance','ביטוח':'Insurance','אנרגיה':'Energy','שירותים':'Services','נדל״ן':'Real estate','ביומד':'Biomed','בריאות':'Healthcare','תעשייה':'Industry','קמעונאות':'Retail','תקשורת ומדיה':'Telecom and media','תחבורה ולוגיסטיקה':'Transport and logistics','מזון ומשקאות':'Food and beverages','בנייה ותשתיות':'Construction and infrastructure','ביטחון ותעופה':'Defense and aerospace','סייבר':'Cyber','חקלאות':'Agriculture','חינוך':'Education','תיירות ומלונאות':'Tourism and hospitality','השכלה גבוהה ומחקר':'Higher education and research','רווחה וקהילה':'Welfare and community','שירותים ציבוריים ושלטון מקומי':'Public services and local government'},'fin':{'מנהל תיקים':'Portfolio manager','יועץ השקעות':'Investment adviser','משווק השקעות':'Investment marketer','מנהל קרנות נאמנות':'Mutual fund manager','חתם':'Underwriter','נאמן לאיגרות חוב':'Bond trustee','זירת סוחר':'Trading platform (forex and CFD)','מימון המונים':'Crowdfunding (offering coordinator)','רכז הצעה, מימון המונים':'Crowdfunding (offering coordinator)','חברת דירוג אשראי':'Credit rating agency','מבטח':'Insurer','קרן פנסיה או גמל':'Pension or provident fund','נותן שירותים פיננסיים מוסדר':'Regulated financial services provider','תאגיד בנקאי':'Banking corporation','חברת כרטיסי אשראי':'Credit card company'},'market':{'ישראל':'Israel','האיחוד האירופי':'European Union','בריטניה':'United Kingdom','ארצות הברית':'United States'},'logo':{'אעלה עכשיו':'Upload now','אוסיף מאוחר יותר':'Add later','בלי לוגו':'No logo'},'brand':{'כן':'Yes','לא':'No'}}
+EN_LABELS={'country':{'ישראל':'Israel','ארצות הברית':'United States','בריטניה':'United Kingdom','גרמניה':'Germany','צרפת':'France','הולנד':'Netherlands','אירלנד':'Ireland','קפריסין':'Cyprus'},'form':{'חברה פרטית':'Private company','חברה ציבורית (נסחרת בבורסה)':'Public company (listed on a stock exchange)','חברת אג״ח (גייסה אג״ח לציבור)':'Bond issuer (raised bonds from the public)','חברה ממשלתית':'Government company','גוף ציבורי או משרד ממשלתי':'Public body or government ministry','רשות מקומית':'Local authority (municipality or local council)','תאגיד סטטוטורי':'Statutory corporation','מוסד להשכלה גבוהה או אוניברסיטה':'University or higher education institution','עמותה':'Non-profit association (amuta)','חל״צ (חברה לתועלת הציבור)':'Public benefit company (PBC)','הקדש או מלכ״ר':'Charity, trust, foundation or other non-profit','חברת חוץ (חברה זרה הרשומה בישראל)':'Foreign company registered in Israel','חברה זרה (לא רשומה בישראל)':'Foreign company (not registered in Israel)','שותפות':'Partnership','אגודה שיתופית':'Cooperative society','גוף ציבורי (משרד ממשלתי, רשות מקומית, תאגיד סטטוטורי)':'Public body (government ministry, local authority, statutory corporation)','עמותה או חל״צ':'Non-profit association or public benefit company'},'listed':{'ישראל':'Israel (TASE)','נאסד״ק':'Nasdaq','ניו יורק (NYSE)':'New York (NYSE)','לונדון':'London','רישום דואלי':'Dual listing'},'dual':{'נאסד״ק':'Nasdaq','ניו יורק (NYSE)':'New York (NYSE)','לונדון (LSE)':'London (LSE)','פרנקפורט':'Frankfurt'},'sector':{'הייטק':'High-tech','פינטק':'Fintech','פיננסים':'Finance','ביטוח':'Insurance','אנרגיה':'Energy','שירותים':'Services','נדל״ן':'Real estate','ביומד':'Biomed','בריאות':'Healthcare','תעשייה':'Industry','קמעונאות':'Retail','תקשורת ומדיה':'Telecom and media','תחבורה ולוגיסטיקה':'Transport and logistics','מזון ומשקאות':'Food and beverages','בנייה ותשתיות':'Construction and infrastructure','ביטחון ותעופה':'Defense and aerospace','סייבר':'Cyber','חקלאות':'Agriculture','חינוך':'Education','תיירות ומלונאות':'Tourism and hospitality','השכלה גבוהה ומחקר':'Higher education and research','רווחה וקהילה':'Welfare and community','שירותים ציבוריים ושלטון מקומי':'Public services and local government'},'fin':{'מנהל תיקים':'Portfolio manager','יועץ השקעות':'Investment adviser','משווק השקעות':'Investment marketer','מנהל קרנות נאמנות':'Mutual fund manager','חתם':'Underwriter','נאמן לאיגרות חוב':'Bond trustee','זירת סוחר':'Trading platform (forex and CFD)','מימון המונים':'Crowdfunding (offering coordinator)','רכז הצעה, מימון המונים':'Crowdfunding (offering coordinator)','חברת דירוג אשראי':'Credit rating agency','מבטח':'Insurer','מנהל קרנות נאמנות או השקעה':'Mutual or investment fund manager','חבר בורסה':'Stock exchange member','סוכן ביטוח':'Insurance agent','אשראי חוץ בנקאי':'Non-bank credit provider','ניכיון צ׳קים':'Cheque discounting',"ניכיון צ'קים":'Cheque discounting','נותן שירות בנכס פיננסי (כולל נכסים דיגיטליים)':'Financial asset service provider (incl. digital assets)','נותן שירות בנכס פיננסי':'Financial asset service provider','שירותי תשלום וסליקה':'Payment and clearing services','ליסינג':'Leasing','קרן פנסיה או גמל':'Pension or provident fund','נותן שירותים פיננסיים מוסדר':'Regulated financial services provider','תאגיד בנקאי':'Banking corporation','חברת כרטיסי אשראי':'Credit card company'},'market':{'ישראל':'Israel','האיחוד האירופי':'European Union','בריטניה':'United Kingdom','ארצות הברית':'United States'},'logo':{'אעלה עכשיו':'Upload now','אוסיף מאוחר יותר':'Add later','בלי לוגו':'No logo'},'brand':{'כן':'Yes','לא':'No'}}
 REG_EN={'הרשות להגנת הפרטיות':'Privacy Protection Authority (Israel)','רשות התחרות':'Israel Competition Authority','רשות ניירות ערך':'Israel Securities Authority','רשות שוק ההון, ביטוח וחיסכון':'Capital Market, Insurance and Savings Authority (Israel)','בנק ישראל, הפיקוח על הבנקים':'Bank of Israel, Banking Supervision Department','EDPB and the national data protection authorities · מפקחות על הגנת המידע האישי והעברתו באיחוד האירופי':'EDPB and the national data protection authorities','FTC and the state privacy regulators · מפקחים על הגנת הצרכן והפרטיות בארצות הברית, פדרלית ובמדינות':'FTC and the state privacy regulators','רשות המסים':'Israel Tax Authority','רשם החברות, רשות התאגידים':'Registrar of Companies, Israel Corporations Authority','משרד העבודה, מינהל הסדרה ואכיפה':'Ministry of Labor, Regulation and Enforcement Administration','המוסד לביטוח לאומי':'National Insurance Institute','נציבות שוויון זכויות לאנשים עם מוגבלות':'Commission for Equal Rights of Persons with Disabilities','הבורסה לניירות ערך בתל אביב':'Tel Aviv Stock Exchange','רשות החברות הממשלתיות':'Government Companies Authority','רשם העמותות':'Registrar of Non-profit Associations','רשם השותפויות, רשות התאגידים':'Registrar of Partnerships, Israel Corporations Authority','רשם האגודות השיתופיות':'Registrar of Cooperative Societies','רשות החשמל':'Electricity Authority','משרד האנרגיה':'Ministry of Energy','המשרד להגנת הסביבה':'Ministry of Environmental Protection','משרד הבריאות':'Ministry of Health','רשות החדשנות':'Israel Innovation Authority','הרשות להגנת הצרכן ולסחר הוגן':'Consumer Protection and Fair Trade Authority','משרד התקשורת':'Ministry of Communications','רשם הקבלנים':'Registrar of Contractors','רשות מקרקעי ישראל':'Israel Land Authority','אפ״י':'Defense Export Controls Agency (DECA)','BIS and DDTC · מפקחים על בקרת היצוא הביטחוני והדו-שימושי של ארצות הברית':'BIS and DDTC','משרד התחבורה':'Ministry of Transport','משרד החינוך':'Ministry of Education','European AI Office · מפקח על פיתוח ושימוש במערכות בינה מלאכותית באיחוד האירופי':'European AI Office','SFO · חוקר ותובע שוחד ומרמה חמורה בבריטניה':'SFO','DOJ · אוכף את איסור השוחד של גורמים זרים':'DOJ','ICO · מפקח על הגנת המידע האישי בבריטניה':'ICO','רשם ההקדשות':'Registrar of Endowments (Israel)','המועצה להשכלה גבוהה ות״ת':'Council for Higher Education and its Planning and Budgeting Committee (Israel)','משרד הפנים, הממונה על המחוז':'Ministry of Interior, District Commissioner (Israel)','Charity Commission':'Charity Commission (UK)','IRS, 501(c)(3)':'IRS, section 501(c)(3) (US)','Office for Students':'Office for Students (UK)'}
 REG_HE={B.casefold():A for(A,B)in REG_EN.items()}
 CATALOG_EN={'הגנת הפרטיות ואבטחת מידע':'Privacy and data security','שימוש במערכת AI':'AI system use','איסור שוחד':'Anti-bribery','סנקציות':'Sanctions','בקרת יצוא':'Export controls','פרטיות לפי דין מקומי':'Local-law privacy','עיבוד מידע אישי על ידי צד שלישי':'Personal-data processing by a third party','העברת מידע אישי בין מדינות':'Cross-border personal-data transfer','התחייבויות כלפי מחזיקי ניירות ערך ואמות מידה פיננסיות':'Obligations to securities holders and financial covenants','ציות רגולטורי פיננסי':'Financial regulatory compliance','גילוי מכוח כללי שקיפות לציבור':'Disclosure under public-access rules','כללי רכש והליך תחרותי':'Public procurement and competitive-procedure rules','תקציב והתחייבות לתקופה':'Budget appropriation and multi-year commitment','כספי תרומות ודיווח לרשם':'Restricted donor funds and reporting to the registrar'}
@@ -138,28 +139,28 @@ def geo_markets(a):
 	if B and B not in A:A.append(B)
 	return A
 def derive(a):
-	D=a['display_language'];A=T[D];B,G=[],[];I,F,Y,Z=nexus(a);J=A[Z]if Z else None;K=Y and not F
+	D=a['display_language'];A=T[D];B,G=[],[];I,F,Y,Z=nexus(a);K=A[Z]if Z else None;L=Y and not F
 	if I is None:G.append(A['q_country'])
-	P=re.sub('[\\s\\-.]','',str(a.get('registration_number')or''))
-	if P and(I=='IL'or a['organization_type']in IL_REGISTERED_FORMS)and not il_check_digit(P):G.append(A['q_regno']%P)
+	Q=re.sub('[\\s\\-.]','',str(a.get('registration_number')or''))
+	if Q and(I=='IL'or a['organization_type']in IL_REGISTERED_FORMS)and not il_check_digit(Q):G.append(A['q_regno']%Q)
 	l=I not in(None,'IL')or any(market_code(A)not in('IL',)for A in a['markets'])
 	if l and not(a.get('organization_name_en')or'').strip()and re.search('[\\u0590-\\u05ff]',a.get('organization_name')or''):G.append(A['q_name_en'])
 	if F:
-		add(B,'הרשות להגנת הפרטיות','Confirmed',A['privacy']%J);add(B,'רשות התחרות','Potential',A['il_axis']%J)
-		for L in['רשות המסים','רשם החברות, רשות התאגידים','משרד העבודה, מינהל הסדרה ואכיפה','המוסד לביטוח לאומי','נציבות שוויון זכויות לאנשים עם מוגבלות']:
-			if L=='רשם החברות, רשות התאגידים'and a['organization_type']in NON_COMPANY_FORMS:continue
-			add(B,L,'Confirmed',A['il_axis']%J)
-	elif K:add(B,'הרשות להגנת הפרטיות','Potential',A['privacy']%J);add(B,'רשות התחרות','Potential',A['il_axis']%J)
-	Q=label('form',a['organization_type'],D)
+		add(B,'הרשות להגנת הפרטיות','Confirmed',A['privacy']%K);add(B,'רשות התחרות','Potential',A['il_axis']%K)
+		for M in['רשות המסים','רשם החברות, רשות התאגידים','משרד העבודה, מינהל הסדרה ואכיפה','המוסד לביטוח לאומי','נציבות שוויון זכויות לאנשים עם מוגבלות']:
+			if M=='רשם החברות, רשות התאגידים'and a['organization_type']in NON_COMPANY_FORMS:continue
+			add(B,M,'Confirmed',A['il_axis']%K)
+	elif L:add(B,'הרשות להגנת הפרטיות','Potential',A['privacy']%K);add(B,'רשות התחרות','Potential',A['il_axis']%K)
+	R=label('form',a['organization_type'],D)
 	if I=='IL':
-		for(C,E,*b)in CORPORATE_REGULATORS.get(a['organization_type'],[]):add(B,C,E,A[b[0]if b else'corp']%Q)
-	for(m,H,R,C)in FOREIGN_FORM_REGULATORS:
+		for(C,E,*b)in CORPORATE_REGULATORS.get(a['organization_type'],[]):add(B,C,E,A[b[0]if b else'corp']%R)
+	for(m,H,S,C)in FOREIGN_FORM_REGULATORS:
 		if a['organization_type']not in m:continue
-		if I==H:add(B,C,'Likely',A['corp_inc']%(Q,label('market',R,D)))
-		elif R in market_rows(a):add(B,C,'Potential',A['corp_mkt']%(Q,label('market',R,D)))
-	M=sorted(((A,venue_code(A))for A in a['listed_in']),key=lambda x:x[1]!='DUAL')
-	if a['organization_type'].startswith('חברת אג״ח')and(any(A=='TASE'for(B,A)in M)or not M and(F or K)):add(B,'רשות ניירות ערך','Confirmed'if F or M else'Potential',A['bond'])
-	for(n,H)in M:
+		if I==H:add(B,C,'Likely',A['corp_inc']%(R,label('market',S,D)))
+		elif S in market_rows(a):add(B,C,'Potential',A['corp_mkt']%(R,label('market',S,D)))
+	N=sorted(((A,venue_code(A))for A in a['listed_in']),key=lambda x:x[1]!='DUAL')
+	if a['organization_type'].startswith('חברת אג״ח')and(any(A=='TASE'for(B,A)in N)or not N and(F or L)):add(B,'רשות ניירות ערך','Confirmed'if F or N else'Potential',A['bond'])
+	for(n,H)in N:
 		if H=='DUAL':
 			add(B,'רשות ניירות ערך','Confirmed',A['dual'])
 			if not a['dual_listed_in']:G.append(A['q_dual'])
@@ -167,18 +168,19 @@ def derive(a):
 				for(C,E)in VENUE_REGULATORS.get(venue_code(c),[]):add(B,C,E,A['dual_on']%label('dual',c,D))
 			continue
 		for(C,E)in VENUE_REGULATORS.get(H,[]):add(B,C,E,A['listed_on']%label('listed',n,D))
-	for N in a['financial_activity']:
-		S=label('fin',N,D)
-		if not F and not K:G.append(A['q_fin']%S);continue
-		U='Confirmed'if F else'Potential';V=A['fin']%S if F else A['fin_mkt']%S
-		if N in SEC_ISA:add(B,'רשות ניירות ערך',U,V)
-		elif N in CMISA:add(B,'רשות שוק ההון, ביטוח וחיסכון',U,V)
-		elif N in BOI:add(B,'בנק ישראל, הפיקוח על הבנקים',U,V)
+	for J in a['financial_activity']:
+		U=label('fin',J,D)
+		if not F and not L:G.append(A['q_fin']%U);continue
+		V='Confirmed'if F else'Potential';O=A['fin']%U if F else A['fin_mkt']%U
+		if J in SEC_ISA:add(B,'רשות ניירות ערך',V,O)
+		if J in CMISA:add(B,'רשות שוק ההון, ביטוח וחיסכון',V,O)
+		if J in BOI:add(B,'בנק ישראל, הפיקוח על הבנקים',V,O)
+		if J in FIN_POTENTIAL:add(B,FIN_POTENTIAL[J],'Potential',O)
 	for d in a['sectors']:
 		for C in SECTOR_REGULATORS.get(d,[]):
 			if C in SECTOR_IL_MARKET_ONLY and not Y:continue
-			if C not in SECTOR_NOT_IL and not F and not K:continue
-			E='Potential'if K and C not in SECTOR_NOT_IL else'Likely';add(B,C,E,A['sector']%label('sector',d,D))
+			if C not in SECTOR_NOT_IL and not F and not L:continue
+			E='Potential'if L and C not in SECTOR_NOT_IL else'Likely';add(B,C,E,A['sector']%label('sector',d,D))
 	for W in a['markets']:
 		H=market_code(W);e=market_row(H)
 		if e:
@@ -189,10 +191,10 @@ def derive(a):
 		o=label('country',(a.get('incorporation_country')or'').strip(),D)
 		for(C,E)in MARKET_REGULATORS.get(f,[]):add(B,C,'Likely'if E=='Potential'else E,A['geo_inc']%o)
 	def X(n):n=str(n).strip();return REG_HE.get(n.casefold(),n)
-	g=set(X(A)for A in a.get('removed_regulators')or[]);B=[A for A in B if A['regulator_name']not in g];h=[A for A in a.get('user_declared_regulators')or[]if X(A)not in g];i=set(X(A)for A in h);O=[A for A in B if A['regulator_name']in PRIMARY_DISPLAY and A['regulator_name']not in i];j=[A for A in B if A['regulator_name']not in PRIMARY_DISPLAY and A['regulator_name']not in i];O.sort(key=lambda r:PRIMARY_DISPLAY.index(r['regulator_name']))
-	for L in h:O.append({'regulator_name':L,'applicability_status':'UserDeclared','basis':A['declared']})
-	for k in O+j:k['regulator_name']=reg_label(k['regulator_name'],D)
-	return O,j,G
+	g=set(X(A)for A in a.get('removed_regulators')or[]);B=[A for A in B if A['regulator_name']not in g];h=[A for A in a.get('user_declared_regulators')or[]if X(A)not in g];i=set(X(A)for A in h);P=[A for A in B if A['regulator_name']in PRIMARY_DISPLAY and A['regulator_name']not in i];j=[A for A in B if A['regulator_name']not in PRIMARY_DISPLAY and A['regulator_name']not in i];P.sort(key=lambda r:PRIMARY_DISPLAY.index(r['regulator_name']))
+	for M in h:P.append({'regulator_name':M,'applicability_status':'UserDeclared','basis':A['declared']})
+	for k in P+j:k['regulator_name']=reg_label(k['regulator_name'],D)
+	return P,j,G
 def normalize_answers(a):
 	a=dict(a)
 	for(A,C)in(('listed_in',[]),('dual_listed_in',[]),('sectors',[]),('financial_activity',[]),('markets',[]),('display_language','he')):
