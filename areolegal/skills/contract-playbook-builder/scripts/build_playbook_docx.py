@@ -363,16 +363,40 @@ def track(doc,r,key,st):
 			q=line();head=tx('company_effect');name=role_names.get(str(k))or s(k)
 			if name:head='%s (%s): '%(head.rstrip(': '),name)
 			run(q,head,9.5,True,INK_SOFT);run(q,s(v),9.5,False,INK)
+	if key=='yellow':ladder_lines(line,blk)
 	src=s(blk.get('source_label')or blk.get('label'))
 	if src:q=line();run(q,tx('source'),9,True,INK_SOFT);run(q,src,9,False,INK_SOFT)
 	if r.get('rule_id'):k=S.cell_key(r['rule_id'],key);q=line(after=6);R.add_status_control(q,R.CELL_TAG+k,R.cell_status_text(None,st,k),8.5,lang=LANG)
 	return True
+LADDER_TX={'he':('מדרגות הנסיגה, לפי הסדר','הרצפה: ',' (נגזרת, הצעה של Areo)','מתי יורדים: ','מה מבקשים בתמורה: '),'en':('Fallback steps, in order','Floor: ',' (derived, an Areo proposal)','When: ','Ask in return: ')}
+RELATED_TX={'he':('סעיפים קשורים','חוסם','הצעה של Areo, מחכה לאישור'),'en':('Related clauses','blocking','an Areo proposal, awaiting approval')}
+RLK_TX={'defined_term':'היקף מונח מוגדר','cross_ref':'הפניה פנימית','cap_exceptions':'תקרה וחריגים','remedy_integrity':'שלמות הסעד','give_take':'חבילת תן וקח'}
+def ladder_lines(line,blk):
+	steps=[x for x in blk.get('fallback_steps')or()if isinstance(x,dict)and s(x.get('text'))]
+	if not steps:return
+	t=LADDER_TX.get(LANG,LADDER_TX['he']);run(line(),t[0],9.5,True,INK_SOFT)
+	for(i,x)in enumerate(steps):
+		q=line();run(q,'%d. '%(i+1)+(t[1]if x.get('floor')or i==len(steps)-1 else''),9.5,True,INK);run(q,s(x.get('text')),9.5,False,INK)
+		if x.get('origin')=='derived':run(q,t[2],9,False,INK_SOFT,italic=True)
+		meta=[(t[3],x.get('condition')),(t[4],x.get('consideration'))]
+		if any(v for(_,v)in meta):
+			q=line()
+			for(lab,v)in meta:
+				if v:run(q,lab,9,True,INK_SOFT);run(q,s(v)+'  ',9,False,INK_SOFT)
+def related_block(doc,r,rules_by_id):
+	links=[x for x in r.get('related_links')or()if isinstance(x,dict)and x.get('related_rule_id')in rules_by_id and x.get('approved')is not False]
+	if not links:return
+	t=RELATED_TX.get(LANG,RELATED_TX['he']);h3(doc,t[0])
+	for x in sorted(links,key=lambda x:0 if x.get('severity')=='blocking'else 1):
+		p=para(doc,after=1);run(p,s(rules_by_id[x['related_rule_id']].get('topic_name')),10,True,INK);tags=[t[1]]if x.get('severity')=='blocking'else[];tags.append(RLK_TX.get(x.get('kind'),s(x.get('kind')))if LANG=='he'else s(x.get('kind')))
+		if x.get('approved')is None:tags.append(t[2])
+		run(p,'  ·  '+' · '.join(v for v in tags if v),9,False,INK_SOFT);para(doc,' '.join(v for v in(s(x.get('impact')),s(x.get('action')))if v),9.5,after=4)
 def has_rationale(r):pr=r.get('policy_rationale')or{};cp=r.get('company_perspective')or{};return bool(any(pr.get(k)for(k,_)in RAT)or any(cp.get(k)for(k,_)in PERSP)or r.get('regulatory_sources')or r.get('evidence'))
 def topic(doc,r,n,full,st):
 	h2(doc,'%d. %s'%(n,s(r.get('topic_name'))),'card_%d'%n);status_line(doc,r,st)
 	if r.get('clause_issue'):para(doc,s(r['clause_issue']),10.5,after=8,color=INK_SOFT)
 	for key in('green','yellow','red'):track(doc,r,key,st)
-	pr=r.get('policy_rationale')or{}
+	related_block(doc,r,{x.get('rule_id'):x for x in MODEL.get('rules')or()if isinstance(x,dict)});pr=r.get('policy_rationale')or{}
 	if full=='card':
 		if pr.get('executive_policy_rationale'):h3(doc,tx('legal_rationale'));para(doc,s(pr['executive_policy_rationale']),10.5,after=6)
 		anchors(doc,r,160)
@@ -457,7 +481,7 @@ def build(d,prof,out,full,lang=None,model_path=None):
 		for(i,head)in enumerate(tx('annex_heads')):cell_text(t.rows[0].cells[i],head,True,9.5,NAVY,SURF)
 		for src in d['source_log']:
 			if not isinstance(src,dict):continue
-			c=t.add_row().cells;cell_text(c[0],s(src.get('agreement_name')or src.get('document_name')or src.get('title')or src.get('file'),40),False,9);cell_text(c[1],s(src.get('counterparty'),40)or tx('not_stated'),False,9);rs=src.get('read_status');cell_text(c[2],READ_STATUS.get(rs)or s(rs,40)or tx('not_stated'),False,9)
+			c=t.add_row().cells;cell_text(c[0],s(src.get('agreement_name')or src.get('document_name')or src.get('title')or src.get('file'),40),False,9);cp=s(src.get('counterparty'),40);cell_text(c[1],tx('not_stated')if not cp or re.fullmatch('\\[\\s*(להשלים|to complete)\\s*\\]',cp,re.I)else cp,False,9);rs=src.get('read_status');cell_text(c[2],READ_STATUS.get(rs)or s(rs,40)or tx('not_stated'),False,9)
 	author=m['company']if m['company']!=tx('company')else''
 	if LANG=='en':R.enforce_ltr_document(doc,author=author,title=tx('title')%m['family'])
 	else:rtl.enforce_document(doc,author=author,title=tx('title')%m['family']);doc.core_properties.language='he-IL'
@@ -486,5 +510,5 @@ def main():
 	else:out=os.path.join(a.out_dir,spec_filename(d,prof,lang))
 	try:out=guard_out(out,inputs=[a.model,a.profile],allow_existing_doc=os.path.isfile(out)and is_built_playbook(out))
 	except OutputRefused as exc:print('refused: %s'%exc);return 2
-	build(d,prof,out,{'one':'one','full':True,'short':False}[a.version],lang,model_path=a.model);print('נבנה %s (%s, %d נושאים, שפה: %s)'%(out,{'one':'קובץ אחד בשני חלקים','full':'מלאה','short':'מקוצרת'}[a.version],len(d['rules']),lang));print('לפני מסירה: verify_playbook_docx.py על הקובץ. קוד יציאה 3 = אין למסור.');return 0
+	build(d,prof,out,{'one':'one','full':True,'short':False}[a.version],lang,model_path=a.model);print('נבנה %s (%s, %d נושאים, שפה: %s)'%(out,{'one':'קובץ אחד בשני חלקים','full':'מלאה','short':'מקוצרת'}[a.version],len(d['rules']),lang));print('בדיקת הקבלה (verify_playbook_docx.py) רצה בשלב הסיום. כשהקובץ נבנה כאן לבד: להריץ אותה עליו, וקוד יציאה 3 = אין למסור.');return 0
 if __name__=='__main__':raise SystemExit(main())

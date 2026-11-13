@@ -14,7 +14,7 @@ NOT_AGREEMENT_ROLES=('template','form','amendment')+DRAFT_ROLES+CORRESPONDENCE_R
 DOCUMENT_BASES='established','single','offered_unexecuted','client_answer'
 AREO_BASES='areo_proposal','market_standard'
 LEVELS='sufficient','thin','insufficient'
-TEXT={'he':{'thin_head':'החומר שמסרתם מספיק כדי להתחיל, אבל לא כדי לדייק את קווי הנסיגה של החברה.','insufficient_head':'החומר שמסרתם אינו מספיק כדי להסיק איפה החברה מוכנה לוותר.','ok':'החומר מספיק כדי להסיק את קווי הנסיגה של החברה מההסכמים שלה. מ-20 הסכמים ומעלה מאותו סוג הדיוק משתפר עוד.','few':'עוד {k} הסכמים לפחות מאותו סוג ומאותה עמדה של החברה (מול צדדים שונים או בתקופות שונות).','trail':'טיוטות משא ומתן (גרסאות עם שינויים במעקב) והתכתבות עם הצד השני על סעיפים שהתמקחתם עליהם. הן מראות מה ביקשתם, על מה ויתרתם ובמה התעקשתם.','spread':'הסכמים שנחתמו מול צדדים שונים. כשכל ההסכמים כמעט זהים, אי אפשר לדעת איפה יש לכם גמישות.','areo':'ב-{n} מתוך {m} נושאים הצהוב מבוסס על הצעת Areo בלבד, כי אין במסמכים שלכם פשרה בנושא.','ask':'מה שיחדד את התוצאה:','tail':'אפשר להמשיך גם עכשיו. קווי נסיגה שאינם נשענים על החומר שלכם יסומנו "הצעת Areo", ואפשר להשלים חומר ולעדכן את הפלייבוק בכל שלב.'},'en':{'thin_head':"What you gave is enough to start, but not enough to pin down the company's fallback lines.",'insufficient_head':'What you gave is not enough to tell where the company is willing to give ground.','ok':"The material is enough to infer the company's fallback lines from its own agreements. From 20 agreements of the same type the precision improves further.",'few':'At least {k} more agreements of the same type and the same company side (with different counterparties or from different periods).','trail':'Negotiation drafts (versions with tracked changes) and correspondence with the other side on the clauses you bargained over. They show what you asked for, what you gave up and where you held.','spread':'Agreements signed with different counterparties. When all agreements are nearly identical, there is no way to tell where you have flexibility.','areo':'In {n} of {m} topics the fallback rests on an Areo proposal alone, because your documents hold no compromise on the topic.','ask':'What would sharpen the result:','tail':'You can go on now. Fallback lines that do not rest on your material will be marked "Areo proposal", and you can add material and update the playbook at any time.'}}
+TEXT={'he':{'thin_head':'החומר שמסרתם מספיק כדי להתחיל, אבל לא כדי לדייק את קווי הנסיגה של החברה.','insufficient_head':'החומר שמסרתם אינו מספיק כדי להסיק איפה החברה מוכנה לוותר.','ok':'החומר מספיק כדי להסיק את קווי הנסיגה של החברה מההסכמים שלה. מ-20 הסכמים ומעלה מאותו סוג הדיוק משתפר עוד.','few':'עוד {k} הסכמים חתומים לפחות מאותו סוג ומאותה עמדה של החברה (מול צדדים שונים או בתקופות שונות).','trail':'טיוטות משא ומתן (גרסאות עם שינויים במעקב) והתכתבות עם הצד השני על סעיפים שהתמקחתם עליהם. הן מראות מה ביקשתם, על מה ויתרתם ובמה התעקשתם.','spread':'הסכמים שנחתמו מול צדדים שונים. כשכל ההסכמים כמעט זהים, אי אפשר לדעת איפה יש לכם גמישות.','areo':'ב-{n} מתוך {m} נושאים הצהוב מבוסס על הצעת Areo בלבד, כי אין במסמכים שלכם פשרה בנושא.','ask':'מה שיחדד את התוצאה:','tail':'אפשר להמשיך גם עכשיו. קווי נסיגה שאינם נשענים על החומר שלכם יסומנו "הצעת Areo", ואפשר להשלים חומר ולעדכן את הפלייבוק בכל שלב.'},'en':{'thin_head':"What you gave is enough to start, but not enough to pin down the company's fallback lines.",'insufficient_head':'What you gave is not enough to tell where the company is willing to give ground.','ok':"The material is enough to infer the company's fallback lines from its own agreements. From 20 agreements of the same type the precision improves further.",'few':'At least {k} more signed agreements of the same type and the same company side (with different counterparties or from different periods).','trail':'Negotiation drafts (versions with tracked changes) and correspondence with the other side on the clauses you bargained over. They show what you asked for, what you gave up and where you held.','spread':'Agreements signed with different counterparties. When all agreements are nearly identical, there is no way to tell where you have flexibility.','areo':'In {n} of {m} topics the fallback rests on an Areo proposal alone, because your documents hold no compromise on the topic.','ask':'What would sharpen the result:','tail':'You can go on now. Fallback lines that do not rest on your material will be marked "Areo proposal", and you can add material and update the playbook at any time.'}}
 def _lang(lang):return'en'if str(lang or'').strip().lower().startswith('en')else'he'
 def _included(s):return isinstance(s,dict)and s.get('included')is not False
 def _role(s):return str(s.get('doc_role')or'').strip().lower()
@@ -48,19 +48,19 @@ def spread(rules):
 		elif F in AREO_BASES:D+=1
 	return{'rules':len(A),'with_spread':B,'yellow_from_documents':C,'yellow_areo_only':D}
 def assess(sources,rules=None):
-	I=sources;G=agreements_per_family(I);A=min(G.values())if G else 0;H=negotiation_trail(I);E=H['drafts']+H['correspondence']>0;B=spread(rules);F,C=[],[]
-	if A>=SOLID_AGREEMENTS:D='sufficient'
-	elif A>=MIN_WITH_TRAIL and E:D='sufficient'
-	elif A>=MIN_ANY or A>=1 and E:D='thin'
-	else:D='insufficient'
-	if A<(MIN_WITH_TRAIL if E else SOLID_AGREEMENTS):F.append('FEW_AGREEMENTS');J=MIN_WITH_TRAIL if E else SOLID_AGREEMENTS;C.append({'kind':'more_agreements','need':max(1,J-A)})
-	if not E and A<SOLID_AGREEMENTS:F.append('NO_NEGOTIATION_TRAIL');C.append({'kind':'negotiation_trail'})
-	if B and B['rules']>=3 and B['with_spread']==0 and A<SOLID_AGREEMENTS:F.append('NO_SPREAD');C.append({'kind':'varied_counterparties'})
+	I=sources;G=agreements_per_family(I);A=min(G.values())if G else 0;H=negotiation_trail(I);C=H['drafts']+H['correspondence']>0;B=spread(rules);F,D=[],[]
+	if A>=SOLID_AGREEMENTS:E='sufficient'
+	elif A>=MIN_WITH_TRAIL and C:E='sufficient'
+	elif A>=MIN_ANY or A>=1 and C:E='thin'
+	else:E='insufficient'
+	if A<(MIN_WITH_TRAIL if C else SOLID_AGREEMENTS):F.append('FEW_AGREEMENTS');J=MIN_WITH_TRAIL if C else SOLID_AGREEMENTS;D.append({'kind':'more_agreements','need':max(1,J-A)})
+	if not C and A<SOLID_AGREEMENTS:F.append('NO_NEGOTIATION_TRAIL');D.append({'kind':'negotiation_trail'})
+	if B and B['rules']>=3 and B['with_spread']==0 and A<SOLID_AGREEMENTS:F.append('NO_SPREAD');D.append({'kind':'varied_counterparties'})
 	if B and B['rules']and B['yellow_areo_only']/float(B['rules'])>AREO_FALLBACK_SHARE:
 		F.append('FALLBACK_FROM_AREO')
-		if D=='sufficient':D='thin'
-		if not any(A['kind']=='negotiation_trail'for A in C):C.append({'kind':'negotiation_trail'})
-	return{'level':D,'agreements':A,'agreements_per_family':G,'negotiation_trail':H,'spread':B,'reasons':F,'requests':C}
+		if E=='sufficient':E='thin'
+		if not C and not any(A['kind']=='negotiation_trail'for A in D):D.append({'kind':'negotiation_trail'})
+	return{'level':E,'agreements':A,'agreements_per_family':G,'negotiation_trail':H,'spread':B,'reasons':F,'requests':D}
 def client_message(res,lang='he'):
 	B=res;A=TEXT[_lang(lang)]
 	if B.get('level')=='sufficient'and not B.get('requests'):return[A['ok']]

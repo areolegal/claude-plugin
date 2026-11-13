@@ -82,6 +82,38 @@ def check_internal_leak(parts,root,comments,mode,ext_ids=()):
 		I=INTERNAL_MARK.search(H or'')or PLAYBOOK_MENTION.search(H or'')
 		if I:(F if A=='send'else G).append(_f('INTERNAL_LEAK','תוכן פנימי ב%s שהצד השני רואה: "%s"'%(K,I.group(0).strip()[:60]),L))
 	return F,G
+def _internal_texts(core):
+	D=[]
+	for A in(core or{}).get('clauses')or():
+		if not isinstance(A,dict):continue
+		C=[A.get('red_line'),A.get('concession_note'),A.get('sensitivity_note'),A.get('interpretation_guidance')]
+		for F in('green','yellow','red'):
+			E=A.get(F)or{}
+			if isinstance(E,dict):C.append(E.get('position'))
+		C+=[A.get('context')for A in A.get('exceptions')or()if isinstance(A,dict)];G={' '.join(str(A.get(B)or'').split())for B in('preferred_wording','fallback_wording','floor_wording')}
+		for B in C:
+			B=' '.join(str(B or'').split())
+			if len(B)>=40 and B not in G:D.append((A.get('id'),B))
+	return D
+def check_playbook_text_leak(parts,root,comments,core,mode,ext_ids=()):
+	A,B=[],[];C=_internal_texts(core)
+	if not C:return A,B
+	D=[dt.para_text(A)for A in dt.body_paragraphs(root)];D+=[A['text']for A in comments if mode=='send'or A['id']in set(ext_ids)];G=' '.join(' '.join(str(A or'').split())for A in D)
+	for(E,F)in C:
+		if F in G:(A if mode=='send'else B).append(_f('INTERNAL_LEAK','טקסט פנימי מהפלייבוק בעותק שהצד השני רואה (%s): "%s"'%(E,F[:60]),E))
+	return A,B
+def check_ladder_steps(state,mode):
+	E,F=[],[];G={}
+	for A in(state or{}).get('decisions')or():
+		if not isinstance(A,dict)or not isinstance(A.get('ladder_step'),int):continue
+		B=tuple(A.get('rule_ids')or())or(A.get('clause_id'),);G.setdefault(B,[]).append((int(A.get('round')or 0),A['ladder_step']))
+	for(B,H)in G.items():
+		H.sort();C=None
+		for(I,D)in H:
+			if I<=1 and D>1:(E if mode=='send'else F).append(_f('LADDER_SKIP','בסבב הראשון הוחלה מדרגה %d ב-%s: בסבב הראשון לכל היותר המדרגה הראשונה'%(D,'/'.join(str(A)for A in B)),B[0]))
+			if C is not None and D-C>1:(E if mode=='send'else F).append(_f('LADDER_SKIP','ב-%s ירדנו מהמדרגה %d ל-%d בסבב %d: מדרגה אחת בכל סבב'%('/'.join(str(A)for A in B),C,D,I),B[0]))
+			C=D if C is None else max(C,D)
+	return E,F
 def check_lawyer_name_en(profile,lang,mode):
 	A=profile;C=A.get('lawyer_name')or''
 	if lang!='en'or A.get('lawyer_name_en')or not re.search('[\u0590-\u05ff]',C):return[],[]
@@ -563,42 +595,42 @@ def sent_prior_keys(state,deal_dir):
 	def D(rec):A=rec.get('file_name')or rec.get('path')or'';return A if os.path.isabs(A)else os.path.join(B,A)
 	E=max(int(A.get('round')or 0)for A in A);F=[D(A)for A in C.get('received_documents')or()if isinstance(A,dict)and int(A.get('round')or 0)<=E];return dt.sent_revision_keys([D(A)for A in A],F)
 def run_gate(path,received,mode,profile,state=None,expected_accept=None,window=None,work_path=None,lang=None,register=None,context=None,decisions=None,core=None,deal_dir=None):
-	j=expected_accept;Z=window;M=decisions;L=profile;J=state;H=mode;F=lang;assert H in('work','send');N=dt.read_package(path);C=etree.fromstring(N['word/document.xml']);a=dt.read_package(received);K=etree.fromstring(a['word/document.xml']);O=[dt.para_text(A)for A in dt.body_paragraphs(K)];F=F or gap_checks.detect_lang('\n'.join(O));b={A['id']for A in dt.read_comments(a)};k=_dt.datetime.now();Z=Z or(k-_dt.timedelta(days=2),k+_dt.timedelta(minutes=5));D=author_for(L,F);A,I=[],[];U=[D]+[A for A in[L.get('lawyer_name'),L.get('lawyer_name_en')]+list(L.get('lawyer_aliases')or[])if A and A!=D];c=dt.prior_revisions(K,U);z={dt.revision_key(A)for A in K.iter(W+'ins',W+'del')};c|=sent_prior_keys(J,deal_dir)&z;l=dt.set_aside_prior(C,c);A0={A.get(W+'author')for A in K.iter(W+'ins',W+'del')}|l;B,m=check_package(N,C,L,b,Z,work_path or path,D,received_authors=A0);A+=B;V=dt.reject_ours_view(C,D);d=[dt.received_reject_text(A,set(U))for A in dt.body_paragraphs(K)]
-	if len(V)==len(O):n=all(A==B or A==C for(A,B,C)in zip(V,O,d))
+	j=expected_accept;a=window;N=decisions;M=profile;J=state;G=lang;F=mode;assert F in('work','send');K=dt.read_package(path);C=etree.fromstring(K['word/document.xml']);b=dt.read_package(received);L=etree.fromstring(b['word/document.xml']);O=[dt.para_text(A)for A in dt.body_paragraphs(L)];G=G or gap_checks.detect_lang('\n'.join(O));c={A['id']for A in dt.read_comments(b)};k=_dt.datetime.now();a=a or(k-_dt.timedelta(days=2),k+_dt.timedelta(minutes=5));E=author_for(M,G);A,H=[],[];U=[E]+[A for A in[M.get('lawyer_name'),M.get('lawyer_name_en')]+list(M.get('lawyer_aliases')or[])if A and A!=E];d=dt.prior_revisions(L,U);z={dt.revision_key(A)for A in L.iter(W+'ins',W+'del')};d|=sent_prior_keys(J,deal_dir)&z;l=dt.set_aside_prior(C,d);A0={A.get(W+'author')for A in L.iter(W+'ins',W+'del')}|l;B,m=check_package(K,C,M,c,a,work_path or path,E,received_authors=A0);A+=B;V=dt.reject_ours_view(C,E);e=[dt.received_reject_text(A,set(U))for A in dt.body_paragraphs(L)]
+	if len(V)==len(O):n=all(A==B or A==C for(A,B,C)in zip(V,O,e))
 	else:n=V==O
 	if not n:A.append(_f('RT_REJECT','"דחה הכול" אינו מחזיר את הטיוטה שהתקבלה'))
 	o=dt.paragraph_views(C,'accept')
 	if j is not None and o!=j:A.append(_f('RT_ACCEPT','"קבל הכול" אינו נותן את נוסחי היעד'))
 	for(P,A1)in enumerate(dt.body_paragraphs(C)):
-		p=dt.duplicated_insertions(A1,lambda e:e is not None and e.get(W+'author')==D)
+		p=dt.duplicated_insertions(A1,lambda e:e is not None and e.get(W+'author')==E)
 		if p:A.append(_f('RT_DUPLICATE','נוסח כפול בפסקה אחרי "קבל הכול": "%s..." מופיע יותר מפעם אחת, ואחת ההופעות בהוספה שלנו. ההוספה הישנה והחדשה עומדות זו לצד זו'%p[0][:60],P))
-	Q='\n'.join(o);e=[A for A in dt.read_comments(N)if A['id']not in b];G=[A for A in e if A['author']==D];f=[A for A in e if A['author']in INTERNAL_AUTHORS];R=dt.comment_paragraph_spans(C);q=dt.body_paragraphs(C);A2={A['id']for A in G}
-	for(r,(S,X))in list(R.items()):
+	Q='\n'.join(o);X=[A for A in dt.read_comments(K)if A['id']not in c];I=[A for A in X if A['author']==E];f=[A for A in X if A['author']in INTERNAL_AUTHORS];R=dt.comment_paragraph_spans(C);q=dt.body_paragraphs(C);A2={A['id']for A in I}
+	for(r,(S,Y))in list(R.items()):
 		if r not in A2 or S is None:continue
-		P=X
-		while P+1<len(q)and _our_del_mark(q[P+1],D):P+=1
-		if P!=X:R[r]=S,P
+		P=Y
+		while P+1<len(q)and _our_del_mark(q[P+1],E):P+=1
+		if P!=Y:R[r]=S,P
 	g={}
-	for s in G:
-		S,X=R.get(s['id'],(None,None))
-		for A3 in range(S,X+1)if S is not None else(None,):g.setdefault(A3,[]).append(s['text'])
-	h=dict(context or{});h.setdefault('waived',sorted(waived_gap_codes(J)));A+=check_bubbles(G,Q,J,'\n'.join(V),F);A+=check_language(C,G,D,F,'\n'.join(O+d));B,E=check_bubble_style(G,F,round_stage(J,M));A+=B;I+=E;I+=check_bubble_text_match(C,G,R,F);A4=[A['text']for A in dt.read_comments(a)if A['author']in U];B,E=check_round_rules(J,M,K,C,U+sorted(l),R,{A['id']for A in G},A4,H);A+=B;I+=E;T,B=check_hidden_removals(K,M)if M is not None else({},[]);A+=B;A5={id(B):A for(A,B)in enumerate(dt.body_paragraphs(C))};t=_received_groups(C,D);u={A:A5[id(B)]for(A,B)in enumerate(t)}if len(t)==len(O)else{};T={u.get(A,A):B for(A,B)in T.items()};v=check_coverage(C,g,D,F,T);A6={u.get(A,A)for(A,B)in enumerate(dt.body_paragraphs(K))if hidden_text(B).strip()}
-	for Y in v:
-		if Y['code']=='COV_UNCOVERED_CHANGE'and Y['where']in A6 and Y['where']not in T:Y['message']+='. בפסקה יש טקסט מוסתר בטיוטה שהתקבלה: כשהמחיקה היא של הטקסט המוסתר, עם הבועה הניטרלית, ההכרעה נושאת kind: hidden_text_removal'
-	A+=v;A+=check_bubble_why(C,g,D,Q,F,h,T);A+=check_contradictions(G,Q,F);I+=check_reasoning_warnings(G);B,i=check_placeholders(C,G,D,J,H);A+=B;B,E=check_identifiers(C,D,L,F,'\n'.join(O));A+=B;I+=E;A+=check_self_created_gaps(C,D,Q,F,h,state=J);B,E=check_state(J,H);A+=B;I+=E;B,E=check_legal_review(J,M,core,H);A+=B;I+=E;B,E=check_entity_name_en(L,F,H,Q+'\n'+'\n'.join(A['text']for A in G));A+=B;I+=E;B,E=check_lawyer_name_en(L,F,H);A+=B;I+=E;B,E=check_internal_leak(N,C,e,H,[A['id']for A in G]);A+=B;I+=E;A+=check_structure(C,D);w=set()
-	if M is not None:B=check_decisions_applied(C,O,M,D,{A['id']for A in G},received_paras=dt.body_paragraphs(K),prior=c,received_rej=d);A+=B;w=None if any(A['where']is None for A in B)else{A['where']for A in B}
-	elif H=='send':A.append(_f('DEC_FILE_MISSING','השער רץ בלי קובץ ההכרעות (--decisions), ולכן אינו יכול לוודא שכל הכרעה סומנה בקובץ'))
-	else:I.append(_f('DEC_FILE_MISSING','בלי קובץ ההכרעות לא נבדק שכל הכרעה סומנה בקובץ'))
-	B,E=check_silent_changes(J,M,w,H);A+=B;I+=E;A7=''.join(N[A].decode('utf-8','ignore')for A in N if A.startswith('word/header'));A8=any(A['author']in INTERNAL_AUTHORS and not A['text'].strip().startswith(dt.AREO_LABEL_PREFIXES)for A in dt.read_comments(N)if A['id']not in b);A9=dt.INTERNAL_HEADER_TEXT,getattr(dt,'INTERNAL_HEADER_TEXT_EN',dt.INTERNAL_HEADER_TEXT);x=any(A in A7 for A in A9)
-	if H=='work'and A8 and not x:A.append(_f('INT_HEADER_MISSING','חסרה הכותרת הפנימית בקובץ העבודה'))
-	if H=='send':
+	for s in I:
+		S,Y=R.get(s['id'],(None,None))
+		for A3 in range(S,Y+1)if S is not None else(None,):g.setdefault(A3,[]).append(s['text'])
+	h=dict(context or{});h.setdefault('waived',sorted(waived_gap_codes(J)));A+=check_bubbles(I,Q,J,'\n'.join(V),G);A+=check_language(C,I,E,G,'\n'.join(O+e));B,D=check_bubble_style(I,G,round_stage(J,N));A+=B;H+=D;H+=check_bubble_text_match(C,I,R,G);A4=[A['text']for A in dt.read_comments(b)if A['author']in U];B,D=check_round_rules(J,N,L,C,U+sorted(l),R,{A['id']for A in I},A4,F);A+=B;H+=D;T,B=check_hidden_removals(L,N)if N is not None else({},[]);A+=B;A5={id(B):A for(A,B)in enumerate(dt.body_paragraphs(C))};t=_received_groups(C,E);u={A:A5[id(B)]for(A,B)in enumerate(t)}if len(t)==len(O)else{};T={u.get(A,A):B for(A,B)in T.items()};v=check_coverage(C,g,E,G,T);A6={u.get(A,A)for(A,B)in enumerate(dt.body_paragraphs(L))if hidden_text(B).strip()}
+	for Z in v:
+		if Z['code']=='COV_UNCOVERED_CHANGE'and Z['where']in A6 and Z['where']not in T:Z['message']+='. בפסקה יש טקסט מוסתר בטיוטה שהתקבלה: כשהמחיקה היא של הטקסט המוסתר, עם הבועה הניטרלית, ההכרעה נושאת kind: hidden_text_removal'
+	A+=v;A+=check_bubble_why(C,g,E,Q,G,h,T);A+=check_contradictions(I,Q,G);H+=check_reasoning_warnings(I);B,i=check_placeholders(C,I,E,J,F);A+=B;B,D=check_identifiers(C,E,M,G,'\n'.join(O));A+=B;H+=D;A+=check_self_created_gaps(C,E,Q,G,h,state=J);B,D=check_state(J,F);A+=B;H+=D;B,D=check_legal_review(J,N,core,F);A+=B;H+=D;B,D=check_entity_name_en(M,G,F,Q+'\n'+'\n'.join(A['text']for A in I));A+=B;H+=D;B,D=check_lawyer_name_en(M,G,F);A+=B;H+=D;B,D=check_internal_leak(K,C,X,F,[A['id']for A in I]);A+=B;H+=D;B,D=check_playbook_text_leak(K,C,X,core,F,[A['id']for A in I]);A+=B;H+=D;B,D=check_ladder_steps(J,F);A+=B;H+=D;A+=check_structure(C,E);w=set()
+	if N is not None:B=check_decisions_applied(C,O,N,E,{A['id']for A in I},received_paras=dt.body_paragraphs(L),prior=d,received_rej=e);A+=B;w=None if any(A['where']is None for A in B)else{A['where']for A in B}
+	elif F=='send':A.append(_f('DEC_FILE_MISSING','השער רץ בלי קובץ ההכרעות (--decisions), ולכן אינו יכול לוודא שכל הכרעה סומנה בקובץ'))
+	else:H.append(_f('DEC_FILE_MISSING','בלי קובץ ההכרעות לא נבדק שכל הכרעה סומנה בקובץ'))
+	B,D=check_silent_changes(J,N,w,F);A+=B;H+=D;A7=''.join(K[A].decode('utf-8','ignore')for A in K if A.startswith('word/header'));A8=any(A['author']in INTERNAL_AUTHORS and not A['text'].strip().startswith(dt.AREO_LABEL_PREFIXES)for A in dt.read_comments(K)if A['id']not in c);A9=dt.INTERNAL_HEADER_TEXT,getattr(dt,'INTERNAL_HEADER_TEXT_EN',dt.INTERNAL_HEADER_TEXT);x=any(A in A7 for A in A9)
+	if F=='work'and A8 and not x:A.append(_f('INT_HEADER_MISSING','חסרה הכותרת הפנימית בקובץ העבודה'))
+	if F=='send':
 		if x:A.append(_f('INT_IN_SEND','הכותרת הפנימית נשארה בעותק למשלוח'))
 		if f:A.append(_f('INT_IN_SEND','בועה פנימית בעותק למשלוח: %d'%len(f)))
-		AA=' '.join(dt.para_text(A)for A in dt.body_paragraphs(C))+' '+' '.join(A['text']for A in dt.read_comments(N))
+		AA=' '.join(dt.para_text(A)for A in dt.body_paragraphs(C))+' '+' '.join(A['text']for A in dt.read_comments(K))
 		if any(A in AA for A in dt.AREO_LABEL_PREFIXES):A.append(_f('AREO_IN_SEND','התווית של סעיף AREO נשארה בעותק למשלוח'))
-		y=[B for A in C.iter(W+'ins',W+'del')if A.get(W+'author')==D for B in A.iter(W+'highlight')if B.get(W+'val')==dt.AREO_HIGHLIGHT]
+		y=[B for A in C.iter(W+'ins',W+'del')if A.get(W+'author')==E for B in A.iter(W+'highlight')if B.get(W+'val')==dt.AREO_HIGHLIGHT]
 		if y:A.append(_f('AREO_IN_SEND','מירקור צהוב בנוסח שלנו בעותק למשלוח: %d'%len(y)))
-	m.update(lang=F,external_comments=len(G),internal_comments=len(f),placeholders=i,signing_checklist=[dict(item='signing_blank',**A)for A in i['signing_blanks']]+[dict(item='their_placeholder',**A)for A in i['theirs']]);return{'mode':H,'passed':not A,'failures':A,'warnings':I,'info':m}
+	m.update(lang=G,external_comments=len(I),internal_comments=len(f),placeholders=i,signing_checklist=[dict(item='signing_blank',**A)for A in i['signing_blanks']]+[dict(item='their_placeholder',**A)for A in i['theirs']]);return{'mode':F,'passed':not A,'failures':A,'warnings':H,'info':m}
 RUNS_DIR='runs'
 def run_report_path(deal_dir,round_no,name):
 	A=deal_dir

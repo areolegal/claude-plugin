@@ -98,12 +98,16 @@ def capabilities(has_clm=True,with_mail=False):
 	if with_mail:A['mcp']={'servers':[dict(A)for A in MCP_SERVERS]}
 	return A
 def _write(path,text):A=path;A=Path(A);A.parent.mkdir(parents=True,exist_ok=True);B=A.with_name(A.name+'.tmp');B.write_text(text,encoding='utf-8');os.replace(str(B),str(A))
+def features():
+	try:A=json.loads((Path(__file__).resolve().parents[1]/'config.json').read_text(encoding='utf-8'))
+	except(OSError,ValueError):A={}
+	B=A.get('features')if isinstance(A.get('features'),dict)else{};return{'playbook_market_research':bool(B.get('playbook_market_research',False))}
 def render_playbook(company,out,mode='playbook',has_clm=False):
 	B=company;C=PLAYBOOK_PAGE.read_text(encoding='utf-8')
 	if C.count(PLAYBOOK_MARKER)!=1:raise ValueError('בעמוד ההקמה אין את הסמן %s פעם אחת בדיוק'%PLAYBOOK_MARKER)
 	A={'mode':mode,'embedded':True,'run':_dt.datetime.now().strftime('%Y%m%d%H%M%S')}
 	if B:A['org_name']=B
-	A['has_profile']=bool(B);A['has_clm']=bool(has_clm);D=json.dumps(A,ensure_ascii=False).replace('</','<\\/');E='<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>';_write(out,E+C.replace(PLAYBOOK_MARKER,D)+'</body></html>')
+	A['has_profile']=bool(B);A['has_clm']=bool(has_clm);A['features']=features();D=json.dumps(A,ensure_ascii=False).replace('</','<\\/');E='<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>';_write(out,E+C.replace(PLAYBOOK_MARKER,D)+'</body></html>')
 DEFAULT_TITLE='Areo'
 def page_title(title=None):A=' '.join(str(title or'').replace('<','').replace('>','').replace('&','ו').split())[:80];return A or DEFAULT_TITLE
 def build(data_dir,out_dir,products=(BASE,),today=None,template=None,start=None,title=None):

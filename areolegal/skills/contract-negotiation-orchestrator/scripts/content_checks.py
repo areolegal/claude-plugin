@@ -712,46 +712,62 @@ def review_areo(out,decisions,state,mode=None):
 		if A.get('decision_basis')not in('Law','CompanyPractice','ExpertJudgment')and not C.startswith(('שיקול מקצועי','דין','הסכם קודם','Professional judgment','Law','Prior')):continue
 		if _reviewed(B or{},'AREO_LABEL_MISSING',A.get('para')):continue
 		finding(out,'AREO_LABEL_MISSING','להכרעה %s אין כלל בפלייבוק, והיא אינה מסומנת כסעיף AREO (source_label: areo_proposal). כך עורך הדין אינו רואה שהיא הצעת Areo. / Decision %s has no playbook rule and is not marked as an Areo clause (source_label: areo_proposal)'%(A.get('id'),A.get('id')),A.get('id'),blocking=mode!='work')
+def _typed_related(core):
+	C={}
+	for B in(core or{}).get('clauses')or():
+		if not isinstance(B,dict):continue
+		for A in B.get('related')or():
+			if not isinstance(A,dict)or not A.get('related_rule_id'):continue
+			if A.get('origin')!='mechanical'and A.get('approved')is not True:continue
+			D=A.get('severity')or'attention';C.setdefault(B.get('id'),{})[A['related_rule_id']]=D,A.get('impact')or''
+			if A.get('direction')=='mutual':C.setdefault(A['related_rule_id'],{})[B.get('id')]=D,A.get('impact')or''
+	return C
 def review_related(out,theirs,decisions,state,core,labels=None):
-	J=state;I=decisions;E=labels;C=theirs;J=J or{};Y=_related_map(core);Z=(J.get('meta')or{}).get('position')or{};a=[re.sub('^(?:the|ה)\\s*','',str(A.get('term')or''),flags=re.I)for A in Z.get('defined_terms_map')or()if isinstance(A,dict)and A.get('term')];Q=RELATED_STOP|{B for A in a for B in re.findall('[א-ת\\w]{3,}',A)};b={A.get('para')for A in I if A.get('tier')=='deliberate_concession'};M={}
-	for G in C:
-		for R in{_norm_token(A)for A in re.findall('[א-ת\\w]{3,}',G or'')}:M[R]=M.get(R,0)+1
-	c={A.get('para')for A in I if isinstance(A.get('para'),int)and(A.get('op')in RELATED_OPS+('comment_only',)or A.get('op')=='accept'and(A.get('internal_comment')or A.get('reason')))};S={}
-	for B in I:
-		if isinstance(B.get('para'),int):S.setdefault(B['para'],[]).append(B)
-	T=set()
-	for B in I:
+	M=core;K=state;J=decisions;E=labels;C=theirs;K=K or{};N=_related_map(M);S=_typed_related(M)
+	for(T,f)in S.items():N[T]=sorted(set(N.get(T)or())|set(f))
+	g=(K.get('meta')or{}).get('position')or{};h=[re.sub('^(?:the|ה)\\s*','',str(A.get('term')or''),flags=re.I)for A in g.get('defined_terms_map')or()if isinstance(A,dict)and A.get('term')];U=RELATED_STOP|{B for A in h for B in re.findall('[א-ת\\w]{3,}',A)};j={A.get('para')for A in J if A.get('tier')=='deliberate_concession'};O={}
+	for H in C:
+		for V in{_norm_token(A)for A in re.findall('[א-ת\\w]{3,}',H or'')}:O[V]=O.get(V,0)+1
+	k={A.get('para')for A in J if isinstance(A.get('para'),int)and(A.get('op')in RELATED_OPS+('comment_only',)or A.get('op')=='accept'and(A.get('internal_comment')or A.get('reason')))};W={}
+	for B in J:
+		if isinstance(B.get('para'),int):W.setdefault(B['para'],[]).append(B)
+	X=set()
+	for B in J:
 		if B.get('op')not in RELATED_OPS or B.get('structural')or B.get('conforming'):continue
-		D=B.get('para');d={A.get('para')for A in B.get('dependents')or()if isinstance(A,dict)and(A.get('decision')or A.get('keep')and A.get('reason'))};F={};e=B.get('old')or(C[D]if B.get('op')in('replace','delete_paragraph')and isinstance(D,int)and D<len(C)else'');H=lambda i:i!=D and i not in c and i not in b and len((C[i]or'').split())>=8
-		for U in _key_phrases(e,Q):
-			N=[A for(A,B)in enumerate(C)if A!=D and U in B]
-			if not N or len(N)>4:continue
-			for A in N:
-				if H(A):F.setdefault(A,'אותו נוסח: "%s"'%U)
-		K=_title_tokens(core,B.get('rule_ids'),Q);K={A for A in K if M.get(A,0)<=max(2,len(C)//5)}
-		if len(K)>=2:
-			for(A,G)in enumerate(C):
-				if not H(A):continue
-				V=K&{_norm_token(A)for A in re.findall('[א-ת\\w]{3,}',G)}
-				if len(V)>=2:F.setdefault(A,'אותו נושא בפלייבוק (%s)'%', '.join(sorted(V)))
+		D=B.get('para');i={A.get('para')for A in B.get('dependents')or()if isinstance(A,dict)and(A.get('decision')or A.get('keep')and A.get('reason'))};F={};l=B.get('old')or(C[D]if B.get('op')in('replace','delete_paragraph')and isinstance(D,int)and D<len(C)else'');I=lambda i:i!=D and i not in k and i not in j and len((C[i]or'').split())>=8
+		for Y in _key_phrases(l,U):
+			P=[A for(A,B)in enumerate(C)if A!=D and Y in B]
+			if not P or len(P)>4:continue
+			for A in P:
+				if I(A):F.setdefault(A,'אותו נוסח: "%s"'%Y)
+		L=_title_tokens(M,B.get('rule_ids'),U);L={A for A in L if O.get(A,0)<=max(2,len(C)//5)}
+		if len(L)>=2:
+			for(A,H)in enumerate(C):
+				if not I(A):continue
+				G=L&{_norm_token(A)for A in re.findall('[א-ת\\w]{3,}',H)}
+				if len(G)>=2:F.setdefault(A,'אותו נושא בפלייבוק (%s)'%', '.join(sorted(G)))
 		if isinstance(D,int):
 			for A in range(D+1,min(D+4,len(C))):
-				if H(A)and RELATED_BACKREF.search(C[A]or''):F.setdefault(A,'מפנה לסעיף שתוקן ("%s")'%RELATED_BACKREF.search(C[A]).group(0).strip())
-		O=(E or[None]*(len(C)+1))[D]if isinstance(D,int)and E and D<len(E)else None
-		if O:
-			f=re.compile('(?:סעיף|סעיפים|בסעיף|לסעיף|section|clause)\\s*'+re.escape(O)+'(?![\\d.]*\\d)',re.I)
-			for(A,G)in enumerate(C):
-				if H(A)and f.search(G):F.setdefault(A,'הפניה לסעיף %s'%O)
-		P={B for A in B.get('rule_ids')or()for B in Y.get(A)or()}
-		if P:
-			for(A,g)in S.items():
-				if not H(A):continue
-				for L in g:
-					if L.get('op')=='accept'and P&set(L.get('rule_ids')or())and L.get('their_track')in('red','yellow'):F.setdefault(A,'כלל קשור בפלייבוק (%s)'%', '.join(sorted(P&set(L.get('rule_ids')))))
-		W=B.get('cluster_id')or B.get('id')
-		for(A,h)in sorted(F.items()):
-			if A in d or(W,A)in T or _reviewed(J,'RELATED_UNHANDLED',A):continue
-			T.add((W,A));X=E[A]if E and A<len(E)and E[A]else'פסקה %d'%A;finding(out,'RELATED_UNHANDLED','ההכרעה %s שינתה סעיף, והסעיף הקשור %s (%s) נשאר בלי הכרעה. להחיל עליו את אותה תכלית בנוסח דומה, או לרשום ב-dependents של ההכרעה שהוא הושאר בכוונה, עם reason. / Decision %s changed a clause; the related clause %s was not handled: apply the same purpose there, or record it in dependents as deliberately unchanged, with a reason'%(B.get('id'),X,h,B.get('id'),X),B.get('id'),blocking=True)
+				if I(A)and RELATED_BACKREF.search(C[A]or''):F.setdefault(A,'מפנה לסעיף שתוקן ("%s")'%RELATED_BACKREF.search(C[A]).group(0).strip())
+		Q=(E or[None]*(len(C)+1))[D]if isinstance(D,int)and E and D<len(E)else None
+		if Q:
+			m=re.compile('(?:סעיף|סעיפים|בסעיף|לסעיף|section|clause)\\s*'+re.escape(Q)+'(?![\\d.]*\\d)',re.I)
+			for(A,H)in enumerate(C):
+				if I(A)and m.search(H):F.setdefault(A,'הפניה לסעיף %s'%Q)
+		Z={B for A in B.get('rule_ids')or()for B in N.get(A)or()};a={B:D for A in B.get('rule_ids')or()for(B,(C,D))in(S.get(A)or{}).items()if C=='blocking'}
+		if Z:
+			for(A,n)in W.items():
+				if not I(A):continue
+				for R in n:
+					G=Z&set(R.get('rule_ids')or())
+					if R.get('op')!='accept'or not G:continue
+					b=G&set(a)
+					if b:c=sorted(b)[0];F.setdefault(A,'סעיף קשור חוסם בפלייבוק (%s): %s'%(c,a[c]))
+					elif R.get('their_track')in('red','yellow'):F.setdefault(A,'כלל קשור בפלייבוק (%s)'%', '.join(sorted(G)))
+		d=B.get('cluster_id')or B.get('id')
+		for(A,o)in sorted(F.items()):
+			if A in i or(d,A)in X or _reviewed(K,'RELATED_UNHANDLED',A):continue
+			X.add((d,A));e=E[A]if E and A<len(E)and E[A]else'פסקה %d'%A;finding(out,'RELATED_UNHANDLED','ההכרעה %s שינתה סעיף, והסעיף הקשור %s (%s) נשאר בלי הכרעה. להחיל עליו את אותה תכלית בנוסח דומה, או לרשום ב-dependents של ההכרעה שהוא הושאר בכוונה, עם reason. / Decision %s changed a clause; the related clause %s was not handled: apply the same purpose there, or record it in dependents as deliberately unchanged, with a reason'%(B.get('id'),e,o,B.get('id'),e),B.get('id'),blocking=True)
 POST_EDIT_PAIRS=('נוסח קפוא של מסמך או מדיניות','version in (?:effect|force) (?:on|at|as at)|as (?:in force|in effect) (?:on|at) the (?:date|effective)|shall not (?:be )?(?:amend|chang|modif)\\w* (?:unilaterally|without)|בנוסח(?:ו|ה|ם)? (?:התקף|שבתוקף|שהיה בתוקף) (?:במועד|ביום)|לא (?:ישונה|ישונו|יעודכן|יעודכנו) (?:באופן חד.?צדדי|ללא|בלי)',None,'as (?:amended|updated|modified|revised) (?:from time to time|periodically)|as updated periodically|then[- ]current|from time to time (?:amend|updat|modif|revis)|כפי (?:שי|שת)(?:עודכן|עודכנו|שונה|שונו) מעת לעת|כפי שיהיה בתוקף מעת לעת|בנוסח(?:ו|ה)? העדכני|כפי שיתעדכן'),('הגבלת היקף או תדירות של ביקורת','(?:not|no) more (?:often )?than once (?:in|per|every|a)|once (?:per|a|in any|every) (?:year|calendar|twelve|12)|by way of (?:written )?(?:reports?|questionnaires?)|לא יותר מפעם(?: אחת)? ב|פעם(?: אחת)? (?:בשנה|ב-?12 חודשים)|בדרך של (?:בקשת )?(?:דוחות|דו\\"חות|שאלון)','audit|inspect|ביקורת|בדיקה|לבדוק','at any time|without (?:prior )?notice|on (?:any )?suspicion|(?:if|where) (?:it|there) (?:is|has) (?:a )?(?:suspicion|concern)|in its (?:sole|absolute) discretion|בכל עת|ללא הודעה|בלי הודעה|בעקבות חשש|בשל חשש|לפי שיקול דעת(?:ו|ה)?(?: הבלעדי)?|(?:החלטת|קביעת)[^.;]{0,40}(?:תהיה )?(?:מכרעת|סופית)|כחלופה'),('חריג של בלאי, אשם או פגם',"fair wear and tear|reasonable wear|(?:caused by|due to|arising from) (?:its|their|the \\w+'s) (?:act|omission|fault|negligence)|בלאי סביר|בלאי רגיל|עקב מעשה או מחדל של(?:ו|ה|הם)|למעט[^.;]{0,40}(?:פגם|בלאי)",'repair|damage|maintenance|restor|תיקון|תיקונים|נזק|נזקים|אחזקה|החזקה|לתקן','(?:all|any(?: and all)?) (?:repairs?|damages?|costs? of repair|loss)|כל (?:ה)?(?:נזקים|תיקונים|הוצאות|הקלקולים)|את כל (?:ה)?(?:נזקים|תיקונים|הוצאות)|הנובעים מ(?:ה)?(?:שימוש|השכרת)'),('איסור לצמצם שירות או תכונה','(?:will|shall) not (?:remove|reduce|degrade|materially reduce|discontinue)|לא (?:יסיר|יפחית|יצמצם|יפסיק)',None,'discontinu|withdraw (?:the|a|any) (?:service|feature)|end[- ]of[- ]life|deprecat|(?:רשאי|זכאי)[^.;]{0,30}(?:להפסיק|לצמצם|להסיר)')
 def review_post_edit(out,theirs,decisions,state,mode=None,labels=None):
 	I=state;H=decisions;D=labels;C=theirs;I=I or{};O=mode!='work';P={A.get('para')for A in H if A.get('op')in RELATED_OPS and isinstance(A.get('para'),int)};Q,R=result_view(C,H);S={}

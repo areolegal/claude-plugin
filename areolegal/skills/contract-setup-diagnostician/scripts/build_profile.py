@@ -208,10 +208,14 @@ def normalize_answers(a):
 		elif a.get(A):a[A]=canon(B,a[A])
 	return a
 COUNSEL_TITLE_RE=re.compile('^\\s*(?:עו(?:"|״|\\x27\\x27|”)ד|עוה(?:"|״)ד|עורך הדין|עורכת הדין|Adv\\.?|Advocate)\\s+',re.I)
+ORG_NAME_RE=re.compile('(בע["״”\']?מ|בעמ\\b|ושות|עמותה|\\b(ltd|inc|llc|llp|limited|gmbh)\\b)',re.I)
+ORG_HEAD_RE=re.compile('^(ה?מחלק[הת]|ה?צוות|ה?לשכ[הת]|ה?יחיד[הת]|legal\\b|the legal)',re.I)
 def split_signer(raw,role=None):
-	A=raw;A=(A or'').strip();E=F=None;B=re.search('\\(([^()]*)\\)\\s*$',A)
-	if B and re.search('[A-Za-z]',B.group(1)):C=[A.strip()for A in B.group(1).split(',',1)];E=COUNSEL_TITLE_RE.sub('',C[0]).strip()or None;F=C[1]if len(C)>1 and C[1]else None;A=A[:B.start()].strip()
-	D=[A.strip()for A in A.split(',',1)];G=COUNSEL_TITLE_RE.sub('',D[0]).strip()or None;H=D[1]if len(D)>1 and D[1]else None;return G,(role or'').strip()or H,E,F
+	B=raw;B=(B or'').strip();E=F=None;C=re.search('\\(([^()]*)\\)\\s*$',B)
+	if C and re.search('[A-Za-z]',C.group(1)):D=[A.strip()for A in C.group(1).split(',',1)];E=COUNSEL_TITLE_RE.sub('',D[0]).strip()or None;F=D[1]if len(D)>1 and D[1]else None;B=B[:C.start()].strip()
+	A=[A.strip()for A in B.split(',',1)]
+	if len(A)>1 and(ORG_NAME_RE.search(A[1])or ORG_HEAD_RE.match(A[0])):A=[B]
+	G=COUNSEL_TITLE_RE.sub('',A[0]).strip()or None;H=A[1]if len(A)>1 and A[1]else None;return G,(role or'').strip()or H,E,F
 def signatories_of(a):
 	A=a.get('signatories')
 	if A in(None,'','-',[]):A=a.get('signatory')
@@ -221,9 +225,9 @@ def signatories_of(a):
 	if isinstance(A,(str,dict)):A=[A]
 	F=[]
 	for B in A or[]:
-		if isinstance(B,dict):E,G,C,D=split_signer(B.get('name'),B.get('role'));C,D=B.get('name_en')or C,B.get('role_en')or D
-		else:E,G,C,D=split_signer(str(B))
-		if E:F.append({'name':E,'role':G,'name_en':C,'role_en':D})
+		if isinstance(B,dict):C,G,D,E=split_signer((B.get('name')or'').replace(',','\x01'),B.get('role'));C=(C or'').replace('\x01',',')or None;D,E=B.get('name_en')or D,B.get('role_en')or E
+		else:C,G,D,E=split_signer(str(B))
+		if C:F.append({'name':C,'role':G,'name_en':D,'role_en':E})
 	return F
 def logo_state(a):
 	A=a.get('logo_path')or None;B=(a.get('logo')or'').strip()
@@ -279,7 +283,7 @@ def report(p,path):
 	for(C,D)in(p.get('clause_catalog_conditions')or{}).items():print(('Conditional clause topic: %s. %s'if A else'סעיף קטלוג מותנה: %s. %s')%(C,D))
 	for E in p['unresolved_questions']:print(B['openq']%E)
 SET_PROTECTED='profile_id','schema_version','core_version','generated_at','checked_at','version'
-SET_NEW_OK='organization_name_en','branding.signatories','branding.policy_approver','deliverable_language','deliverable_language_basis','departments_involved','departments_involved.asked_at','branding.website','branding.theme','branding.lawyer_name_en','branding.lawyer_role_en'
+SET_NEW_OK='organization_name_en','branding.signatories','branding.policy_approver','deliverable_language','deliverable_language_basis','departments_involved','departments_involved.asked_at','branding.website','branding.theme','branding.lawyer_name_en','branding.lawyer_role_en','branding.lawyer_name','branding.lawyer_role'
 SET_FAMILY_FIELD='departments_involved'
 DELIVERABLE_LANGS='he','en','both'
 SET_ALLOWED='organization_name_en','registration_number','branding.signatories','branding.policy_approver','branding.lawyer_name','branding.lawyer_role','branding.lawyer_name_en','branding.lawyer_role_en','branding.logo_path','branding.logo_status','branding.logo_added_at','branding.website','branding.theme','deliverable_language','deliverable_language_basis'
@@ -364,14 +368,19 @@ def check_set_value(key,val):
 		return E,None
 	return A,None
 def set_fields(path,assignments,preview=False):
-	I=preview;F=path
+	J=preview;F=path
 	if not os.path.exists(F):print('אין פרופיל בנתיב %s. --set מעדכן פרופיל קיים; פרופיל חדש נבנה מ---answers'%F);return 2
-	C=json.load(io.open(F,encoding='utf-8'));J=[];G=None
-	for K in assignments:
-		A,P,L=K.partition('=');A=A.strip()
-		if not P or not A:print('--set %r: נדרש שדה=ערך'%K);return 2
-		try:B=json.loads(L)
-		except ValueError:B=L
+	C=json.load(io.open(F,encoding='utf-8'));K=[];G=None
+	for L in assignments:
+		A,P,H=L.partition('=');A=A.strip()
+		if not P or not A:print('--set %r: נדרש שדה=ערך'%L);return 2
+		try:B=json.loads(H)
+		except ValueError:
+			B=H
+			if H.strip()[:1]in('[','{'):
+				Q=re.sub('(?<=[\\u0590-\\u05ff])"(?=[\\u0590-\\u05ff])','״',H)
+				try:B=json.loads(Q)
+				except ValueError:print('--set %s: הערך אינו JSON תקין: %s'%(A,H[:80]));return 2
 		if isinstance(B,str):B=B.strip()or None
 		E=A.split('.')
 		if E[0]in SET_PROTECTED:print('השדה %s אינו משתנה ב---set (זהות הפרופיל ותאריך היצירה)'%E[0]);return 2
@@ -388,17 +397,17 @@ def set_fields(path,assignments,preview=False):
 		if A==SET_FAMILY_FIELD and isinstance(D.get(A),dict):B=dict(D[A],**B)
 		if A=='branding.theme'and isinstance(D.get('theme'),dict)and B['choice']=='yes':B=dict(D['theme'],**B)
 		if A=='branding.signatories':B=signatories_of({'signatories':B}if isinstance(B,(list,dict))else{'signer':B or''})
-		J.append((A,D.get(E[-1]),B));D[E[-1]]=B
+		K.append((A,D.get(E[-1]),B));D[E[-1]]=B
 		if A=='registration_number':C['organization_id']=re.sub('[\\s\\-.]','',B or'')or None
-	H=T[G or(C.get('display_language')if C.get('display_language')in T else'he')]
-	for(A,Q,R)in J:print(set_line(H,A,Q,R))
+	I=T[G or(C.get('display_language')if C.get('display_language')in T else'he')]
+	for(A,R,S)in K:print(set_line(I,A,R,S))
 	if G and G!=C.get('display_language'):
-		print(set_line(H,'display_language',C.get('display_language'),G))
-		if not I and J:C['last_updated']=date.today().isoformat();write_json(F,C)
-		if I and J:print(H['pv']);return 0
-		return update_profile(F,{'display_language':G},preview=I)[0]
-	if I:print(H['pv']);return 0
-	C['last_updated']=date.today().isoformat();write_json(F,C);print(H['upd']);return 0
+		print(set_line(I,'display_language',C.get('display_language'),G))
+		if not J and K:C['last_updated']=date.today().isoformat();write_json(F,C)
+		if J and K:print(I['pv']);return 0
+		return update_profile(F,{'display_language':G},preview=J)[0]
+	if J:print(I['pv']);return 0
+	C['last_updated']=date.today().isoformat();write_json(F,C);print(I['upd']);return 0
 def set_line(t,key,old,new):
 	A=key
 	def B(v):

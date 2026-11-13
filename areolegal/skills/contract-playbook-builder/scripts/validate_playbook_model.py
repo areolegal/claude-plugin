@@ -40,8 +40,8 @@ VALID_TRACK_BASIS={'own_evidence','own_paper_repeated','documents_majority','tem
 FALLBACK_SOURCE_WORDS={'market_standard','areo_proposal'}
 LEGACY_FALLBACK_SOURCE={'signed_compromise','single_compromise','offered_not_signed','client_answer'}
 VALID_ACCEPTANCE_MODE={'negotiated','imposed','unnegotiated','unknown'}
-VALID_PAPER={'ours','theirs'}
-LEGACY_PAPER={'unknown'}
+VALID_PAPER={'ours','theirs','third_party','unknown'}
+LEGACY_PAPER=set()
 VALID_DOC_ROLE={'signed','agreement','draft','amendment','template','form','correspondence','guidance','policy','table'}
 NOT_NEGOTIATION_ROLES={'form','template','correspondence','guidance','policy','table'}
 VALID_BASELINE={'template','own_paper_majority','documents_majority','none','market'}
@@ -340,7 +340,7 @@ def main(path,core=None,index_entry=None,word=None,workspace=None,inventory=None
 		if G.get('doc_role')not in(None,'')and G['doc_role']not in VALID_DOC_ROLE:add(A,f"{K} invalid doc_role {G['doc_role']!r} ({', '.join(sorted(VALID_DOC_ROLE))})")
 		if G.get('doc_role')in('template','correspondence'):continue
 		if G.get('paper')in LEGACY_PAPER:H.append(f"{K} paper {G['paper']!r} is a legacy value: leave it empty when it cannot be determined (playbook-schema.md)")
-		elif G.get('paper')not in VALID_PAPER and G.get('paper')not in(None,''):add(A,f"{K} invalid paper {G.get('paper')!r} (ours, theirs, or empty when it cannot be determined)")
+		elif G.get('paper')not in VALID_PAPER and G.get('paper')not in(None,''):add(A,f"{K} invalid paper {G.get('paper')!r} (ours, theirs, third_party or unknown)")
 		if not nonempty(G.get('channel')):add(A,f"{K} missing channel")
 		if G.get('acceptance_mode')not in VALID_ACCEPTANCE_MODE:add(A,f"{K} missing/invalid acceptance_mode")
 	p=corpus_status_of(D);A9=[A for A in D.get('source_log')or[]if isinstance(A,dict)and A.get('included')is not False]

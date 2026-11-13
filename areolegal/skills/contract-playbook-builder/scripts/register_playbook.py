@@ -14,8 +14,16 @@ def load(path,what):
 	if not os.path.exists(A):print('%s אינו קיים: %s'%(what,A));raise SystemExit(2)
 	with open(A,encoding='utf-8')as B:return json.load(B)
 def entry_identity(e):return e.get('family_id')or e.get('family_code'),e.get('company_role_code'),bool(e.get('legacy'))
+def _aliases(model):
+	A=model;D=[];G=(A.get('meta')or{}).get('build_request')or{};E=A.get('family_id');F=[G.get('family_aliases'),A.get('family_aliases')];H=list(A.get('contract_families')or())+list((A.get('scope_summary')or{}).get('contract_families')or())
+	for B in H:
+		if isinstance(B,dict)and(not E or(B.get('contract_family_id')or B.get('family_id'))in(None,E)):F.append(B.get('family_aliases'))
+	for I in F:
+		for C in I or():
+			if isinstance(C,str)and C.strip()and C.strip()not in D:D.append(C.strip())
+	return D
 def model_entry(model,core,core_rel,legacy=False,model_path=None):
-	B=core;A=model;C=S.gate_status(A,model_path);D={'core_path':core_rel,'family_id':A.get('family_id'),'family_code':A.get('family_code')or(B or{}).get('family_code'),'company_role_code':A.get('company_role_code')or(B or{}).get('company_role_code'),'family_aliases':list(((A.get('meta')or{}).get('build_request')or{}).get('family_aliases')or[]),'family_name':((A.get('meta')or{}).get('build_request')or{}).get('family_label')or A.get('family_label'),'language':A.get('output_language')or((A.get('meta')or{}).get('build_request')or{}).get('language'),'last_updated':_dt.date.today().isoformat(),'playbook_status':C['playbook_status'],'status_label':C['label'],'corpus_origin':(A.get('scope_summary')or{}).get('corpus_origin'),'produced_with':A.get('produced_with'),'validity':validity_of(A,B)}
+	B=core;A=model;C=S.gate_status(A,model_path);D={'core_path':core_rel,'family_id':A.get('family_id'),'family_code':A.get('family_code')or(B or{}).get('family_code'),'company_role_code':A.get('company_role_code')or(B or{}).get('company_role_code'),'family_aliases':_aliases(A),'family_name':((A.get('meta')or{}).get('build_request')or{}).get('family_label')or A.get('family_label'),'language':A.get('output_language')or((A.get('meta')or{}).get('build_request')or{}).get('language'),'last_updated':_dt.date.today().isoformat(),'playbook_status':C['playbook_status'],'status_label':C['label'],'corpus_origin':(A.get('scope_summary')or{}).get('corpus_origin'),'produced_with':A.get('produced_with'),'validity':validity_of(A,B)}
 	if legacy:D['legacy']=True
 	return{B:A for(B,A)in D.items()if A not in(None,'')}
 def validity_of(model,core):

@@ -160,7 +160,7 @@ def is_amendment(name,text):
 	if AMENDMENT.search(Path(name).stem):return True
 	return any(AMENDMENT.search(A)for A in head_lines(text))
 def placeholder_count(text):B=len(text)-SIGN_TAIL;return sum(1 for A in PLACEHOLDER.finditer(text)if not(A.start()>=B and LINE_RUN.fullmatch(A.group(0))))
-def shingles(text,size=9,step=3):A=text.split();return{hashlib.md5(' '.join(A[B:B+size]).encode('utf-8')).digest()[:8]for B in range(0,max(1,len(A)-size),step)}
+def shingles(text,size=9,step=1):A=text.split();return{hashlib.md5(' '.join(A[B:B+size]).encode('utf-8')).digest()[:8]for B in range(0,max(1,len(A)-size+1),step)}
 def similarity(a,b):return len(a&b)/float(len(a|b))if a and b else .0
 def normalized_stem(name):A=Path(name).stem.lower();A=re.sub('\\b(v|ver|version|rev|draft|final|signed)[-_ ]?\\d*[a-z]?\\b',' ',A);A=re.sub('\\b20\\d{2}[-_. ]\\d{1,2}[-_. ]\\d{1,2}\\b',' ',A);A=re.sub('\\b(copy|עותק)\\b',' ',A);A=re.sub('[^a-z0-9\u0590-\u05ff]+',' ',A);return' '.join(A.split())
 def same_negotiation(a,b):

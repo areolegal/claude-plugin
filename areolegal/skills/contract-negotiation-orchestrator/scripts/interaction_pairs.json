@@ -1,85 +1,853 @@
 {
-  "_comment": "מפת קשרי סעיפים כללית: משפחות מושגים משפטיים (עברית ואנגלית) וזוגות משפחות שיכולים לצמצם זה את זה. אין כאן סוג הסכם, צד או עסקה. מילות העברית נבדקות כתת-מחרוזת, מילות האנגלית כתחילת מילה.",
-  "version": 1,
-  "families": {
-    "term_commitment": {"label": "תקופה ומחויבות מינימלית",
-      "he": ["תקופת מינימום", "תקופה מינימלית", "מחויבות מינימלית", "התחייבות מינימלית", "תקופת ההתקשרות", "תקופה קבועה", "תקופה ראשונית", "תקופת ההסכם"],
-      "en": ["minimum term", "minimum commitment", "minimum period", "initial term", "committed term", "fixed term", "term of this agreement"]},
-    "termination_exit": {"label": "סיום, אי-חידוש ויציאה מוקדמת",
-      "he": ["אי-חידוש", "אי חידוש", "לא לחדש", "הודעה על סיום", "סיום מוקדם", "לסיים את ההסכם", "לסיים הסכם", "סיום ההסכם", "ביטול ההסכם", "הפסקת ההסכם", "פקיעת"],
-      "en": ["non-renewal", "not to renew", "notice of termination", "early termination", "terminate this agreement", "terminate for convenience", "termination for convenience", "expir"]},
-    "indemnity": {"label": "שיפוי",
-      "he": ["שיפוי", "לשפות", "ישפה", "תשפה"],
-      "en": ["indemnif", "hold harmless"]},
-    "liability_limits": {"label": "הגבלת אחריות והחרגת נזקים",
-      "he": ["תקרת אחריות", "הגבלת אחריות", "נזק עקיף", "נזקים עקיפים", "נזק תוצאתי", "נזקים תוצאתיים", "אובדן רווחים", "לא יישא באחריות", "לא תישא באחריות", "אחריותו הכוללת", "אחריותה הכוללת", "לא יעלה על"],
-      "en": ["limitation of liability", "aggregate liability", "total liability", "liability cap", "shall not exceed", "indirect damages", "consequential", "loss of profit", "excluded damages", "in no event"]},
-    "grant_license": {"label": "הענקת זכות או רישיון",
-      "he": ["רישיון", "מעניק", "הענקת זכות", "זכות שימוש", "הרשאה", "הדגמה"],
-      "en": ["licen", "grants", "grant of", "right to use", "permission to use", "demonstrat"]},
-    "license_restriction": {"label": "שלילת רישיון, שמירת זכויות והגבלות שימוש",
-      "he": ["לא יינתן רישיון", "אין רישיון", "אין בהסכם זה כדי להקנות", "כל הזכויות שמורות", "שמירת זכויות", "אין להשתמש", "לא יעשה שימוש", "אסור"],
-      "en": ["no licen", "reserves all rights", "all rights reserved", "reservation of rights", "shall not use", "prohibited", "except as expressly", "no right"]},
-    "exclusivity": {"label": "בלעדיות והגבלת תחרות",
-      "he": ["בלעדי", "בלעדיות", "איסור תחרות", "אי-תחרות", "לא ימנה"],
-      "en": ["exclusiv", "sole right", "non-compete", "shall not appoint"]},
-    "refusal_right": {"label": "זכות לסרב או לדחות, והגנה על לקוחות פוטנציאליים",
-      "he": ["לסרב", "לדחות הזמנ", "זכות סירוב", "שיקול דעתו הבלעדי", "שיקול דעתה הבלעדי", "לקוחות פוטנציאליים", "הגנה על לקוח"],
-      "en": ["right to refuse", "reject any order", "reject orders", "sole discretion", "prospective customer", "not obliged to accept", "may decline"]},
-    "survival": {"label": "שרידות וחובות לאחר סיום",
-      "he": ["תשרוד", "ימשיכו לחול", "לאחר סיום", "לאחר הסיום", "לאחר פקיעת", "שרידות", "לאחר תום"],
-      "en": ["surviv", "post-termination", "after termination", "upon expiry", "after expiry", "following termination"]},
-    "payment": {"label": "תשלום ותמורה",
-      "he": ["תשלום", "תמורה", "שכר", "חשבונית", "עמלה", "דמי "],
-      "en": ["payment", "fees", "consideration", "invoice", "commission", "remuneration"]},
-    "setoff": {"label": "קיזוז ועיכוב תשלום",
-      "he": ["קיזוז", "לקזז", "לעכב תשלום", "עיכבון", "ניכוי"],
-      "en": ["set-off", "set off", "setoff", "withhold", "deduct"]},
-    "confidentiality_scope": {"label": "היקף סודיות והגנת מידע",
-      "he": ["מידע סודי", "סודיות", "נתונים אישיים", "מידע אישי", "נתוני לקוח", "הגנת מידע", "הגנת פרטיות", "עיבוד מידע"],
-      "en": ["confidential", "personal data", "personal information", "customer data", "data protection", "privacy"]},
-    "definitions": {"label": "הגדרות",
-      "he": ["פירושו", "פירושה", "משמעו", "משמעה", "יהיה פירושו", "הגדרות"],
-      "en": [" means ", "shall mean", "has the meaning", "definitions"]},
-    "audit": {"label": "ביקורת ובדיקת ספרים",
-      "he": ["ביקורת", "זכות לבקר", "בדיקת ספרים", "זכות עיון"],
-      "en": ["audit", "inspection of records", "examine the books"]}
+ "_comment": "מפת קשרי סעיפים כללית: משפחות מושגים משפטיים (עברית ואנגלית) וזוגות משפחות שיכולים לצמצם זה את זה. אין כאן סוג הסכם, צד או עסקה. מילות העברית נבדקות כתת-מחרוזת, מילות האנגלית כתחילת מילה. pair_meta: לכל זוג, סוג הקישור, דרגת החיוב וכלל הפעולה, לבונה הפלייבוק (related_links.py). הזוגות נקראים כמו קודם.",
+ "version": 2,
+ "families": {
+  "term_commitment": {
+   "label": "תקופה ומחויבות מינימלית",
+   "he": [
+    "תקופת מינימום",
+    "תקופה מינימלית",
+    "מחויבות מינימלית",
+    "התחייבות מינימלית",
+    "תקופת ההתקשרות",
+    "תקופה קבועה",
+    "תקופה ראשונית",
+    "תקופת ההסכם"
+   ],
+   "en": [
+    "minimum term",
+    "minimum commitment",
+    "minimum period",
+    "initial term",
+    "committed term",
+    "fixed term",
+    "term of this agreement"
+   ]
   },
-  "pairs": [
-    ["term_commitment", "termination_exit", "תקופת מינימום מול אי-חידוש, סיום מוקדם ויציאה"],
-    ["indemnity", "liability_limits", "שיפוי מול תקרת אחריות והחרגת סוגי נזק"],
-    ["grant_license", "license_restriction", "הענקת זכות מול שלילת רישיון, שמירת זכויות והגבלות"],
-    ["exclusivity", "refusal_right", "בלעדיות מול זכות לדחות והגנה על לקוחות פוטנציאליים"],
-    ["survival", "termination_exit", "שרידות מול סיום ופקיעה"],
-    ["survival", "payment", "המשך חובות לאחר סיום מול חובות תשלום"],
-    ["survival", "grant_license", "המשך חובות לאחר סיום מול פקיעת זכויות ורישיונות"],
-    ["confidentiality_scope", "definitions", "היקף סודיות והגנת מידע מול הגדרות"],
-    ["payment", "setoff", "תשלום מול קיזוז ועיכוב"]
-  ],
-  "duplicate_mechanisms": {
-    "audit": {"label": "זכות ביקורת",
-      "he": ["זכות לבקר", "לערוך ביקורת", "בדיקת ספרים", "זכות עיון", "ביקורת"],
-      "en": ["audit right", "right to audit", "may audit", "audit"]},
-    "price_review": {"label": "עדכון מחיר",
-      "he": ["עדכון מחיר", "התאמת מחיר", "העלאת מחיר", "עדכון תעריף"],
-      "en": ["price adjustment", "price review", "price increase", "fee adjustment"]},
-    "liability_cap": {"label": "תקרת אחריות",
-      "he": ["תקרת אחריות", "אחריותו הכוללת", "אחריותה הכוללת"],
-      "en": ["liability cap", "aggregate liability", "total liability", "limitation of liability"]},
-    "renewal": {"label": "חידוש",
-      "he": ["חידוש אוטומטי", "יתחדש", "מתחדש"],
-      "en": ["auto-renew", "automatic renewal", "shall renew"]}
+  "termination_exit": {
+   "label": "סיום, אי-חידוש ויציאה מוקדמת",
+   "he": [
+    "אי-חידוש",
+    "אי חידוש",
+    "לא לחדש",
+    "הודעה על סיום",
+    "סיום מוקדם",
+    "לסיים את ההסכם",
+    "לסיים הסכם",
+    "סיום ההסכם",
+    "ביטול ההסכם",
+    "הפסקת ההסכם",
+    "פקיעת"
+   ],
+   "en": [
+    "non-renewal",
+    "not to renew",
+    "notice of termination",
+    "early termination",
+    "terminate this agreement",
+    "terminate for convenience",
+    "termination for convenience",
+    "expir"
+   ]
   },
-  "overclaim": {
-    "mutual": {"he": ["הדדי", "הדדית", "הדדיות"], "en": ["mutual"]},
-    "total": {
-      "he": ["במלואו", "במלואה", "במלואם", "כל (?:ה)?(?:חובות|הוראות|סעיפים|נזקים|תביעות|סוגי)"],
-      "en": ["fully", "entirely", "in full", "completely", "any and all", "all (?:of the )?(?:obligations|provisions|claims|damages|clauses)"]},
-    "none": {
-      "he": ["אין (?:כל )?(?:התחייבות|חובה|זכות|הגבלה|אחריות)"],
-      "en": ["no (?:obligation|liability|right|restriction|limitation)"]},
-    "symmetric_markers": {
-      "he": ["כל צד", "כל אחד מהצדדים", "שני הצדדים", "הדדי"],
-      "en": ["each party", "either party", "both parties", "neither party", "mutual"]}
+  "indemnity": {
+   "label": "שיפוי",
+   "he": [
+    "שיפוי",
+    "לשפות",
+    "ישפה",
+    "תשפה"
+   ],
+   "en": [
+    "indemnif",
+    "hold harmless"
+   ]
+  },
+  "liability_limits": {
+   "label": "הגבלת אחריות והחרגת נזקים",
+   "he": [
+    "תקרת אחריות",
+    "הגבלת אחריות",
+    "נזק עקיף",
+    "נזקים עקיפים",
+    "נזק תוצאתי",
+    "נזקים תוצאתיים",
+    "אובדן רווחים",
+    "לא יישא באחריות",
+    "לא תישא באחריות",
+    "אחריותו הכוללת",
+    "אחריותה הכוללת",
+    "לא יעלה על"
+   ],
+   "en": [
+    "limitation of liability",
+    "aggregate liability",
+    "total liability",
+    "liability cap",
+    "shall not exceed",
+    "indirect damages",
+    "consequential",
+    "loss of profit",
+    "excluded damages",
+    "in no event"
+   ]
+  },
+  "grant_license": {
+   "label": "הענקת זכות או רישיון",
+   "he": [
+    "רישיון",
+    "מעניק",
+    "הענקת זכות",
+    "זכות שימוש",
+    "הרשאה",
+    "הדגמה"
+   ],
+   "en": [
+    "licen",
+    "grants",
+    "grant of",
+    "right to use",
+    "permission to use",
+    "demonstrat"
+   ]
+  },
+  "license_restriction": {
+   "label": "שלילת רישיון, שמירת זכויות והגבלות שימוש",
+   "he": [
+    "לא יינתן רישיון",
+    "אין רישיון",
+    "אין בהסכם זה כדי להקנות",
+    "כל הזכויות שמורות",
+    "שמירת זכויות",
+    "אין להשתמש",
+    "לא יעשה שימוש",
+    "אסור"
+   ],
+   "en": [
+    "no licen",
+    "reserves all rights",
+    "all rights reserved",
+    "reservation of rights",
+    "shall not use",
+    "prohibited",
+    "except as expressly",
+    "no right"
+   ]
+  },
+  "exclusivity": {
+   "label": "בלעדיות והגבלת תחרות",
+   "he": [
+    "בלעדי",
+    "בלעדיות",
+    "איסור תחרות",
+    "אי-תחרות",
+    "לא ימנה"
+   ],
+   "en": [
+    "exclusiv",
+    "sole right",
+    "non-compete",
+    "shall not appoint"
+   ]
+  },
+  "refusal_right": {
+   "label": "זכות לסרב או לדחות, והגנה על לקוחות פוטנציאליים",
+   "he": [
+    "לסרב",
+    "לדחות הזמנ",
+    "זכות סירוב",
+    "שיקול דעתו הבלעדי",
+    "שיקול דעתה הבלעדי",
+    "לקוחות פוטנציאליים",
+    "הגנה על לקוח"
+   ],
+   "en": [
+    "right to refuse",
+    "reject any order",
+    "reject orders",
+    "sole discretion",
+    "prospective customer",
+    "not obliged to accept",
+    "may decline"
+   ]
+  },
+  "survival": {
+   "label": "שרידות וחובות לאחר סיום",
+   "he": [
+    "תשרוד",
+    "ימשיכו לחול",
+    "לאחר סיום",
+    "לאחר הסיום",
+    "לאחר פקיעת",
+    "שרידות",
+    "לאחר תום"
+   ],
+   "en": [
+    "surviv",
+    "post-termination",
+    "after termination",
+    "upon expiry",
+    "after expiry",
+    "following termination"
+   ]
+  },
+  "payment": {
+   "label": "תשלום ותמורה",
+   "he": [
+    "תשלום",
+    "תמורה",
+    "שכר",
+    "חשבונית",
+    "עמלה",
+    "דמי "
+   ],
+   "en": [
+    "payment",
+    "fees",
+    "consideration",
+    "invoice",
+    "commission",
+    "remuneration"
+   ]
+  },
+  "setoff": {
+   "label": "קיזוז ועיכוב תשלום",
+   "he": [
+    "קיזוז",
+    "לקזז",
+    "לעכב תשלום",
+    "עיכבון",
+    "ניכוי"
+   ],
+   "en": [
+    "set-off",
+    "set off",
+    "setoff",
+    "withhold",
+    "deduct"
+   ]
+  },
+  "confidentiality_scope": {
+   "label": "היקף סודיות והגנת מידע",
+   "he": [
+    "מידע סודי",
+    "סודיות",
+    "נתונים אישיים",
+    "מידע אישי",
+    "נתוני לקוח",
+    "הגנת מידע",
+    "הגנת פרטיות",
+    "עיבוד מידע"
+   ],
+   "en": [
+    "confidential",
+    "personal data",
+    "personal information",
+    "customer data",
+    "data protection",
+    "privacy"
+   ]
+  },
+  "definitions": {
+   "label": "הגדרות",
+   "he": [
+    "פירושו",
+    "פירושה",
+    "משמעו",
+    "משמעה",
+    "יהיה פירושו",
+    "הגדרות"
+   ],
+   "en": [
+    " means ",
+    "shall mean",
+    "has the meaning",
+    "definitions"
+   ]
+  },
+  "audit": {
+   "label": "ביקורת ובדיקת ספרים",
+   "he": [
+    "ביקורת",
+    "זכות לבקר",
+    "בדיקת ספרים",
+    "זכות עיון"
+   ],
+   "en": [
+    "audit",
+    "inspection of records",
+    "examine the books"
+   ]
+  },
+  "insurance": {
+   "label": "ביטוח",
+   "he": [
+    "ביטוח",
+    "פוליסה",
+    "פוליסת",
+    "מבטח"
+   ],
+   "en": [
+    "insurance",
+    "insurer",
+    "policy of insurance"
+   ]
+  },
+  "minimum_purchase": {
+   "label": "רכש מינימלי ותחזיות",
+   "he": [
+    "רכש מינימלי",
+    "כמות מינימלית",
+    "היקף מינימלי",
+    "התחייבות לרכישה",
+    "תחזית"
+   ],
+   "en": [
+    "minimum purchase",
+    "minimum order",
+    "minimum volume",
+    "take or pay",
+    "forecast"
+   ]
+  },
+  "mfn": {
+   "label": "תנאים שאינם פחות טובים",
+   "he": [
+    "לא פחות טובים",
+    "התנאים המיטביים",
+    "לקוח מועדף"
+   ],
+   "en": [
+    "most favoured",
+    "most favored",
+    "no less favourable",
+    "no less favorable"
+   ]
+  },
+  "suspension_interest": {
+   "label": "השעיה וריבית פיגורים",
+   "he": [
+    "השעיה",
+    "להשעות",
+    "ריבית פיגורים",
+    "ריבית פיגור",
+    "הפרשי הצמדה וריבית"
+   ],
+   "en": [
+    "suspend",
+    "suspension",
+    "late interest",
+    "interest on late"
+   ]
+  },
+  "injunctive_relief": {
+   "label": "סעד זמני וצו מניעה",
+   "he": [
+    "צו מניעה",
+    "סעד זמני",
+    "סעד דחוף",
+    "נזק בלתי הפיך",
+    "נזק שאינו ניתן לתיקון"
+   ],
+   "en": [
+    "injunct",
+    "interim relief",
+    "equitable relief",
+    "irreparable harm",
+    "irreparable damage"
+   ]
+  },
+  "arbitration": {
+   "label": "בוררות ויישוב מחלוקות",
+   "he": [
+    "בוררות",
+    "בורר",
+    "גישור"
+   ],
+   "en": [
+    "arbitrat",
+    "mediation"
+   ]
+  },
+  "legal_disclosure": {
+   "label": "גילוי על פי דין",
+   "he": [
+    "על פי דין",
+    "לפי דין",
+    "צו שיפוטי",
+    "דרישת רשות"
+   ],
+   "en": [
+    "required by law",
+    "court order",
+    "compelled to disclose",
+    "legally required"
+   ]
+  },
+  "assignment": {
+   "label": "הסבה והמחאה",
+   "he": [
+    "להסב",
+    "הסבה",
+    "להמחות",
+    "המחאה",
+    "העברת זכויות"
+   ],
+   "en": [
+    "assign",
+    "assignment",
+    "transfer this agreement"
+   ]
+  },
+  "change_of_control": {
+   "label": "שינוי שליטה",
+   "he": [
+    "שינוי שליטה",
+    "מיזוג",
+    "רכישת השליטה",
+    "העברת השליטה"
+   ],
+   "en": [
+    "change of control",
+    "change in control",
+    "merger",
+    "acquisition of"
+   ]
+  },
+  "affiliates": {
+   "label": "חברות קשורות",
+   "he": [
+    "חברה קשורה",
+    "חברות קשורות",
+    "תאגיד קשור",
+    "חברה בת",
+    "חברת אם"
+   ],
+   "en": [
+    "affiliate",
+    "subsidiar",
+    "parent company"
+   ]
+  },
+  "security_standard": {
+   "label": "תקן אבטחת מידע",
+   "he": [
+    "אבטחת מידע",
+    "תקן אבטחה",
+    "אמצעי אבטחה",
+    "ISO 27001"
+   ],
+   "en": [
+    "information security",
+    "security measures",
+    "security standard",
+    "iso 27001"
+   ]
+  },
+  "breach_notification": {
+   "label": "הודעה על אירוע אבטחה",
+   "he": [
+    "אירוע אבטחה",
+    "אירוע אבטחה חמור",
+    "דליפת מידע",
+    "פריצה",
+    "להודיע על אירוע"
+   ],
+   "en": [
+    "security incident",
+    "data breach",
+    "breach notification",
+    "notify of any breach"
+   ]
+  },
+  "ip_ownership": {
+   "label": "בעלות בתוצרים",
+   "he": [
+    "בעלות בתוצרים",
+    "הבעלות בתוצרי",
+    "זכויות הקניין הרוחני בתוצרים",
+    "יהיו בבעלות"
+   ],
+   "en": [
+    "ownership of deliverables",
+    "work product",
+    "shall own",
+    "title to the deliverables"
+   ]
+  },
+  "feedback": {
+   "label": "משוב והצעות לשיפור",
+   "he": [
+    "משוב",
+    "הצעות לשיפור",
+    "הערות לשיפור"
+   ],
+   "en": [
+    "feedback",
+    "suggestions"
+   ]
+  },
+  "personal_data": {
+   "label": "עיבוד מידע אישי",
+   "he": [
+    "מידע אישי",
+    "נתונים אישיים",
+    "עיבוד מידע",
+    "הגנת הפרטיות",
+    "הגנת פרטיות",
+    "מאגר מידע"
+   ],
+   "en": [
+    "personal data",
+    "personal information",
+    "data processing",
+    "processing of personal"
+   ]
   }
+ },
+ "pairs": [
+  [
+   "term_commitment",
+   "termination_exit",
+   "תקופת מינימום מול אי-חידוש, סיום מוקדם ויציאה"
+  ],
+  [
+   "indemnity",
+   "liability_limits",
+   "שיפוי מול תקרת אחריות והחרגת סוגי נזק"
+  ],
+  [
+   "grant_license",
+   "license_restriction",
+   "הענקת זכות מול שלילת רישיון, שמירת זכויות והגבלות"
+  ],
+  [
+   "exclusivity",
+   "refusal_right",
+   "בלעדיות מול זכות לדחות והגנה על לקוחות פוטנציאליים"
+  ],
+  [
+   "survival",
+   "termination_exit",
+   "שרידות מול סיום ופקיעה"
+  ],
+  [
+   "survival",
+   "payment",
+   "המשך חובות לאחר סיום מול חובות תשלום"
+  ],
+  [
+   "survival",
+   "grant_license",
+   "המשך חובות לאחר סיום מול פקיעת זכויות ורישיונות"
+  ],
+  [
+   "confidentiality_scope",
+   "definitions",
+   "היקף סודיות והגנת מידע מול הגדרות"
+  ],
+  [
+   "payment",
+   "setoff",
+   "תשלום מול קיזוז ועיכוב"
+  ],
+  [
+   "indemnity",
+   "insurance",
+   "שיפוי מול ביטוח: הכיסוי הביטוחי צריך לגבות את החבות"
+  ],
+  [
+   "liability_limits",
+   "insurance",
+   "תקרת אחריות מול ביטוח"
+  ],
+  [
+   "exclusivity",
+   "minimum_purchase",
+   "בלעדיות מול רכש מינימלי: ויתור על אחד בלי התאמת השני הוא ויתור חד צדדי"
+  ],
+  [
+   "termination_exit",
+   "minimum_purchase",
+   "סיום לנוחות מול רכש מינימלי"
+  ],
+  [
+   "mfn",
+   "audit",
+   "תנאים שאינם פחות טובים מול זכות ביקורת"
+  ],
+  [
+   "payment",
+   "suspension_interest",
+   "תנאי תשלום מול זכות השעיה וריבית פיגורים"
+  ],
+  [
+   "injunctive_relief",
+   "arbitration",
+   "בוררות בלי חריג לסעד זמני מונעת צו מניעה מהיר"
+  ],
+  [
+   "confidentiality_scope",
+   "legal_disclosure",
+   "גילוי על פי דין מול נוהל הגילוי המצמצם"
+  ],
+  [
+   "assignment",
+   "change_of_control",
+   "הגבלת הסבה בלי שינוי שליטה אינה מונעת העברה בעסקה בהון"
+  ],
+  [
+   "assignment",
+   "affiliates",
+   "היתר הסבה לחברה קשורה מול הגדרת חברה קשורה"
+  ],
+  [
+   "security_standard",
+   "breach_notification",
+   "תקן אבטחה מול חובת הודעה על אירוע"
+  ],
+  [
+   "personal_data",
+   "indemnity",
+   "עיבוד מידע אישי מול השיפוי"
+  ],
+  [
+   "ip_ownership",
+   "grant_license",
+   "בעלות בתוצרים מול היקף הרישיון"
+  ],
+  [
+   "feedback",
+   "ip_ownership",
+   "סעיף משוב מול הבעלות"
+  ]
+ ],
+ "duplicate_mechanisms": {
+  "audit": {
+   "label": "זכות ביקורת",
+   "he": [
+    "זכות לבקר",
+    "לערוך ביקורת",
+    "בדיקת ספרים",
+    "זכות עיון",
+    "ביקורת"
+   ],
+   "en": [
+    "audit right",
+    "right to audit",
+    "may audit",
+    "audit"
+   ]
+  },
+  "price_review": {
+   "label": "עדכון מחיר",
+   "he": [
+    "עדכון מחיר",
+    "התאמת מחיר",
+    "העלאת מחיר",
+    "עדכון תעריף"
+   ],
+   "en": [
+    "price adjustment",
+    "price review",
+    "price increase",
+    "fee adjustment"
+   ]
+  },
+  "liability_cap": {
+   "label": "תקרת אחריות",
+   "he": [
+    "תקרת אחריות",
+    "אחריותו הכוללת",
+    "אחריותה הכוללת"
+   ],
+   "en": [
+    "liability cap",
+    "aggregate liability",
+    "total liability",
+    "limitation of liability"
+   ]
+  },
+  "renewal": {
+   "label": "חידוש",
+   "he": [
+    "חידוש אוטומטי",
+    "יתחדש",
+    "מתחדש"
+   ],
+   "en": [
+    "auto-renew",
+    "automatic renewal",
+    "shall renew"
+   ]
+  }
+ },
+ "overclaim": {
+  "mutual": {
+   "he": [
+    "הדדי",
+    "הדדית",
+    "הדדיות"
+   ],
+   "en": [
+    "mutual"
+   ]
+  },
+  "total": {
+   "he": [
+    "במלואו",
+    "במלואה",
+    "במלואם",
+    "כל (?:ה)?(?:חובות|הוראות|סעיפים|נזקים|תביעות|סוגי)"
+   ],
+   "en": [
+    "fully",
+    "entirely",
+    "in full",
+    "completely",
+    "any and all",
+    "all (?:of the )?(?:obligations|provisions|claims|damages|clauses)"
+   ]
+  },
+  "none": {
+   "he": [
+    "אין (?:כל )?(?:התחייבות|חובה|זכות|הגבלה|אחריות)"
+   ],
+   "en": [
+    "no (?:obligation|liability|right|restriction|limitation)"
+   ]
+  },
+  "symmetric_markers": {
+   "he": [
+    "כל צד",
+    "כל אחד מהצדדים",
+    "שני הצדדים",
+    "הדדי"
+   ],
+   "en": [
+    "each party",
+    "either party",
+    "both parties",
+    "neither party",
+    "mutual"
+   ]
+  }
+ },
+ "pair_meta": {
+  "indemnity|liability_limits": {
+   "kind": "cap_exceptions",
+   "severity": "blocking",
+   "action": "כשהתקרה יורדת או החרגת הנזק מתרחבת, בודקים מחדש את שווי השיפוי: שיפוי שאינו מוחרג מהתקרה שווה לכל היותר את התקרה."
+  },
+  "term_commitment|termination_exit": {
+   "kind": "give_take",
+   "severity": "attention",
+   "action": "שינוי בתקופה המחייבת מחייב לבדוק את זכויות הסיום והיציאה, ולהפך."
+  },
+  "grant_license|license_restriction": {
+   "kind": "defined_term",
+   "severity": "attention",
+   "action": "שינוי בהיקף הרישיון מחייב לבדוק את ההגבלות ושמירת הזכויות."
+  },
+  "exclusivity|refusal_right": {
+   "kind": "give_take",
+   "severity": "attention",
+   "action": "בלעדיות שניתנה מחייבת לבדוק את זכות הסירוב והגנת הלקוחות."
+  },
+  "survival|termination_exit": {
+   "kind": "remedy_integrity",
+   "severity": "attention",
+   "action": "שינוי בסיום מחייב לבדוק אילו חובות שורדות אותו."
+  },
+  "survival|payment": {
+   "kind": "remedy_integrity",
+   "severity": "attention",
+   "action": "חובות תשלום שנולדו לפני הסיום שורדות אותו."
+  },
+  "survival|grant_license": {
+   "kind": "remedy_integrity",
+   "severity": "attention",
+   "action": "פקיעת הרישיון בסיום מחייבת לבדוק את השרידות."
+  },
+  "confidentiality_scope|definitions": {
+   "kind": "defined_term",
+   "severity": "blocking",
+   "action": "שינוי בהגדרת המידע הסודי משנה את כל החובות שנשענות עליה: אי השימוש, ההשבה וההשמדה."
+  },
+  "payment|setoff": {
+   "kind": "give_take",
+   "severity": "attention",
+   "action": "שינוי בתנאי התשלום מחייב לבדוק את זכות הקיזוז והעיכוב."
+  },
+  "indemnity|insurance": {
+   "kind": "cap_exceptions",
+   "severity": "attention",
+   "action": "השיפוי צריך כיסוי ביטוחי מתאים."
+  },
+  "liability_limits|insurance": {
+   "kind": "cap_exceptions",
+   "severity": "attention",
+   "action": "התקרה וסכומי הביטוח צריכים להתיישב זה עם זה."
+  },
+  "exclusivity|minimum_purchase": {
+   "kind": "give_take",
+   "severity": "blocking",
+   "action": "ויתור על בלעדיות בלי התאמת הרכש המינימלי, או להפך, הוא ויתור חד צדדי."
+  },
+  "termination_exit|minimum_purchase": {
+   "kind": "give_take",
+   "severity": "attention",
+   "action": "סיום לנוחות מרוקן את הרכש המינימלי."
+  },
+  "mfn|audit": {
+   "kind": "remedy_integrity",
+   "severity": "attention",
+   "action": "בלי זכות ביקורת אין דרך לאכוף תנאים שאינם פחות טובים."
+  },
+  "payment|suspension_interest": {
+   "kind": "remedy_integrity",
+   "severity": "attention",
+   "action": "תנאי התשלום והסעדים על איחור נקבעים יחד."
+  },
+  "injunctive_relief|arbitration": {
+   "kind": "remedy_integrity",
+   "severity": "blocking",
+   "action": "בוררות בלי חריג לסעד זמני מאיינת צו מניעה מהיר, ובהפרת סודיות עיכוב של שבועות מאיין את הסעד."
+  },
+  "confidentiality_scope|legal_disclosure": {
+   "kind": "remedy_integrity",
+   "severity": "attention",
+   "action": "גילוי על פי דין צריך נוהל: הודעה מוקדמת וגילוי מינימלי."
+  },
+  "assignment|change_of_control": {
+   "kind": "remedy_integrity",
+   "severity": "blocking",
+   "action": "הגבלת הסבה בלי התייחסות לשינוי שליטה אינה מונעת העברה בפועל."
+  },
+  "assignment|affiliates": {
+   "kind": "defined_term",
+   "severity": "attention",
+   "action": "היתר הסבה לחברה קשורה רחב כמו הגדרת החברה הקשורה."
+  },
+  "security_standard|breach_notification": {
+   "kind": "remedy_integrity",
+   "severity": "attention",
+   "action": "תקן האבטחה וחובת ההודעה על אירוע נקבעים יחד."
+  },
+  "ip_ownership|grant_license": {
+   "kind": "defined_term",
+   "severity": "attention",
+   "action": "הבעלות בתוצרים וההיקף של הרישיון נקבעים יחד."
+  },
+  "feedback|ip_ownership": {
+   "kind": "defined_term",
+   "severity": "attention",
+   "action": "סעיף משוב רחב עלול להעביר בעלות שהסעיף העיקרי שמר."
+  },
+  "personal_data|indemnity": {
+   "kind": "cap_exceptions",
+   "severity": "attention",
+   "action": "עיבוד מידע אישי מחייב לבדוק אם הוא מוחרג מהתקרה ומכוסה בשיפוי."
+  }
+ }
 }

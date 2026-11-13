@@ -50,17 +50,19 @@ def _accept_text(model,lang):
 	for B in model.get('rules')or[]:C=(B.get('traffic_light')or{}).get('green')or{};A+=[A for(A,B)in _wordings(C,'green')if B==lang]
 	return'\n'.join(A)
 def wording_findings(model):
-	'בדיקות הפערים המשותפות (common.gap_checks) על כל נוסח ירוק, צהוב ונסיגה, בכל שפה. ממצא = error.\n    אין כאן רמז נושא ואין שיקול של סוג הסכם: המודול המשותף בודק מנגנונים כלליים בלבד.';F=model
-	try:from common import gap_checks as H
+	'בדיקות הפערים המשותפות (common.gap_checks) על כל נוסח ירוק, צהוב ונסיגה, בכל שפה. ממצא = error.\n    אין כאן רמז נושא ואין שיקול של סוג הסכם: המודול המשותף בודק מנגנונים כלליים בלבד.';C=model
+	try:from common import gap_checks as I
 	except ImportError:return[{'code':'GAP_CHECKS_UNAVAILABLE','severity':'error','rule_id':None,'track':None,'message':'common.gap_checks אינו זמין, ולכן אי אפשר לבדוק את הנוסחים לפני הגיליון.'}]
-	C=[]
-	for D in F.get('rules')or[]:
-		for(I,A,J)in _iter_tracks(D):
+	D=[]
+	try:from playbook import approval_sheet as J;G=[A for(B,A)in J.company_roles(C)if A and B!='company']
+	except Exception:G=[]
+	for E in C.get('rules')or[]:
+		for(K,A,L)in _iter_tracks(E):
 			if A not in('green','yellow'):continue
-			for(G,E)in _wordings(J,A):
-				K={'accept_text':_accept_text(F,E)+'\n'+G,'source':'playbook','rule_id':D['rule_id'],'track':A,'segment':I,'allow_statutory_cap':True}
-				for B in H.check_wording(G,E,topic=None,context=K)or[]:_f(C,'WORDING_GAP','error','%s: %s'%(B.get('code'),B.get('message_he')or''),D['rule_id'],A);C[-1].update(gap_code=B.get('code'),span=B.get('span'),lang=E)
-	return C
+			for(H,F)in _wordings(L,A):
+				M={'accept_text':_accept_text(C,F)+'\n'+H,'source':'playbook','rule_id':E['rule_id'],'track':A,'segment':K,'allow_statutory_cap':True,'company_terms':G}
+				for B in I.check_wording(H,F,topic=None,context=M)or[]:_f(D,'WORDING_GAP','error','%s: %s'%(B.get('code'),B.get('message_he')or''),E['rule_id'],A);D[-1].update(gap_code=B.get('code'),span=B.get('span'),lang=F)
+	return D
 def _approver_paths(obj,path=''):
 	D=path;A=obj
 	if isinstance(A,dict):

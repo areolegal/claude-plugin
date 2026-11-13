@@ -105,9 +105,10 @@ input.ltr{direction:ltr;text-align:right}
 details.payload{font-size:13px;color:var(--mist)}
 details.payload pre{direction:ltr;text-align:left;background:var(--raised);border-radius:4px;padding:12px;overflow-x:auto;color:var(--ink);font-size:12px}
 .done-mark{width:56px;height:56px;border-radius:50%;background:var(--aurora-soft);display:grid;place-items:center;color:var(--aurora);font-size:28px;font-weight:700}
-.next{display:flex;gap:14px;align-items:center;padding:14px 16px;border:1px solid var(--line-strong);border-radius:6px}
-.next .t{flex:1;min-width:0}
+.next{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:14px 16px;border:1px solid var(--line-strong);border-radius:6px}
+.next .t{flex:1 1 220px;min-width:0}
 .next .t b{display:block}
+.conf{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5}.conf input{margin-top:4px}.faintx{color:var(--mist)}
 .next .t span{font-size:14px;color:var(--mist)}
 .next.col{flex-direction:column;align-items:stretch}
 .agents3{display:flex;flex-direction:column;gap:8px}
@@ -215,14 +216,17 @@ details.payload pre{direction:ltr;text-align:left;background:var(--raised);borde
 (function(){
 'use strict';
 var INIT=/*__AREO_INIT__*/null;
+/* building "by what is common in the market" and the market comparison search the web. They stay in the page, off,
+   until a version turns them on (lib/config.json features.playbook_market_research, passed in INIT.features) */
+var MARKET_ON=!!(INIT&&INIT.features&&INIT.features.playbook_market_research);
 var KEY='areo-onboarding-draft';
 var STEPS=['welcome','company','incorp','sector','brand','summary','done'];
 var QSTEPS=['company','incorp','sector','brand','summary'];
 var FEN={'שולחן העבודה':'Desktop','מסמכים':'Documents','הורדות':'Downloads'};
 var POS=(INIT&&INIT.positions)||[];
-var S={pb:{path:'',family:'',side:'',deps:[],depsFree:'',market:false,concern:'',dec:{},page:0},step:'welcome',name:'',reg:'',nameEn:'',multi:false,entities:'',country:'ישראל',type:'',listed:[],dual:[],sectors:[],fin:[],desc:'',markets:['ישראל'],mcs:'',
+var S={pb:{path:'',family:'',side:'',deps:[],depsFree:'',market:false,concern:'',dec:{},page:0,tpl:false,conf:false,seg:'',segBy:[],segFree:'',dbk:[]},step:'welcome',name:'',reg:'',nameEn:'',multi:false,entities:'',country:'ישראל',type:'',listed:[],dual:[],sectors:[],fin:[],desc:'',markets:['ישראל'],mcs:'',
   dataFolder:null,other:{country:'',type:'',sectors:'',markets:'',fin:''},tradable:'',xreg:'',signers:[{name:'',role:''}],approver:{name:'',role:''},logo:'',brand:'',website:'',lang:'he',sent:false};
-try{var saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved&&typeof saved==='object'){Object.assign(S,saved);S.sent=false;if(S.step==='pb_scan')S.step='pb_types';if(S.step==='pb_folder')S.step='pb_connect';if(S.step==='pb_build')S.step='pb_approve';if(!S.pb||!S.pb.dec)S.pb={path:'',family:'',side:'',deps:[],depsFree:'',market:false,concern:'',dec:{},page:0};if(!Array.isArray(S.listed))S.listed=[];['dual','fin'].forEach(function(k){if(!Array.isArray(S[k]))S[k]=[]});if(!S.other)S.other={country:'',type:'',sectors:'',markets:'',fin:''};if(!S.approver)S.approver={name:'',role:''};}}catch(e){}
+try{var saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved&&typeof saved==='object'){Object.assign(S,saved);S.sent=false;if(S.step==='pb_scan')S.step='pb_types';if(S.step==='pb_folder')S.step='pb_connect';if(S.step==='pb_build')S.step='pb_approve';if(!S.pb||!S.pb.dec)S.pb={path:'',family:'',side:'',deps:[],depsFree:'',market:false,concern:'',dec:{},page:0};['segBy','dbk'].forEach(function(k){if(!Array.isArray(S.pb[k]))S.pb[k]=[]});if(!Array.isArray(S.listed))S.listed=[];['dual','fin'].forEach(function(k){if(!Array.isArray(S[k]))S[k]=[]});if(!S.other)S.other={country:'',type:'',sectors:'',markets:'',fin:''};if(!S.approver)S.approver={name:'',role:''};}}catch(e){}
 /* drafts from before 1.31: the renamed financial activities, and an insurer is now the sector, not an activity */
 try{if(S.other.fin==null)S.other.fin='';if(S.xreg==null)S.xreg='';if(S.tradable==null)S.tradable='';S.fin=S.fin.map(function(x){return x==='מנהל קרנות נאמנות'?'מנהל קרנות נאמנות או השקעה':(x==='נותן שירות בנכס פיננסי'?'נותן שירות בנכס פיננסי (כולל נכסים דיגיטליים)':x)});var mbx=S.fin.indexOf('מבטח');if(mbx>=0){S.fin.splice(mbx,1);if(S.sectors.indexOf('ביטוח')<0)S.sectors.push('ביטוח')}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
@@ -298,6 +302,9 @@ var AGENTS3=[
  ['הנושא ונותן','מחיל את הפלייבוק על הסכם של הצד השני, או על טיוטה שלכם שעברה לצד השני. בלי פלייבוק, ההערות לפי מקובלות השוק.','<path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/>']];
 /* the sides of each type, in the words agreements of that type use; mutual only where both sides carry the same duties */
 var SIDE_AUTO='נזהה לפי ההסכמים';
+var SEG_Q=['לא, אותן עמדות מול כולם','כן, יש הבדלים'];
+var SEG_BY=['לפי סוג הצד השני','לפי גודל העסקה','לפי מדינה'];
+var DBK=['אין','איסור רגולטורי','התחייבות למבטח או למממן','חשיפה גדולה משווי העסקה','החלטת דירקטוריון'];
 var SIDES=[
  [/סודיות|NDA/i,['מגלה המידע','מקבל המידע','הסכם הדדי']],
  [/הפצ/,['הספק (יצרן או יבואן)','המפיץ']],
@@ -367,7 +374,7 @@ function clean(s){var o='';s=String(s||'');for(var k=0;k<s.length;k++){var c=s.c
 
 /* מספר רישום ישראלי: 9 ספרות עם ספרת ביקורת (כמו תעודת זהות) */
 function regIL(){return S.country==='ישראל'||/^חברת חוץ/.test(S.type)}
-function regHint(){return regIL()?'ח.פ, מספר עמותה, הקדש או שותפות, או מספר של גוף ציבורי. אין מספר? אפשר להשאיר ריק.':'מספר הרישום במדינת ההתאגדות, כפי שהוא כתוב שם. אין מספר? אפשר להשאיר ריק.'}
+function regHint(){return (regIL()?'ח.פ, מספר עמותה, הקדש או שותפות, או מספר של גוף ציבורי.':'מספר הרישום במדינת ההתאגדות, כפי שהוא כתוב שם.')+' המספר משמש לבדיקת פרטי הצדדים לפני חתימה ובהסכמים שתנסחו. אפשר להשאיר ריק, ונבקש אותו כשיידרש.'}
 function regNote(){var rs=regState(S.reg);return rs?'<div class="note '+(rs.ok?'ok':'warn')+'">'+rs.msg+'</div>':'<div class="hint">'+regHint()+'</div>'}
 function regState(v){
   if(!regIL())return null;
@@ -550,7 +557,9 @@ function payload(){
   var o=function(k,v){return v===NL?(clean(S.other[k])||''):v};
   var multiO=function(k,a){return a.map(function(v){return o(k,v)}).filter(Boolean)};
   var mk=multiO('markets',S.markets);if(needMcs())clean(S.mcs).split(/\s*,\s*/).forEach(function(x){x=clean(x);if(x&&mk.indexOf(x)<0)mk.push(x)});
-  return {label:'הקמת Areo: פרטי '+W('החברה','הארגון')+' לשמירה',kind:'areo_setup_answers',answers:{
+  /* the Claude window that asks "send this?" shows the whole message. Its first line is in plain Hebrew, so the person sees what is saved before the data */
+  var said=[clean(S.name),o('country',S.country),o('type',S.type),multiO('sectors',S.sectors).slice(0,4).join(', ')].filter(Boolean).join(' · ');
+  return {label:'הקמת Areo: פרטי '+W('החברה','הארגון')+' לשמירה',summary:'לשמור את פרטי '+W('החברה','הארגון')+': '+said+'. הפרטים המלאים מופיעים למטה.',kind:'areo_setup_answers',answers:{
     organization_name:clean(S.name),organization_name_en:clean(S.nameEn),registration_number:regIL()?clean(S.reg).replace(/\D/g,''):clean(S.reg).slice(0,40),
     incorporation_country:o('country',S.country),organization_type:o('type',S.type),
     listed_in:isListedCo()?S.listed.slice(0,5):[],dual_listed_in:isListedCo()&&S.listed.indexOf('רישום דואלי')>=0?S.dual.slice(0,4):[],
@@ -634,13 +643,13 @@ function render(keep){
       actions('המשך',S.sectors.length>0&&S.markets.length>0&&(!finRequired()||S.fin.length>0),true)+'</section>';
   }
   else if(S.step==='pb_people'){
-    h='<section class="card"><div class="eyebrow">פלייבוק · מורשי חתימה</div><h2>מי חותם על המסמכים?</h2>'+
-      '<p class="lead">נשמר בתיקייה שבחרתם, לא אצלנו. כל מי שיש לו גישה לתיקייה ישתמש באותם פרטים.</p>'+
-      '<div class="field"><span class="legend">מי חותם על המסמכים שיוצאים לצד השני?</span><div class="hint">השם הראשון יופיע בבלוק החתימה ועל ההערות במסמכי המשא ומתן.</div>'+S.signers.map(function(x,i){return '<div class="signer"><input type="text" id="sn'+i+'" data-sn="'+i+'" value="'+esc(x.name)+'" placeholder="שם מלא" aria-label="שם החותם">'+
-        '<input type="text" id="sr'+i+'" data-sr="'+i+'" value="'+esc(x.role)+'" placeholder="תפקיד" aria-label="תפקיד">'+
-        (S.signers.length>1?'<button type="button" class="linkbtn" data-rm="'+i+'">הסרה</button>':'<span></span>')+'</div>'}).join('')+
-      '<button type="button" class="linkbtn" data-add style="align-self:flex-start">+ חותם נוסף</button></div>'+
-      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_home">חזרה</button><button type="button" class="btn primary" data-jump="pb_path" data-gonext'+(S.signers.some(function(x){return clean(x.name)})?'':' disabled')+'>המשך</button></div></section>';
+    /* one name for the comments that go to the other side, not a list of signatories: a playbook is not signed (Inbal, 12.11.2026, 1.2) */
+    if(!clean(S.signers[0].name))S.signers[0].name='המחלקה המשפטית'+(INIT&&INIT.org_name?', '+INIT.org_name:'');
+    h='<section class="card"><div class="eyebrow">פלייבוק · ההערות לצד השני</div><h2>באיזה שם לרשום את ההערות?</h2>'+
+      '<p class="lead">כשהצד השני יקבל טיוטה עם התיקונים שלכם, ההערות בה ייחתמו בשם הזה. נשמר בתיקייה שלכם, לא אצלנו.</p>'+
+      '<div class="field"><label for="sn0">השם על ההערות</label><input type="text" id="sn0" data-sn="0" value="'+esc(S.signers[0].name)+'">'+
+      '<div class="hint">אפשר להשאיר את שם המחלקה, או לכתוב שם של עורך דין.</div></div>'+
+      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_home">חזרה</button><button type="button" class="btn primary" data-jump="pb_path" data-gonext'+(clean(S.signers[0].name)?'':' disabled')+'>המשך</button></div></section>';
   }
   else if(S.step==='brand'){
     h='<section class="card"><div class="eyebrow">לוגו, מיתוג ושפה</div><h2>איך התוצרים ייראו, ובאיזו שפה?</h2>'+
@@ -698,7 +707,7 @@ function render(keep){
       '<p class="lead">המדיניות קובעת את העמדה של החברה בכל סעיף: מה מקובל, איפה אפשר להתגמש, ועל מה לא מסכימים. בונים אותה לסוג אחד של הסכמים.</p>'+
       '<div class="paths">'+
       '<button type="button" class="path" data-pbpath="agreements"><span class="ic">1</span><span><b>מההסכמים שלנו</b><span>הכי מדויק. מחברים תיקייה עם הסכמים מאותו סוג, רצוי 20 ומעלה, ואנחנו לומדים מהם את העמדות שלכם.</span></span></button>'+
-      '<button type="button" class="path" data-pbpath="market"><span class="ic">2</span><span><b>לפי המקובל בשוק</b><span>כשאין לכם הסכמים מהסוג הזה. נבנה טיוטה מהסכמים שפורסמו ומהרגולציה, ממקורות מאושרים בלבד. כל עמדה מסומנת כהמלצה של Areo.</span></span></button>'+
+      (MARKET_ON?'<button type="button" class="path" data-pbpath="market"><span class="ic">2</span><span><b>לפי המקובל בשוק</b><span>כשאין לכם הסכמים מהסוג הזה. נבנה טיוטה מהסכמים שפורסמו ומהרגולציה, ממקורות מאושרים בלבד. כל עמדה מסומנת כהמלצה של Areo.</span></span></button>':'')+
       '<button type="button" class="path" data-pbpath="upload"><span class="ic">3</span><span><b>יש לנו מדיניות, נעלה אותה</b><span>נהפוך אותה לפלייבוק עובד בלי לשנות אף עמדה, ונסמן רק מה שחסר או סותר.</span></span></button>'+
       '</div><div class="actions"><button type="button" class="btn ghost" data-jump="pb_people">חזרה</button><span></span></div></section>';
   }
@@ -714,7 +723,7 @@ function render(keep){
   else if(S.step==='pb_connect'&&S.dataFolder&&S.pb.where!=='other'){
     var kn2=S.pb.kindAuto?'ההסכמים':esc(S.pb.family);
     h='<section class="card"><div class="eyebrow">ההסכמים שלכם</div><h2>איפה '+kn2+'?</h2>'+
-      '<p class="lead">הכי טוב: הסכמים חתומים מהשנים האחרונות, מול צדדים שונים, כולל כאלה שניהלתם עליהם משא ומתן. 20 ומעלה.</p>'+
+      '<p class="lead">הכי טוב: הסכמים חתומים וטיוטות שהוחלפו עם הצד השני, מהשנים האחרונות ומול צדדים שונים. 20 ומעלה. טיוטות פנימיות שלא יצאו לא צריך.</p>'+
       (S.dataFolder.mode==='picked'&&S.dataFolder.docs===0?'<div class="note warn">בתיקייה '+esc(S.dataFolder.name)+' אין הסכמים: לא מצאנו בה אף קובץ Word או PDF. בחרו "במקום אחר", ובחרו את התיקייה שבה שמורים ההסכמים.</div>':'')+
       '<div class="paths"><button type="button" class="path" data-pbwhere="same"'+(S.dataFolder.mode==='picked'&&S.dataFolder.docs===0?' disabled style="opacity:.45;cursor:not-allowed"':'')+'><span class="ic">1</span><span><b>באותה תיקייה</b><span>'+(S.dataFolder.mode==='picked'?esc(S.dataFolder.name)+', ':'')+'התיקייה שכבר חיברתם. לא צריך אישור נוסף.</span></span></button>'+
       '<button type="button" class="path" data-pbwhere="other"><span class="ic">2</span><span><b>במקום אחר</b><span>תבחרו את תיקיית ההסכמים מהמחשב, ו-Claude יבקש לאשר גישה אליה.</span></span></button></div>'+
@@ -723,7 +732,7 @@ function render(keep){
   else if(S.step==='pb_connect'){
     var kname=S.pb.kindAuto?'':S.pb.family,pk=S.pb.picked;
     h='<section class="card"><div class="eyebrow">ההסכמים שלכם</div><h2>'+(kname?'בחרו את התיקייה עם '+esc(kname):'בחרו את תיקיית ההסכמים')+'</h2>'+
-      '<p class="lead">הכי טוב: הסכמים חתומים מהשנים האחרונות, מול צדדים שונים, כולל כאלה שניהלתם עליהם משא ומתן. 20 ומעלה. '+(kname?'אם יש בתיקייה גם סוגים אחרים, נזהה אותם ונשאיר אותם בחוץ.':'נזהה לבד אילו סוגים יש בתיקייה.')+'</p>'+
+      '<p class="lead">הכי טוב: הסכמים חתומים וטיוטות שהוחלפו עם הצד השני, מהשנים האחרונות ומול צדדים שונים. 20 ומעלה. טיוטות פנימיות שלא יצאו לא צריך. '+(kname?'אם יש בתיקייה גם סוגים אחרים, נזהה אותם ונשאיר אותם בחוץ.':'נזהה לבד אילו סוגים יש בתיקייה.')+'</p>'+
       '<button type="button" class="btn primary" data-dirpick style="align-self:flex-start">לבחור מהמחשב</button>'+
       '<input type="file" id="dirpick" webkitdirectory directory multiple hidden>'+
       (pk?'<div class="pos"><div class="hd"><b>בחרתם: '+esc(pk.name)+'</b><span class="tag c">'+pk.count+' קבצים</span></div>'+
@@ -790,12 +799,12 @@ function render(keep){
       '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_path">חזרה</button><button type="button" class="btn primary" data-jump="pb_side"'+(S.pb.family?'':' disabled')+' data-need="family">המשך</button></div></section>';
   }
   else if(S.step==='pb_side'){
-    var mk=S.pb.path==='market',ag=S.pb.path==='agreements',ROLES=sidesFor(S.pb.family);if(ag)ROLES.unshift(SIDE_AUTO);
+    var mk=S.pb.path==='market',ag=S.pb.path==='agreements',ROLES=sidesFor(S.pb.family);if(!ROLES.some(function(r){return /הדדי/.test(r)}))ROLES.push('הדדי');if(ag)ROLES.unshift(SIDE_AUTO);
     var sideFree=S.pb.side&&ROLES.indexOf(S.pb.side)<0?S.pb.side:'';
     var DEPS=[['כספים והנהלת חשבונות','תשלום, הצמדה, תקרות'],['רכש','הזמנות, מועדי אספקה, ניהול הספק'],['תפעול','אבני דרך, SLA ותחזוקה'],['מחלקה משפטית','הודעות, חידוש וסיום'],['IT ואבטחת מידע','אירועי אבטחה, גישה למערכות'],['ציות ואכיפה','רגולציה, פרטיות, אנטי שוחד'],['ביטוח','פוליסות וערבויות'],['הנהלה בכירה','חריגות מקווים אדומים'],['משאבי אנוש','אי שידול, עובדים מושאלים'],['מכירות','חידוש מול לקוח'],['תציעו לפי ההסכמים','נציג לכם הצעה לאישור']];
     h='<section class="card"><div class="eyebrow">'+esc(S.pb.family||'המדיניות הקיימת')+'</div><h2>באיזה צד החברה, ומי מעורב?</h2>'+
       '<div class="field"><span class="legend">הצד של '+W('החברה','הארגון')+' בהסכם</span>'+chips(ROLES,S.pb.side,'side',false)+
-      '<input type="text" id="sideFree" value="'+esc(sideFree)+'" placeholder="צד אחר? כתבו כאן איך הוא נקרא בהסכמים">'+
+      '<input type="text" id="sideFree" value="'+esc(sideFree)+'" placeholder="צד אחר? כתבו כאן איך הוא נקרא בהסכמים">'+'<div class="hint">"הדדי": כששני הצדדים נותנים ומקבלים אותן התחייבויות, למשל הסכם סודיות הדדי.</div>'+
       (ag?'<div class="hint">"'+SIDE_AUTO+'": נקרא שני הסכמים מהתיקייה ונראה באיזה צד אתם. אם לא ברור, נשאל.</div>':'')+'</div>'+
       '<div class="field"><span class="legend">המחלקות המעורבות בהסכמים האלה<span class="optional">אפשר כמה</span></span>'+
       '<div class="chips">'+DEPS.map(function(d){var on=S.pb.deps.indexOf(d[0])>=0;return '<button type="button" class="chip" data-dep="'+esc(d[0])+'" aria-pressed="'+on+'" title="'+esc(d[1])+'">'+esc(d[0])+'</button>'}).join('')+'</div>'+
@@ -805,13 +814,20 @@ function render(keep){
   }
   else if(S.step==='pb_extra'){
     var up2=S.pb.path==='upload';
-    h='<section class="card"><div class="eyebrow">עוד שתי שאלות קצרות</div><h2>לפני שמתחילים</h2>'+
-      (S.pb.path==='agreements'?'<div class="field"><span class="legend">להוסיף השוואה למקובל בשוק?</span>'+chips(['לא, רק ההסכמים שלנו','כן, להשוות'],S.pb.market?'כן, להשוות':'לא, רק ההסכמים שלנו','market',false)+
+    h='<section class="card"><div class="eyebrow">עוד כמה שאלות קצרות</div><h2>לפני שמתחילים</h2>'+
+      (S.pb.path==='agreements'?'<div class="field"><button type="button" class="chip" data-tpl aria-pressed="'+(!!S.pb.tpl)+'" style="align-self:flex-start">יש לנו תבנית (נוסח בית) להסכם הזה</button>'+
+        '<div class="hint">'+(S.pb.tpl?'Areo תחפש אותה בתיקייה ותשאל אם לא תמצא. היא תהיה עמדת הפתיחה בכל נושא.':'רשות. אם יש, זה הנתון הכי חשוב: הנוסח שאתם מבקשים כשאין לחץ.')+'</div></div>'+
+        '<div class="field"><span class="legend">העמדות שלכם שונות מול צדדים שונים?</span>'+chips(SEG_Q,S.pb.seg||SEG_Q[0],'pbseg',false,true)+
+        (S.pb.seg===SEG_Q[1]?chips(SEG_BY,S.pb.segBy||[],'pbsegby',true,true)+'<input type="text" id="segFree" value="'+esc(S.pb.segFree||'')+'" placeholder="קבוצה אחרת? כתבו כאן">'+'<div class="hint">אפשר לשנות אחר כך בלשונית המדיניות.</div>':'')+'</div>'+
+        '<div class="field"><span class="legend">יש נושאים שאם הצד השני לא זז בהם, עדיף לא לחתום?</span>'+chips(DBK,S.pb.dbk&&S.pb.dbk.length?S.pb.dbk:[DBK[0]],'pbdbk',true,true)+
+        '<div class="hint">את השיוך לנושאים עצמם מאשרים בסוף, כשהפלייבוק מוכן.</div></div>':'')+
+      (S.pb.path==='agreements'&&MARKET_ON?'<div class="field"><span class="legend">להוסיף השוואה למקובל בשוק?</span>'+chips(['לא, רק ההסכמים שלנו','כן, להשוות'],S.pb.market?'כן, להשוות':'לא, רק ההסכמים שלנו','market',false)+
         '<div class="hint">אם כן, נחפש הסכמים מאותו סוג ורגולציה רלוונטית, ממקורות מאושרים בלבד, ונציג לכם את הממצאים בנפרד. שום דבר לא נכנס לפלייבוק בלי אישור שלכם.</div></div>':'')+
       (up2?'<div class="privacy">במדיניות שהעליתם לא משתנה אף עמדה. נסמן רק מה שחסר או סותר.</div>':'')+
       '<div class="field"><label for="concern">יש נושא בהסכמים מהסוג הזה שמטריד אתכם במיוחד?<span class="optional">אפשר לדלג</span></label><textarea id="concern" placeholder="במילים שלכם. למשל: ספקים שמעבירים מידע לחו&quot;ל בלי לשאול">'+esc(S.pb.concern)+'</textarea>'+
       '<div class="hint">כל חשש מקבל נושא בפלייבוק, גם אם אין עליו דוגמה בהסכמים.</div></div>'+
-      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_side">חזרה</button><button type="button" class="btn primary" data-jump="pb_summary">לסיכום</button></div></section>';
+      (S.pb.path==='agreements'?'<label class="conf"><input type="checkbox" data-conf'+(S.pb.conf?' checked':'')+'> <span>אין בתיקייה הסכם שאוסר להעביר אותו לעיבוד בכלי בינה מלאכותית. <span class="faintx">אם יש הסכם כזה, הוציאו אותו מהתיקייה לפני שמתחילים.</span></span></label>':'')+
+      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_side">חזרה</button><button type="button" class="btn primary" data-jump="pb_summary"'+(S.pb.path==='agreements'&&!S.pb.conf?' disabled':'')+'>לסיכום</button></div></section>';
   }
   else if(S.step==='pb_summary'){
     var deps=S.pb.deps.concat(clean(S.pb.depsFree)?clean(S.pb.depsFree).split(/\s*,\s*/):[]);
@@ -828,10 +844,13 @@ function render(keep){
       (S.pb.path==='agreements'?g2('תיקיית ההסכמים',esc(S.pb.where==='same'?((S.dataFolder&&S.dataFolder.name)||'התיקייה שחיברתם'):((S.pb.picked&&S.pb.picked.name)||'התיקייה שבחרתם')),S.pb.where==='same'?'pb_home':'pb_connect'):'')+
       g2('סוג ההסכמים',esc(S.pb.family||'לפי המסמך שהעליתם')+(S.pb.path==='agreements'&&S.pb.picked&&S.pb.picked.count?' · '+S.pb.picked.count+' קבצים':''),S.pb.path==='market'?'pb_market':(S.pb.path==='agreements'?'pb_types':''))+
       g2('הצד של החברה',esc(S.pb.side),'pb_side')+g2('מחלקות',esc(deps.join(', ')),'pb_side')+g2('אופן הבנייה',esc(how),'pb_extra')+
+      (S.pb.path==='agreements'?g2('השם על ההערות',esc(clean(S.signers[0]&&S.signers[0].name)),'pb_people')+g2('תבנית',S.pb.tpl?'יש, Areo תאתר אותה בתיקייה':'אין','pb_extra')+
+        g2('הבדלים בין צדדים',esc(segText()),'pb_extra')+g2('שוברי עסקה',esc((S.pb.dbk&&S.pb.dbk.length?S.pb.dbk:[DBK[0]]).join(', ')),'pb_extra'):'')+
       (S.pb.concern?g2('מה מטריד אתכם',esc(S.pb.concern),'pb_extra'):'')+'</div>'+
-      '<div class="hint">בסוף מקבלים שני תוצרים מאותה מדיניות: מסמך Word, וסביבת עבודה שאפשר לחפש בה ולסנן. שניהם בתיקייה שלכם.</div>'+
+      '<div class="hint">בסוף מקבלים סביבת עבודה שאפשר לחפש בה ולסנן, בתיקייה שלכם. את מסמך המדיניות ב-Word מורידים ממנה בכפתור הייצוא.</div>'+
       '<details class="payload"><summary>מה נשמר</summary><pre>'+esc(JSON.stringify(pbPayload(),null,2))+'</pre></details>'+
-      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_extra">חזרה</button><button type="button" class="btn primary" data-pbstart>להתחיל בבנייה</button></div></section>';
+      '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_extra">חזרה</button><button type="button" class="btn primary" data-pbstart>להתחיל בבנייה</button></div>'+
+      '<div id="senderr" class="note warn" hidden></div><div id="manual" hidden class="field"><label for="manualtext">לא הצלחנו לשלוח מכאן. העתיקו את הפרטים והדביקו בשיחה:</label><textarea id="manualtext" readonly></textarea></div></section>';
   }
   else if(S.step==='pb_wait'){
     h='<section class="card"><div class="done-mark" aria-hidden="true">✓</div><h2>'+(S.pb.path==='upload'?'ממירים את המדיניות לפלייבוק':'בונים את הפלייבוק')+'</h2>'+
@@ -888,17 +907,22 @@ function animSteps(sel,fin){
     if(k<li.length){li[k].className='on';k++;setTimeout(tick,900)}else setTimeout(fin,500)};
   tick();
 }
+function segText(){if(S.pb.seg!==SEG_Q[1])return SEG_Q[0];var a=(S.pb.segBy||[]).slice();if(clean(S.pb.segFree))a.push(clean(S.pb.segFree));return a.length?a.join(', '):'כן, Areo תציע קבוצות'}
 function findPayload(){var pk=S.pb.picked||{};return {label:'חיבור תיקייה',kind:'areo_find_folder',folder_name:clean(pk.name),file_count:pk.count,sample_files:(pk.sample||[]).map(clean)}}
 function pbPayload(){
   var deps=S.pb.deps.concat(clean(S.pb.depsFree)?clean(S.pb.depsFree).split(/\s*,\s*/):[]),pk=S.pb.picked;
   var where=S.pb.path!=='agreements'?null:(S.pb.where==='same'?{mode:'data_folder'}:S.pb.agConnected?{mode:'connected',folder_name:clean(S.pb.agName||'')}:(pk?{mode:'picked',folder_name:clean(pk.name),root:pk.root||'',file_count:pk.count,sample_files:(pk.sample||[]).slice(0,8)}:{mode:'attached_in_chat'}));
   var df=S.dataFolder||{};
-  return {label:'בניית פלייבוק: '+(clean(S.pb.family)||'לפי מה שנמצא בתיקייה'),kind:'areo_playbook_intake',answers:{
+  return {label:'בניית פלייבוק: '+(clean(S.pb.family)||'לפי מה שנמצא בתיקייה'),summary:'לבנות פלייבוק ל'+(clean(S.pb.family)||'סוג ההסכם שנמצא בתיקייה')+', לפי התשובות למטה.',kind:'areo_playbook_intake',answers:{
     data_folder:df.mode==='picked'?{mode:'picked',folder_name:clean(df.name),root:df.root||'',file_count:df.count,sample_files:(df.sample||[]).slice(0,8)}:{mode:df.mode||'connected'},
     signers:S.signers.filter(function(x){return clean(x.name)}).slice(0,8).map(function(x){return {name:clean(x.name),role:clean(x.role)}}),
     policy_approver:clean(S.approver.name)?{name:clean(S.approver.name),role:clean(S.approver.role)}:null,
     path:S.pb.path,family:clean(S.pb.family),family_auto:!!S.pb.kindAuto,agreements_folder:where,company_side:S.pb.side===SIDE_AUTO?null:clean(S.pb.side),side_auto:S.pb.side===SIDE_AUTO,
-    origin:EMB?'areo_app':'setup_page',policy_file:S.pb.path==='upload'&&S.pb.policyFile?{name:clean(S.pb.policyFile.name),size:S.pb.policyFile.size||0}:null,departments:deps.slice(0,15),market_comparison:S.pb.path==='agreements'?S.pb.market:(S.pb.path==='market'),client_concern:clean(S.pb.concern).slice(0,500)}};
+    origin:EMB?'areo_app':'setup_page',policy_file:S.pb.path==='upload'&&S.pb.policyFile?{name:clean(S.pb.policyFile.name),size:S.pb.policyFile.size||0}:null,departments:deps.slice(0,15),market_comparison:MARKET_ON&&(S.pb.path==='agreements'?S.pb.market:(S.pb.path==='market')),client_concern:clean(S.pb.concern).slice(0,500),
+    comment_name:(clean(S.signers[0]&&S.signers[0].name)||('המחלקה המשפטית'+(INIT&&INIT.org_name?', '+INIT.org_name:''))).slice(0,120),role_mode:/הדדי/.test(S.pb.side||'')?'mutual':'one_sided',
+    has_template:S.pb.path==='agreements'&&!!S.pb.tpl,confidentiality_confirmed:S.pb.path==='agreements'&&!!S.pb.conf,
+    segments:S.pb.path!=='agreements'?null:(S.pb.seg===SEG_Q[1]?{differ:true,by:(S.pb.segBy||[]).slice(0,3),other:clean(S.pb.segFree||'').slice(0,120)}:{differ:false}),
+    deal_breakers:S.pb.path!=='agreements'?null:{asked:true,sources:(S.pb.dbk||[]).filter(function(x){return x!==DBK[0]})}}};
 }
 function decPayload(){
   var ap=S.approver||{};
@@ -920,7 +944,7 @@ function refreshNext(){
   if(S.step==='company')ok=!!clean(S.name)&&(!S.multi||!!clean(S.entities));
   if(S.step==='incorp')ok=incorpOk();
   if(S.step==='sector')ok=S.sectors.length>0&&S.markets.length>0&&(!finRequired()||S.fin.length>0);
-  if(S.step==='pb_people'){var b2=$('[data-gonext]');ok=S.signers.some(function(x){return clean(x.name)});if(b2)b2.disabled=!ok}
+  if(S.step==='pb_people'){var b2=$('[data-gonext]');ok=!!clean(S.signers[0]&&S.signers[0].name);if(b2)b2.disabled=!ok}
   if(S.step==='brand')ok=!!S.logo&&!!S.brand;
   if(b.tagName)b.disabled=!ok;
 }
@@ -964,6 +988,8 @@ function fallback(p,after,why){
 }
 function manual(text){var m=$('#manual');if(!m)return;m.hidden=false;var ta=$('#manualtext');ta.value=text;ta.focus();ta.select()}
 
+/* the confidentiality tick: a checkbox, not a button */
+document.addEventListener('change',function(e){var t=e.target;if(!t||!t.hasAttribute||!t.hasAttribute('data-conf'))return;S.pb.conf=!!t.checked;save();var nb=document.querySelector('[data-jump="pb_summary"]');if(nb)nb.disabled=!S.pb.conf});
 document.addEventListener('click',function(e){
   var t=e.target.closest('button,.nm');if(!t)return;
   if(clmClick(t))return;
@@ -992,6 +1018,11 @@ document.addEventListener('click',function(e){
   if(t.hasAttribute('data-restart')){try{localStorage.removeItem(KEY)}catch(e){}location.reload();return}
   if(t.dataset.chip){
     var k=t.dataset.chip,val=t.dataset.val;
+    if(k==='pbseg'||k==='pbsegby'||k==='pbdbk'){
+      if(k==='pbseg')S.pb.seg=val;
+      else if(k==='pbsegby'){var sb=S.pb.segBy,j=sb.indexOf(val);j>=0?sb.splice(j,1):sb.push(val)}
+      else{var db=S.pb.dbk.length?S.pb.dbk:[DBK[0]],jj=db.indexOf(val);if(val===DBK[0])db=[DBK[0]];else{db=db.filter(function(x){return x!==DBK[0]});jj=db.indexOf(val);jj>=0?db.splice(jj,1):db.push(val);if(!db.length)db=[DBK[0]]}S.pb.dbk=db}
+      save();var y0=window.scrollY;render(true);window.scrollTo(0,y0);return}
     if(['sectors','markets','listed','dual','fin'].indexOf(k)>=0){var a=S[k],ix=a.indexOf(val);ix>=0?a.splice(ix,1):a.push(val)}
     else if(k==='lang'){S.lang=val==='English'?'en':'he'}
     else if(k==='side'){S.pb.side=val;var sf=$('#sideFree');if(sf)sf.value=''}
@@ -1004,6 +1035,7 @@ document.addEventListener('click',function(e){
       c.setAttribute('aria-pressed',on)});
     save();if(t.dataset.rr){var y=window.scrollY;render(true);window.scrollTo(0,y)}else{refreshNext();pbNext()}return;
   }
+  if(t.hasAttribute('data-tpl')){S.pb.tpl=!S.pb.tpl;save();var y1=window.scrollY;render(true);window.scrollTo(0,y1);return}
   if(t.hasAttribute('data-add')){S.signers.push({name:'',role:''});save();render();var n=$('#sn'+(S.signers.length-1));n&&n.focus();return}
   if(t.dataset.rm){S.signers.splice(+t.dataset.rm,1);save();render();return}
   if(t.dataset.toggle==='multi'){S.multi=!S.multi;save();render(true);if(S.multi){var en=$('#entities');en&&en.focus()}return}
@@ -1029,6 +1061,7 @@ document.addEventListener('input',function(e){
   else if(t.id==='xreg'){S.xreg=t.value}
   else if(t.id==='reg'){S.reg=t.value;var n=$('#regnote');if(n)n.innerHTML=regNote()}
   else if(t.id==='mtype'){S.pb.family=t.value;S.pb.side='';document.querySelectorAll('[data-chip=mtype]').forEach(function(c){c.setAttribute('aria-pressed','false')});var nb3=$('[data-need]');if(nb3)nb3.disabled=!clean(t.value)}
+  else if(t.id==='segFree'){S.pb.segFree=t.value}
   else if(t.id==='sideFree'){S.pb.side=t.value;document.querySelectorAll('[data-chip=side]').forEach(function(c){c.setAttribute('aria-pressed','false')})}
   else if(t.id==='depsFree'){S.pb.depsFree=t.value}
   else if(t.id==='kindFree'){S.pb.family=t.value;S.pb.side='';S.pb.kindAuto=false;document.querySelectorAll('[data-chip=kind]').forEach(function(c){c.setAttribute('aria-pressed','false')});var ka2=$('[data-kindauto]');if(ka2)ka2.setAttribute('aria-pressed','false');var nb2=$('[data-needkind]');if(nb2)nb2.disabled=!clean(t.value)}

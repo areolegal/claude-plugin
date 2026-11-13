@@ -12,6 +12,31 @@ WORDED='green','yellow'
 TOP='schema_version','core_version','family_id','produced_with'
 MATCH='company_role_code','family_code'
 STATUS='status_label','playbook_status'
+ROLE_MODES='one_sided','mutual'
+CLASSES='A1','A2','B','C','D'
+PAPERS='ours','theirs','third_party','unknown'
+DOC_STATUS='signed','exchanged_draft'
+def evidence_findings(core):
+	E=core;A=[]
+	if E.get('role_mode')not in(None,'')+ROLE_MODES:A.append('role_mode "%s" אינו one_sided או mutual'%E.get('role_mode'))
+	if E.get('evidence_class')not in(None,'')+CLASSES:A.append('evidence_class "%s" בפלייבוק אינו אחד מ-A1, A2, B, C, D'%E.get('evidence_class'))
+	for B in E.get('clauses')or[]:
+		if not isinstance(B,dict):continue
+		C=B.get('id')
+		if B.get('evidence_class')not in(None,'')+CLASSES:A.append('%s: evidence_class "%s" אינו אחד מ-A1, A2, B, C, D'%(C,B.get('evidence_class')))
+		if B.get('confidence')not in(None,'','high','medium','low','High','Medium','Low'):A.append('%s: confidence "%s" אינו high, medium או low'%(C,B.get('confidence')))
+		F=(B.get('yellow')or{}).get('fallback_ladder')or[]
+		if F:
+			if' '.join(str(F[0].get('wording')or'').split())!=' '.join(str(B.get('fallback_wording')or'').split()):A.append('%s: המדרגה הראשונה בסולם אינה נוסח הנסיגה (fallback_wording)'%C)
+			for(I,G)in enumerate(F):
+				if not str(G.get('wording')or'').strip():A.append('%s: מדרגה %d בסולם בלי נוסח להחלה'%(C,I+1))
+				if G.get('origin')not in(None,'','observed','derived','lower_bound','calibrated','template'):A.append('%s: origin "%s" במדרגה %d'%(C,G.get('origin'),I+1))
+			if sum(1 for A in F if A.get('floor'))>1:A.append('%s: יותר מרצפה אחת בסולם'%C)
+		for H in('green','yellow','red'):
+			for D in(B.get(H)or{}).get('sources')or[]:
+				if isinstance(D,dict)and D.get('paper')not in(None,'')+PAPERS:A.append('%s/%s: paper "%s" במקור'%(C,H,D.get('paper')))
+				if isinstance(D,dict)and D.get('doc_status')not in(None,'')+DOC_STATUS+('template','form','guidance','policy','table','correspondence'):A.append('%s/%s: doc_status "%s" במקור'%(C,H,D.get('doc_status')))
+	return A
 def nonempty(v):return bool(v)and(not isinstance(v,str)or bool(v.strip()))
 def wording_of(cell):
 	for B in('wording','preferred_wording','proposed_clause','fallback_wording','text','clause_text','wording_he'):
@@ -68,43 +93,44 @@ def main(argv=None):
 		try:W.reconfigure(encoding='utf-8',errors='replace')
 		except(AttributeError,ValueError):pass
 	I=argparse.ArgumentParser(description=__doc__.split('\n')[0]);I.add_argument('model',help='playbook-model.json');I.add_argument('--core',help='playbook-core.json');I.add_argument('--index',help='playbooks/index.json. בלעדיו: האינדקס שמעל תיקיית הגרעין, כשהוא קיים');I.add_argument('--min-skill-version',help='גרסת בונה מינימלית. פלייבוק שנבנה לפניה מדווח כישן');B=I.parse_args(argv)
-	try:C=json.loads(Path(B.model).read_text(encoding='utf-8'))
+	try:D=json.loads(Path(B.model).read_text(encoding='utf-8'))
 	except Exception as M:print('cannot read the model (%s): %s'%(B.model,M));return 2
 	E=None
 	if B.core:
 		try:E=json.loads(Path(B.core).read_text(encoding='utf-8'))
 		except Exception as M:print('cannot read the core (%s): %s'%(B.core,M));return 2
-	D,F=[],[]
+	C,F=[],[]
 	for A in TOP:
-		if not nonempty(C.get(A)):D.append('אין %s במודל'%A)
-	X=[A for A in(C.get('scope_summary')or{}).get('contract_families')or()if isinstance(A,dict)];Y={'company_role_code':next((A.get('company_role_code')for A in X if A.get('company_role_code')),None),'family_code':C.get('family_id')}
+		if not nonempty(D.get(A)):C.append('אין %s במודל'%A)
+	X=[A for A in(D.get('scope_summary')or{}).get('contract_families')or()if isinstance(A,dict)];Y={'company_role_code':next((A.get('company_role_code')for A in X if A.get('company_role_code')),None),'family_code':D.get('family_id')}
 	for A in MATCH:
-		if not nonempty(C.get(A))and not nonempty((E or{}).get(A))and not nonempty(Y.get(A)):D.append('אין %s במודל ולא בגרעין. בלעדיו האיתור אינו מתאים את הפלייבוק למשפחה ולצד'%A)
+		if not nonempty(D.get(A))and not nonempty((E or{}).get(A))and not nonempty(Y.get(A)):C.append('אין %s במודל ולא בגרעין. בלעדיו האיתור אינו מתאים את הפלייבוק למשפחה ולצד'%A)
 	for A in STATUS:
-		if not nonempty(C.get(A)):D.append('אין %s במודל. המעמד מוצג כפי שהוא, ואינו מנוסח מחדש'%A)
+		if not nonempty(D.get(A)):C.append('אין %s במודל. המעמד מוצג כפי שהוא, ואינו מנוסח מחדש'%A)
 		elif A=='status_label'and S is not None:continue
-		elif E is not None and A in E and E.get(A)!=C.get(A):D.append('%s בגרעין "%s" ובמודל "%s". הקורא אינו יודע במי להאמין'%(A,E.get(A),C.get(A)))
-	if'presentation_label'in json.dumps(C,ensure_ascii=False):D.append('presentation_label במודל. התווית היחידה היא status_label')
-	G=C.get('rules')
-	if not isinstance(G,list)or not G:D.append('אין rules[] במודל: אין ממה להכריע');G=[]
+		elif E is not None and A in E and E.get(A)!=D.get(A):C.append('%s בגרעין "%s" ובמודל "%s". הקורא אינו יודע במי להאמין'%(A,E.get(A),D.get(A)))
+	if'presentation_label'in json.dumps(D,ensure_ascii=False):C.append('presentation_label במודל. התווית היחידה היא status_label')
+	G=D.get('rules')
+	if not isinstance(G,list)or not G:C.append('אין rules[] במודל: אין ממה להכריע');G=[]
 	J=core_rules_by_id(E)
 	for N in G:
-		if isinstance(N,dict):D+=rule_findings(N,J.get(N.get('rule_id')))
-		else:D.append('כלל שאינו אובייקט ב-rules[]')
+		if isinstance(N,dict):C+=rule_findings(N,J.get(N.get('rule_id')))
+		else:C.append('כלל שאינו אובייקט ב-rules[]')
 	if E is not None and J:
 		T={A.get('rule_id')for A in G if isinstance(A,dict)}
-		for L in sorted(set(J)-T):D.append('%s: בגרעין ואינו במודל'%L)
+		for L in sorted(set(J)-T):C.append('%s: בגרעין ואינו במודל'%L)
 		for L in sorted(T-set(J)):
 			if L:F.append('%s: במודל ואינו בגרעין'%L)
+	if E is not None:C+=evidence_findings(E)
 	if B.min_skill_version:
-		O=str((C.get('produced_with')or{}).get('skill_version')or'')
+		O=str((D.get('produced_with')or{}).get('skill_version')or'')
 		if O and _older(O,B.min_skill_version):F.append('הפלייבוק נבנה בגרסת בונה %s, והמינימום הוא %s. אמור זאת ללקוחה ואל תוריד בשקט'%(O,B.min_skill_version))
 	P=[A.get('rule_id')for A in G if isinstance(A,dict)and _val(A,J.get(A.get('rule_id')),'round1_posture')is None]
 	if P:F.append('אין round1_posture ל-%d כללים (%s). מחזיקים בירוק, ונאמר בסיכום הפנימי'%(len(P),', '.join(str(A)for A in P[:6])))
 	H=[]
 	if S is None:F.append('הספרייה המשותפת אינה זמינה, ולכן פער התוויות מול שער המדיניות לא נבדק')
 	else:
-		Q=B.index or(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(B.core))),'index.json')if B.core else None);Z=index_entry_for(Q,B.core,C,E)if Q and os.path.exists(Q)else None;K=S.label_gap(C,B.model,core=E,index_entry=Z)
+		Q=B.index or(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(B.core))),'index.json')if B.core else None);Z=index_entry_for(Q,B.core,D,E)if Q and os.path.exists(Q)else None;K=S.label_gap(D,B.model,core=E,index_entry=Z)
 		if K['mismatch']:
 			H.append('התווית של שער המדיניות: "%s"'%K['label'])
 			for U in K['mismatch']:H.append('%s: "%s"'%(U,K['stored'][U]))
@@ -114,11 +140,11 @@ def main(argv=None):
 		if H:
 			print('LABEL MISMATCH')
 			for A in H:print('-',A)
-	if D:
+	if C:
 		print('CONTRACT NOT MET')
-		for a in D:print('-',a)
+		for a in C:print('-',a)
 		for R in F:print('! note:',R)
-		print('%d errors'%len(D));V();return 3
+		print('%d errors'%len(C));V();return 3
 	print('CONTRACT MET')
 	for R in F:print('! note:',R)
 	V();return 0

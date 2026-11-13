@@ -1,4 +1,7 @@
-<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}body{margin:0}</style></head><body><title>מדיניות חוזית</title>
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}body{margin:0}.ppcard{display:flex;flex-direction:column;gap:10px}.ppcard .lead{margin:0}.pplist{display:flex;flex-direction:column;gap:8px}.ppr{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:8px}.ppn{min-width:0;flex:1 1 220px;overflow-wrap:anywhere}
+.tg.dbk{border-color:var(--r);color:var(--r)}.steps li small{display:block}
+.tg.blk{border-color:var(--r);color:var(--r)}.unk{font-size:14px;color:var(--mist,#6b7280);border-inline-start:2px solid var(--line-strong,#ccc);padding:2px 10px;margin:0 0 12px}.resp{font-size:13px;color:var(--mist,#6b7280);margin-top:6px}.mtl{display:flex;flex-direction:column;gap:4px;margin:0;padding-inline-start:18px;font-size:14px}.mtl small{color:var(--mist,#6b7280)}.rlq{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+</style></head><body><title>מדיניות חוזית</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Noto+Sans+Hebrew:wght@400;500;600;700&family=David+Libre:wght@400;500;700&display=swap">
@@ -1057,7 +1060,7 @@ html[data-look="mono"][data-theme="dark"] .expm{box-shadow:0 8px 24px rgba(0,0,0
 'use strict';
 /* the client's playbooks, from Areo-נתונים (lib/app/policy_view.py): {company, current, books:[{key,type,label,family,side,status,status_label,updated,rules,built,data}]} */
 var P=/*__AREO_POLICY__*/null;
-var EMPTY={company:'',family:'',side:'',docs:0,date:'',approver:null,deal:'',suff:'',limits:[],notObserved:[],seg:{status:'',checked:[]},segs:[],qs:[],cov:{units:0,topic:0,tech:0,by:[]},status:{label:'',approved:0,total:0,open_questions:[]},src:{},com:{fields:[],rows:[]},rules:[]};
+var EMPTY={paper:{counts:{},unknown:[],qid:''},company:'',family:'',side:'',docs:0,date:'',approver:null,deal:'',suff:'',limits:[],notObserved:[],seg:{status:'',checked:[]},segs:[],qs:[],cov:{units:0,topic:0,tech:0,by:[]},status:{label:'',approved:0,total:0,open_questions:[]},src:{},com:{fields:[],rows:[]},rules:[]};
 function fill(d){var o={};d=d||{};for(var k in EMPTY)o[k]=(d[k]==null)?EMPTY[k]:d[k];for(var j in d)if(!(j in o))o[j]=d[j];o.rules=(o.rules||[]).map(function(r){r.L=r.L||{};['green','yellow','red'].forEach(function(k){var L=r.L[k];if(!L||!L.p){r.L[k]={};return}['ev','crit','steps','lr'].forEach(function(f){if(!Array.isArray(L[f]))L[f]=[]})});r.rel=r.rel||[];r.relx=r.relx||[];return r});return o}
 var BOOKS=((P&&P.books)||[]).filter(function(b){return b&&b.data}).map(function(b){var d=fill(b.data),n=d.rules.length;return {id:b.key,key:b.key,type:b.type||b.key,name:b.label||b.family||b.key,family:b.family||'',side:b.side||'',sub:(b.side?b.side+' · ':'')+(n===1?'נושא אחד':n+' נושאים'),built:b.built!==false,data:d}});
 var CUR=0;(function(){var want=P&&P.current;try{var kept=localStorage.getItem('areo-policy-book');if(kept&&BOOKS.some(function(b){return b.key===kept}))want=kept}catch(e){}BOOKS.forEach(function(b,i){if(b.key===want)CUR=i})})();
@@ -1127,7 +1130,7 @@ function render(){
       '<p class="metaline">'+metaLine()+'</p></div>'+sealHtml(c,w)+psealHtml(c,w)+'</div>';
     h+=nextHtml(w);
     h+=mapHtml();
-    h+='<div class="pg2">'+knowHtml()+questionsHtml()+'</div>';
+    h+='<div class="pg2">'+knowHtml()+metricsHtml()+questionsHtml()+'</div>';
   }
   else if(S.sec==='rules'){
     var crit2=D.rules.filter(function(r){return r.imp==='critical'||r.imp==='high'}).length,wt=D.rules.filter(topicWaiting).length,ar=D.rules.filter(function(r){return lanesOf(r).some(function(k){return r.L[k].areo})}).length,allOpen=D.rules.every(function(r){return S.open[r.id]});
@@ -1314,7 +1317,7 @@ function closeDrawer(){S.ed=null;S.sed=null;$('#drawer').hidden=true;$('#scrim')
 function chgOf(r,k){return S.chg[r.id+k]}
 function rulesHead(){
   var w=waiting(),nc=w.filter(function(x){var c=chgOf(x[0],x[1]);return c&&c.state==='pending'}).length;
-  return '<div><h1>סעיפי מדיניות</h1><p class="lead">חפשו נושא כדי לראות מה מבקשים, על מה אפשר להתפשר ומה לא חותמים. מכל עמדה אפשר להעתיק נוסח, לראות מאיזה הסכם היא נלמדה, ולבקש שינוי.</p></div>'+
+  return '<div><h1>סעיפי מדיניות</h1><p class="lead">חפשו נושא כדי לראות מה מבקשים, על מה אפשר להתפשר ומה לא חותמים. מכל עמדה אפשר להעתיק נוסח, לראות מאיזה הסכם היא נלמדה, ולבקש שינוי.</p><p class="resp">'+RESP+'</p></div>'+
     '<div class="bigsearch"><span aria-hidden="true">⌕</span><input type="search" id="q" value="'+esc(S.q)+'" placeholder="על מה הצד השני ביקש? למשל: תקרת אחריות, דין זר, תשלום ב-90 יום" aria-label="חיפוש במדיניות"></div>'+
     (w.length?'<button type="button" class="wbar" data-sec="approve"><i class="wdot"></i><span><b>'+w.length+' עמדות מחכות לאישור שלך</b>'+(nc?' · '+nc+' מהן שינויים שביקשתם':'')+'</span><span class="go">לאישור ←</span></button>':'');
 }
@@ -1334,7 +1337,7 @@ function rangeFull(r){
     if(key==='cl')return '<div class="cell" data-l="הנוסח">'+(L.cl?'<div class="cbox"><p>'+esc(L.cl)+'</p><button type="button" class="linkbtn" data-copy2="'+r.id+'|'+k+'">העתקה</button></div>':'')+'</div>';
     if(key==='crit')return '<div class="cell" data-l="מתי העמדה חלה">'+(L.crit&&L.crit.length?'<ul>'+L.crit.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul>':'')+'</div>';
     if(key==='why'){var w='';if(L.why)w+='<p>'+esc(idsToNames(L.why))+'</p>';if(L.fx)w+='<p class="fx"><small>מה זה אומר לחברה:</small> '+esc(L.fx)+'</p>';
-      if(k==='yellow'&&L.steps&&L.steps.length>1)w+='<div class="steps"><small>מדרגות הוויתור</small><ol>'+L.steps.map(function(s){return '<li>'+esc(s.t)+(s.g?'<small> מוותרים על: '+esc(s.g)+'</small>':'')+'</li>'}).join('')+'</ol></div>';
+      if(k==='yellow'&&L.steps&&L.steps.length>1)w+='<div class="steps"><small>מדרגות הוויתור</small><ol>'+L.steps.map(stepLi).join('')+'</ol></div>';
       return '<div class="cell" data-l="למה">'+w+'</div>'}
     if(key==='src')return '<div class="cell" data-l="המקור בהסכמים"><div class="sbasis">'+esc(basisText(L))+'</div>'+srcMini(r,k)+'</div>';
     if(key==='act')return '<div class="cell act">'+(c&&c.state==='sending'?'':'<button type="button" class="edbtn" data-edit="'+r.id+'|'+k+'">✎ לשנות</button>')+'</div>';
@@ -1344,6 +1347,10 @@ function rangeFull(r){
       return '<div class="lcol '+LANE[k][1]+(chgOf(r,k)?' changed':'')+'"><div class="cell hd"><span class="hdt"><b>'+LNAME[k]+'</b>'+(L.areo?'<span class="areo-h">הצעה של Areo</span>':'')+'</span>'+(L.p?lstat(r,k):'')+'</div>'+rows.slice(1).map(function(x){return cell(k,x[1])}).join('')+'</div>'}).join('')+'</div>';
   return '<p class="sh3note">שלוש העמדות הן טווח אחד: מתחילים מהעמדה המועדפת, מתפשרים עד הפשרה, ולא עוברים את הקו האדום. לחיצה על הסכם פותחת את הנוסח המלא שלו.</p>'+h;
 }
+/* a fallback step: the last one is the floor, the least wanted wording that is still signed; a derived step says so */
+function stepText(s,i,a){var fl=s.f||i===a.length-1;return (fl?'<b>הרצפה:</b> ':'')+esc(s.t)+(s.o==='derived'?' <span class="tg">נגזרת</span>':'')}
+function stepMeta(s){return (s.g?'<small>מוותרים על: '+esc(s.g)+'</small>':'')+(s.w?'<small>מתי יורדים: '+esc(s.w)+'</small>':'')+(s.k?'<small>מה מבקשים בתמורה: '+esc(s.k)+'</small>':'')}
+function stepLi(s,i,a){return '<li>'+stepText(s,i,a)+stepMeta(s)+'</li>'}
 function topicWhy(r){return (r.rat?'<p class="rat">'+esc(idsToNames(r.rat))+'</p>':'')+'<div class="wcols">'+
     (r.legal?'<div><h4>השיקול המשפטי</h4><p>'+esc(r.legal)+'</p></div>':'')+(r.biz?'<div><h4>השיקול העסקי</h4><p>'+esc(r.biz)+'</p></div>':'')+(r.cp?'<div><h4>הטענות הצפויות מהצד השני</h4><p>'+esc(r.cp)+'</p></div>':'')+'</div>'}
 function whyHtml(r){var h=(r.rat?'<p class="rat">'+esc(idsToNames(r.rat))+'</p>':'')+'<div class="wcols">'+
@@ -1352,7 +1359,7 @@ function whyHtml(r){var h=(r.rat?'<p class="rat">'+esc(idsToNames(r.rat))+'</p>'
     if(L.crit&&L.crit.length)m+='<div><h4>תחולת העמדה</h4><ul>'+L.crit.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul></div>';
     if(L.why)m+='<div><h4>'+(k==='red'?'הנימוק לקו האדום':'הנימוק לפשרה')+'</h4><p>'+esc(idsToNames(L.why))+'</p></div>';
     if(L.fx)m+='<div><h4>המשמעות לחברה</h4><p>'+esc(L.fx)+'</p></div>';
-    if(k==='yellow'&&L.steps&&L.steps.length>1)m+='<div class="steps"><h4>סדר הוויתורים</h4><ol>'+L.steps.map(function(s){return '<li><p>'+esc(s.t)+'</p>'+(s.g?'<small>מוותרים על: '+esc(s.g)+'</small>':'')+'</li>'}).join('')+'</ol></div>';
+    if(k==='yellow'&&L.steps&&L.steps.length>1)m+='<div class="steps"><h4>סדר הוויתורים</h4><ol>'+L.steps.map(function(s,i,a){return '<li><p>'+stepText(s,i,a)+'</p>'+stepMeta(s)+'</li>'}).join('')+'</ol></div>';
     if(m)h+='<div class="wlane '+LANE[k][1]+'"><div class="wlk"><i></i>'+LANE[k][0]+'</div><div class="l2meta">'+m+'</div></div>'});
   return h}
 function basisHtml(r){return lanesOf(r).map(function(k){var L=r.L[k],src=laneSrcs(L);
@@ -1361,20 +1368,65 @@ function listHtml(){
   var rs=D.rules.filter(function(r){return hit(r,S.q)&&(S.f==='all'||(S.f==='wait'&&topicWaiting(r))||(S.f==='crit'&&(r.imp==='critical'||r.imp==='high'))||(S.f==='areo'&&lanesOf(r).some(function(k){return r.L[k].areo})))});
   if(!rs.length)return '<div class="empty">לא מצאנו נושא כזה במדיניות. אפשר לנסות מילה אחרת, או לשאול את המדיניות.</div>';
   return rs.map(function(r){var n=D.rules.indexOf(r)+1,open=!!S.open[r.id],wt=topicWaiting(r),ch=lanesOf(r).some(function(k){return chgOf(r,k)});
-    var tags=(r.imp==='critical'?'<span class="tg crit">קריטי</span>':r.imp==='high'?'<span class="tg">חשיבות גבוהה</span>':'')+(r.kind?'<span class="tg">'+esc(r.kind)+'</span>':'')+(ch?'<span class="tg chg">שונה</span>':'')+(wt?'<span class="tg wait">מחכה לאישור</span>':lanesOf(r).length?'<span class="tg ok">מאושר</span>':'');
+    var lns=lanesOf(r),mix=lns.some(function(k){return r.L[k].areo})&&lns.some(function(k){return !r.L[k].areo});
+    var blk=(r.rl||[]).some(function(x){return x.sev==='blocking'&&x.ok!==false});
+    var tags=(r.walk?'<span class="tg dbk">שובר עסקה</span>':'')+(blk?'<span class="tg blk" title="שינוי בנושא הזה מחייב בדיקה של נושא קשור">יש סעיף קשור חוסם</span>':'')+(mix?'<span class="tg" title="חלק מהעמדות מההסכמים שלכם, וחלק הצעה של Areo">עמדות ממקורות שונים</span>':'')+(r.imp==='critical'?'<span class="tg crit">קריטי</span>':r.imp==='high'?'<span class="tg">חשיבות גבוהה</span>':'')+(r.kind?'<span class="tg">'+esc(r.kind)+'</span>':'')+(ch?'<span class="tg chg">שונה</span>':'')+(wt?'<span class="tg wait">מחכה לאישור</span>':lanesOf(r).length?'<span class="tg ok">מאושר</span>':'');
     var h='<section class="rx'+(open?' open':'')+(!wt&&lanesOf(r).length?' okd':'')+'" id="rx-'+r.id+'"><button type="button" class="rxh" data-tog="'+r.id+'" aria-expanded="'+open+'"><span class="rxn">'+(n<10?'0':'')+n+'</span><span class="rxt"><b>'+hl(r.t,S.q)+'</b>'+(r.sub?'<small>'+esc(r.sub)+'</small>':'')+'</span><span class="rxtags">'+tags+'</span><span class="rxc" aria-hidden="true">'+(open?'סגירה':'פתיחה')+'</span></button>';
     if(!open)return h+segBand(r,true)+rangeMini(r)+'</section>';
-    h+=segBand(r,false)+'<div class="rxb">'+rangeFull(r)+
+    h+=segBand(r,false)+'<div class="rxb">'+unkHtml(r)+rangeFull(r)+
       '<details class="more" data-det="'+r.id+'w"'+(S.det[r.id+'w']?' open':'')+'><summary>הנימוק לעמדה <small>השיקולים המשפטיים והעסקיים, והטענות הצפויות מהצד השני</small></summary><div class="morein">'+topicWhy(r)+'</div></details>';
-    h+=relatedHtml(r);
+    h+=negoHtml(r)+relatedHtml(r);
     return h+'</div></section>'}).join('');
 }
+/* Inbal, 12.11.2026, 8.3: the playbook is a legal decision of the organisation, and the responsibility stays with its counsel */
+var RESP='הפלייבוק הוא החלטה משפטית של הארגון: Areo מביאה את הראיות ואת ההצעה, והאישור והאחריות על העמדות ועל קווי הנסיגה אצל היועץ המשפטי שלכם.';
+function times(n){return n===1?'פעם אחת':n+' פעמים'}
+function unkHtml(r){return r.unk&&r.unk.length?'<p class="unk"><b>מה לא ידוע:</b> '+esc(r.unk.join(' '))+'</p>':''}
+/* what happened to this topic in the deals in the folder (metrics.py), plain words; never sent to Areo */
+function mtLines(r){var m=D.mt&&D.mt.by_rule&&D.mt.by_rule[r.id];if(!m)return [];var out=[],st=Object.keys(m.steps||{}).sort();
+  out.push('הוחל ב-'+m.applied+' הצעות'+(m.accepted||m.rejected?'. הצד השני קיבל '+m.accepted+' ודחה '+m.rejected:'')+'.');
+  if(st.length)out.push(st.map(function(s){return (s==='0'?'בעמדה המועדפת':'מדרגה '+s)+': '+times(m.steps[s])}).join(' · '));
+  (D.mt.repeat||[]).filter(function(x){return x.rule_id===r.id}).forEach(function(x){out.push('מדרגה '+x.step+' התקבלה ב-'+x.times+' עסקאות. אולי היא הסטנדרט בפועל: עדכון הכלל רק באישור משפטי ובגרסה חדשה של הפלייבוק.')});
+  return out}
+/* in negotiation, folded so the default view gains nothing: reading a different wording, the prepared note, what was given once, the segments, the deals */
+function negoHtml(r){var c='',seg=D.segs&&D.segs.length,mt=mtLines(r);
+  if(r.ig)c+='<div><h4>כשהנוסח שלהם שונה מכל העמדות</h4><p>'+esc(r.ig)+'</p></div>';
+  if(r.xn)c+='<div><h4>ההערה המוכנה לצד השני</h4><p>'+esc(r.xn)+'</p></div>';
+  if(r.exc&&r.exc.length)c+='<div><h4>ויתורים שניתנו פעם אחת</h4><p class="basis">אינם עמדה שלכם. הנושא ונותן מזכיר אותם רק בהערה הפנימית.</p><ul class="mtl">'+r.exc.map(function(x){return '<li>'+esc(x.t)+(x.ctx?'<small> '+esc(x.ctx)+'</small>':'')+'</li>'}).join('')+'</ul></div>';
+  if(seg&&r.same!==null&&r.same!==undefined)c+='<div><h4>סגמנטים</h4><p>'+(r.same?'העמדה זהה בכל הסגמנטים.':'יש עמדה לפי סגמנט. הנושא ונותן בוחר את הסגמנט לפי פרטי העסקה.')+'</p></div>';
+  if(mt.length)c+='<div><h4>מה קרה בעסקאות</h4><ul class="mtl">'+mt.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul></div>';
+  if(!c)return '';
+  return '<details class="more" data-det="'+r.id+'n"'+(S.det[r.id+'n']?' open':'')+'><summary>במשא ומתן <small>איך לקרוא נוסח אחר, וההערה המוכנה לצד השני</small></summary><div class="morein"><div class="wcols">'+c+'</div></div></details>'}
+/* the four measures, on the overview, only when there are deals: computed in the client's folder, never sent to Areo */
+function metricsHtml(){var m=D.mt;if(!m||!m.deals)return '';var st=Object.keys(m.steps||{}).sort(),done=m.accepted+m.rejected;
+  return '<div class="card"><h2>מה קרה בעסקאות</h2><ul class="notes">'+
+    '<li><b>שיעור הקבלה של השינויים שהצעתם:</b> '+(done?Math.round(m.rate*100)+'% ('+m.accepted+' מתוך '+done+')':'עוד אין סבב שני באף עסקה')+'</li>'+
+    '<li><b>השימוש במדרגות:</b> '+(st.length?st.map(function(s){return (s==='0'?'בעמדה המועדפת':'מדרגה '+s)+': '+times(m.steps[s])}).join(' · '):'עוד לא הוחלה עמדה')+'</li>'+
+    '<li><b>הוראות של הצד השני בלי כלל בפלייבוק:</b> '+m.no_rule+'</li>'+
+    '<li><b>הבדיקה החוזרת:</b> '+(m.backtest===null||m.backtest===undefined?'לא רצה. היא רצה כשיש 15 הסכמים חתומים לפחות.':Math.round(m.backtest*100)+'% מההכרעות שלה יצאו מעבר לקו האדום')+'</li>'+
+    '</ul><p class="basis">'+m.deals+' עסקאות, '+m.rounds+' סבבים. המספרים מחושבים מהעסקאות שבתיקייה שלכם ונשארים אצלכם.</p></div>'}
 /* Related clauses: what the agreements show about how this topic and another one affect each other. Only when there is a link */
 var RELDIR={affects:'מושפע מהנושא הזה',affected_by:'משפיע על הנושא הזה',mutual:'השפעה הדדית'};
+var RLK={defined_term:'היקף מונח מוגדר',cross_ref:'הפניה פנימית',cap_exceptions:'תקרה וחריגים',remedy_integrity:'שלמות הסעד',give_take:'חבילת תן וקח'};
+var RLO={mechanical:'מהנוסח',catalog:'מהקטלוג המשפטי',learned:'מההסכמים שלכם'};
+/* typed links: blocking first; a suggestion (from the catalog or learned) waits for the lawyer once */
+function typedHtml(r){var T=(r.rl||[]).filter(function(x){return D.rules.some(function(y){return y.id===x.id})});if(!T.length)return '';
+  S.rlok=S.rlok||{};T=T.slice().sort(function(a,b){return (a.sev==='blocking'?0:1)-(b.sev==='blocking'?0:1)});
+  return T.map(function(x){var t=D.rules.filter(function(y){return y.id===x.id})[0],key=r.id+'|'+x.id,pick=S.rlok[key];
+    return '<div class="rlx"><div class="rlxt"><button type="button" class="linkbtn" data-topic="'+x.id+'">'+esc(t.t)+'</button>'+
+      (x.sev==='blocking'?'<span class="tg blk">חוסם</span>':'')+'<span class="tg">'+(RLK[x.kind]||esc(x.kind))+'</span><span class="rlxd">'+(RLO[x.org]||'')+(x.n?' · '+x.n+' מסמכים':'')+'</span></div>'+
+      '<p>'+esc(x.why)+'</p>'+(x.act?'<p class="rlxa">'+esc(x.act)+'</p>':'')+
+      (x.ok===null||x.ok===undefined?'<div class="rlq"><span class="basis">הצעה של Areo, מחכה לאישור שלכם</span><span class="chips"><button type="button" class="chip'+(pick===true?' on':'')+'" aria-pressed="'+(pick===true)+'" data-rlok="'+esc(key)+'|1">לאשר</button><button type="button" class="chip'+(pick===false?' on':'')+'" aria-pressed="'+(pick===false)+'" data-rlok="'+esc(key)+'|0">לדחות</button></span></div>':'')+'</div>'}).join('')}
+function saveLinks(){var list=Object.keys(S.rlok||{}).map(function(k){var p=k.split('|');return {rule_id:p[0],related_rule_id:p[1],approved:S.rlok[k]}});if(!list.length)return;
+  submitReq({label:'סעיפים קשורים ('+list.length+')',kind:'related_confirm',playbook:book().key,links:list,date:new Date().toISOString().slice(0,10)},function(ok){
+    toast(ok?'נשמר. Areo תעדכן את הקישורים בפלייבוק.':'ירד קובץ. שמרו אותו בתיקייה Areo-נתונים.');
+    D.rules.forEach(function(r){(r.rl||[]).forEach(function(x){var k=r.id+'|'+x.id;if(k in S.rlok)x.ok=S.rlok[k]})});S.rlok={};render()})}
 function relatedHtml(r){
   var L=(r.relx||[]).filter(function(x){return D.rules.some(function(y){return y.id===x.id})});
+  var TY=typedHtml(r),pend=Object.keys(S.rlok||{}).filter(function(k){return k.indexOf(r.id+'|')===0}).length;
+  if(TY&&!L.length)return '<section class="relx"><div class="relxh">סעיפים קשורים</div>'+TY+(pend?'<div class="mf"><span></span><button type="button" class="btn primary small" data-rlsave>לשמור '+pend+'</button></div>':'')+'</section>';
   if(!L.length)return '';
-  return '<section class="relx"><div class="relxh">סעיפים קשורים</div>'+L.map(function(x){var t=D.rules.filter(function(y){return y.id===x.id})[0];
+  return '<section class="relx"><div class="relxh">סעיפים קשורים</div>'+TY+(pend?'<div class="mf"><span></span><button type="button" class="btn primary small" data-rlsave>לשמור '+pend+'</button></div>':'')+L.map(function(x){var t=D.rules.filter(function(y){return y.id===x.id})[0];
     return '<div class="rlx"><div class="rlxt"><button type="button" class="linkbtn" data-topic="'+x.id+'">'+esc(t.t)+'</button><span class="rlxd">'+RELDIR[x.dir]+'</span>'+(x.basis==='areo'?'<span class="tg areo-h">הצעת Areo</span>':'')+'</div>'+
       '<p>'+esc(x.why)+'</p>'+
       (x.q?'<blockquote><small>'+esc(x.q.c)+(x.q.n>1?' · אותו נוסח ב-'+x.q.n+' הסכמים':'')+'</small>'+esc(x.q.t)+'</blockquote>':'')+
@@ -1584,6 +1636,7 @@ function approveHtml(){var c=counts(),items=apItems(),ready=Object.keys(S.ad).fi
   var nsv=Object.keys(S.saved).length,pend=Object.keys(S.sent).length;
   if(S.savedNote)h+='<div class="cact ok"><b>✓ '+S.savedNote+' הכרעות נשמרו בפלייבוק.</b> הן מופיעות למטה, ב"הוכרעו".</div>';
   h+='<div class="approg"><span><b>'+c.ok+'</b> מתוך '+c.t+' עמדות מאושרות'+(nsv?' · <b>'+nsv+'</b> הכרעות נשמרו ונכנסות לפלייבוק':'')+(pend?' · <b>'+pend+'</b> בקובץ שהורד':'')+'</span><div class="bar"><i style="width:'+Math.round(100*c.ok/c.t)+'%"></i></div></div>';
+  h+=paperHtml();
   h+=items.length?'<div class="apl2">'+items.map(apCard).join('')+'</div>':'<div class="cact ok"><b>אין עמדות שמחכות.</b> כל המדיניות מאושרת, והסוכנים עובדים לפיה.</div>';
   if(S.hist.length||true){var past=[];D.rules.forEach(function(r){lanesOf(r).forEach(function(k){var L=r.L[k];if(isOk(r,k)&&!S.chg[r.id+k])past.push({t:r.t,k:k,by:L.signer,at:L.at})})});
     var seen={},hist=[];S.hist.slice().reverse().concat(past).forEach(function(x){var kk=x.t+'|'+x.k;if(seen[kk])return;seen[kk]=1;hist.push(x)});
@@ -1592,6 +1645,17 @@ function approveHtml(){var c=counts(),items=apItems(),ready=Object.keys(S.ad).fi
   if(ready.length)h+='<div class="apsend"><span><b>'+ready.length+'</b> הכרעות מוכנות. הן עוד לא נשמרו.'+(dbx?'':' השמירה לא זמינה בחלון הזה, ולכן ההכרעות יירדו לקובץ.')+'</span><button type="button" class="btn primary" data-apsend>'+(dbx?'לשמור '+ready.length+' הכרעות':'להוריד קובץ הכרעות ('+ready.length+')')+'</button></div>';
   return h;
 }
+/* whose paper: agreements Areo could not place stay out of the playbook until the lawyer marks them here */
+var PPN={ours:'שלכם',theirs:'של הצד השני',third_party:'של צד שלישי'};
+function paperHtml(){var P=D.paper||{},u=P.unknown||[],c=P.counts||{};if(!u.length)return '';S.pp=S.pp||{};
+  var done=Object.keys(S.pp).filter(function(k){return u.some(function(x){return x.id===k})}).length;
+  return '<section class="apc ppcard"><div class="aph"><b>על הנייר של מי?</b><span class="basis">'+(c.ours||0)+' על הנייר שלכם · '+(c.theirs||0)+' של הצד השני · '+u.length+' לא ברור</span></div>'+
+    '<p class="lead">על '+u.length+(u.length===1?' הסכם':' הסכמים')+' לא ברור מי ניסח אותם, ולכן הם עוד לא נכנסו למדיניות. הסכם על הנייר שלכם מלמד מה אתם מבקשים; הסכם על הנייר של הצד השני מלמד על מה הסכמתם.</p>'+
+    '<div class="pplist">'+u.map(function(x){return '<div class="ppr"><span class="ppn">'+esc(x.name)+'</span><span class="chips">'+['ours','theirs','third_party'].map(function(k){return '<button type="button" class="chip'+(S.pp[x.id]===k?' on':'')+'" aria-pressed="'+(S.pp[x.id]===k)+'" data-pp="'+esc(x.id)+'|'+k+'">'+PPN[k]+'</button>'}).join('')+'</span></div>'}).join('')+'</div>'+
+    '<div class="mf"><span class="basis">'+done+' מתוך '+u.length+' סומנו</span><button type="button" class="btn primary small" data-ppsave'+(done?'':' disabled')+'>לשמור ולהכניס למדיניות</button></div></section>'}
+function savePaper(){var u=(D.paper&&D.paper.unknown)||[],list=u.filter(function(x){return S.pp[x.id]}).map(function(x){return {source_id:x.id,name:cut(x.name,80),paper:S.pp[x.id]}});if(!list.length)return;
+  var pl={label:'על הנייר של מי ('+list.length+')',kind:'paper_confirm',playbook:book().key,question_id:(D.paper&&D.paper.qid)||'',sources:list,date:new Date().toISOString().slice(0,10)};
+  submitReq(pl,function(ok){toast(ok?'נשמר. Areo תכניס את ההסכמים האלה למדיניות בעדכון הבא.':'ירד קובץ. שמרו אותו בתיקייה Areo-נתונים.');D.paper.unknown=u.filter(function(x){return !S.pp[x.id]});S.pp={};render()})}
 function canChat(){return !!(room&&typeof room.sendToClaudeSession==='function')}
 /* decisions are saved in the page store at once; Areo moves them into the playbook in the folder and marks them taken in */
 var dbx=null,SNAP=[];S.saved={};
@@ -1641,33 +1705,75 @@ function knowHtml(){var ids=Object.keys(D.src),draft=ids.filter(function(id){ret
 /* downloads: a real Word file, a real Excel file, or both in one zip */
 function xe(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function wr(t,o){o=o||{};var sz=o.sz||22;return '<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>'+(o.b?'<w:b/><w:bCs/>':'')+(o.c?'<w:color w:val="'+o.c+'"/>':'')+'<w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/><w:rtl/></w:rPr><w:t xml:space="preserve">'+xe(t)+'</w:t></w:r>'}
-function wp(runs,o){o=o||{};return '<w:p><w:pPr>'+(o.bdr?'<w:pBdr><w:right w:val="single" w:sz="18" w:space="8" w:color="'+o.bdr+'"/></w:pBdr>':'')+(o.shd?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.shd+'"/>':'')+'<w:bidi/><w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after==null?100:o.after)+'"/>'+(o.ind?'<w:ind w:right="'+o.ind+'"/>':'')+'</w:pPr>'+runs+'</w:p>'}
+function wp(runs,o){o=o||{};return '<w:p><w:pPr>'+(o.st?'<w:pStyle w:val="'+o.st+'"/>':'')+(o.keep?'<w:keepNext/>':'')+(o.bdr?'<w:pBdr><w:right w:val="single" w:sz="18" w:space="8" w:color="'+o.bdr+'"/></w:pBdr>':'')+(o.shd?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.shd+'"/>':'')+'<w:bidi/><w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after==null?100:o.after)+'"/>'+(o.ind?'<w:ind w:right="'+o.ind+'"/>':'')+'</w:pPr>'+runs+'</w:p>'}
 var LC={green:'0F9D6E',yellow:'B07A06',red:'C93434'};
+var WGREY='4F615A';
+function todayIso(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+/* the policy document, exported from the system as it is now, with the decisions approved so far (Inbal, 12.11.2026, 8.3):
+   the export date and the status of the playbook on that date, right to left, the ladder and the floor, the related
+   clauses (blocking first), what is not known, and the negotiation notes. The run no longer writes a Word file */
 function buildDocx(){
-  var c=counts(),b='';
-  b+=wp(wr('מדיניות חוזית: '+book().name,{b:1,sz:40}),{after:80});
-  b+=wp(wr(D.company+' · '+D.side+' · עודכן '+dmy(D.date),{c:'4F615A'}));
-  b+=wp(wr(D.rules.length+' נושאים, '+c.t+' עמדות, '+c.ok+' אושרו. נבנתה מ-'+D.docs+' הסכמים.',{c:'4F615A'}),{after:300});
+  var c=counts(),b='',H=function(t,lvl){return wp(wr(t,{b:1,sz:lvl===1?30:24}),{st:'Heading'+lvl,keep:1,before:lvl===1?320:180,after:60})},
+    G=function(t){return wp(wr(t,{c:WGREY,sz:20}))};
+  b+=wp(wr('מדיניות חוזית: '+book().name,{b:1,sz:40}),{st:'Title',after:80});
+  b+=G(D.company+(D.side?' · '+D.side:'')+' · יוצא מהמערכת ב-'+dmy(todayIso()));
+  b+=G('מעמד הפלייבוק ביום הייצוא: '+((D.status&&D.status.label)||'')+'. '+D.rules.length+' נושאים, '+c.t+' עמדות, '+c.ok+' אושרו. נבנתה מ-'+D.docs+' הסכמים.');
+  b+=wp(wr(RESP,{sz:20}),{shd:'F0F3F6',before:120,after:200});
+  var lim=(D.limits||[]).slice(0,6);
+  if(lim.length){b+=H('מה כדאי לדעת על המדיניות הזאת',1);lim.forEach(function(x){b+=wp(wr('• '+x,{sz:20}),{ind:300,after:40})})}
   D.rules.forEach(function(r,i){
-    b+=wp(wr((i+1)+'. '+r.t,{b:1,sz:30}),{before:280,after:60});
-    if(r.sub)b+=wp(wr(r.sub+' · '+(IMPN[r.imp]||'')+(r.kind?' · '+r.kind:''),{c:'4F615A',sz:20}));
+    b+=H((i+1)+'. '+r.t,1);
+    var tags=[];if(r.walk)tags.push('שובר עסקה');if(IMPN[r.imp])tags.push(IMPN[r.imp]);if(r.kind)tags.push(r.kind);if(r.sub)tags.unshift(r.sub);
+    if(tags.length)b+=G(tags.join(' · '));
+    if(r.unk&&r.unk.length)b+=wp(wr('מה לא ידוע: ',{b:1,sz:20})+wr(r.unk.join(' '),{sz:20}),{bdr:'B8C2BE'});
     if(r.rat)b+=wp(wr(idsToNames(r.rat)));
     if(r.cp)b+=wp(wr('מה הצד השני ירצה: ',{b:1})+wr(r.cp));
     lanesOf(r).forEach(function(k){var L=r.L[k],src=laneSrcs(L);
-      b+=wp(wr(LANE[k][0],{b:1,c:LC[k],sz:24})+wr('  ·  '+basisText(L)+(isOk(r,k)?'  ·  אושר'+(L.signer?' בידי '+L.signer:''):'  ·  מחכה לבדיקת עורך דין'),{c:'4F615A',sz:20}),{before:160,bdr:LC[k]});
+      b+=wp(wr(LANE[k][0],{b:1,c:LC[k],sz:24})+wr('  ·  '+(L.areo?'הצעה של Areo':basisText(L))+(isOk(r,k)?'  ·  אושר'+(L.signer?' בידי '+L.signer:'')+(L.at?' ב-'+dmy(L.at):''):'  ·  מחכה לבדיקת עורך דין'),{c:WGREY,sz:20}),{before:160,bdr:LC[k],keep:1});
       b+=wp(wr(L.p),{bdr:LC[k]});
       if(L.cl)b+=wp(wr('נוסח: ',{b:1})+wr(L.cl),{shd:'F0F3F6',bdr:LC[k]});
       (L.crit||[]).forEach(function(x){b+=wp(wr('• '+x,{sz:20}),{ind:300,after:40})});
       if(L.why)b+=wp(wr((k==='red'?'למה זה קו אדום: ':'למה מסכימים: '),{b:1,sz:20})+wr(idsToNames(L.why),{sz:20}));
       if(L.fx)b+=wp(wr('מה זה אומר לחברה: ',{b:1,sz:20})+wr(L.fx,{sz:20}));
-      src.forEach(function(e){b+=wp(wr(shortName(e.s)+(e.c?', סעיף '+e.c:'')+': ',{b:1,sz:20,c:'4F615A'})+wr(e.q||'',{sz:20,c:'4F615A'}),{ind:300,after:40})});
+      if(k==='yellow'&&L.steps&&L.steps.length){
+        b+=wp(wr('מדרגות הנסיגה, לפי הסדר',{b:1,sz:20}),{before:80,keep:1});
+        L.steps.forEach(function(s,j,a){var fl=s.f||j===a.length-1;
+          b+=wp(wr((j+1)+'. ',{b:1,sz:20})+(fl?wr('הרצפה: ',{b:1,sz:20}):'')+wr(s.t,{sz:20})+(s.o==='derived'?wr('  (נגזרת, הצעה של Areo)',{c:WGREY,sz:18}):''),{ind:300,after:20});
+          var m=[];if(s.g)m.push('מוותרים על: '+s.g);if(s.w)m.push('מתי יורדים: '+s.w);if(s.k)m.push('מה מבקשים בתמורה: '+s.k);
+          if(m.length)b+=wp(wr(m.join(' · '),{c:WGREY,sz:18}),{ind:600,after:60})});
+      }
+      src.forEach(function(e){b+=wp(wr(shortName(e.s)+(e.c?', סעיף '+e.c:'')+': ',{b:1,sz:20,c:WGREY})+wr(e.q||'',{sz:20,c:WGREY}),{ind:300,after:40})});
     });
+    if(r.ig||r.xn||(r.exc&&r.exc.length)){b+=H('במשא ומתן',2);
+      if(r.ig)b+=wp(wr('כשהנוסח שלהם שונה מכל העמדות: ',{b:1,sz:20})+wr(r.ig,{sz:20}));
+      if(r.xn)b+=wp(wr('ההערה המוכנה לצד השני: ',{b:1,sz:20})+wr(r.xn,{sz:20}));
+      (r.exc||[]).forEach(function(x){b+=wp(wr('ויתור שניתן פעם אחת, ואינו עמדה: ',{b:1,sz:20})+wr(x.t+(x.ctx?' ('+x.ctx+')':''),{sz:20}))})}
+    var T=(r.rl||[]).filter(function(x){return x.ok!==false&&D.rules.some(function(y){return y.id===x.id})}).sort(function(a,z){return (a.sev==='blocking'?0:1)-(z.sev==='blocking'?0:1)});
+    var X=(r.relx||[]).filter(function(x){return D.rules.some(function(y){return y.id===x.id})&&!T.some(function(t){return t.id===x.id})});
+    if(T.length||X.length){b+=H('סעיפים קשורים',2);
+      T.forEach(function(x){var t=D.rules.filter(function(y){return y.id===x.id})[0];
+        b+=wp(wr(t.t,{b:1,sz:20})+wr('  ·  '+(x.sev==='blocking'?'חוסם · ':'')+(RLK[x.kind]||x.kind||'')+(RLO[x.org]?' · '+RLO[x.org]:'')+(x.ok===null||x.ok===undefined?' · הצעה של Areo, מחכה לאישור':''),{c:x.sev==='blocking'?LC.red:WGREY,sz:18}),{ind:300,after:20,keep:1});
+        b+=wp(wr(x.why+(x.act?' '+x.act:''),{sz:20}),{ind:300,after:60})});
+      X.forEach(function(x){var t=D.rules.filter(function(y){return y.id===x.id})[0];
+        b+=wp(wr(t.t,{b:1,sz:20})+wr('  ·  '+(RELDIR[x.dir]||''),{c:WGREY,sz:18}),{ind:300,after:20,keep:1});
+        b+=wp(wr(x.why+(x.act?' '+x.act:''),{sz:20}),{ind:300,after:60})});
+    }
   });
-  var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+b+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1200" w:right="1200" w:bottom="1200" w:left="1200" w:header="708" w:footer="708" w:gutter="0"/><w:bidi/></w:sectPr></w:body></w:document>';
+  var W='http://schemas.openxmlformats.org/wordprocessingml/2006/main',X='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',RP='http://schemas.openxmlformats.org/package/2006/relationships';
+  var doc=X+'<w:document xmlns:w="'+W+'"><w:body>'+b+'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1200" w:right="1200" w:bottom="1200" w:left="1200" w:header="708" w:footer="708" w:gutter="0"/><w:bidi/></w:sectPr></w:body></w:document>';
+  var rpr='<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:rtl/></w:rPr>';
+  var hs=function(id,name,lvl,sz){return '<w:style w:type="paragraph" w:styleId="'+id+'"><w:name w:val="'+name+'"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:bidi/>'+(lvl!==null?'<w:outlineLvl w:val="'+lvl+'"/>':'')+'</w:pPr><w:rPr><w:b/><w:bCs/><w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/><w:rtl/></w:rPr></w:style>'};
+  var styles=X+'<w:styles xmlns:w="'+W+'"><w:docDefaults><w:rPrDefault>'+rpr+'</w:rPrDefault><w:pPrDefault><w:pPr><w:bidi/></w:pPr></w:pPrDefault></w:docDefaults>'+
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/><w:pPr><w:bidi/></w:pPr>'+rpr+'</w:style>'+
+    hs('Title','Title',null,40)+hs('Heading1','heading 1',0,30)+hs('Heading2','heading 2',1,24)+'</w:styles>';
+  var settings=X+'<w:settings xmlns:w="'+W+'"><w:defaultTabStop w:val="720"/><w:themeFontLang w:val="en-US" w:bidi="he-IL"/></w:settings>';
   var z=new JSZip();
-  z.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
-  z.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  z.file('[Content_Types].xml',X+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/></Types>');
+  z.file('_rels/.rels',X+'<Relationships xmlns="'+RP+'"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  z.file('word/_rels/document.xml.rels',X+'<Relationships xmlns="'+RP+'"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/></Relationships>');
   z.file('word/document.xml',doc);
+  z.file('word/styles.xml',styles);
+  z.file('word/settings.xml',settings);
   return z.generateAsync({type:'uint8array',compression:'DEFLATE'});
 }
 function buildXlsx(){
@@ -1696,9 +1802,10 @@ function offer(name,bytes){
 function download(kind){
   if(typeof JSZip==='undefined'){toast('רכיב ההורדה לא נטען. אפשר לרענן את העמוד.');return}
   var base=fileBase();
-  if(kind==='docx')return buildDocx().then(function(b){return offer(base+'.docx',b)});
-  if(kind==='xlsx')return buildXlsx().then(function(b){return offer(base+' - טבלת עמדות.xlsx',b)});
-  return Promise.all([buildDocx(),buildXlsx()]).then(function(p){var z=new JSZip();z.file(base+'.docx',p[0]);z.file(base+' - טבלת עמדות.xlsx',p[1]);return z.generateAsync({type:'uint8array',compression:'DEFLATE'})}).then(function(b){return offer(base+'.zip',b)});
+  var fail=function(){toast('הייצוא נכשל. אפשר לנסות שוב, או לבקש את המסמך בשיחה.')};
+  if(kind==='docx')return buildDocx().then(function(b){return offer(base+'.docx',b)}).catch(fail);
+  if(kind==='xlsx')return buildXlsx().then(function(b){return offer(base+' - טבלת עמדות.xlsx',b)}).catch(fail);
+  return Promise.all([buildDocx(),buildXlsx()]).then(function(p){var z=new JSZip();z.file(base+'.docx',p[0]);z.file(base+' - טבלת עמדות.xlsx',p[1]);return z.generateAsync({type:'uint8array',compression:'DEFLATE'})}).then(function(b){return offer(base+'.zip',b)}).catch(fail);
 }
 function toast(m){var t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){t.hidden=true},3000)}
 function curTheme(){var r=document.documentElement;return r.getAttribute('data-areo')||(r.getAttribute('data-theme')==='light'?'light':'dark')}
@@ -1707,6 +1814,10 @@ var ICON_SUN='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke
 function themeIcon(){return curTheme()==='light'?ICON_MOON:ICON_SUN}
 function theme(){var r=document.documentElement,nx=curTheme()==='light'?'dark':'light';r.setAttribute('data-areo',nx);try{localStorage.setItem('areo-theme',nx)}catch(x){}var b=$('#themebtn');if(b){b.innerHTML=themeIcon();b.setAttribute('aria-label',nx==='light'?'מעבר למצב כהה':'מעבר למצב בהיר')}}
 document.addEventListener('click',function(e){
+  var rlb=e.target.closest&&e.target.closest('[data-rlok]');if(rlb){var rv=rlb.getAttribute('data-rlok').split('|');S.rlok=S.rlok||{};S.rlok[rv[0]+'|'+rv[1]]=rv[2]==='1';render();return}
+  if(e.target.closest&&e.target.closest('[data-rlsave]')){saveLinks();return}
+  var ppb=e.target.closest&&e.target.closest('[data-pp]');if(ppb){var pv=ppb.getAttribute('data-pp').split('|');S.pp=S.pp||{};S.pp[pv[0]]=pv[1];render();return}
+  if(e.target.closest&&e.target.closest('[data-ppsave]')){savePaper();return}
   var emn=$('#expm');if(emn&&!emn.hidden&&!e.target.closest('.expw')){emn.hidden=true;var eb=$('#expbtn');if(eb)eb.setAttribute('aria-expanded','false')}
   if(e.target.id==='scrim'){closeDrawer();return}
   var t=e.target.closest('button');
@@ -1799,6 +1910,7 @@ render();
 /* Areo one-menu hook: lets the top bar read what this screen shows, and open a place in it */
 window.__areo=function(){try{var w=waiting(),oq=(D.qs||[]).filter(function(q,i){return !(S.qa[i]&&S.qa[i].mode==='sent')});return {company:D.company||'',who:(S.who&&S.who.name)||'',approver:(D.approver&&D.approver.name)||'',book:book().name,empty:!BOOKS.length,waiting:w.length,total:D.rules.reduce(function(n,r){return n+lanesOf(r).length},0),wtopics:w.map(function(x){return x[0].t}).filter(function(v,i,a){return a.indexOf(v)===i}).slice(0,3),oq:oq.length}}catch(e){return null}};
 window.__areoPolicyText=function(){try{return policyText()}catch(e){return ''}};
+window.__areoDocx=function(){return buildDocx()};
 window.__areoLocal=function(q){try{return localAnswer(q).text}catch(e){return ''}};
 window.__areoBooks=function(){try{return {date:D.date||'',docs:D.docs||0,current:book().key,books:BOOKS.map(function(b){return {type:b.type,key:b.key,name:b.name,side:b.side,built:!!b.built,rules:b.data.rules.length,date:b.data.date||'',docs:b.data.docs||0}})}}catch(e){return null}};
 window.__areoBook=function(key){try{useBook(key)}catch(e){}};

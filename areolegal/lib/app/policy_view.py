@@ -6,6 +6,7 @@ from typing import Optional
 _LIB=Path(__file__).resolve().parents[1]
 if str(_LIB)not in sys.path:sys.path.insert(0,str(_LIB))
 from playbook import status as S
+from app import metrics as M
 TRACKS='green','yellow','red'
 MARKER='/*__AREO_POLICY__*/null'
 TEMPLATE=_LIB.parent/'ui'/'app'/'policy.html'
@@ -110,7 +111,7 @@ def _evidence(rule,track):
 def _steps(obj):
 	B=[]
 	for A in obj.get('steps')or obj.get('fallback_steps')or[]:
-		if isinstance(A,dict)and _pick(A,'text','t','position'):B.append({'t':_s(_pick(A,'text','t','position')),'g':_s(_pick(A,'gives_up','g'))})
+		if isinstance(A,dict)and _pick(A,'text','t','position'):B.append({'t':_s(_pick(A,'text','t','position')),'g':_s(_pick(A,'gives_up','g')),'o':_s(A.get('origin')),'w':_s(A.get('condition')),'k':_s(A.get('consideration')),'f':bool(A.get('floor'))})
 		elif isinstance(A,str)and A.strip():B.append({'t':A.strip(),'g':''})
 	return B
 def _effect(obj):
@@ -127,16 +128,28 @@ def _lane(rule,track,st,cells,rat,sc):
 	G=_s(_pick(A,'position','pos','text'))
 	if not G:return{}
 	H=S.cell_key(D['rule_id'],B);E=H in set(st.get('approved_keys')or());I=cells.get(H)or{};F=_legal_open(D,B);J=A.get('match_criteria')or A.get('crit')or[];return{'p':C(G),'cl':_clause(A.get('proposed_clause')),'fx':C(_effect(A)),'areo':_s(A.get('basis'))in AREO_BASES,'ok':E,'ev':_evidence(D,B),'legal':bool(F),'crit':[C(A)for A in _strs(J)],'why':C(_s(_pick(rat,'%s_boundary_rationale'%B))or _s(A.get('basis_note'))),'signer':_s(I.get('signer'))if E else'','at':_s(I.get('approved_at'))[:10]if E else'','steps':_steps(A)if B=='yellow'else[],'lr':[{'q':C(A['q']),'refs':A['refs']}for A in F if A['q']or A['refs']],'st':'approved'if E else'pending_legal_review'if F else'pending'}
-def _rule(r,ids,st,cells,sc):
-	A=sc;D=r['rule_id'];E=r.get('policy_rationale')if isinstance(r.get('policy_rationale'),dict)else{};I=r.get('company_perspective')if isinstance(r.get('company_perspective'),dict)else{};J=_s(_pick(r,'topic_name','topic'))or _s(r.get('clause_issue'))or D;G=_s(r.get('clause_issue'));K=_s(r.get('importance')).lower();H=r.get('presence_rule');L=[]
+def _rule(r,ids,st,cells,sc,seg_on=False):
+	G=ids;A=sc;D=r['rule_id'];E=r.get('policy_rationale')if isinstance(r.get('policy_rationale'),dict)else{};K=r.get('company_perspective')if isinstance(r.get('company_perspective'),dict)else{};L=_s(_pick(r,'topic_name','topic'))or _s(r.get('clause_issue'))or D;H=_s(r.get('clause_issue'));I=_s(r.get('importance')).lower();J=r.get('presence_rule');M=[]
 	for B in r.get('related_clause_impacts')or r.get('related_clauses')or[]:
 		if not isinstance(B,dict):continue
-		F=_s(_pick(B,'related_rule_id','rule_id','ref'));M=_s(_pick(B,'impact','relation','effect'))
-		if not F or F==D or F not in ids or not M:continue
-		C=[A for A in B.get('evidence')or[]if isinstance(A,dict)and _s(A.get('quote'))];N=_s(B.get('direction'));O={'id':F,'dir':N if N in('affects','affected_by','mutual')else'mutual','basis':'areo'if B.get('basis')=='areo_proposal'or not C else'corpus','why':A(M),'act':A(_s(B.get('action')))}
-		if C:O['q']={'c':_s(C[0].get('clause_ref')),'n':int(C[0].get('count')or 1),'t':_s(C[0].get('quote'))}
-		L.append(O)
-	return{'id':D,'t':J,'sub':G if G and G!=J else'','imp':K if K in IMPORTANCE else'','kind':_s(r.get('clause_kind')),'req':_s(H.get('requirement'))if isinstance(H,dict)else _s(H),'why':A(_s(r.get('why_address_topic'))),'cp':A(_s(r.get('counterparty_objective'))),'rat':A(_s(E.get('executive_policy_rationale'))),'legal':A(_s(_pick(E,'legal_risk_and_legal_framework'))or _s(I.get('legal_analysis'))),'biz':A(_s(_pick(E,'business_operational_impact'))or _s(I.get('business_analysis'))),'rel':[A for A in _strs(r.get('related_rule_ids'))if A!=D and A in ids],'relx':L,'L':{B:_lane(r,B,st,cells,E,A)for B in TRACKS}}
+		F=_s(_pick(B,'related_rule_id','rule_id','ref'));N=_s(_pick(B,'impact','relation','effect'))
+		if not F or F==D or F not in G or not N:continue
+		C=[A for A in B.get('evidence')or[]if isinstance(A,dict)and _s(A.get('quote'))];O=_s(B.get('direction'));P={'id':F,'dir':O if O in('affects','affected_by','mutual')else'mutual','basis':'areo'if B.get('basis')=='areo_proposal'or not C else'corpus','why':A(N),'act':A(_s(B.get('action')))}
+		if C:P['q']={'c':_s(C[0].get('clause_ref')),'n':int(C[0].get('count')or 1),'t':_s(C[0].get('quote'))}
+		M.append(P)
+	Q={B:_lane(r,B,st,cells,E,A)for B in TRACKS};R=r.get('evidence_count_computed')if isinstance(r.get('evidence_count_computed'),dict)else{};return{'id':D,'t':L,'unk':_unknowns(r,Q,R,I),'ig':A(_s(r.get('interpretation_guidance'))),'xn':A(_s(r.get('external_note'))),'exc':[{'t':A(_s(_pick(B,'wording','value'))),'ctx':A(_s(_pick(B,'context','reason')))}for B in r.get('exceptions')or()if isinstance(B,dict)and _s(_pick(B,'wording','value'))][:5],'same':not r.get('segment_variants')if seg_on else None,'sub':H if H and H!=L else'','imp':I if I in IMPORTANCE else'','walk':bool(r.get('walk_away')),'rl':[{'id':_s(B.get('related_rule_id')),'kind':_s(B.get('kind')),'sev':_s(B.get('severity')),'org':_s(B.get('origin')),'ok':B.get('approved'),'why':A(_s(B.get('impact'))),'act':A(_s(B.get('action'))),'n':B.get('doc_count')}for B in r.get('related_links')or()if isinstance(B,dict)and _s(B.get('related_rule_id'))in G],'kind':_s(r.get('clause_kind')),'req':_s(J.get('requirement'))if isinstance(J,dict)else _s(J),'why':A(_s(r.get('why_address_topic'))),'cp':A(_s(r.get('counterparty_objective'))),'rat':A(_s(E.get('executive_policy_rationale'))),'legal':A(_s(_pick(E,'legal_risk_and_legal_framework'))or _s(K.get('legal_analysis'))),'biz':A(_s(_pick(E,'business_operational_impact'))or _s(K.get('business_analysis'))),'rel':[A for A in _strs(r.get('related_rule_ids'))if A!=D and A in G],'relx':M,'L':Q}
+SMALL_SAMPLE=5
+def _unknowns(r,lanes,ec,imp):
+	D=lanes;A=[];E=D.get('green')or{}
+	if E.get('p')and E.get('areo'):A.append('אין דוגמה בהסכמים שלכם לעמדה המועדפת.')
+	B,C=ec.get('total'),ec.get('absent')
+	if isinstance(B,int)and B:
+		if isinstance(C,int)and C:A.append('הנושא לא מוסדר ב-%d מתוך %d הסכמים.'%(C,B))
+		if B<SMALL_SAMPLE:A.append('מדגם קטן: %d מסמכים במאגר.'%B)
+	if any(A.get('quote_verified')is False for A in r.get('evidence')or()if isinstance(A,dict)):A.append('ציטוט אחד או יותר לא נמצא מילה במילה בהסכם.')
+	F=D.get('yellow')or{}
+	if imp in('critical','high')and F.get('p')and len(F.get('steps')or())<2:A.append('אין בהסכמים מספיק נקודות למדרגת נסיגה שנייה.')
+	A.append('גבול הדין לא נבדק.');return A
 def _segments(model,ids,st,sc):
 	G=model;I=G.get('segmentation_model')or{};H,D=[],{}
 	for B in I.get('segments')or[]:
@@ -175,7 +188,15 @@ def _questions(model,sc):
 		if C or D:B.append({'t':sc(C),'q':sc(D),'rec':sc(_s(_pick(A,'recommendation','rec')))})
 	return B
 def _cov(model):B=model.get('coverage')or{};A=lambda k:B.get(k)if isinstance(B.get(k),int)else 0;return{'units':A('units'),'topic':A('topic_units'),'tech':A('technical_units'),'by':[]}
-def book_data(model,model_path,profile=None):E=profile;A=model;C=_scrubber(A);F=[A for A in A.get('rules')or[]if isinstance(A,dict)and A.get('rule_id')];G={A['rule_id']for A in F};H=_cells(A,model_path);B=S.derive_status(A,H,lang='he');D=A.get('scope_summary')or{};I=(D.get('contract_families')or[{}])[0]or{};M=D.get('corpus_basis')or A.get('corpus_basis')or{};J=_s(M.get('band'));K=_sources(A);L=A.get('segmentation_model')or{};return{'company':_company(A,E),'family':_s(_pick(I,'contract_family_name','label')),'side':_s(_pick(I,'company_role')),'docs':S.company_agreements_counted(A),'date':_s(_pick(A,'last_updated','generated_at'))[:10],'approver':_approver(E,B),'deal':C(_s(D.get('deal_description')))if isinstance(D.get('deal_description'),str)else'','suff':'thin'if J in('below7','below20','none')else'ok'if J else'','limits':[C(A)for A in _strs(D.get('limitations'))],'notObserved':[C(A)for A in _strs((A.get('applicability')or{}).get('not_covered'))],'seg':{'status':_s(L.get('status')),'checked':[C(A)for A in _strs(L.get('dimensions'))]},'segs':_segments(A,G,B,C),'qs':_questions(A,C),'cov':_cov(A),'status':{'label':B['label'],'approved':B['approved_count'],'total':B['positions_count'],'open_questions':list(B.get('open_questions')or[])},'src':K,'com':_commercial(A,K),'rules':[_rule(A,G,B,H,C)for A in F]},B
+def book_data(model,model_path,profile=None):F=profile;A=model;C=_scrubber(A);G=[A for A in A.get('rules')or[]if isinstance(A,dict)and A.get('rule_id')];H={A['rule_id']for A in G};I=_cells(A,model_path);B=S.derive_status(A,I,lang='he');D=A.get('scope_summary')or{};J=(D.get('contract_families')or[{}])[0]or{};M=D.get('corpus_basis')or A.get('corpus_basis')or{};K=_s(M.get('band'));L=_sources(A);E=A.get('segmentation_model')or{};return{'company':_company(A,F),'family':_s(_pick(J,'contract_family_name','label')),'side':_s(_pick(J,'company_role')),'docs':S.company_agreements_counted(A),'date':_s(_pick(A,'last_updated','generated_at'))[:10],'approver':_approver(F,B),'deal':C(_s(D.get('deal_description')))if isinstance(D.get('deal_description'),str)else'','suff':'thin'if K in('below7','below20','none')else'ok'if K else'','limits':[C(A)for A in _strs(D.get('limitations'))],'notObserved':[C(A)for A in _strs((A.get('applicability')or{}).get('not_covered'))],'seg':{'status':_s(E.get('status')),'checked':[C(A)for A in _strs(E.get('dimensions'))]},'segs':_segments(A,H,B,C),'qs':_questions(A,C),'cov':_cov(A),'status':{'label':B['label'],'approved':B['approved_count'],'total':B['positions_count'],'open_questions':list(B.get('open_questions')or[])},'src':L,'com':_commercial(A,L),'rules':[_rule(A,H,B,I,C,bool(E.get('segments')))for A in G],'paper':_paper(A),'bt':(A.get('backtest')or{}).get('red_rate')if isinstance(A.get('backtest'),dict)else None},B
+def _paper(model):
+	D=model;F=(D.get('scope_summary')or{}).get('paper_counts')or{};B=next((A for A in D.get('validation_queue')or[]if isinstance(A,dict)and A.get('kind')=='paper_confirm'and A.get('status')!='closed'),None);E=[]
+	if B:
+		G=set(B.get('source_ids')or[])
+		for(H,A)in enumerate(D.get('source_log')or[]):
+			C=_s(A.get('source_id'))if isinstance(A,dict)else'';C=C or'F%d'%(H+1)
+			if isinstance(A,dict)and C in G:E.append({'id':C,'name':_s(_pick(A,'title'))or _plain_name(A.get('file'))or _s(A.get('source_id'))})
+	return{'counts':{A:int(F.get(A)or 0)for A in('ours','theirs','third_party','unknown')},'unknown':E[:20],'qid':_s(B.get('id'))if B else''}
 def _type_of(key,entry,model):
 	A=_pick(entry or{},'family_type','contract_type','type')or _pick(model,'contract_type','family_type')
 	if A:return _s(A)
@@ -288,23 +309,23 @@ def _html_books(data_dir,profile):
 	return J
 def _norm_name(t):return re.sub('\\s+',' ',_s(t)).strip().lower()
 def page_data(data_dir):
-	G=data_dir;G=Path(G);L=_read_json(G/PROFILE_NAME)if(G/PROFILE_NAME).is_file()else None;D,I=[],set()
-	for(H,J)in find_models(G):
-		E=_read_json(J)
-		if not isinstance(E,dict)or not isinstance(E.get('rules'),list):_warn('%s אינו מודל פלייבוק, ולא נכלל'%J);continue
-		S=((E.get('scope_summary')or{}).get('contract_families')or[{}])[0]or{};A=_s(_pick(E,'family_id')or _pick(H,'family_id')or _pick(S,'contract_family_id')or _pick(E,'playbook_id'))or J.parent.name or'playbook';M,F=A,2
-		while A in I:A,F='%s_%d'%(M,F),F+1
-		I.add(A);B,K=book_data(E,J,L);D.append({'key':A,'type':_type_of(A,H,E),'label':B['family']or _s(_pick(H,'family_name','label'))or A,'family':B['family'],'side':B['side']or _s(_pick(H,'company_role')),'status':K['playbook_status'],'status_label':K['label'],'updated':B['date'],'rules':len(B['rules']),'legacy':bool(H.get('legacy')),'built':True,'data':B})
-	N={A['key']for A in D}|{_norm_name(A['family'])for A in D if A['family']};N|={_norm_name(A['label'])for A in D if A['label']};P={}
-	for C in sorted(_html_books(G,L),key=lambda h:(h['data']['date'],h['mtime']),reverse=True):
-		O=_s(C['model'].get('family_id'))or _s(C['model'].get('playbook_id'));Q={A for A in(O,_norm_name(C['data']['family']),_norm_name(C['label']))if A}
-		if Q&N:continue
-		R=O or _norm_name(C['data']['family'])or _norm_name(C['label'])
-		if R in P:continue
-		P[R]=C;N|=Q;A=O or re.sub('[^\\w]+','_',C['label']).strip('_')or'playbook';M,F=A,2
-		while A in I:A,F='%s_%d'%(M,F),F+1
-		I.add(A);B,K=C['data'],C['st'];D.append({'key':A,'type':_type_of(A,{},C['model']),'label':C['label'],'family':B['family'],'side':B['side'],'status':K['playbook_status'],'status_label':B['status']['label'],'updated':B['date'],'rules':len(B['rules']),'legacy':True,'from_html':C['path'],'built':True,'data':B})
-	T=max(D,key=lambda b:b['updated'])['key']if D else None;return{'company':D[0]['data']['company']if D else _s(_pick(L or{},'organization_name')),'current':T,'books':D}
+	E=data_dir;E=Path(E);L=_read_json(E/PROFILE_NAME)if(E/PROFILE_NAME).is_file()else None;D,I=[],set();T=M.deal_logs(E)
+	for(H,J)in find_models(E):
+		F=_read_json(J)
+		if not isinstance(F,dict)or not isinstance(F.get('rules'),list):_warn('%s אינו מודל פלייבוק, ולא נכלל'%J);continue
+		U=((F.get('scope_summary')or{}).get('contract_families')or[{}])[0]or{};B=_s(_pick(F,'family_id')or _pick(H,'family_id')or _pick(U,'contract_family_id')or _pick(F,'playbook_id'))or J.parent.name or'playbook';N,G=B,2
+		while B in I:B,G='%s_%d'%(N,G),G+1
+		I.add(B);A,K=book_data(F,J,L);A['mt']=M.compute(T,family=A['family'],backtest=A.get('bt'));D.append({'key':B,'type':_type_of(B,H,F),'label':A['family']or _s(_pick(H,'family_name','label'))or B,'family':A['family'],'side':A['side']or _s(_pick(H,'company_role')),'status':K['playbook_status'],'status_label':K['label'],'updated':A['date'],'rules':len(A['rules']),'legacy':bool(H.get('legacy')),'built':True,'data':A})
+	O={A['key']for A in D}|{_norm_name(A['family'])for A in D if A['family']};O|={_norm_name(A['label'])for A in D if A['label']};Q={}
+	for C in sorted(_html_books(E,L),key=lambda h:(h['data']['date'],h['mtime']),reverse=True):
+		P=_s(C['model'].get('family_id'))or _s(C['model'].get('playbook_id'));R={A for A in(P,_norm_name(C['data']['family']),_norm_name(C['label']))if A}
+		if R&O:continue
+		S=P or _norm_name(C['data']['family'])or _norm_name(C['label'])
+		if S in Q:continue
+		Q[S]=C;O|=R;B=P or re.sub('[^\\w]+','_',C['label']).strip('_')or'playbook';N,G=B,2
+		while B in I:B,G='%s_%d'%(N,G),G+1
+		I.add(B);A,K=C['data'],C['st'];D.append({'key':B,'type':_type_of(B,{},C['model']),'label':C['label'],'family':A['family'],'side':A['side'],'status':K['playbook_status'],'status_label':A['status']['label'],'updated':A['date'],'rules':len(A['rules']),'legacy':True,'from_html':C['path'],'built':True,'data':A})
+	V=max(D,key=lambda b:b['updated'])['key']if D else None;return{'company':D[0]['data']['company']if D else _s(_pick(L or{},'organization_name')),'current':V,'books':D}
 def to_js(obj):A=json.dumps(obj,ensure_ascii=False,separators=(',',':'));return A.replace('</','<\\/').replace('<!--','<\\!--').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
 def render_data(data,out_html,template=None):
 	B=template;A=out_html;C=Path(B)if B else TEMPLATE;D=C.read_text(encoding='utf-8')

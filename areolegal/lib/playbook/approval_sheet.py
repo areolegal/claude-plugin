@@ -22,15 +22,15 @@ ROLE_LINE=HE['role_line']
 def sheet_lang(lang):return'en'if str(lang or'').strip().lower().startswith('en')else'he'
 _EFFECT_FIELD=re.compile('^as_(\\w+)_effect$')
 def company_roles(model):
-	A=model;C=A.get('scope_summary')or{};D=C.get('company_roles')or[]
-	if D:return[(A['role'],A.get('label')or A['role'])for A in D]
-	if role_code(A)=='mutual':
-		B=[]
-		for G in A.get('rules')or[]:
+	B=model;D=B.get('scope_summary')or{};A=D.get('company_roles')or[];A=[A if isinstance(A,dict)else{'role':str(A),'label':str(A)}for A in A if isinstance(A,dict)and A.get('role')or isinstance(A,str)and A.strip()]
+	if A:return[(A['role'],A.get('label')or A['role'])for A in A]
+	if role_code(B)=='mutual':
+		C=[]
+		for G in B.get('rules')or[]:
 			for E in(G.get('traffic_light')or{}).values():
 				for F in list((E or{}).get('role_effects')or{})+[A.group(1)for A in map(_EFFECT_FIELD.match,(E or{}).keys())if A]:
-					if F not in B:B.append(F)
-		H=C.get('role_labels')or{};return[(A,H.get(A)or A)for A in B]or[('company',None)]
+					if F not in C:C.append(F)
+		H=D.get('role_labels')or{};return[(A,H.get(A)or A)for A in C]or[('company',None)]
 	return[('company',None)]
 def role_effect(t,role,single=False):
 	A=role;B=(t.get('role_effects')or{}).get(A)or t.get('as_%s_effect'%A)

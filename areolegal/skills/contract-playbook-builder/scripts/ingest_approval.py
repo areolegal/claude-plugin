@@ -103,7 +103,7 @@ def chat_main(a):
 	for b in F['warnings']:print('  %s %s'%('Note:'if B=='en'else'שימו לב:',b))
 	if G.get('closed'):print('%s %s'%('Answered questions:'if B=='en'else'שאלות שנענו:',', '.join(G['closed'])))
 	print(RECORDS_LINE%J)
-	if P:print('הנוסח השתנה בפלייבוק (גרסה %s). יש לבנות מחדש את הגרעין, הרישום, ה-Word וסביבת העבודה (SKILL.md, "בדיקות החובה"), ורק אז להמשיך.'%A.get('version'))
+	if P:print('הנוסח השתנה בפלייבוק (גרסה %s). יש לבנות מחדש את הגרעין, הרישום וסביבת העבודה (SKILL.md, "בדיקות החובה"), ורק אז להמשיך.'%A.get('version'))
 	for c in G.get('problems')or():print('  סתירה בין השכבות: %s'%c)
 	return 4 if G.get('problems')else 0
 def main(argv=None):

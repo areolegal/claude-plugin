@@ -1184,11 +1184,12 @@ new MutationObserver(ovSoon).observe(document.body,{childList:true});
 /* building a playbook happens here, not in the conversation: the playbook steps open over the policy screen,
    and their last button sends the request to Areo. They stay open while switching tabs and close from their own button */
 let PBX=null,PBXK='';
-const FLOWS={playbook:{src:'apps/playbook.html',tab:'policy',title:'בניית פלייבוק'},setup:{src:'apps/setup.html',tab:'today',title:'הקמת Areo'}};
-function pbxSync(){if(PBX)PBX.classList.toggle('on',current()===FLOWS[PBXK].tab);ovSoon()}
+const FLOWS={playbook:{src:'apps/playbook.html',tab:'policy',title:'בניית פלייבוק'},setup:{src:'apps/setup.html',tab:null,title:'הקמת Areo'}};
+/* the company setup has no tab of its own: it opens over whatever screen the user is on, so it is never waiting unseen in another tab */
+function pbxSync(){if(PBX){const t=FLOWS[PBXK].tab;PBX.classList.toggle('on',!t||current()===t)}ovSoon()}
 function openFlow(k){const F=FLOWS[k];if(PBX&&PBXK!==k){PBX.remove();PBX=null}
   if(!PBX){PBX=document.createElement('iframe');PBX.className='pbx';PBX.title=F.title;PBX.src=F.src;stage.appendChild(PBX);PBXK=k}
-  if(current()!==F.tab)location.hash=F.tab;pbxSync();return true}
+  if(F.tab&&current()!==F.tab)location.hash=F.tab;pbxSync();return true}
 window.__areoBuildPlaybook=()=>openFlow('playbook');
 window.__areoSetup=()=>openFlow('setup');
 /* the welcome steps and any other button that starts a flow */

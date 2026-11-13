@@ -1,0 +1,11 @@
+{
+ "about": "Areo thresholds for turning what the agreements show into positions (Inbal, 12.11.2026, 4.4). The client may override any value in Areo-נתונים/playbook-thresholds.json. All of them apply within a segment.",
+ "preferred_min_share": 0.5,
+ "step_min_counterparties": 2,
+ "step_min_share": 0.15,
+ "step_min_occurrences": 3,
+ "percent_min_signed": 5,
+ "behavioral_red_min_deals": 3,
+ "max_steps": 3,
+ "material_min_steps": 2
+}

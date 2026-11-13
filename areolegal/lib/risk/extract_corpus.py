@@ -133,19 +133,39 @@ def _is_near_white(val):
 	if A in('','AUTO'):return False
 	if not re.match('^[0-9A-F]{6}$',A):return False
 	B,C,D=int(A[0:2],16),int(A[2:4],16),int(A[4:6],16);return min(B,C,D)>=240
+FORM_MARKERS=re.compile('^(top of form|bottom of form|ראש הטופס|תחתית הטופס|תחילת הטופס|סוף הטופס)$',re.I)
+def _is_dark(val):
+	A=val;A=(A or'').strip().upper()
+	if not re.match('^[0-9A-F]{6}$',A):return False
+	return max(int(A[0:2],16),int(A[2:4],16),int(A[4:6],16))<=128
+def _on_dark(run):
+	A=run
+	while A is not None:
+		for B in(A.find('w:rPr',NS),A.find('w:pPr',NS),A.find('w:tcPr',NS)):
+			if B is None:continue
+			C=B.find('w:shd',NS)
+			if C is not None and _is_dark(C.get(q('fill'))):return True
+			D=B.find('w:highlight',NS)
+			if D is not None and(D.get(q('val'))or'').lower()in('black','darkblue','darkgreen','darkred','darkgray','darkcyan','darkmagenta'):return True
+		if A.tag==q('tbl'):break
+		A=A.getparent()if hasattr(A,'getparent')else None
+	return False
 def run_hidden(run):
-	A=run.find('w:rPr',NS)
+	C=run;A=C.find('w:rPr',NS)
 	if A is None:return
 	for B in('vanish','specVanish','webHidden'):
-		C=A.find('w:'+B,NS)
-		if C is not None and C.get(q('val'),'true')not in('0','false','off'):return B
-	D=A.find('w:color',NS)
-	if D is not None and _is_near_white(D.get(q('val'))):return'color'
+		D=A.find('w:'+B,NS)
+		if D is not None and D.get(q('val'),'true')not in('0','false','off'):
+			G=''.join(A.text or''for A in C.iter(q('t'))).strip()
+			if FORM_MARKERS.match(G):return
+			return B
+	E=A.find('w:color',NS)
+	if E is not None and _is_near_white(E.get(q('val')))and not _on_dark(C):return'color'
 	for B in('sz','szCs'):
-		E=A.find('w:'+B,NS)
-		if E is not None:
+		F=A.find('w:'+B,NS)
+		if F is not None:
 			try:
-				if int(E.get(q('val')))<8:return'font_size'
+				if int(F.get(q('val')))<8:return'font_size'
 			except(TypeError,ValueError):pass
 def _own_paragraph(el,p):
 	A=el.getparent()

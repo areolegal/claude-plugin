@@ -97,35 +97,36 @@ CODE_RX=re.compile('\\s*\\((?:\\s*(?:[ARKNQ]|REG-?|APR-?)\\d+[a-z]?\\s*,?)+\\)|\
 def client_text(t,core=None,lang='he'):import content_checks as A;t=CODE_RX.sub('',str(t or''));return A.scrub_client_text(t,core,lang)
 def is_deal_only(st):A=(st or{}).get('positions_source');return isinstance(A,dict)and A.get('mode')=='deal_only'
 def cmd_questions(a):
-	B=load(a.items,'רשימת הפריטים');A=state_of(a.deal);I=set(a.asked_before or())
+	B=load(a.items,'רשימת הפריטים');A=state_of(a.deal);J=set(a.asked_before or())
 	if A:
-		for C in A.get('question_batches')or():I|=set(C.get('keys')or())
-		I-=SB.held_for_explicit(A)
+		for C in A.get('question_batches')or():J|=set(C.get('keys')or())
+		J-=SB.held_for_explicit(A)
 	O=load(a.strategy,'נתוני האסטרטג',required=False)if a.strategy else load(os.path.join(a.deal,'strategy-data.json'),'נתוני האסטרטג',required=False)if a.deal and os.path.exists(os.path.join(a.deal,'strategy-data.json'))else None
-	if a.ask_stance:I.discard('stance')
+	if a.ask_stance:J.discard('stance')
 	G=((A or{}).get('meta')or{}).get('paper_type')in('tender_pre_bid','tender_awarded','standard_form_online');P=(A or{}).get('playbook_resolution')or{};G=G or bool(P and P.get('result')not in(None,'match'));G=G or is_deal_only(A)
 	if not G and(a.ask_stance or not SB.stance_of(A))and not any(isinstance(A,dict)and A.get('key')=='stance'for A in B):B=[QB.stance_item(a.lang or'he')]+list(B)
-	Q=load(a.resolution,'תוצאת האיתור',required=False)or(A or{}).get('playbook_resolution');Y=any(A.get('id')=='playbook_activation'for A in(A or{}).get('user_decisions')or());K=(Q or{}).get('side_check')or{}
-	if K.get('conflict')and K.get('question')and not any(A.get('id')=='side_conflict'for A in(A or{}).get('user_decisions')or()):
-		if not any(isinstance(A,dict)and A.get('key')=='side_conflict'for A in B):B=[K['question']]+list(B)
-	L=QB.activation_item(Q,a.lang or'he',kind_segment=a.kind_segment)
-	if L and not Y and not any(isinstance(A,dict)and A.get('key')==L['key']for A in B):B=list(B)+[L]
+	Q=load(a.resolution,'תוצאת האיתור',required=False)or(A or{}).get('playbook_resolution');Y=any(A.get('id')=='playbook_activation'for A in(A or{}).get('user_decisions')or());L=(Q or{}).get('side_check')or{}
+	if L.get('conflict')and L.get('question')and not any(A.get('id')=='side_conflict'for A in(A or{}).get('user_decisions')or()):
+		if not any(isinstance(A,dict)and A.get('key')=='side_conflict'for A in B):B=[L['question']]+list(B)
+	M=QB.activation_item(Q,a.lang or'he',kind_segment=a.kind_segment)
+	if M and not Y and not any(isinstance(A,dict)and A.get('key')==M['key']for A in B):B=list(B)+[M]
 	D=load(a.compare,'השוואת הסבב',required=False);E=a.status_line
 	if((A or{}).get('meta')or{}).get('paper_type')=='tender_awarded':R=PAPER_Q['en'if a.lang=='en'else'he']['only_errors'];E='%s\n%s'%(R,E)if E else R
 	H=SB.current_round(A)if A is not None else None;F=None
 	if D is not None:
 		H=compare_round(A,D);F=copy.deepcopy(A)if A else SB.skeleton()
 		if not compare_applied(F,H):SB.apply_compare(F,D,H)
-		M={A.get('key')for A in B if isinstance(A,dict)};B=list(B)+[A for A in QB.round_items(D,F,H,a.lang or'he',strategy=O)if A['key']not in M]
+		I={A.get('key')for A in B if isinstance(A,dict)};B=list(B)+[A for A in QB.round_items(D,F,H,a.lang or'he',strategy=O)if A['key']not in I]
 		if D.get('base')=='assumed':S=('Assumed base: the comparison is against %s, the last work file; an unmarked change may be our own edit before sending.'if a.lang=='en'else'בסיס משוער: ההשוואה היא מול %s, קובץ העבודה האחרון; שינוי שלא סומן עשוי להיות עריכה שלנו לפני המשלוח.')%os.path.basename(D.get('sent')or'?');E='%s\n%s'%(E,S)if E else S
 	N=prefix_item(A,D,a)
 	if N and N['key']not in{A.get('key')for A in B if isinstance(A,dict)}:B=list(B)+[N]
-	if getattr(a,'agreement_lang',None)=='en'and a.profile:Z=lawyer_view(load(a.profile,'הפרופיל',required=False)or{});M={A.get('key')for A in B if isinstance(A,dict)};B=list(B)+[A for A in QB.english_name_items(Z,a.lang or'he')if A['key']not in M]
+	if a.profile:Z=lawyer_view(load(a.profile,'הפרופיל',required=False)or{});I={A.get('key')for A in B if isinstance(A,dict)};B=list(B)+[A for A in QB.comment_name_item(Z,a.lang or'he')if A['key']not in I]
+	if getattr(a,'agreement_lang',None)=='en'and a.profile:b=lawyer_view(load(a.profile,'הפרופיל',required=False)or{});I={A.get('key')for A in B if isinstance(A,dict)};B=list(B)+[A for A in QB.english_name_items(b,a.lang or'he')if A['key']not in I]
 	T=[A for A in B if isinstance(A,dict)and A.get('kind')=='sent_basis'];B=[A for A in B if A not in T]
 	for U in T:print(('  (not asked: %s, the sent file is asked alone before the comparison: round_tools.py basis)'if a.lang=='en'else'  (לא נשאלה: %s, הקובץ שנשלח נשאל לבד לפני ההשוואה: round_tools.py basis)')%(U.get('key')or U.get('text')))
-	try:C=QB.build_batch(B,no_consideration=a.no_consideration,asked_before=I,max_questions=a.max,status_line=E,lang=a.lang or'he',strategy=O,round_number=H)
-	except ValueError as b:print('המנה לא נבנתה: %s'%b);return 2
-	for c in C.get('memos')or():print(c);print('')
+	try:C=QB.build_batch(B,no_consideration=a.no_consideration,asked_before=J,max_questions=a.max,status_line=E,lang=a.lang or'he',strategy=O,round_number=H)
+	except ValueError as c:print('המנה לא נבנתה: %s'%c);return 2
+	for d in C.get('memos')or():print(d);print('')
 	print(C['text'])
 	for V in C['skipped']:print(('  (not asked: %s, %s)'if a.lang=='en'else'  (לא נשאלה: %s, %s)')%(V['key'],V['why']))
 	W=QB.ready_signal(D)if D is not None else None
@@ -135,10 +136,10 @@ def cmd_questions(a):
 		A,X=SB.skeleton(),True;A['meta'].update(transaction_id=os.path.basename(os.path.abspath(a.deal)),round_number=1,round_stage=SB.stage_for_round(1),generated_at=SB.now_iso(),last_updated=SB.now_iso())
 		if SB.validate_state(A):A=None
 	if A is not None:
-		J={'round':compare_round(A,D)if D is not None else SB.current_round(A),'asked_at':SB.now_iso(),'keys':[B for A in C['questions']for B in A.get('group_keys')or[A.get('key')or A.get('text')]]}
-		if C.get('deferred')or C.get('applied_by_recommendation'):J['deferred']=C.get('deferred')or[];J['applied_by_recommendation']=C.get('applied_by_recommendation')or[]
-		if C.get('requires_explicit'):J['requires_explicit']=C['requires_explicit']
-		A.setdefault('question_batches',[]).append(J)
+		K={'round':compare_round(A,D)if D is not None else SB.current_round(A),'asked_at':SB.now_iso(),'keys':[B for A in C['questions']for B in A.get('group_keys')or[A.get('key')or A.get('text')]]}
+		if C.get('deferred')or C.get('applied_by_recommendation'):K['deferred']=C.get('deferred')or[];K['applied_by_recommendation']=C.get('applied_by_recommendation')or[]
+		if C.get('requires_explicit'):K['requires_explicit']=C['requires_explicit']
+		A.setdefault('question_batches',[]).append(K)
 		if not save_state(a.deal,A):return 0 if X else 3
 	return 0
 def print_signing_preview(st,a,ready):

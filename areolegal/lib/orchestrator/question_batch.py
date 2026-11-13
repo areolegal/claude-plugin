@@ -8,6 +8,11 @@ TXT={'he':{'sit':'מצב','blocks':BLOCKS,'rec':' המלצה: %s.','asked':'כב
 STANCE={'he':{'text':'איך להחיל את הפלייבוק בעסקה הזו? לפי הפלייבוק: העמדה שבפלייבוק בכל סעיף. מחמירה: מחזיקים בעמדה המועדפת גם במקום שהפלייבוק מתיר לוותר, ומבקשים גם בנושאים משניים. מקלה: מקבלים נוסח שלהם שבטווח שהפלייבוק מתיר, ומבקשים רק בנושאים החשובים. מה שלא מקבלים נשאר כך בכל גישה.','rec':'לפי הפלייבוק','opts':['לפי הפלייבוק (ההמלצה)','גישה מחמירה יותר','גישה מקלה יותר']},'en':{'text':'How should the playbook be applied in this deal? By the playbook: the playbook position in each clause. Stricter: hold the preferred position even where the playbook allows a concession, and ask on minor topics too. More lenient: accept their wording where it is within the range the playbook allows, and ask only on the important topics. What you never accept stays the same in every approach.','rec':'By the playbook','opts':['By the playbook (recommended)','A stricter approach','A more lenient approach']}}
 STANCE_VALUES='playbook','stricter','lenient'
 NAME_EN={'he':{'lawyer_name_en':('באיזה שם באנגלית לחתום על ההערות לצד השני?','<השם באנגלית>'),'entity_name_en':('מה השם הרשום של החברה באנגלית, כפי שהוא מופיע במרשם?','<השם הרשום באנגלית>')},'en':{'lawyer_name_en':('Which English name should sign the comments to the other side?','<the name in English>'),'entity_name_en':("What is the company's registered name in English?",'<the registered name>')}}
+COMMENT_NAME={'he':('באיזה שם לרשום את ההערות שיוצאות לצד השני?','המחלקה המשפטית, %s','המחלקה המשפטית'),'en':('Which name should sign the comments to the other side?','Legal Department, %s','Legal Department')}
+def comment_name_item(profile,lang='he'):
+	A=profile or{}
+	if A.get('lawyer_name'):return[]
+	D,E,F=COMMENT_NAME[_lang(lang)];B=A.get('organization_name')or'';C=E%B if B else F;return[{'key':'lawyer_name','kind':'lawyer_name','situation':None,'blocks_sending':True,'text':D,'recommendation':C,'options':[C]}]
 def english_name_items(profile,lang='he'):
 	A=profile or{};B=NAME_EN[_lang(lang)];C=[]
 	if A.get('lawyer_name')and not A.get('lawyer_name_en'):C.append({'key':'lawyer_name_en','kind':'lawyer_name_en','situation':None,'blocks_sending':True,'text':B['lawyer_name_en'][0],'options':[B['lawyer_name_en'][1]]})
@@ -73,7 +78,7 @@ def build_batch(items,no_consideration=False,asked_before=(),max_questions=8,sta
 	g,K,Z=[],[],0
 	if len(B)>G:a=lambda q:q.get('blocks_sending')or q.get('requires_explicit');b=[A for A in B if a(A)];c=[A for A in B if not a(A)];d=max(0,G-len(b));K.extend(c[d:]);h={id(A)for A in b+c[:d]};B=[A for A in B if id(A)in h];Z=max(0,len(B)-G)
 	i=(COUNT_NONE[C]if not B else COUNT_ONE[C]if len(B)==1 else COUNT_LINE[C]%len(B))+(COUNT_OVER[C]%len([A for A in B if A.get('blocks_sending')or A.get('requires_explicit')])if Z else'')+(COUNT_MORE[C]%len(K)if K else'');j=([R]if R else[])+[i]+[_line(A,B,L)for(A,B)in enumerate(B,1)];return{'text':'\n'.join(j),'questions':B,'skipped':M,'requires_explicit':[A.get('key')for A in B if A.get('requires_explicit')],'memos':[A['memo']for A in B if A.get('memo')],'deferred':[A.get('key')for A in g],'applied_by_recommendation':[A.get('key')for A in K]}
-PROCESS_KINDS='stance','components','research_referral','file_prefix','bubble_language','entity_name_en','lawyer_name_en'
+PROCESS_KINDS='stance','components','research_referral','file_prefix','bubble_language','entity_name_en','lawyer_name_en','lawyer_name'
 COUNT_LINE={'he':'לפני שנכין את התגובה: %d שאלות.','en':'Before we prepare the response: %d questions.'}
 COUNT_ONE={'he':'לפני שנכין את התגובה: שאלה אחת.','en':'Before we prepare the response: one question.'}
 COUNT_NONE={'he':'אין שאלות. ממשיכים להכנת התגובה.','en':'No questions. We are preparing the response.'}

@@ -170,37 +170,37 @@ def record_sent(st,path,deal,rnd,basis='user_confirmed',edited=False):
 		if not L.get('delivered_in_round'):L['delivered_in_round']=E
 	return A
 def cmd_write(a):
-	C=a.deal;os.makedirs(C,exist_ok=True);W=os.path.join(C,LIVE);B=load(W,'קובץ המצב')if os.path.exists(W)else None
+	C=a.deal;os.makedirs(C,exist_ok=True);Y=os.path.join(C,LIVE);B=load(Y,'קובץ המצב')if os.path.exists(Y)else None
 	if B is not None and str((B.get('meta')or{}).get('schema_version'))!=SB.SCHEMA_VERSION:print('קובץ המצב הקיים בפורמט ישן (%s). הרץ קודם: negotiation_state.py migrate --deal ...'%(B.get('meta')or{}).get('schema_version'));return 2
-	F=int((B or{}).get('meta',{}).get('round_number')or 0);j=bool(a.decisions)and B is not None and os.path.basename(a.decisions)=='decisions_round_%d.json'%F==B.get('decisions_file');k=B is not None and(not B.get('decisions_file')and not(B.get('meta')or{}).get('sent_documents')or j);D=a.round or(F if k else F+1 if B else 1)
+	F=int((B or{}).get('meta',{}).get('round_number')or 0);l=bool(a.decisions)and B is not None and os.path.basename(a.decisions)=='decisions_round_%d.json'%F==B.get('decisions_file');m=B is not None and(not B.get('decisions_file')and not(B.get('meta')or{}).get('sent_documents')or l);D=a.round or(F if m else F+1 if B else 1)
 	if B is not None and D<F:print('סבב %d קטן מהסבב שבקובץ (%d). קובץ מצב אינו חוזר לאחור'%(D,F));return 2
-	X=a.transaction_id or(B or{}).get('meta',{}).get('transaction_id')or os.path.basename(os.path.abspath(C));M=[]
-	for Y in a.produced or():
-		N,o,G=Y.partition('=');H=G if os.path.isabs(G)else os.path.join(C,G)
-		if not N or not G or not os.path.exists(H):print('--produced %r: צריך סוג=נתיב לקובץ שקיים'%Y);return 2
+	Z=a.transaction_id or(B or{}).get('meta',{}).get('transaction_id')or os.path.basename(os.path.abspath(C));M=[]
+	for b in a.produced or():
+		N,p,G=b.partition('=');H=G if os.path.isabs(G)else os.path.join(C,G)
+		if not N or not G or not os.path.exists(H):print('--produced %r: צריך סוג=נתיב לקובץ שקיים'%b);return 2
 		M.append((N,H))
-	Z=load(a.gate,'דוח השער',required=False);b=a.lang or((B or{}).get('meta')or{}).get('lang')or'he';c=load(a.decisions,'קובץ ההכרעות',required=False);Q=clause_numbers_of(a.received,C);d=dict(place_labels_of(a.received,C,c,Q,b));d.update(load(a.clause_labels,'מספרי הסעיפים',required=False)or{});A=SB.build_state(X,D,profile=load(a.profile,'הפרופיל',required=False),decisions=c,deal_dir=C,produced=M,resolution=load(a.resolution,'תוצאת האיתור',required=False),gate=Z,concessions=load(a.concessions,'הוויתורים',required=False)or(),lang=b,text_status=a.text_status,counterparty_name=a.counterparty or'',contract_type=a.contract_type or'',clause_labels=d or None,para_count=a.para_count,clause_numbers=Q,received_texts=received_texts_of(a.received,C),clause_schedules=schedules_of(a.received,C,Q));I=load(a.compare,'השוואת הסבב',required=False)
+	c=load(a.gate,'דוח השער',required=False);d=a.lang or((B or{}).get('meta')or{}).get('lang')or'he';Q=load(a.decisions,'קובץ ההכרעות',required=False);R=clause_numbers_of(a.received,C);e=dict(place_labels_of(a.received,C,Q,R,d));e.update(load(a.clause_labels,'מספרי הסעיפים',required=False)or{});A=SB.build_state(Z,D,profile=load(a.profile,'הפרופיל',required=False),decisions=Q,deal_dir=C,produced=M,resolution=load(a.resolution,'תוצאת האיתור',required=False),gate=c,concessions=load(a.concessions,'הוויתורים',required=False)or(),lang=d,text_status=a.text_status,counterparty_name=a.counterparty or'',contract_type=a.contract_type or'',clause_labels=e or None,para_count=a.para_count,clause_numbers=R,received_texts=received_texts_of(a.received,C),clause_schedules=schedules_of(a.received,C,R));I=load(a.compare,'השוואת הסבב',required=False)
 	if B is not None:
-		B=copy.deepcopy(B);R=[];SB.normalize_statuses(B,R)
+		B=copy.deepcopy(B);S=[];SB.normalize_statuses(B,S)
 		if I is not None and D>F:
 			if not any(int(A.get('round')or 0)==F for A in B['meta'].get('sent_documents')or())and I.get('sent')and os.path.exists(I['sent']):record_sent(B,I['sent'],C,F,'assumed_last_work'if I.get('base')=='assumed'else'compare_base');print('נרשם כקובץ שנשלח בסבב %d: %s (%s)'%(F,os.path.basename(I['sent']),'בסיס משוער'if I.get('base')=='assumed'else'בסיס ההשוואה'))
-			R+=SB.apply_compare(B,I,D)
-		for K in R:print('  %s'%K)
-		A=carry_over(B,A,same_round=D==F,gate=Z,text_status_given=bool(a.text_status));S=os.path.join(C,'negotiation_state_round_%d.json'%F)
-		if D>F and not os.path.exists(S):dump(S,B);print('הסבב הקודם נשמר: %s'%S)
+			S+=SB.apply_compare(B,I,D)
+		for K in S:print('  %s'%K)
+		A=carry_over(B,A,same_round=D==F,gate=c,text_status_given=bool(a.text_status));T=os.path.join(C,'negotiation_state_round_%d.json'%F)
+		if D>F and not os.path.exists(T):dump(T,B);print('הסבב הקודם נשמר: %s'%T)
 	O=A.setdefault('quality_gate',{})
 	for(N,H)in M:
 		if N=='send'and not(O.get('send_copy')or{}).get('path'):E=SB.produced_document(H,C,'send');O['send_copy']=SB.send_copy_pending({'path':E['path'],'sha256':E['sha256'],'recorded_at':E['produced_at']})
 	L=next((paths.prefix_from_name(A)for(B,A)in M if B=='work'and paths.prefix_from_name(A)),None);E=A['meta'].get('file_prefix')if isinstance(A['meta'].get('file_prefix'),dict)else{};J=(E['agreement_type'],E.get('company')or'')if E.get('agreement_type')else paths.stored_prefix(B)if B else None
 	if J or L:
-		e=J or L;E=dict(E,agreement_type=e[0],company=e[1]);E.setdefault('set_in_round',1 if J else D)
+		f=J or L;E=dict(E,agreement_type=f[0],company=f[1]);E.setdefault('set_in_round',1 if J else D)
 		if J and L and tuple(L)!=tuple(J)and paths.prefix_switch_answer(A)=='switch':E.setdefault('history',[]).append({'agreement_type':J[0],'company':J[1],'until_round':D});E.update(agreement_type=L[0],company=L[1],set_in_round=D)
 		A['meta']['file_prefix']=E
-	f=(O.get('send_copy')or{}).get('sha256')if(O.get('send_copy')or{}).get('status')=='produced_pending_send'else None
+	g=(O.get('send_copy')or{}).get('sha256')if(O.get('send_copy')or{}).get('status')=='produced_pending_send'else None
 	for G in a.sent or():
 		H=G if os.path.isabs(G)else os.path.join(C,G)
 		if not os.path.exists(H):print('--sent %r אינו קיים'%G);return 2
-		if f and sha256(H)==f:print('%s הוא העותק למשלוח של הסבב: נרשם "הופק, ממתין לשליחה", ולא "נשלח". אחרי המשלוח: negotiation_state.py sent --deal <תיקיית העסקה> --file <הקובץ>'%os.path.basename(H));continue
+		if g and sha256(H)==g:print('%s הוא העותק למשלוח של הסבב: נרשם "הופק, ממתין לשליחה", ולא "נשלח". אחרי המשלוח: negotiation_state.py sent --deal <תיקיית העסקה> --file <הקובץ>'%os.path.basename(H));continue
 		record_sent(A,H,C,D)
 	for G in a.received or():
 		H=G if os.path.isabs(G)else os.path.join(C,G)
@@ -210,23 +210,25 @@ def cmd_write(a):
 	SB.link_silent_decisions(A,load(a.decisions,'קובץ ההכרעות',required=False))
 	if B is not None and D>F:carry_time_anchors(B,A,C,F,a.received)
 	for K in SB.refresh_open_items(A,D,load(a.decisions,'קובץ ההכרעות',required=False)):print('  %s'%K)
-	from orchestrator import proportionality as l;T=set()
+	from orchestrator import proportionality as n;U=set()
 	for P in A.get('user_decisions')or():
 		if isinstance(P,dict)and P.get('answer_kind')=='explicit':
-			T.update(str(A)for A in P.get('applies_to')or());U=str(P.get('id')or'').split(':')
-			if len(U)>=2 and U[0]in('commercial','held'):T.add(U[1])
-	for V in l.commercial_concession_violations(A.get('deliberate_concessions')):
-		if str(V.get('clause_ref'))in T:continue
-		print('  ויתור על נושא מסחרי מחייב בלי שאלה נפרדת: %s (%s). נשאל במנה הבאה, ואינו נמסר כוויתור עד תשובה מפורשת'%(V.get('topic'),V.get('clause_ref')))
-	m=isinstance(A.get('positions_source'),dict)and A['positions_source'].get('mode')=='deal_only';K=None if m else SB.playbook_update_line(A,D,A['meta'].get('lang')or'he')
+			U.update(str(A)for A in P.get('applies_to')or());V=str(P.get('id')or'').split(':')
+			if len(V)>=2 and V[0]in('commercial','held'):U.add(V[1])
+	for W in n.commercial_concession_violations(A.get('deliberate_concessions')):
+		if str(W.get('clause_ref'))in U:continue
+		print('  ויתור על נושא מסחרי מחייב בלי שאלה נפרדת: %s (%s). נשאל במנה הבאה, ואינו נמסר כוויתור עד תשובה מפורשת'%(W.get('topic'),W.get('clause_ref')))
+	o=isinstance(A.get('positions_source'),dict)and A['positions_source'].get('mode')=='deal_only';K=None if o else SB.playbook_update_line(A,D,A['meta'].get('lang')or'he')
 	if K:print('לשורה בסיכום: %s'%K)
-	SB.summarize(A);g=SB.unresolved_silent_changes(A,D)
-	if g:print('שינויים שקטים בלי הכרעה מסומנת (חוסמים משלוח): %s. ההכרעה נכנסת לקובץ ההכרעות עם silent_change: <מזהה>, בהחזרה בעקוב אחר שינויים או בקבלה עם בועה'%', '.join(A['id']for A in g))
-	print('עסקה: %s   סבב: %d (%s)'%(X,D,A['meta']['round_stage']));print('סעיפים: %d   ויתורים מכוונים: %d   הכרעות משתמש: %d'%(len(A['clauses']),len(A['deliberate_concessions']),len(A['user_decisions'])));h=SB.coverage_gaps(A.get('coverage_index'))
-	if h:print('רכיבים בלי הכרעה במפתח הכיסוי: %d'%len(h))
+	SB.summarize(A);h=SB.unresolved_silent_changes(A,D)
+	if h:print('שינויים שקטים בלי הכרעה מסומנת (חוסמים משלוח): %s. ההכרעה נכנסת לקובץ ההכרעות עם silent_change: <מזהה>, בהחזרה בעקוב אחר שינויים או בקבלה עם בועה'%', '.join(A['id']for A in h))
+	print('עסקה: %s   סבב: %d (%s)'%(Z,D,A['meta']['round_stage']));print('סעיפים: %d   ויתורים מכוונים: %d   הכרעות משתמש: %d'%(len(A['clauses']),len(A['deliberate_concessions']),len(A['user_decisions'])));i=SB.coverage_gaps(A.get('coverage_index'))
+	if i:print('רכיבים בלי הכרעה במפתח הכיסוי: %d'%len(i))
 	infer_paper_type(A,received_texts_of(a.received,C))
-	try:import playbook_map as i;i.update_ledger(A,i.round_view(A,I))
-	except Exception as n:print('יומן הסבבים לא נרשם (%s). להריץ playbook_map.py rounds'%n)
+	try:import playbook_map as j;j.update_ledger(A,j.round_view(A,I))
+	except Exception as X:print('יומן הסבבים לא נרשם (%s). להריץ playbook_map.py rounds'%X)
+	try:import round_metrics as k;k.update(A,k.entry(A,Q,D,with_outcome=I is not None and B is not None and D>F))
+	except Exception as X:print('נתוני המדידה לא נרשמו (%s)'%X)
 	return write_checked(C,A)
 def infer_paper_type(st,texts):
 	C=texts;A=st.setdefault('meta',{})
