@@ -83,12 +83,15 @@ def _folders(data_dir,profile,templates):
 	B=[{'name':A,'kind':'agreements','count':B}for(A,B)in C.items()]+B
 	if G or(A/TEMPLATES_DIR).is_dir():B.append({'name':TEMPLATES_DIR,'kind':'templates','count':len(G)})
 	L=A/'transactions';O=sum(1 for A in L.iterdir()if A.is_dir())if L.is_dir()else 0;B.append({'name':A.name,'kind':'workspace','count':O});return B
+def plugin_version():
+	try:return _s(json.loads((LIB.parent/'.claude-plugin'/'plugin.json').read_text(encoding='utf-8')).get('version'))
+	except(OSError,ValueError,AttributeError):return''
 def shell_data(data_dir,products=(BASE,),today=None,start=None):
 	C=products;B=data_dir;B=Path(B);A=_json(B/PROFILE);A=A if isinstance(A,dict)else{};C=_uniq([_s(A).lower()for A in C if _s(A)])or[BASE]
 	if BASE not in C:C.insert(0,BASE)
 	E=find_templates(B);D=_s(A.get('organization_name'))or _s(A.get('organization_name_en'))
 	if not D:F=(_json(B/'clm-data.json')or{}).get('meta')or{};D=_s(F.get('company'))if isinstance(F,dict)else''
-	return{'company':D,'lang':_lang(A),'today':_s(today)or _dt.date.today().isoformat(),'products':C,'folders':_folders(B,A,E),'templates':E,'people':_people(A),'org':_org(A),'start':_s(start)or'','built_at':_dt.datetime.now().replace(microsecond=0).isoformat(timespec='minutes')}
+	return{'company':D,'lang':_lang(A),'today':_s(today)or _dt.date.today().isoformat(),'products':C,'folders':_folders(B,A,E),'templates':E,'people':_people(A),'org':_org(A),'start':_s(start)or'','built_at':_dt.datetime.now().replace(microsecond=0).isoformat(timespec='minutes'),'built_with':plugin_version()}
 def inject(html,data):
 	A=json.dumps(data,ensure_ascii=False,separators=(',',':'));A=A.replace('</','<\\/').replace('<!--','<\\!--').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
 	if html.count(MARKER)!=1:raise ValueError('התבנית אינה מכילה את הסמן %s פעם אחת בדיוק'%MARKER)

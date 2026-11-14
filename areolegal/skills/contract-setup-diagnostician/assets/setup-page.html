@@ -708,7 +708,7 @@ function render(keep){
       '<div class="paths">'+
       '<button type="button" class="path" data-pbpath="agreements"><span class="ic">1</span><span><b>מההסכמים שלנו</b><span>הכי מדויק. מחברים תיקייה עם הסכמים מאותו סוג, רצוי 20 ומעלה, ואנחנו לומדים מהם את העמדות שלכם.</span></span></button>'+
       (MARKET_ON?'<button type="button" class="path" data-pbpath="market"><span class="ic">2</span><span><b>לפי המקובל בשוק</b><span>כשאין לכם הסכמים מהסוג הזה. נבנה טיוטה מהסכמים שפורסמו ומהרגולציה, ממקורות מאושרים בלבד. כל עמדה מסומנת כהמלצה של Areo.</span></span></button>':'')+
-      '<button type="button" class="path" data-pbpath="upload"><span class="ic">3</span><span><b>יש לנו מדיניות, נעלה אותה</b><span>נהפוך אותה לפלייבוק עובד בלי לשנות אף עמדה, ונסמן רק מה שחסר או סותר.</span></span></button>'+
+      '<button type="button" class="path" data-pbpath="upload"><span class="ic">'+(MARKET_ON?3:2)+'</span><span><b>יש לנו מדיניות, נעלה אותה</b><span>נהפוך אותה לפלייבוק עובד בלי לשנות אף עמדה, ונסמן רק מה שחסר או סותר.</span></span></button>'+
       '</div><div class="actions"><button type="button" class="btn ghost" data-jump="pb_people">חזרה</button><span></span></div></section>';
   }
   else if(S.step==='pb_kind'){
