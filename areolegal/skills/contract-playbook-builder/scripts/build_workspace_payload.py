@@ -6,6 +6,7 @@ sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 import areo_lib,basis_line,evidence_kind as E,voice_scrub
 from common.cli import OutputRefused,guard_out
 from playbook import approval_sheet as A
+from playbook import kit_view as KV
 from playbook import status as S
 LIGHTS='green','yellow','red'
 ORIGIN_TO_PATH={'own':'own','own_plus_market':'own_plus_market','market_built':'market_built'}
@@ -143,69 +144,71 @@ def light(obj,rule_id,color,lang='he'):
 		if isinstance(I,dict)and I.get('text'):C['fallback_wording']={'text':I['text'],'source':I.get('source')or''}
 	return C or None
 def build_rules(m,cites,lang='he',extract=None):
-	g=extract;R=lang;Q=cites;S,h=[],set();q={A.get('source_id'):A for A in m.get('source_log')or[]if isinstance(A,dict)};r=E.doc_index(g)if g else{};s=E.party_names(m);t=pick(m,'company_name')or'';u={A.get('rule_id')for A in m.get('rules')or[]if isinstance(A,dict)}
+	g=extract;R=cites;K=lang;S,h=[],set();r={A.get('source_id'):A for A in m.get('source_log')or[]if isinstance(A,dict)};s=E.doc_index(g)if g else{};t=E.party_names(m);u=pick(m,'company_name')or'';v={A.get('rule_id')for A in m.get('rules')or[]if isinstance(A,dict)}
 	for A in m.get('rules')or[]:
 		D=pick(A,'rule_id','id')
 		if not D:warn('כלל בלי rule_id נדלג');continue
 		if D in h:warn('rule_id כפול: %s'%D)
-		h.add(D);T=A.get('policy_rationale')or{};B={'id':D,'topic':(pick(A,'topic_name_en')if R=='en'else None)or pick(A,'topic_name','topic')or D,'issue':(pick(A,'clause_issue_en')if R=='en'else None)or pick(A,'clause_issue')or''}
+		h.add(D);T=A.get('policy_rationale')or{};B={'id':D,'topic':(pick(A,'topic_name_en')if K=='en'else None)or pick(A,'topic_name','topic')or D,'issue':(pick(A,'clause_issue_en')if K=='en'else None)or pick(A,'clause_issue')or''}
 		for(U,V)in(('num','clause_number'),('kind','clause_kind'),('they','counterparty_objective'),('pb','playbook_id'),('conf','confidence'),('why','why_address_topic'),('reg','regulatory_status'),('policy','policy_status'),('topic_en','topic_name_en')):
 			I=pick(A,V)
 			if I is not None:B[U]=I
+		i=KV.view(A,K)
+		if i:B['kit']=i
 		if A.get('walk_away')is True:B['walk_away']=True
 		if A.get('client_concern')is True:B['client_concern']=True
-		i,v=E.rationale_complete(A);B['rationale_complete']=i
-		if T and i:B['rat']=T
-		elif T:B['rat_hidden']=v
-		W={};j=A.get('traffic_light')or A.get('tl')or{}
+		j,w=E.rationale_complete(A);B['rationale_complete']=j
+		if T and j:B['rat']=T
+		elif T:B['rat_hidden']=w
+		W={};k=A.get('traffic_light')or A.get('tl')or{}
 		for J in LIGHTS:
-			X=light(j.get(J),D,J,R)
-			if X:wording_checks(X,j.get(J)or{},D,J,s,t);W[J]=X
+			X=light(k.get(J),D,J,K)
+			if X:wording_checks(X,k.get(J)or{},D,J,t,u);W[J]=X
 		if W:B['tl']=W
-		K=A.get('proposed_clause')or{}
-		if K:B['clause']=pick(K,'he','en')or'';B['clause_en']=K.get('en')or'';B['clause_lang']=K.get('source_language')or''
+		L=A.get('proposed_clause')or{}
+		if L:B['clause']=pick(L,'he','en')or'';B['clause_en']=L.get('en')or'';B['clause_lang']=L.get('source_language')or''
 		Y=[]
-		for L in A.get('legal_basis_layers')or[]:
-			if L.get('statute'):Y.append({'law':L.get('statute')or'','ref':L.get('section')or'','meaning':first_line(pick(L,'meaning','effect')or'',220)})
+		for M in A.get('legal_basis_layers')or[]:
+			if M.get('statute'):Y.append({'law':M.get('statute')or'','ref':M.get('section')or'','meaning':first_line(pick(M,'meaning','effect')or'',220)})
 		if Y:B['norms']=Y
 		Z=[]
 		for F in A.get('related_clause_impacts')or A.get('related_clauses')or A.get('impacts')or[]:
-			M=pick(F,'related_rule_id','rule_id','ref')or''
-			if not M or M==A.get('rule_id')or M not in u or not(pick(F,'impact','relation','effect')or'').strip():continue
-			C=[A for A in F.get('evidence')or[]if isinstance(A,dict)and(A.get('quote')or'').strip()];k=pick(F,'direction')or'mutual';Z.append({'related_rule_id':M,'direction':k if k in('affects','affected_by','mutual')else'mutual','impact':pick(F,'impact','relation','effect')or'','action':pick(F,'action')or'','basis':'areo_proposal'if F.get('basis')=='areo_proposal'or not C else'corpus','evidence':[{'clause':A.get('clause_ref')or'','quote':first_line(A.get('quote')or'',400),'count':A.get('count')or 1}for A in C[:2]]})
+			N=pick(F,'related_rule_id','rule_id','ref')or''
+			if not N or N==A.get('rule_id')or N not in v or not(pick(F,'impact','relation','effect')or'').strip():continue
+			C=[A for A in F.get('evidence')or[]if isinstance(A,dict)and(A.get('quote')or'').strip()];l=pick(F,'direction')or'mutual';Z.append({'related_rule_id':N,'direction':l if l in('affects','affected_by','mutual')else'mutual','impact':pick(F,'impact','relation','effect')or'','action':pick(F,'action')or'','basis':'areo_proposal'if F.get('basis')=='areo_proposal'or not C else'corpus','evidence':[{'clause':A.get('clause_ref')or'','quote':first_line(A.get('quote')or'',400),'count':A.get('count')or 1}for A in C[:2]]})
 		if Z:B['impacts']=Z
-		l=[B for B in A.get('related_rule_ids')or[]if B and B!=A.get('rule_id')]
-		if l:B['rel']=l
+		n=[B for B in A.get('related_rule_ids')or[]if B and B!=A.get('rule_id')]
+		if n:B['rel']=n
 		G=A.get('presence_rule')or A.get('presence')
 		if isinstance(G,dict)and G:B['presence']={'requirement':pick(G,'requirement')or'','missing_clause_color':pick(G,'missing_clause_color')or''}
 		elif isinstance(G,str)and G:B['presence']={'requirement':G,'missing_clause_color':''}
 		else:warn('%s: אין presence_rule. הסינון לפי נחיצות הסעיף לא יראה אותו'%D)
 		a=A.get('activation_conditions')
 		if isinstance(a,list)and a:B['trig']={'he':[str(A)for A in a],'en':[]}
-		b,n=[],{}
+		b,o=[],{}
 		for c in A.get('evidence')or[]:
-			N=src_id(pick(c,'source_ref','source_id'))
-			if not N or N in n:continue
-			n[N]=True;b.append({'source_id':N,'weight':pick(c,'weight')or'','note':pick(c,'note','tag')or''})
+			O=src_id(pick(c,'source_ref','source_id'))
+			if not O or O in o:continue
+			o[O]=True;b.append({'source_id':O,'weight':pick(c,'weight')or'','note':pick(c,'note','tag')or''})
 		if b:B['ev']=b
-		B['ec']=E.derived_counts(A,m.get('source_log')or[]);O=A.get('fallback_origin')or{}
-		if isinstance(O,dict)and O:
-			P={A:basis_line.fallback_label(O,m,A)for A in('he','en')}
-			if P['he']or P['en']:B['fallback_origin']={'label_he':P['he'],'label_en':P['en'],'baseline':O.get('baseline')or''}
+		B['ec']=E.derived_counts(A,m.get('source_log')or[]);P=A.get('fallback_origin')or{}
+		if isinstance(P,dict)and P:
+			Q={A:basis_line.fallback_label(P,m,A)for A in('he','en')}
+			if Q['he']or Q['en']:B['fallback_origin']={'label_he':Q['he'],'label_en':Q['en'],'baseline':P.get('baseline')or''}
 		for C in A.get('evidence')or[]:
-			o=pick(C,'evidence_id','id')or'c%d'%(len(Q)+1);d=pick(C,'track')
-			if not d:warn('%s: ראיה %s בלי track, לא תיספר באחוז'%(D,o))
-			e=pick(C,'source_ref','source_id')or'';H={'id':o,'rules':[D],'src':src_id(e),'text':pick(C,'quote','text')or'','ref':pick(C,'clause_ref','ref')or'','tag':pick(C,'tag')or'','side':pick(C,'side')or'pro'}
+			p=pick(C,'evidence_id','id')or'c%d'%(len(R)+1);d=pick(C,'track')
+			if not d:warn('%s: ראיה %s בלי track, לא תיספר באחוז'%(D,p))
+			e=pick(C,'source_ref','source_id')or'';H={'id':p,'rules':[D],'src':src_id(e),'text':pick(C,'quote','text')or'','ref':pick(C,'clause_ref','ref')or'','tag':pick(C,'tag')or'','side':pick(C,'side')or'pro'}
 			if d:H['track']=d
 			if'#'in e:H['para']=e
 			for(U,V)in(('weight','weight'),('segment_id','segment_id')):
 				I=pick(C,V)
 				if I:H[U]=I
-			f=q.get(H['src'])or{};H['ev_kind']=E.ev_kind(C,f,E.doc_for_source(f,r));p=pick(C,'paper')or f.get('paper')
-			if p in('ours','theirs'):H['paper']=p
-			Q.append(H)
+			f=r.get(H['src'])or{};H['ev_kind']=E.ev_kind(C,f,E.doc_for_source(f,s));q=pick(C,'paper')or f.get('paper')
+			if q in('ours','theirs'):H['paper']=q
+			R.append(H)
 		S.append(B)
-	prune_constants(S,Q);return S
+	prune_constants(S,R);return S
 def wording_checks(one,raw,rid,color,names,company):
 	H=company;G=names;D=raw;A=one;C=A.get('clause')or'';I=E.detect_lang(C)
 	if I:A['clause_lang']=I
@@ -298,7 +301,7 @@ def approval_flags(m,rules,cells,st):
 			if H:B['slots']=H
 _GLOSSARY_HE=[(re.compile('(?<![א-ת])(ו?[בלמשכ]?)ה?קורפוס(?![א-ת])'),lambda m:m.group(1)+('הסכמים'if m.group(1)else'ההסכמים')),(re.compile('(?<![א-ת])([ושהכלב]{0,2})נגזר(ה|ת|ים|ות)? מ(ה?)'),lambda m:'%sמבוסס%s על %s'%(m.group(1),{'ה':'ת','ת':'ת'}.get(m.group(2)or'',m.group(2)or''),'ה'if m.group(3)else'')),(re.compile('(?<![א-ת])([ושהכלב]{0,2})נגזר(ה|ת|ים|ות)?(?![א-ת])'),lambda m:'%sמבוסס%s'%(m.group(1),{'ה':'ת','ת':'ת'}.get(m.group(2)or'',m.group(2)or''))),(re.compile('(?<![א-ת])טעונה (אישור|בדיקה)'),lambda m:'ממתינה ל'+m.group(1)),(re.compile('(?<![א-ת])טעונות (אישור|בדיקה)'),lambda m:'ממתינות ל'+m.group(1)),(re.compile('(?<![א-ת])טעונים (אישור|בדיקה)'),lambda m:'ממתינים ל'+m.group(1)),(re.compile('(?<![א-ת])טעון (אישור|בדיקה)'),lambda m:'ממתין ל'+m.group(1)),(re.compile('(?<![א-ת])הטעונים (אישור|בדיקה)'),lambda m:'הממתינים ל'+m.group(1)),(re.compile('(?<![א-ת])הטעונות (אישור|בדיקה)'),lambda m:'הממתינות ל'+m.group(1)),(re.compile('(?<![א-ת])(ה?)מסלולים(?![א-ת])'),lambda m:m.group(1)+'עמדות'),(re.compile('(?<![א-ת])(ו?[בלמשכ]?ה?)מסלול(?![א-ת])'),lambda m:m.group(1)+'עמדה')]
 _GLOSSARY_EN=[(re.compile('\x08corpus\x08',re.I),'agreements'),(re.compile('\x08derived from\x08',re.I),'based on'),(re.compile('\x08needs approval\x08',re.I),'awaiting approval')]
-_SKIP={'id','rule_id','src','source_id','source_ref','refs','related_rule_id','rules','seg','segment_id','item_id','evidence','ev','quote','text','basis_refs','market_source_ids','supports','pb','source','baseline','clause','clause_en','clause_lang','fallback_wording','slots','url','path','loc','proposed_clause','family_id','playbook_id','ls_key','slug','h'}
+_SKIP={'kit','kit_labels','id','rule_id','src','source_id','source_ref','refs','related_rule_id','rules','seg','segment_id','item_id','evidence','ev','quote','text','basis_refs','market_source_ids','supports','pb','source','baseline','clause','clause_en','clause_lang','fallback_wording','slots','url','path','loc','proposed_clause','family_id','playbook_id','ls_key','slug','h'}
 def voice_text(s,lang='he'):
 	import html as C
 	if not isinstance(s,str)or not s:return s
@@ -347,10 +350,12 @@ def _old_evidence_as_objects(m):
 		if isinstance(A,dict)and isinstance(A.get('evidence'),list)and any(not isinstance(A,dict)for A in A['evidence']):A['evidence']=[A if isinstance(A,dict)else{'quote':str(A)}for A in A['evidence']if A not in(None,'')]
 	return m
 def convert(m,lang='he',model_path=None,profile=None,extract=None):
-	C=extract;B=model_path;A=lang;m=_old_evidence_as_objects(m);H=[];F,M=build_sources(m)
-	if C is None and B:C=E.find_extract(m,B)
-	if not C:warn('אין קובץ חילוץ (--extract): סיווג הראיה של הציטוטים (ev_kind) הוא unknown')
-	D=build_rules(m,H,A,C);N={A['id']:A for A in D};I=S.record_cells_for(m,B)if B else{};J=S.derive_status(m,I,lang=A);approval_flags(m,D,I,J);G=build_meta(m,A,J,profile);G['gaps']=build_gaps(m,D,A);G['sources_counted']={'agreements':sum(1 for A in F.values()if A.get('is_agreement')),'non_agreements':sum(1 for A in F.values()if A.get('kind')=='internal'and not A.get('is_agreement'))};K={'meta':G,'scope':scope_block(m,A),'sources':F,'friendly':M,'rules':D,'cites':H,'segments':build_segments(m,N,A),'precedents':m.get('previous_agreements_where_language_accepted')or[],'templateFindings':build_findings(m),'queue':build_queue(m)}
+	D=extract;C=model_path;A=lang;m=_old_evidence_as_objects(m);H=[];G,M=build_sources(m)
+	if D is None and C:D=E.find_extract(m,C)
+	if not D:warn('אין קובץ חילוץ (--extract): סיווג הראיה של הציטוטים (ev_kind) הוא unknown')
+	B=build_rules(m,H,A,D);N={A['id']:A for A in B};I=S.record_cells_for(m,C)if C else{};J=S.derive_status(m,I,lang=A);approval_flags(m,B,I,J);F=build_meta(m,A,J,profile);F['gaps']=build_gaps(m,B,A)
+	if any(A.get('kit')for A in B):F['kit_labels']=KV.LABELS['en'if A=='en'else'he']
+	F['sources_counted']={'agreements':sum(1 for A in G.values()if A.get('is_agreement')),'non_agreements':sum(1 for A in G.values()if A.get('kind')=='internal'and not A.get('is_agreement'))};K={'meta':F,'scope':scope_block(m,A),'sources':G,'friendly':M,'rules':B,'cites':H,'segments':build_segments(m,N,A),'precedents':m.get('previous_agreements_where_language_accepted')or[],'templateFindings':build_findings(m),'queue':build_queue(m)}
 	for(O,L)in(('reg',m.get('regulatory_research')),('commercial',m.get('commercial')),('coverage',m.get('coverage')),('market',build_market(m)),('playbooks',build_playbooks(m)),('external_sources',m.get('external_sources')),('external_sources_table',m.get('external_sources_table')),('assumptions',m.get('assumptions')),('departments',build_departments(m)),('cross',m.get('cross_family_links'))):
 		if L:K[O]=L
 	return finish_payload(_scrub_payload(K,m,A),A)

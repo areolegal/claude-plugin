@@ -519,8 +519,23 @@ def fallback_findings(model):
 		if not isinstance(L,dict):continue
 		if not any(A in U for A in L.get('mapped_rule_ids')or[]):_f(F,'CONCERN_UNMAPPED','warning','חשש של הלקוח ("%s") בלי כלל בפלייבוק: מפה אותו לכלל, או רשום אותו בשאלות הפתוחות.'%str(L.get('text')or'')[:60])
 	return F
+def decision_kit_findings(model,core=None):
+	'ערכת ההכרעה (ענבל, 15.11.2026): הבדיקות המהותיות במודל, התקציב בגרעין, וזהות הגרעין למודל.\n    במודל מגרסה 3.4 ואילך הערכה חובה בכלל מהותי; במודל ישן חסר הוא אזהרה (תאימות לאחור).';D=model;from playbook import decision_kit as B;C=[]
+	for A in D.get('rules')or():
+		if not isinstance(A,dict):continue
+		for(H,I,J)in B.kit_findings(A,D):_f(C,'kit_'+I,H,J,rule_id=A.get('rule_id'))
+		E=B.core_kit(A)
+		if E and B.kit_words(E)>B.KIT_WORD_BUDGET:_f(C,'kit_budget','warning','the decision kit is %d words in the core (budget about %d)'%(B.kit_words(E),B.KIT_WORD_BUDGET),rule_id=A.get('rule_id'))
+	if isinstance(core,dict):
+		F={A.get('id'):A for A in core.get('clauses')or()if isinstance(A,dict)}
+		for A in D.get('rules')or():
+			if not isinstance(A,dict)or A.get('rule_id')not in F:continue
+			K=F[A['rule_id']];L=B.core_kit(A);G=K.get('decision_kit')or{}
+			if L!=G:_f(C,'kit_core_drift','error','the decision kit in the core differs from the model: rebuild the core',rule_id=A.get('rule_id'))
+			for M in B.check_core_kit(G):_f(C,'kit_core_schema','error',M,rule_id=A.get('rule_id'))
+	return C
 def validate(model,core=None,index_entry=None,check_wording=True,inventory=None,extract=None,approved_sources=None):
-	c=index_entry;K=core;B=model;A=coverage_findings(B,inventory=inventory,extract=extract);A+=coverage_ledger_findings(B);A+=department_findings(B);A+=source_findings(B,approved_sources);A+=case_law_findings(B,K);A+=jurisdiction_findings(B);A+=no_source_findings(B);A+=position_source_findings(B);A+=sufficiency_findings(B);A+=rationale_findings(B);A+=fallback_findings(B);D=B.get('rules')or[];T={A.get('id')or A.get('rule_id'):A for A in(K or{}).get('clauses')or[]};N=[A for A in D if bool(_core_val(A,T,'walk_away'))]
+	c=index_entry;G=core;B=model;A=coverage_findings(B,inventory=inventory,extract=extract);A+=coverage_ledger_findings(B);A+=department_findings(B);A+=source_findings(B,approved_sources);A+=case_law_findings(B,G);A+=jurisdiction_findings(B);A+=no_source_findings(B);A+=position_source_findings(B);A+=sufficiency_findings(B);A+=rationale_findings(B);A+=fallback_findings(B);A+=decision_kit_findings(B,G);D=B.get('rules')or[];T={A.get('id')or A.get('rule_id'):A for A in(G or{}).get('clauses')or[]};N=[A for A in D if bool(_core_val(A,T,'walk_away'))]
 	if D and len(N)==len(D):_f(A,'WALKAWAY_ALL','error','כל %d הכללים מסומנים שובר עסקה: אין מרחב ויתור. שובר עסקה רק לשובר עסקה אמיתי.'%len(D))
 	for C in N:
 		if _imp(C)!='critical':_f(A,'WALKAWAY_NOT_CRITICAL','error','שובר עסקה בכלל בחשיבות "%s".'%_imp(C),C['rule_id'])
@@ -534,30 +549,30 @@ def validate(model,core=None,index_entry=None,check_wording=True,inventory=None,
 	for C in D:
 		e=C.get('traffic_light')or{};U,f=e.get('green')or{},e.get('yellow')or{}
 		if U.get('position')and U['position'].strip()==(f.get('position')or'').strip():_f(A,'YELLOW_EQUALS_GREEN','error','הצהוב זהה לירוק: אין מרחב ויתור.',C['rule_id'])
-		G=f.get('fallback_wording');G=G.get('text')if isinstance(G,dict)else G;F=U.get('proposed_clause');F=F.get('he')or F.get('en')if isinstance(F,dict)else F
-		if G and F and G.strip()==F.strip():_f(A,'FALLBACK_EQUALS_GREEN','error','נוסח הנסיגה זהה לנוסח הירוק.',C['rule_id'])
-		for(_,H,V)in _iter_tracks(C):
-			if V.get('protects_main_role')is False:_f(A,'YELLOW_WORSENS_MAIN_ROLE','error','המסלול %s סומן כפוגע בתפקיד העיקרי של החברה.'%H,C['rule_id'],H)
+		H=f.get('fallback_wording');H=H.get('text')if isinstance(H,dict)else H;F=U.get('proposed_clause');F=F.get('he')or F.get('en')if isinstance(F,dict)else F
+		if H and F and H.strip()==F.strip():_f(A,'FALLBACK_EQUALS_GREEN','error','נוסח הנסיגה זהה לנוסח הירוק.',C['rule_id'])
+		for(_,I,V)in _iter_tracks(C):
+			if V.get('protects_main_role')is False:_f(A,'YELLOW_WORSENS_MAIN_ROLE','error','המסלול %s סומן כפוגע בתפקיד העיקרי של החברה.'%I,C['rule_id'],I)
 			if t and V.get('position'):
-				if len(O)<2:_f(A,'ROLE_EFFECT_MISSING','error','לחברה יותר מתפקיד אחד בהסכם, ונמצאה שורת השפעה לתפקיד אחד בלבד (%s) במסלול %s.'%(', '.join(O),H),C['rule_id'],H)
+				if len(O)<2:_f(A,'ROLE_EFFECT_MISSING','error','לחברה יותר מתפקיד אחד בהסכם, ונמצאה שורת השפעה לתפקיד אחד בלבד (%s) במסלול %s.'%(', '.join(O),I),C['rule_id'],I)
 				for g in O:
-					if not role_effect(V,g):_f(A,'ROLE_EFFECT_MISSING','error','חסרה שורת ההשפעה של התפקיד %s במסלול %s.'%(g,H),C['rule_id'],H)
+					if not role_effect(V,g):_f(A,'ROLE_EFFECT_MISSING','error','חסרה שורת ההשפעה של התפקיד %s במסלול %s.'%(g,I),C['rule_id'],I)
 	if check_wording:A+=wording_findings(B)
-	h=[('model',B),('core',K),('index',c)]
+	h=[('model',B),('core',G),('index',c)]
 	if isinstance(B.get('handoff'),dict):h.append(('handoff',B['handoff']))
 	for(W,P)in h:
 		if not P:continue
 		for i in S.DUAL_FIELDS:
 			if i in P:_f(A,'LABEL_DUAL_FIELD','error','%s.%s: שדה תווית כפול. התווית היחידה היא status_label, שנגזרת ב-status.derive_status.'%(W,i))
-	for(j,u)in S.label_findings(B,K,c):_f(A,j,'warning'if j=='LABEL_OLD_WORDING'else'error',u)
-	for(W,P)in(('model',B),('core',K)):
+	for(j,u)in S.label_findings(B,G,c):_f(A,j,'warning'if j=='LABEL_OLD_WORDING'else'error',u)
+	for(W,P)in(('model',B),('core',G)):
 		for X in _approver_paths(P or{}):_f(A,'APPROVER_FIELD','error','%s.%s: שדה מאשר או הסלמה. אין שרשרת אישורים: ויתור מעבר לצהוב או חציית אדום מוצגים למשתמש כ"נדרשת הכרעתך". החתימה של היועץ המשפטי על הגיליון נשארת.'%(W,X))
-	I=B.get('market_research')or{};Q=I.get('source_refs')or I.get('sources')or[];Y=(I.get('question')or{}).get('engagement_purpose')or(B.get('applicability')if isinstance(B.get('applicability'),dict)else{}).get('engagement_purpose')
+	J=B.get('market_research')or{};Q=J.get('source_refs')or J.get('sources')or[];Y=(J.get('question')or{}).get('engagement_purpose')or(B.get('applicability')if isinstance(B.get('applicability'),dict)else{}).get('engagement_purpose')
 	if Q and Y:
 		E={}
-		for J in Q:
-			if not J.get('engagement_purpose'):continue
-			k=J.get('template_family')or J.get('family')or J.get('source_id')or J.get('id');E[k]=E.get(k,True)and J['engagement_purpose']!=Y
+		for K in Q:
+			if not K.get('engagement_purpose'):continue
+			k=K.get('template_family')or K.get('family')or K.get('source_id')or K.get('id');E[k]=E.get(k,True)and K['engagement_purpose']!=Y
 		if E and all(E.values()):_f(A,'MARKET_SAMPLE_PURPOSE','error','כל משפחות המקורות ממטרת התקשרות אחרת ממטרת הפלייבוק (%s). נדרשת לפחות משפחה אחת ממטרה זהה.'%Y)
 		elif E and sum(E.values())*2>len(E):_f(A,'MARKET_SAMPLE_PURPOSE','warning','רוב משפחות המקורות (%d מתוך %d) ממטרת התקשרות אחרת: לשקלל או להוציא.'%(sum(E.values()),len(E)))
 	if Q:
@@ -566,15 +581,15 @@ def validate(model,core=None,index_entry=None,check_wording=True,inventory=None,
 		if not L:_f(A,'MARKET_NO_HOME_COUNTRY','warning','אין scope_summary.governing_laws[] ואין contracting_entity.incorporation_country מזוהה (%s): נדרש קוד (IL, GB-EAW, US-NY, DE) כדי לבדוק מקור שוק מתחום השיפוט.'%('חסר'if not str(R or'').strip()else R))
 		else:
 			v=any(_country_of(A.get('jurisdiction'))in L for A in Q)
-			if not v and not I.get('jurisdiction_note'):_f(A,'MARKET_NO_LOCAL_SOURCE','error','אין מקור שוק מ-%s, ואין jurisdiction_note שאומר זאת ("לא נמצא נוסח <הסוג> מ-<תחום השיפוט> שפורסם; העמדות התלויות בדין סומנו טעון בדיקה משפטית").'%', '.join(L))
+			if not v and not J.get('jurisdiction_note'):_f(A,'MARKET_NO_LOCAL_SOURCE','error','אין מקור שוק מ-%s, ואין jurisdiction_note שאומר זאת ("לא נמצא נוסח <הסוג> מ-<תחום השיפוט> שפורסם; העמדות התלויות בדין סומנו טעון בדיקה משפטית").'%', '.join(L))
 	Z=MC.counts(B)
 	if'counted'in Z:
-		l=I.get('disclosure')or{};w=[('market_research.disclosure.fixed_sentence',l.get('fixed_sentence')),('market_research.disclosure.chat_message',l.get('chat_message')),('meta.evidence_disclaimer',(B.get('meta')or{}).get('evidence_disclaimer'))]
+		l=J.get('disclosure')or{};w=[('market_research.disclosure.fixed_sentence',l.get('fixed_sentence')),('market_research.disclosure.chat_message',l.get('chat_message')),('meta.evidence_disclaimer',(B.get('meta')or{}).get('evidence_disclaimer'))]
 		for(x,y)in w:
 			for X in MC.count_claims(y or'',B):_f(A,'MARKET_COUNT_MISMATCH','error','%s: %s'%(x,X))
 		a=B.get('handoff')or{}
 		if isinstance(a.get('counted_sources'),int)and a['counted_sources']!=Z['counted']:_f(A,'MARKET_COUNT_MISMATCH','error','handoff.counted_sources=%d, ובספירה counted=%d'%(a['counted_sources'],Z['counted']))
-	for b in I.get('unverified_findings')or[]:
+	for b in J.get('unverified_findings')or[]:
 		m=' '.join(A for A in(b.get('label'),b.get('reason'))if A)
 		if re.search('(?<!\\d)1 מקורות|\\(\\s*\\)',m):_f(A,'UNVERIFIED_LABEL_FORMAT','error','התווית "%s": "מקור אחד (W..)", בלי סוגריים ריקים.'%m,b.get('rule_id'))
 	z=(B.get('regulatory_research')or{}).get('facts')or[];n=set()

@@ -94,18 +94,18 @@ def validate(data):
 			check_enum(A,B,'paper',(I or{}).get('paper'),'source.paper',required=False);A0=(C.get('meta')or{}).get('corpus_status')or(C.get('scope')or{}).get('corpus_status');A1=A0=='unknown'or(I or{}).get('doc_role')in('form','template')
 			if not(I or{}).get('paper')and not A1:A.warn(B,'paper חסר. לא יוצג אם ההסכם על הנייר שלנו או של הצד שכנגד')
 	V=set();P=set(A.get('id')for A in C.get('rules')or[])
-	for(F,G)in enumerate(C.get('cites')or[]):
-		B='cites[%d]'%F;J=G.get('id')
+	for(F,H)in enumerate(C.get('cites')or[]):
+		B='cites[%d]'%F;J=H.get('id')
 		if not J:A.err(B,'id חסר')
 		if J in V:A.err(B,'מזהה הציטוט %r חוזר'%J)
 		V.add(J)
-		if not G.get('text'):A.err(B,'text חסר. הערת השוליים תיפתח ריקה')
-		T=str(G.get('src')or'').split('#')[0]
-		if T and T not in K:A.err(B,'src %r אינו קיים ב-sources. הציטוט לא ישויך לאף מקור'%G['src'])
-		elif T and T!=G['src']:A.warn(B,'src %r כולל עוגן פסקה. התבנית מחפשת את המקור לפי %r בלבד: העוגן נשמר ב-para (build_workspace_payload.py)'%(G['src'],T))
-		check_enum(A,B,'side',G.get('side'),'cite.side',required=False);check_enum(A,B,'track',G.get('track'),'cite.track',required=False)
-		if not G.get('track'):A.warn(B,'track חסר. הציטוט לא ישויך לעמדה, ולא ייכנס לספירת ההסכמים ולאחוז שמוצגים בה. ראיה הקשרית מסומנת context')
-		for D in G.get('rules')or[]:
+		if not H.get('text'):A.err(B,'text חסר. הערת השוליים תיפתח ריקה')
+		T=str(H.get('src')or'').split('#')[0]
+		if T and T not in K:A.err(B,'src %r אינו קיים ב-sources. הציטוט לא ישויך לאף מקור'%H['src'])
+		elif T and T!=H['src']:A.warn(B,'src %r כולל עוגן פסקה. התבנית מחפשת את המקור לפי %r בלבד: העוגן נשמר ב-para (build_workspace_payload.py)'%(H['src'],T))
+		check_enum(A,B,'side',H.get('side'),'cite.side',required=False);check_enum(A,B,'track',H.get('track'),'cite.track',required=False)
+		if not H.get('track'):A.warn(B,'track חסר. הציטוט לא ישויך לעמדה, ולא ייכנס לספירת ההסכמים ולאחוז שמוצגים בה. ראיה הקשרית מסומנת context')
+		for D in H.get('rules')or[]:
 			if D not in P:A.err(B,'מפנה לכלל %r שאינו קיים'%D)
 	A2=set(A.get('segment_id')for A in C.get('segments')or[])
 	for(F,I)in enumerate(C.get('segments')or[]):
@@ -127,29 +127,29 @@ def validate(data):
 		for q in d:
 			if q not in o:A.err('books[%s]'%q,'ספר שאין לו שורה ב-playbooks, ולכן אין אליו מעבר בבורר')
 	r=set()
-	for G in C.get('cites')or[]:
-		if G.get('track'):
-			for D in G.get('rules')or[]:r.add((D,G['track']))
+	for H in C.get('cites')or[]:
+		if H.get('track'):
+			for D in H.get('rules')or[]:r.add((D,H['track']))
 	s=set()
-	for(F,H)in enumerate(C.get('rules')or[]):
-		D=H.get('id')or'?';B='rules[%d] (%s)'%(F,D)
+	for(F,G)in enumerate(C.get('rules')or[]):
+		D=G.get('id')or'?';B='rules[%d] (%s)'%(F,D)
 		if D in s:A.err(B,'מזהה הכלל %r חוזר'%D)
-		s.add(D);check_enum(A,B,'kind',H.get('kind'),'rule.kind',required=False)
-		if not H.get('they'):A.warn(B,"they חסר. הכרטיס 'מה הצד שכנגד ירצה' לא יוצג, ועורך הדין יראה רק את הצד שלנו")
-		for(Q,Z)in enumerate(H.get('norms')or[]):
+		s.add(D);check_enum(A,B,'kind',G.get('kind'),'rule.kind',required=False)
+		if not G.get('they')and not(G.get('kit')or{}).get('cp'):A.warn(B,"they חסר. הכרטיס 'מה הצד שכנגד ירצה' לא יוצג, ועורך הדין יראה רק את הצד שלנו")
+		for(Q,Z)in enumerate(G.get('norms')or[]):
 			for E in('law','ref','meaning'):
 				if not Z.get(E):A.err('%s norms[%d]'%(B,Q),'%s חסר. שורת המקור הנורמטיבי תוצג חלקית'%E)
-		if not H.get('kind'):A.warn(B,'kind חסר. הסעיף לא ישויך למשפטי או למסחרי, והסינון לפי סוג הסעיף לא יראה אותו')
+		if not G.get('kind'):A.warn(B,'kind חסר. הסעיף לא ישויך למשפטי או למסחרי, והסינון לפי סוג הסעיף לא יראה אותו')
 		for f in LIGHTS:
-			R=(H.get('tl')or{}).get(f)or{}
+			R=(G.get('tl')or{}).get(f)or{}
 			if(D,f)in r or R.get('basis')or R.get('label'):continue
 			A.warn(B,'אין ציטוט משויך לעמדה ה%s ואין לה מקור מוצהר. היא תוצג כהנחה של המערכת ולא כראיה מהתיקייה'%{'green':'ירוקה','yellow':'צהובה','red':'אדומה'}[f])
 		for E in('id','topic','issue'):
-			if not H.get(E):A.err(B,'השדה %r חסר, והוא שדה חובה בכרטיס הכלל'%E)
-		g=H.get('presence')or{}
+			if not G.get(E):A.err(B,'השדה %r חסר, והוא שדה חובה בכרטיס הכלל'%E)
+		g=G.get('presence')or{}
 		if g.get('requirement')=='Recommended':A.warn(B+'.presence','requirement Recommended הוא ערך ישן, והסינון לפי נחיצות הסעיף לא יראה אותו. הערכים: Required, Optional, Conditional, Prohibited')
 		else:check_enum(A,B+'.presence','requirement',g.get('requirement'),'presence.requirement')
-		check_enum(A,B+'.presence','missing_clause_color',g.get('missing_clause_color'),'presence.missing_clause_color');A4=H.get('tl')or{}
+		check_enum(A,B+'.presence','missing_clause_color',g.get('missing_clause_color'),'presence.missing_clause_color');A4=G.get('tl')or{}
 		for M in LIGHTS:
 			R=A4.get(M)
 			if not isinstance(R,dict):A.err(B,'הרמזור חסר את המצב %r. שלושת המצבים חובה בכל כלל'%M);continue
@@ -157,19 +157,19 @@ def validate(data):
 			h=R.get('crit')
 			if h is None:A.err('%s.tl.%s'%(B,M),'crit חסר. התבנית מצפה למערך קריטריונים')
 			elif not isinstance(h,list):A.err('%s.tl.%s'%(B,M),'crit חייב להיות מערך, ולא %s'%type(h).__name__)
-		check_enum(A,B,'conf',H.get('conf'),'rule.conf',required=False);A5=H.get('rat')or{};t=A5.get('rationale_status')
+		check_enum(A,B,'conf',G.get('conf'),'rule.conf',required=False);A5=G.get('rat')or{};t=A5.get('rationale_status')
 		if t is None:A.warn(B,'אין rationale_status. הנושא יוצג כטיוטה בסביבת העבודה')
 		else:check_enum(A,B+'.rat','rationale_status',t,'rat.rationale_status',required=False)
-		check_enum(A,B,'reg',H.get('reg'),'rule.reg',required=False)
-		for(Q,X)in enumerate(H.get('ev')or[]):
+		check_enum(A,B,'reg',G.get('reg'),'rule.reg',required=False)
+		for(Q,X)in enumerate(G.get('ev')or[]):
 			u='%s.ev[%d]'%(B,Q)
 			if X.get('source_id')and X['source_id']not in K:A.err(u,'source_id %r אינו קיים ב-sources'%X['source_id'])
 			check_enum(A,u,'weight',X.get('weight'),'ev.weight',required=False)
-		for v in H.get('rel')or[]:
+		for v in G.get('rel')or[]:
 			if v not in P:A.err(B,'rel מפנה לכלל %r שאינו קיים'%v)
-		for(Q,i)in enumerate(H.get('impacts')or[]):
+		for(Q,i)in enumerate(G.get('impacts')or[]):
 			if i.get('related_rule_id')and i['related_rule_id']not in P:A.err('%s.impacts[%d]'%(B,Q),'related_rule_id %r אינו קיים'%i['related_rule_id'])
-		for(Q,Y)in enumerate(H.get('variants')or[]):
+		for(Q,Y)in enumerate(G.get('variants')or[]):
 			w='%s.variants[%d]'%(B,Q)
 			if Y.get('seg')and Y['seg']not in A2:A.err(w,'seg %r אינו קיים ברשימת הסגמנטים'%Y['seg'])
 			A6=Y.get('tl')or{}
@@ -192,9 +192,9 @@ def validate(data):
 		if S.get('rule_id')and S['rule_id']!='GLOBAL'and S['rule_id']not in P:A.err(B,'rule_id %r אינו קיים'%S['rule_id'])
 		for D in S.get('rule_ids')or[]:
 			if D not in P:A.err(B,'rule_ids מפנה לכלל %r שאינו קיים'%D)
-	for(F,G)in enumerate(C.get('cross')or[]):
+	for(F,H)in enumerate(C.get('cross')or[]):
 		B='cross[%d]'%F
-		for D in G.get('rules')or[]:
+		for D in H.get('rules')or[]:
 			if D not in P:A.err(B,'צירוף מפנה לכלל %r שאינו קיים'%D)
 	x=C.get('friendly')or{}
 	for L in x:

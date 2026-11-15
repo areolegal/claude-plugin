@@ -173,6 +173,7 @@ COVERAGE_FILE='rule-coverage.json'
 RESULTS='applied_full','applied_partial','not_applied','not_applicable'
 ACTIONS='amend','keep','clarify'
 EQ_KEYS='protected_party','event','subject','conditions','duration','exceptions'
+EQ_KIT_KEYS='consequence','parameters'
 EQ_VALUES='same','broader','narrower','n/a'
 BASES='approved_policy','proposed_unapproved','new_recommendation'
 BODY_OPS='replace','replace_span','insert_paragraph','delete_paragraph'
@@ -230,10 +231,11 @@ def _plan_before_work(plan,work):
 		C=A.datetime.fromtimestamp(os.path.getctime(work),tz=A.timezone.utc)
 	except(TypeError,ValueError,OSError):return True
 	return B<=C+A.timedelta(seconds=2)
-def equivalence_problem(d):
+def eq_keys(rules=None,rids=()):A=any(((rules or{}).get(A)or{}).get('decision_kit')for A in rids);return EQ_KEYS+(EQ_KIT_KEYS if A else())
+def equivalence_problem(d,keys=EQ_KEYS):
 	A=d.get('equivalence')
 	if not isinstance(A,dict):return'חסר equivalence'
-	B=[B for B in EQ_KEYS if A.get(B)not in EQ_VALUES]
+	B=[B for B in keys if A.get(B)not in EQ_VALUES]
 	if B:return'equivalence חסר או לא תקין ב: %s (ערכים: %s)'%(', '.join(B),' | '.join(EQ_VALUES))
 def has_open_entry(d,state=None,doc=None):
 	A=doc;C=d.get('decision_required')
@@ -245,44 +247,44 @@ def has_open_entry(d,state=None,doc=None):
 			if isinstance(B,dict)and E&(set(B.get('decision_ids')or[])|set(B.get('clause_ids')or[])):return True
 	return False
 def check_coverage(plan,playbook,decisions,state=None,mode='send',work=None):
-	P=decisions;O=playbook;I=plan;X=mode!='work';F=[]
-	def B(code,msg,where=''):F.append(_f(code,msg,where,X and code in CODE_BLOCKING_COVERAGE))
-	K={rule_id(A):A for A in rules_of(O)}
-	if not K:return F
+	Q=decisions;P=playbook;I=plan;Y=mode!='work';F=[]
+	def B(code,msg,where=''):F.append(_f(code,msg,where,Y and code in CODE_BLOCKING_COVERAGE))
+	J={rule_id(A):A for A in rules_of(P)}
+	if not J:return F
 	if I is None:B('RULE_COVERAGE_PLAN_MISSING','אין תוכנית כיסוי לכללי הפלייבוק (rule-coverage.json). להריץ: playbook_map.py plan, למלא, ו-check-plan, לפני העריכה');return F
 	if work and not _plan_before_work(I,work):B('RULE_COVERAGE_PLAN_MISSING','תוכנית הכיסוי נוצרה אחרי קובץ העבודה: התוכנית באה לפני העריכה, ולא אחריה')
-	for L in check_plan(I,O):B(L['code'],L['message'],L['where'])
-	Q=_dlist(P);R={A['rule_id']:A for A in I.get('rules')or[]if isinstance(A,dict)and A.get('rule_id')}
-	for(C,E)in R.items():
-		M=[A for A in Q if C in(A.get('rule_ids')or[])];G=[A for A in M if A.get('op')in BODY_OPS];H=E.get('result')
+	for L in check_plan(I,P):B(L['code'],L['message'],L['where'])
+	R=_dlist(Q);S={A['rule_id']:A for A in I.get('rules')or[]if isinstance(A,dict)and A.get('rule_id')}
+	for(C,E)in S.items():
+		M=[A for A in R if C in(A.get('rule_ids')or[])];G=[A for A in M if A.get('op')in BODY_OPS];H=E.get('result')
 		if E.get('applies')is False:
 			if G:F.append(_f('RULE_NOT_APPLICABLE_BUT_EDITED','הכלל %s סומן כלא חל (%s), ויש הכרעות שמשנות נוסח: %s'%(C,E.get('applies_reason')or'-',', '.join(str(A.get('id'))for A in G)),C,False))
 			continue
 		if E.get('applies')is not True:continue
 		if H not in RESULTS:B('RULE_PLANNED_NOT_RESOLVED','הכלל %s (%s) תוכנן כחל וללא תוצאה רשומה (applied_full | applied_partial | not_applied | not_applicable). לרשום: playbook_map.py result'%(C,E.get('topic')or C),C);continue
 		if H in('applied_full','applied_partial'):
-			Y=any(A.get('op')=='comment_only'for A in M)
-			if not G and(E.get('action')!='keep'or Y):B('RULE_APPLIED_BY_COMMENT_ONLY','הכלל %s סומן %s, אבל ההכרעות שלו אינן משנות את גוף ההסכם (הערה בלבד). הערה אינה יישום: או תיקון בגוף, או not_applied'%(C,H),C)
+			Z=any(A.get('op')=='comment_only'for A in M)
+			if not G and(E.get('action')!='keep'or Z):B('RULE_APPLIED_BY_COMMENT_ONLY','הכלל %s סומן %s, אבל ההכרעות שלו אינן משנות את גוף ההסכם (הערה בלבד). הערה אינה יישום: או תיקון בגוף, או not_applied'%(C,H),C)
 			if H=='applied_full':
-				S=[A for A in M if isinstance(A.get('equivalence'),dict)and'narrower'in A['equivalence'].values()]
-				if S:B('RULE_PARTIAL_MARKED_FULL','הכלל %s סומן applied_full, אבל בהכרעה %s יש רכיב שקילות צר יותר מהפלייבוק (narrower). התוצאה היא applied_partial'%(C,', '.join(str(A.get('id'))for A in S)),C)
+				T=[A for A in M if isinstance(A.get('equivalence'),dict)and'narrower'in A['equivalence'].values()]
+				if T:B('RULE_PARTIAL_MARKED_FULL','הכלל %s סומן applied_full, אבל בהכרעה %s יש רכיב שקילות צר יותר מהפלייבוק (narrower). התוצאה היא applied_partial'%(C,', '.join(str(A.get('id'))for A in T)),C)
 		elif H=='not_applied'and G:B('RULE_PARTIAL_MARKED_FULL','הכלל %s סומן not_applied, אבל יש לו הכרעות שמשנות נוסח (%s)'%(C,', '.join(str(A.get('id'))for A in G)),C)
-	T=set()
-	for A in Q:
-		U=[A for A in A.get('rule_ids')or[]if A in R]
-		if not U or A.get('op')=='accept':continue
+	U=set()
+	for A in R:
+		N=[A for A in A.get('rule_ids')or[]if A in S]
+		if not N or A.get('op')=='accept':continue
 		D=A.get('id')
 		if A.get('op')in BODY_OPS:
-			V=equivalence_problem(A)
-			if V and D not in T:T.add(D);B('EQUIVALENCE_MISSING','ההכרעה %s משנה נוסח לפי כלל בפלייבוק, ו%s (שישה רכיבים: %s)'%(D,V,', '.join(EQ_KEYS)),str(D))
-		J=A.get('position_basis')
-		if J not in BASES:B('POSITION_BASIS_MISSING','בהכרעה %s חסר position_basis (%s)'%(D,' | '.join(BASES)),str(D))
+			V=eq_keys(J,N);W=equivalence_problem(A,V)
+			if W and D not in U:U.add(D);B('EQUIVALENCE_MISSING','ההכרעה %s משנה נוסח לפי כלל בפלייבוק, ו%s (רכיבים: %s)'%(D,W,', '.join(V)),str(D))
+		K=A.get('position_basis')
+		if K not in BASES:B('POSITION_BASIS_MISSING','בהכרעה %s חסר position_basis (%s)'%(D,' | '.join(BASES)),str(D))
 		else:
-			N,W=_offered_track(A)
-			if J=='approved_policy'and not all(rule_approved(K.get(A),N)for A in U if A in K):B('BASIS_APPROVAL_UNSUPPORTED','ההכרעה %s רשומה approved_policy, והפלייבוק אינו מסמן את העמדה (מסלול %s) כמאושרת (ingest_result.counts_as_approved או policy_status=Confirmed). אין להסיק אישור מתווית ירוק'%(D,N),str(D))
-			if J in('proposed_unapproved','new_recommendation')and not has_open_entry(A,state,P):B('APPROVAL_OPEN_MISSING','ההכרעה %s נשענת על עמדה שלא אושרה (%s) ואין לה רשומת הכרעה פתוחה (open_items). העבודה אינה נעצרת; ההכרעה נשארת פתוחה ללקוח'%(D,J),str(D))
-		N,W=_offered_track(A)
-		if W and not(str(A.get('departure_reason')or'').strip()or A.get('earlier_rejection')or A.get('user_instruction')):B('OPENING_DEPARTURE_UNEXPLAINED','ההכרעה %s מציעה עמדה שאינה עמדת הפתיחה (%s) בלי departure_reason (ובלי דחייה קודמת מתועדת או הנחיה). להסביר בדוח הפנימי'%(D,A.get('offered')or A.get('offered_now')or A.get('offered_track')),str(D))
+			O,X=_offered_track(A)
+			if K=='approved_policy'and not all(rule_approved(J.get(A),O)for A in N if A in J):B('BASIS_APPROVAL_UNSUPPORTED','ההכרעה %s רשומה approved_policy, והפלייבוק אינו מסמן את העמדה (מסלול %s) כמאושרת (ingest_result.counts_as_approved או policy_status=Confirmed). אין להסיק אישור מתווית ירוק'%(D,O),str(D))
+			if K in('proposed_unapproved','new_recommendation')and not has_open_entry(A,state,Q):B('APPROVAL_OPEN_MISSING','ההכרעה %s נשענת על עמדה שלא אושרה (%s) ואין לה רשומת הכרעה פתוחה (open_items). העבודה אינה נעצרת; ההכרעה נשארת פתוחה ללקוח'%(D,K),str(D))
+		O,X=_offered_track(A)
+		if X and not(str(A.get('departure_reason')or'').strip()or A.get('earlier_rejection')or A.get('user_instruction')):B('OPENING_DEPARTURE_UNEXPLAINED','ההכרעה %s מציעה עמדה שאינה עמדת הפתיחה (%s) בלי departure_reason (ובלי דחייה קודמת מתועדת או הנחיה). להסביר בדוח הפנימי'%(D,A.get('offered')or A.get('offered_now')or A.get('offered_track')),str(D))
 	return F
 def coverage_results_view(plan,pm_rules=None):
 	B={}
@@ -291,6 +293,25 @@ def coverage_results_view(plan,pm_rules=None):
 		if A.get('applies')is False and A.get('applies_reason'):B[A['rule_id']]=A.get('result')if A.get('result')in RESULTS else'not_applicable'
 		elif A.get('result')in RESULTS:B[A['rule_id']]=A['result']
 	return B
+def classify_params(rule,values):
+	from playbook import decision_kit as G;H={A.get('id'):A for A in((rule or{}).get('decision_kit')or{}).get('parameters')or()if isinstance(A,dict)};B=[]
+	for(E,F)in(values or{}).items():
+		C=H.get(E)
+		if C is None:B.append({'param':E,'value':F,'track':'unknown_param','step':None});continue
+		I,J=G.param_track(C,F);B.append({'param':E,'name':C.get('name'),'unit':C.get('unit'),'value':F,'track':I,'step':J})
+	D=[A['track']for A in B if A['track']!='unknown_param']
+	if not D:A=None
+	elif'red'in D:A='red'
+	elif'undecided'in D:A='undecided'
+	elif'yellow'in D:A='yellow'
+	else:A='green'
+	return{'rule_id':rule_id(rule or{}),'params':B,'track':A,'their_track_basis':'parameter'if A else None}
+def cmd_params(a):
+	C=_load(a.playbook,'הפלייבוק');A=next((A for A in rules_of(C)if rule_id(A)==a.rule),None)
+	if A is None:print('אין בפלייבוק כלל %s'%a.rule);return 2
+	try:D=json.loads(a.values)
+	except ValueError as E:print('--values אינו JSON: %s'%E);return 2
+	B=classify_params(A,D);print(json.dumps(B,ensure_ascii=False,indent=1));return 0 if all(A['track']!='unknown_param'for A in B['params'])else 1
 def _load(path,what,required=True):
 	A=path
 	if not A or not os.path.exists(A):
@@ -359,7 +380,7 @@ def cmd_rounds(a):
 	for D in A['changed_back_by_counterparty']:print('  סעיף מוסכם שהצד השני החזיר לאחור: %s (%s)'%(D['clause'],D['how']))
 	print('מטפלים רק ב: %s'%(', '.join(A['handle_only'])or'-'));update_ledger(C,A);return _save_state(a.deal,C)
 def main(argv=None):
-	sys.dont_write_bytecode=True;G=argparse.ArgumentParser(description=__doc__.split('\n')[0]);B=G.add_subparsers(dest='cmd',required=True)
+	sys.dont_write_bytecode=True;H=argparse.ArgumentParser(description=__doc__.split('\n')[0]);B=H.add_subparsers(dest='cmd',required=True)
 	for E in('build','check','annotate'):
 		A=B.add_parser(E);A.add_argument('--playbook',required=True,help='playbook-core.json או playbook-model.json');A.add_argument('--lang',choices=('he','en'),default='he');A.add_argument('--deal',help='תיקיית העסקה')
 		if E!='check':A.add_argument('--decisions',required=True)
@@ -367,5 +388,5 @@ def main(argv=None):
 		if E=='build':A.add_argument('--received',help='הטיוטה שהתקבלה (docx): לזיהוי סעיפים בהסכם בלי סעיף בפלייבוק')
 		if E!='annotate':A.add_argument('--mode',choices=('work','send'),default='send')
 		else:A.add_argument('--out')
-	F=B.add_parser('plan');F.add_argument('--playbook',required=True);F.add_argument('--deal',required=True);F.add_argument('--force',action='store_true');H=B.add_parser('check-plan');H.add_argument('--playbook',required=True);H.add_argument('--deal',required=True);D=B.add_parser('result');D.add_argument('--deal',required=True);D.add_argument('--rule',required=True);D.add_argument('--result',required=True,choices=RESULTS);D.add_argument('--reason');D.add_argument('--decision',action='append');C=B.add_parser('declare');C.add_argument('--deal',required=True);C.add_argument('--rule',required=True);C.add_argument('--outcome',required=True,choices=OUTCOMES);C.add_argument('--reason');C.add_argument('--para',type=int,action='append',help='פסקה בהסכם שהסעיף חל עליה (אפשר כמה)');C.add_argument('--track',choices=TRACKS);I=B.add_parser('rounds');I.add_argument('--deal',required=True);I.add_argument('--compare');J=G.parse_args(argv);return{'build':cmd_build,'declare':cmd_declare,'check':cmd_check,'annotate':cmd_annotate,'rounds':cmd_rounds,'plan':cmd_plan,'check-plan':cmd_check_plan,'result':cmd_result}[J.cmd](J)
+	F=B.add_parser('plan');F.add_argument('--playbook',required=True);F.add_argument('--deal',required=True);F.add_argument('--force',action='store_true');I=B.add_parser('check-plan');I.add_argument('--playbook',required=True);I.add_argument('--deal',required=True);D=B.add_parser('result');D.add_argument('--deal',required=True);D.add_argument('--rule',required=True);D.add_argument('--result',required=True,choices=RESULTS);D.add_argument('--reason');D.add_argument('--decision',action='append');C=B.add_parser('declare');C.add_argument('--deal',required=True);C.add_argument('--rule',required=True);C.add_argument('--outcome',required=True,choices=OUTCOMES);C.add_argument('--reason');C.add_argument('--para',type=int,action='append',help='פסקה בהסכם שהסעיף חל עליה (אפשר כמה)');C.add_argument('--track',choices=TRACKS);J=B.add_parser('rounds');J.add_argument('--deal',required=True);J.add_argument('--compare');G=B.add_parser('params');G.add_argument('--playbook',required=True,help='playbook-core.json');G.add_argument('--rule',required=True);G.add_argument('--values',required=True,help='JSON: {"<מזהה פרמטר>": <הערך בנוסח שלהם>}');K=H.parse_args(argv);return{'build':cmd_build,'declare':cmd_declare,'check':cmd_check,'annotate':cmd_annotate,'rounds':cmd_rounds,'plan':cmd_plan,'check-plan':cmd_check_plan,'result':cmd_result,'params':cmd_params}[K.cmd](K)
 if __name__=='__main__':sys.exit(main())

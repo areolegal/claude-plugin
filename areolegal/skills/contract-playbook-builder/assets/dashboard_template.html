@@ -3540,7 +3540,7 @@ function ruleCard(r){
       <div class="rulenum">${esc(rnum(r.id))}</div>
       <div style="flex:1;min-width:0">
         <h3><bdi>${esc(r.topic)}</bdi>${srcTag(r.topic)}</h3>
-        <div class="mut" style="font-size:12px"><bdi>${esc(r.issue)}</bdi></div>
+        ${kitOf(r).anatomy?'':`<div class="mut" style="font-size:12px"><bdi>${esc(r.issue)}</bdi></div>`}
         ${intRefs(r)}
         <div style="margin-top:7px">
           <span class="tag b">${esc(prsn(r.presence.requirement))}</span>
@@ -3554,6 +3554,7 @@ function ruleCard(r){
     </div>
     <div class="rulebody">
       ${noteGrid(r)}
+      ${kitBefore(r)}
       ${citesFor(r.id).length?`<div class="evbtn"><button class="btn ghost sm" onclick="openEvidence('${r.id}')">${T('דוגמאות מההסכמים שלכם')} · <span class="num">${citesFor(r.id).length}</span></button></div>`:''}
       ${citesFor(r.id).some(c=>!c.track)?`<div style="margin:12px 0"><span class="lbl" style="display:block;margin:0 0 5px">${T("המקור בהסכמים, מקורות שטרם שויכו לעמדה")}</span>${fnChips(r.id)}</div>`:''}
       <div class="lbl" style="margin:16px 0 8px">${T("העמדות")}</div>
@@ -3561,6 +3562,7 @@ function ruleCard(r){
         ${lightCard(effLight(r,'green'),'green',r)}
         ${lightCard(effLight(r,'yellow'),'yellow',r)}
         ${lightCard(effLight(r,'red'),'red',r)}</div>`}
+      ${kitAfter(r)}
       ${normsHtml(r)}
       ${relTable(r)}
       ${queueFor(r.id).length?`<div class="sep"></div>${queueFor(r.id).map(qItemHtml).join('')}`:''}
@@ -3590,14 +3592,57 @@ function noteGrid(r){
   const legal=rat.protected_interest_and_clause_purpose||rat.legal_risk_and_legal_framework||persp.legal_analysis||'';
   const comm=rat.business_operational_impact||persp.business_analysis||'';
   const cells=[
-    [T('במה עוסק הסעיף'), r.why||r.issue||''],
+    [T('במה עוסק הסעיף'), r.why||(kitOf(r).anatomy?'':r.issue)||''],
     [T('האינטרס שלנו'), [legal?(T('משפטי: ')+firstSent(legal)):'', comm?(T('מסחרי: ')+firstSent(comm)):''].filter(Boolean).join(' ')],
     [T('מה אנחנו רוצים'), effLight(r,'green').pos||''],
-    [T('מה הצד שכנגד ירצה'), r.they||'']
+    [T('מה הצד שכנגד ירצה'), kitOf(r).cp?'':(r.they||'')]
   ].filter(c=>c[1]);
   if(!cells.length) return '';
   return `<div class="grid g2">${cells.map(c=>
     `<div class="note2"><b>${c[0]}.</b> ${esc(c[1])}</div>`).join('')}</div>`;
+}
+/* ערכת ההכרעה (הערות ענבל, 4.11): אותם בלוקים, באותו סדר ובאותן תוויות כמו ב-Word ובלשונית המדיניות
+   (kit_view.py). לפני העמדות: מה הסעיף קובע, התכלית לחברה, מה הצד שכנגד ירצה. אחריהן: מבחני ההתאמה והפרמטרים,
+   והנימוק לצד השני. בלוק בלי נתונים אינו מודפס, וכלל בלי ערכה נראה כמו קודם. "מה אפשר לתת" פנימי, בשורה משלו. */
+function kitOf(r){ return (r&&r.kit)||{}; }
+function kitL(k){ const L=(D.meta&&D.meta.kit_labels)||{}; return L[k]||''; }
+const KIT_TONE={green:'g',yellow:'y',red:'r'};
+function kitHead(t){ return `<div class="sep"></div><div class="lbl" style="margin:0 0 8px">${esc(t)}</div>`; }
+function kitBefore(r){
+  const k=kitOf(r); let h='';
+  if(k.anatomy){
+    h+=kitHead(kitL('anatomy'))+`<table class="tbl kit-an"><thead><tr><th>${esc(kitL('component'))}</th>${['green','yellow','red'].map(t=>`<th><span class="tag ${KIT_TONE[t]}">${esc(kitL(t))}</span></th>`).join('')}</tr></thead><tbody>
+      ${k.anatomy.map(x=>`<tr><td><b>${esc(x.label)}</b></td><td>${esc(x.green||'')}</td>${['yellow','red'].map(t=>`<td>${x[t+'_same']?`<span class="mut">${esc(kitL('same'))}</span>`:esc(x[t]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+  if(k.purpose){
+    h+=kitHead(kitL('purpose'))+`<div class="grid g2">${k.purpose.map(x=>`<div class="note2"><b>${esc(x.label)}.</b> ${esc(x.value)}${x.tag?` <span class="tag">${esc(x.tag)}</span>`:''}</div>`).join('')}</div>`;
+  }
+  if(k.cp){
+    h+=kitHead(kitL('cp'))+(k.cp.interest?`<div class="note2"><b>${esc(kitL('their_interest'))}.</b> ${esc(k.cp.interest)}</div>`:'');
+    h+=(k.cp.moves||[]).map(m=>`<div class="note2" style="margin-top:8px">
+      ${m.move?`<div><b>${esc(kitL('their_move'))}.</b> ${esc(m.move)}</div>`:''}
+      ${m.argument?`<div><b>${esc(kitL('their_argument'))}.</b> ${esc(m.argument)}</div>`:''}
+      ${m.reply?`<div><b>${esc(kitL('our_reply'))}.</b> ${esc(m.reply)}</div>`:''}
+      ${m.internal?`<div class="kit-int" style="margin-top:6px"><span class="tag y">${esc(kitL('internal'))}</span> <b>${esc(kitL('internal_allowance'))}.</b> ${esc(m.internal)}</div>`:''}</div>`).join('');
+  }
+  return h;
+}
+function kitAfter(r){
+  const k=kitOf(r); let h='';
+  if(k.params||k.tests||k.undecided||k.signals){
+    h+=kitHead(kitL('tests'));
+    const ph=(D.meta&&D.meta.kit_labels&&D.meta.kit_labels.param_heads)||[];
+    if(k.params) h+=`<table class="tbl kit-pr"><thead><tr>${ph.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>
+      ${k.params.map(x=>`<tr><td><b>${esc(x.name)}</b></td><td>${esc(x.unit||'')}</td><td>${esc(x.green||'')}</td><td>${esc(x.yellow||'')}</td><td>${esc(x.floor||'')}</td><td>${esc(x.red||'')}</td></tr>`).join('')}</tbody></table>`;
+    h+=(k.tests||[]).map(t=>`<div style="margin-top:10px"><span class="tag ${KIT_TONE[t.track]}">${esc(t.label)}</span>
+      <ul class="crit">${['required','forbidden','conditions'].map(f=>(t[f]||[]).map(x=>`<li><b>${esc(kitL(f))}:</b> ${esc(x)}</li>`).join('')).join('')}</ul></div>`).join('');
+    if(k.undecided) h+=`<div class="note2" style="margin-top:10px"><b>${esc(kitL('undecided'))}.</b> ${esc(k.undecided.when)}${k.undecided.nearest?` <b>${esc(kitL('nearest'))}:</b> ${esc(k.undecided.nearest)}.`:''}${k.undecided.missing?` <b>${esc(kitL('missing'))}:</b> ${esc(k.undecided.missing)}.`:''}</div>`;
+    if(k.signals) h+=`<div style="margin-top:10px"><span class="tag r">${esc(kitL('signals'))}</span><ul class="crit">${k.signals.map(x=>`<li><b>${esc(x.signal)}</b>${x.on?` <span class="mut">· ${esc(kitL('on')+x.on)}</span>`:''}${x.remedy?`<div class="mut">${esc(kitL('remedy'))}: ${esc(x.remedy)}</div>`:''}</li>`).join('')}</ul></div>`;
+  }
+  if(k.external){
+    h+=kitHead(kitL('external'))+k.external.map(x=>x.texts.map((t,i)=>`<div class="note2" style="margin-top:6px"><span class="tag ${KIT_TONE[x.track]}">${esc(x.label)}${x.texts.length>1?' '+(i+1):''}</span> ${esc(t)}</div>`).join('')).join('');
+  }
+  return h;
 }
 function normsHtml(r){
   const ns=r.norms||[];

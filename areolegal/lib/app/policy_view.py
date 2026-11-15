@@ -6,6 +6,7 @@ from typing import Optional
 _LIB=Path(__file__).resolve().parents[1]
 if str(_LIB)not in sys.path:sys.path.insert(0,str(_LIB))
 from playbook import status as S
+from playbook import kit_view as KV
 from app import metrics as M
 TRACKS='green','yellow','red'
 MARKER='/*__AREO_POLICY__*/null'
@@ -129,15 +130,17 @@ def _lane(rule,track,st,cells,rat,sc):
 	if not G:return{}
 	H=S.cell_key(D['rule_id'],B);E=H in set(st.get('approved_keys')or());I=cells.get(H)or{};F=_legal_open(D,B);J=A.get('match_criteria')or A.get('crit')or[];return{'p':C(G),'cl':_clause(A.get('proposed_clause')),'fx':C(_effect(A)),'areo':_s(A.get('basis'))in AREO_BASES,'ok':E,'ev':_evidence(D,B),'legal':bool(F),'crit':[C(A)for A in _strs(J)],'why':C(_s(_pick(rat,'%s_boundary_rationale'%B))or _s(A.get('basis_note'))),'signer':_s(I.get('signer'))if E else'','at':_s(I.get('approved_at'))[:10]if E else'','steps':_steps(A)if B=='yellow'else[],'lr':[{'q':C(A['q']),'refs':A['refs']}for A in F if A['q']or A['refs']],'st':'approved'if E else'pending_legal_review'if F else'pending'}
 def _rule(r,ids,st,cells,sc,seg_on=False):
-	G=ids;A=sc;D=r['rule_id'];E=r.get('policy_rationale')if isinstance(r.get('policy_rationale'),dict)else{};K=r.get('company_perspective')if isinstance(r.get('company_perspective'),dict)else{};L=_s(_pick(r,'topic_name','topic'))or _s(r.get('clause_issue'))or D;H=_s(r.get('clause_issue'));I=_s(r.get('importance')).lower();J=r.get('presence_rule');M=[]
+	G=ids;A=sc;D=r['rule_id'];E=r.get('policy_rationale')if isinstance(r.get('policy_rationale'),dict)else{};L=r.get('company_perspective')if isinstance(r.get('company_perspective'),dict)else{};M=_s(_pick(r,'topic_name','topic'))or _s(r.get('clause_issue'))or D;H=_s(r.get('clause_issue'));I=_s(r.get('importance')).lower();J=r.get('presence_rule');N=[]
 	for B in r.get('related_clause_impacts')or r.get('related_clauses')or[]:
 		if not isinstance(B,dict):continue
-		F=_s(_pick(B,'related_rule_id','rule_id','ref'));N=_s(_pick(B,'impact','relation','effect'))
-		if not F or F==D or F not in G or not N:continue
-		C=[A for A in B.get('evidence')or[]if isinstance(A,dict)and _s(A.get('quote'))];O=_s(B.get('direction'));P={'id':F,'dir':O if O in('affects','affected_by','mutual')else'mutual','basis':'areo'if B.get('basis')=='areo_proposal'or not C else'corpus','why':A(N),'act':A(_s(B.get('action')))}
-		if C:P['q']={'c':_s(C[0].get('clause_ref')),'n':int(C[0].get('count')or 1),'t':_s(C[0].get('quote'))}
-		M.append(P)
-	Q={B:_lane(r,B,st,cells,E,A)for B in TRACKS};R=r.get('evidence_count_computed')if isinstance(r.get('evidence_count_computed'),dict)else{};return{'id':D,'t':L,'unk':_unknowns(r,Q,R,I),'ig':A(_s(r.get('interpretation_guidance'))),'xn':A(_s(r.get('external_note'))),'exc':[{'t':A(_s(_pick(B,'wording','value'))),'ctx':A(_s(_pick(B,'context','reason')))}for B in r.get('exceptions')or()if isinstance(B,dict)and _s(_pick(B,'wording','value'))][:5],'same':not r.get('segment_variants')if seg_on else None,'sub':H if H and H!=L else'','imp':I if I in IMPORTANCE else'','walk':bool(r.get('walk_away')),'rl':[{'id':_s(B.get('related_rule_id')),'kind':_s(B.get('kind')),'sev':_s(B.get('severity')),'org':_s(B.get('origin')),'ok':B.get('approved'),'why':A(_s(B.get('impact'))),'act':A(_s(B.get('action'))),'n':B.get('doc_count')}for B in r.get('related_links')or()if isinstance(B,dict)and _s(B.get('related_rule_id'))in G],'kind':_s(r.get('clause_kind')),'req':_s(J.get('requirement'))if isinstance(J,dict)else _s(J),'why':A(_s(r.get('why_address_topic'))),'cp':A(_s(r.get('counterparty_objective'))),'rat':A(_s(E.get('executive_policy_rationale'))),'legal':A(_s(_pick(E,'legal_risk_and_legal_framework'))or _s(K.get('legal_analysis'))),'biz':A(_s(_pick(E,'business_operational_impact'))or _s(K.get('business_analysis'))),'rel':[A for A in _strs(r.get('related_rule_ids'))if A!=D and A in G],'relx':M,'L':Q}
+		F=_s(_pick(B,'related_rule_id','rule_id','ref'));O=_s(_pick(B,'impact','relation','effect'))
+		if not F or F==D or F not in G or not O:continue
+		C=[A for A in B.get('evidence')or[]if isinstance(A,dict)and _s(A.get('quote'))];P=_s(B.get('direction'));Q={'id':F,'dir':P if P in('affects','affected_by','mutual')else'mutual','basis':'areo'if B.get('basis')=='areo_proposal'or not C else'corpus','why':A(O),'act':A(_s(B.get('action')))}
+		if C:Q['q']={'c':_s(C[0].get('clause_ref')),'n':int(C[0].get('count')or 1),'t':_s(C[0].get('quote'))}
+		N.append(Q)
+	R={B:_lane(r,B,st,cells,E,A)for B in TRACKS};T=r.get('evidence_count_computed')if isinstance(r.get('evidence_count_computed'),dict)else{};K=KV.map_text(KV.view(r,'he',internal=True),A);S={'id':D,'t':M,'unk':_unknowns(r,R,T,I),'ig':A(_s(r.get('interpretation_guidance'))),'xn':A(_s(r.get('external_note'))),'exc':[{'t':A(_s(_pick(B,'wording','value'))),'ctx':A(_s(_pick(B,'context','reason')))}for B in r.get('exceptions')or()if isinstance(B,dict)and _s(_pick(B,'wording','value'))][:5],'same':not r.get('segment_variants')if seg_on else None,'sub':H if H and H!=M and not K.get('anatomy')else'','imp':I if I in IMPORTANCE else'','walk':bool(r.get('walk_away')),'rl':[{'id':_s(B.get('related_rule_id')),'kind':_s(B.get('kind')),'sev':_s(B.get('severity')),'org':_s(B.get('origin')),'ok':B.get('approved'),'why':A(_s(B.get('impact'))),'act':A(_s(B.get('action'))),'n':B.get('doc_count')}for B in r.get('related_links')or()if isinstance(B,dict)and _s(B.get('related_rule_id'))in G],'kind':_s(r.get('clause_kind')),'req':_s(J.get('requirement'))if isinstance(J,dict)else _s(J),'why':A(_s(r.get('why_address_topic'))),'cp':A(_s(r.get('counterparty_objective'))),'rat':A(_s(E.get('executive_policy_rationale'))),'legal':A(_s(_pick(E,'legal_risk_and_legal_framework'))or _s(L.get('legal_analysis'))),'biz':A(_s(_pick(E,'business_operational_impact'))or _s(L.get('business_analysis'))),'rel':[A for A in _strs(r.get('related_rule_ids'))if A!=D and A in G],'relx':N,'L':R}
+	if K:S['kit']=K
+	return S
 SMALL_SAMPLE=5
 def _unknowns(r,lanes,ec,imp):
 	D=lanes;A=[];E=D.get('green')or{}

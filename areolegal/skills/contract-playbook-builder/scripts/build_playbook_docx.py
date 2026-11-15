@@ -13,6 +13,7 @@ from docx.oxml.ns import qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.shared import Cm,Pt,RGBColor
 from playbook import market_counts as MC,status as S,surfaces_render as R
+from playbook import kit_view as KV
 try:from playbook import validate_model as VM
 except ImportError:VM=None
 try:from obligations.model import LABELS as OBL_LABELS
@@ -392,11 +393,67 @@ def related_block(doc,r,rules_by_id):
 		if x.get('approved')is None:tags.append(t[2])
 		run(p,'  ·  '+' · '.join(v for v in tags if v),9,False,INK_SOFT);para(doc,' '.join(v for v in(s(x.get('impact')),s(x.get('action')))if v),9.5,after=4)
 def has_rationale(r):pr=r.get('policy_rationale')or{};cp=r.get('company_perspective')or{};return bool(any(pr.get(k)for(k,_)in RAT)or any(cp.get(k)for(k,_)in PERSP)or r.get('regulatory_sources')or r.get('evidence'))
+TRACK_HEAD={'green':(GREEN,GREEN_BG),'yellow':(AMBER,AMBER_BG),'red':(RED,RED_BG)}
+def kit_table(doc,heads,rows,widths,head_colors=None):
+	t=doc.add_table(rows=1,cols=len(heads));table_borders(t)
+	for(i,head)in enumerate(heads):color,fill=(head_colors or{}).get(i,(NAVY,SURF));cell_text(t.rows[0].cells[i],head,True,9,color,fill)
+	for row in rows:
+		c=t.add_row().cells
+		for(i,v)in enumerate(row):
+			if isinstance(v,tuple):cell_text(c[i],v[1],False,8.5,INK_SOFT)
+			else:cell_text(c[i],v,i==0,8.5)
+	for r in t.rows:
+		for(cell,w)in zip(r.cells,widths):cell.width=Cm(w)
+	para(doc,after=6)
+def kit_line(doc,label,text,size=9.5,tag=''):
+	if not text:return
+	p=para(doc,after=3);run(p,label+': ',size,True,INK_SOFT);run(p,text,size,False,INK)
+	if tag:run(p,'  ·  '+tag,size-.5,True,INK_SOFT)
+def kit_before_tracks(doc,kit):
+	L=KV.LABELS[LANG]
+	if kit.get('anatomy'):h3(doc,L['anatomy']);rows=[[x['label'],x['green']]+[('same',L['same'])if x[t+'_same']else x[t]for t in('yellow','red')]for x in kit['anatomy']];kit_table(doc,[L['component'],L['green'],L['yellow'],L['red']],rows,[3.,4.3,4.3,4.2],{1:TRACK_HEAD['green'],2:TRACK_HEAD['yellow'],3:TRACK_HEAD['red']})
+	if kit.get('purpose'):
+		h3(doc,L['purpose'])
+		for x in kit['purpose']:kit_line(doc,x['label'],x['value'],tag=x.get('tag')or'')
+	cp=kit.get('cp')or{}
+	if cp:
+		h3(doc,L['cp']);kit_line(doc,L['their_interest'],cp.get('interest'))
+		for m in cp.get('moves')or():
+			q=para(doc,before=3,after=1);bar(q,LINE,8);run(q,L['their_move']+': ',9.5,True,INK_SOFT);run(q,m.get('move')or'',9.5,False,INK)
+			for(label,key)in((L['their_argument'],'argument'),(L['our_reply'],'reply')):
+				if m.get(key):q=para(doc,after=1);bar(q,LINE,8);run(q,label+': ',9.5,True,INK_SOFT);run(q,m[key],9.5,False,INK)
+			if m.get('internal'):q=para(doc,after=3);bar(q,AMBER,8);run(q,L['internal']+' · '+L['internal_allowance']+': ',9.5,True,AMBER);run(q,m['internal'],9.5,False,INK)
+def kit_after_tracks(doc,kit):
+	L=KV.LABELS[LANG]
+	if KV.has_tests_block(kit):
+		h3(doc,L['tests'])
+		if kit.get('params'):kit_table(doc,L['param_heads'],[[x['name'],x['unit'],x['green'],x['yellow'],x['floor'],x['red']]for x in kit['params']],[3.4,2.6,2.2,2.6,2.,3.],{2:TRACK_HEAD['green'],3:TRACK_HEAD['yellow'],5:TRACK_HEAD['red']})
+		for t in kit.get('tests')or():
+			color,fill=TRACK_HEAD[t['track']];q=para(doc,before=4,after=1);bar(q,color,14);run(q,t['label'],9.5,True,color)
+			for key in('required','forbidden','conditions'):
+				for x in t[key]:q=para(doc,after=1);bar(q,color,14);run(q,L[key]+': ',9,True,INK_SOFT);run(q,x,9,False,INK)
+		uz=kit.get('undecided')or{}
+		if uz:
+			q=para(doc,before=4,after=3);run(q,L['undecided']+': ',9.5,True,INK_SOFT);run(q,uz['when'],9.5,False,INK)
+			for key in('nearest','missing'):
+				if uz.get(key):run(q,'.  '+L[key]+': ',9.5,True,INK_SOFT);run(q,uz[key],9.5,False,INK)
+		if kit.get('signals'):
+			q=para(doc,before=4,after=1);run(q,L['signals'],9.5,True,RED)
+			for x in kit['signals']:
+				q=para(doc,after=1);bar(q,RED,10);run(q,x['signal'],9.5,True,INK)
+				if x.get('on'):run(q,'  ·  '+L['on']+x['on'],9,False,INK_SOFT)
+				if x.get('remedy'):q=para(doc,after=3);bar(q,RED,10);run(q,L['remedy']+': ',9,True,INK_SOFT);run(q,x['remedy'],9,False,INK)
+	if kit.get('external'):
+		h3(doc,L['external'])
+		for x in kit['external']:
+			color,_fill=TRACK_HEAD[x['track']];many=len(x['texts'])>1
+			for(i,text)in enumerate(x['texts'],1):q=para(doc,after=2);bar(q,color,14);run(q,('%s %d'%(x['label'],i)if many else x['label'])+': ',9.5,True,color);run(q,text,9.5,False,INK)
 def topic(doc,r,n,full,st):
-	h2(doc,'%d. %s'%(n,s(r.get('topic_name'))),'card_%d'%n);status_line(doc,r,st)
-	if r.get('clause_issue'):para(doc,s(r['clause_issue']),10.5,after=8,color=INK_SOFT)
+	h2(doc,'%d. %s'%(n,s(r.get('topic_name'))),'card_%d'%n);status_line(doc,r,st);kit=KV.view(r,LANG)
+	if r.get('clause_issue')and not kit.get('anatomy'):para(doc,s(r['clause_issue']),10.5,after=8,color=INK_SOFT)
+	kit_before_tracks(doc,kit)
 	for key in('green','yellow','red'):track(doc,r,key,st)
-	related_block(doc,r,{x.get('rule_id'):x for x in MODEL.get('rules')or()if isinstance(x,dict)});pr=r.get('policy_rationale')or{}
+	kit_after_tracks(doc,kit);related_block(doc,r,{x.get('rule_id'):x for x in MODEL.get('rules')or()if isinstance(x,dict)});pr=r.get('policy_rationale')or{}
 	if full=='card':
 		if pr.get('executive_policy_rationale'):h3(doc,tx('legal_rationale'));para(doc,s(pr['executive_policy_rationale']),10.5,after=6)
 		anchors(doc,r,160)

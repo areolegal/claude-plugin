@@ -586,6 +586,22 @@ mark.dv{background:var(--y-soft);color:var(--ink);box-shadow:inset 0 -2px 0 var(
 .rxb h4{margin:0 0 4px;font-size:12.5px;font-weight:700;color:var(--mist)}
 .rxb p{margin:0}
 .wcols p{font-size:14px;line-height:1.55}
+/* the decision kit (Inbal, 4.11): what the clause provides per track, the purpose, what the other side will want */
+.kitb{display:flex;flex-direction:column;gap:8px}
+.kitb table{min-width:520px}
+.kitb th.g{box-shadow:inset 0 3px 0 var(--g)}.kitb th.y{box-shadow:inset 0 3px 0 var(--y)}.kitb th.r{box-shadow:inset 0 3px 0 var(--r)}
+.kitb td.kl{font-weight:700;color:var(--mist);white-space:nowrap;width:1%}
+.kitb .same{color:var(--faint)}
+.kitb .wcols .tg{margin-inline-start:6px}
+.kmv{display:flex;flex-direction:column;gap:3px;padding-inline-start:12px;border-inline-start:2px solid var(--line-strong)}
+.kmv p,.kcp>p{margin:0;font-size:14px;line-height:1.55}
+.kmv b,.ktr b{font-weight:700;color:var(--mist)}
+.kmv .kint{margin-top:4px;padding:6px 10px;border-radius:8px;background:var(--y-soft)}
+.ktr{display:flex;flex-direction:column;gap:4px;border-inline-start:3px solid var(--lc);padding-inline-start:12px}
+.ktr.g{--lc:var(--g)}.ktr.y{--lc:var(--y)}.ktr.r{--lc:var(--r)}
+.ktr .wlk{font-size:13.5px}
+.ktr ul{margin:0;padding-inline-start:16px;font-size:14px;display:flex;flex-direction:column;gap:3px}
+.ktr p{font-size:14px;line-height:1.55}
 .lane2{border:1px solid var(--line);border-inline-start:4px solid var(--lc);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .lane2.g{--lc:var(--g)}.lane2.y{--lc:var(--y)}.lane2.r{--lc:var(--r)}
 .l2h{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -870,6 +886,13 @@ html[data-look="mono"] .morein{padding:0 14px 14px;gap:12px}
 html[data-look="mono"] .rat,html[data-look="mono"] .whyb .rat{font-size:13.5px;line-height:1.65}
 html[data-look="mono"] .wcols div{background:var(--sub);border-radius:var(--r2)}
 html[data-look="mono"] .wcols p{font-size:13px}
+html[data-look="mono"] .kitb td.kl{font-weight:500;color:var(--ink2)}
+html[data-look="mono"] .kitb .same{color:var(--ink3)}
+html[data-look="mono"] .kmv{border-inline-start-color:var(--line2)}
+html[data-look="mono"] .kmv p,html[data-look="mono"] .ktr p,html[data-look="mono"] .ktr ul{font-size:13px}
+html[data-look="mono"] .kmv b,html[data-look="mono"] .ktr b{font-weight:500;color:var(--ink2)}
+html[data-look="mono"] .kmv .kint{background:var(--ats);border-radius:var(--r2)}
+html[data-look="mono"] .ktr{border-inline-start-width:2px}
 html[data-look="mono"] .rxb h4{font-size:12px;font-weight:500;color:var(--ink3)}
 html[data-look="mono"] .relx{border-top-color:var(--line)}
 html[data-look="mono"] .relxh{font-size:12.5px;font-weight:500;color:var(--ink2)}
@@ -1352,7 +1375,7 @@ function stepText(s,i,a){var fl=s.f||i===a.length-1;return (fl?'<b>הרצפה:</
 function stepMeta(s){return (s.g?'<small>מוותרים על: '+esc(s.g)+'</small>':'')+(s.w?'<small>מתי יורדים: '+esc(s.w)+'</small>':'')+(s.k?'<small>מה מבקשים בתמורה: '+esc(s.k)+'</small>':'')}
 function stepLi(s,i,a){return '<li>'+stepText(s,i,a)+stepMeta(s)+'</li>'}
 function topicWhy(r){return (r.rat?'<p class="rat">'+esc(idsToNames(r.rat))+'</p>':'')+'<div class="wcols">'+
-    (r.legal?'<div><h4>השיקול המשפטי</h4><p>'+esc(r.legal)+'</p></div>':'')+(r.biz?'<div><h4>השיקול העסקי</h4><p>'+esc(r.biz)+'</p></div>':'')+(r.cp?'<div><h4>הטענות הצפויות מהצד השני</h4><p>'+esc(r.cp)+'</p></div>':'')+'</div>'}
+    (r.legal?'<div><h4>השיקול המשפטי</h4><p>'+esc(r.legal)+'</p></div>':'')+(r.biz?'<div><h4>השיקול העסקי</h4><p>'+esc(r.biz)+'</p></div>':'')+(r.cp&&!kitOf(r).cp?'<div><h4>הטענות הצפויות מהצד השני</h4><p>'+esc(r.cp)+'</p></div>':'')+'</div>'}
 function whyHtml(r){var h=(r.rat?'<p class="rat">'+esc(idsToNames(r.rat))+'</p>':'')+'<div class="wcols">'+
     (r.legal?'<div><h4>השיקול המשפטי</h4><p>'+esc(r.legal)+'</p></div>':'')+(r.biz?'<div><h4>השיקול העסקי</h4><p>'+esc(r.biz)+'</p></div>':'')+(r.cp?'<div><h4>הטענות הצפויות מהצד השני</h4><p>'+esc(r.cp)+'</p></div>':'')+'</div>';
   lanesOf(r).forEach(function(k){var L=r.L[k],m='';
@@ -1373,11 +1396,40 @@ function listHtml(){
     var tags=(r.walk?'<span class="tg dbk">שובר עסקה</span>':'')+(blk?'<span class="tg blk" title="שינוי בנושא הזה מחייב בדיקה של נושא קשור">יש סעיף קשור חוסם</span>':'')+(mix?'<span class="tg" title="חלק מהעמדות מההסכמים שלכם, וחלק הצעה של Areo">עמדות ממקורות שונים</span>':'')+(r.imp==='critical'?'<span class="tg crit">קריטי</span>':r.imp==='high'?'<span class="tg">חשיבות גבוהה</span>':'')+(r.kind?'<span class="tg">'+esc(r.kind)+'</span>':'')+(ch?'<span class="tg chg">שונה</span>':'')+(wt?'<span class="tg wait">מחכה לאישור</span>':lanesOf(r).length?'<span class="tg ok">מאושר</span>':'');
     var h='<section class="rx'+(open?' open':'')+(!wt&&lanesOf(r).length?' okd':'')+'" id="rx-'+r.id+'"><button type="button" class="rxh" data-tog="'+r.id+'" aria-expanded="'+open+'"><span class="rxn">'+(n<10?'0':'')+n+'</span><span class="rxt"><b>'+hl(r.t,S.q)+'</b>'+(r.sub?'<small>'+esc(r.sub)+'</small>':'')+'</span><span class="rxtags">'+tags+'</span><span class="rxc" aria-hidden="true">'+(open?'סגירה':'פתיחה')+'</span></button>';
     if(!open)return h+segBand(r,true)+rangeMini(r)+'</section>';
-    h+=segBand(r,false)+'<div class="rxb">'+unkHtml(r)+rangeFull(r)+
+    h+=segBand(r,false)+'<div class="rxb">'+kitTop(r)+unkHtml(r)+rangeFull(r)+kitBottom(r)+
       '<details class="more" data-det="'+r.id+'w"'+(S.det[r.id+'w']?' open':'')+'><summary>הנימוק לעמדה <small>השיקולים המשפטיים והעסקיים, והטענות הצפויות מהצד השני</small></summary><div class="morein">'+topicWhy(r)+'</div></details>';
     h+=negoHtml(r)+relatedHtml(r);
     return h+'</div></section>'}).join('');
 }
+/* the decision kit (Inbal, 4.11; lib/playbook/kit_view.py builds it, the same blocks as the Word and the workspace):
+   before the positions what the clause provides, the purpose for the company and what the other side will want; after
+   them, folded, the match tests and parameters and the rationale for the other side. A block with no data is not
+   printed, and a rule without the kit looks as before. What we can give is internal: its own line, marked "פנימי",
+   never inside the reply or the rationale for the other side. */
+var KL={anatomy:'מה הסעיף קובע',purpose:'התכלית לחברה',cp:'מה הצד שכנגד ירצה',tests:'מבחני ההתאמה והפרמטרים',external:'הנימוק לצד השני',component:'הרכיב',same:'כמו בירוק',green:'ירוק',yellow:'צהוב',red:'אדום',their_interest:'האינטרס שלהם',their_move:'המהלך הצפוי',their_argument:'הטענה שלהם',our_reply:'התשובה שלנו',internal_allowance:'מה אפשר לתת',internal:'פנימי',required:'חייב להופיע',forbidden:'אסור שיופיע',conditions:'תנאי הפרמטרים',undecided:'התאמה חלקית, נדרשת הכרעתך',nearest:'העמדה הקרובה',missing:'מה חסר להכרעה',signals:'סימני אדום',on:'נוגע ל',remedy:'נוסח הריפוי',param_heads:['הפרמטר','יחידה','ירוק','מדרגות בצהוב','רצפה','אדום']};
+var KT={green:'g',yellow:'y',red:'r'};
+function kitOf(r){return (r&&r.kit)||{}}
+function kitTests(k){return !!(k.params||k.tests||k.undecided||k.signals)}
+function kitTop(r){var k=kitOf(r),h='';
+  if(k.anatomy)h+='<div class="kitb kan"><h4>'+KL.anatomy+'</h4><div class="tblwrap"><table><thead><tr><th>'+KL.component+'</th>'+['green','yellow','red'].map(function(t){return '<th class="'+KT[t]+'">'+KL[t]+'</th>'}).join('')+'</tr></thead><tbody>'+
+    k.anatomy.map(function(x){return '<tr><td class="kl">'+esc(x.label)+'</td><td>'+esc(x.green||'')+'</td>'+['yellow','red'].map(function(t){return '<td>'+(x[t+'_same']?'<span class="same">'+KL.same+'</span>':esc(x[t]||''))+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div></div>';
+  if(k.purpose)h+='<div class="kitb kpu"><h4>'+KL.purpose+'</h4><div class="wcols">'+k.purpose.map(function(x){return '<div><h4>'+esc(x.label)+(x.tag?'<span class="tg">'+esc(x.tag)+'</span>':'')+'</h4><p>'+esc(x.value)+'</p></div>'}).join('')+'</div></div>';
+  if(k.cp){h+='<div class="kitb kcp"><h4>'+KL.cp+'</h4>'+(k.cp.interest?'<p>'+esc(k.cp.interest)+'</p>':'');
+    (k.cp.moves||[]).forEach(function(m){h+='<div class="kmv">'+(m.move?'<p><b>'+KL.their_move+':</b> '+esc(m.move)+'</p>':'')+(m.argument?'<p><b>'+KL.their_argument+':</b> '+esc(m.argument)+'</p>':'')+(m.reply?'<p class="kreply"><b>'+KL.our_reply+':</b> '+esc(m.reply)+'</p>':'')+
+      (m.internal?'<p class="kint"><span class="tg wait">'+KL.internal+'</span> <b>'+KL.internal_allowance+':</b> '+esc(m.internal)+'</p>':'')+'</div>'});
+    h+='</div>'}
+  return h}
+function kitBottom(r){var k=kitOf(r),h='',c='';
+  if(kitTests(k)){
+    if(k.params)c+='<div class="tblwrap"><table><thead><tr>'+KL.param_heads.map(function(x,i){return '<th'+(i===2?' class="g"':i===3?' class="y"':i===5?' class="r"':'')+'>'+x+'</th>'}).join('')+'</tr></thead><tbody>'+
+      k.params.map(function(x){return '<tr><td class="kl">'+esc(x.name)+'</td><td>'+esc(x.unit||'')+'</td><td>'+esc(x.green||'')+'</td><td>'+esc(x.yellow||'')+'</td><td>'+esc(x.floor||'')+'</td><td>'+esc(x.red||'')+'</td></tr>'}).join('')+'</tbody></table></div>';
+    (k.tests||[]).forEach(function(t){c+='<div class="ktr '+KT[t.track]+'"><div class="wlk">'+esc(t.label)+'</div><ul>'+['required','forbidden','conditions'].map(function(f){return (t[f]||[]).map(function(x){return '<li><b>'+KL[f]+':</b> '+esc(x)+'</li>'}).join('')}).join('')+'</ul></div>'});
+    if(k.undecided)c+='<p class="unk"><b>'+KL.undecided+':</b> '+esc(k.undecided.when)+(k.undecided.nearest?'. '+KL.nearest+': '+esc(k.undecided.nearest):'')+(k.undecided.missing?'. '+KL.missing+': '+esc(k.undecided.missing):'')+'</p>';
+    if(k.signals)c+='<div class="ktr r"><div class="wlk">'+KL.signals+'</div><ul>'+k.signals.map(function(x){return '<li>'+esc(x.signal)+(x.on?' <small class="same">· '+KL.on+esc(x.on)+'</small>':'')+(x.remedy?'<br><b>'+KL.remedy+':</b> '+esc(x.remedy):'')+'</li>'}).join('')+'</ul></div>';
+    h+='<details class="more kitb kts" data-det="'+r.id+'k"'+(S.det[r.id+'k']?' open':'')+'><summary>'+KL.tests+' <small>מתי הנוסח שלהם תואם כל עמדה, ומה מסמן קו אדום</small></summary><div class="morein">'+c+'</div></details>'}
+  if(k.external)h+='<details class="more kitb kext" data-det="'+r.id+'x"'+(S.det[r.id+'x']?' open':'')+'><summary>'+KL.external+' <small>מה אומרים לצד השני בכל עמדה</small></summary><div class="morein">'+
+    k.external.map(function(x){return '<div class="ktr '+KT[x.track]+'"><div class="wlk">'+esc(x.label)+'</div>'+x.texts.map(function(t,i){return '<p>'+(x.texts.length>1?'<b>'+(i+1)+'.</b> ':'')+esc(t)+'</p>'}).join('')+'</div>'}).join('')+'</div></details>';
+  return h}
 /* Inbal, 12.11.2026, 8.3: the playbook is a legal decision of the organisation, and the responsibility stays with its counsel */
 var RESP='הפלייבוק הוא החלטה משפטית של הארגון: Areo מביאה את הראיות ואת ההצעה, והאישור והאחריות על העמדות ועל קווי הנסיגה אצל היועץ המשפטי שלכם.';
 function times(n){return n===1?'פעם אחת':n+' פעמים'}
@@ -1708,6 +1760,33 @@ function wr(t,o){o=o||{};var sz=o.sz||22;return '<w:r><w:rPr><w:rFonts w:ascii="
 function wp(runs,o){o=o||{};return '<w:p><w:pPr>'+(o.st?'<w:pStyle w:val="'+o.st+'"/>':'')+(o.keep?'<w:keepNext/>':'')+(o.bdr?'<w:pBdr><w:right w:val="single" w:sz="18" w:space="8" w:color="'+o.bdr+'"/></w:pBdr>':'')+(o.shd?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.shd+'"/>':'')+'<w:bidi/><w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after==null?100:o.after)+'"/>'+(o.ind?'<w:ind w:right="'+o.ind+'"/>':'')+'</w:pPr>'+runs+'</w:p>'}
 var LC={green:'0F9D6E',yellow:'B07A06',red:'C93434'};
 var WGREY='4F615A';
+/* a right-to-left table (bidiVisual, and bidi in every cell paragraph): heads, rows of cells; a cell {t,c} has a colour */
+function wtbl(heads,rows,hc){hc=hc||{};var n=heads.length,cw=Math.floor(9500/n);
+  var cell=function(t,o){return '<w:tc><w:tcPr><w:tcW w:w="'+cw+'" w:type="dxa"/>'+(o.fill?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.fill+'"/>':'')+'</w:tcPr>'+wp(wr(t,{sz:18,b:o.b,c:o.c}),{after:0})+'</w:tc>'};
+  return '<w:tbl><w:tblPr><w:bidiVisual/><w:tblW w:w="5000" w:type="pct"/><w:tblBorders>'+['top','left','bottom','right','insideH','insideV'].map(function(e){return '<w:'+e+' w:val="single" w:sz="4" w:space="0" w:color="D7DBE0"/>'}).join('')+'</w:tblBorders></w:tblPr>'+
+    '<w:tblGrid>'+heads.map(function(){return '<w:gridCol w:w="'+cw+'"/>'}).join('')+'</w:tblGrid>'+
+    '<w:tr>'+heads.map(function(h,i){return cell(h,{b:1,c:hc[i]||WGREY,fill:'F0F3F6'})}).join('')+'</w:tr>'+
+    rows.map(function(r){return '<w:tr>'+r.map(function(v,i){return typeof v==='object'?cell(v.t,{c:v.c}):cell(v,{b:i===0})}).join('')+'</w:tr>'}).join('')+'</w:tbl>'+wp('',{after:60})}
+function docxKitTop(K,H){var b='';
+  if(K.anatomy){b+=H(KL.anatomy,2);b+=wtbl([KL.component,KL.green,KL.yellow,KL.red],K.anatomy.map(function(x){return [x.label,x.green||''].concat(['yellow','red'].map(function(t){return x[t+'_same']?{t:KL.same,c:WGREY}:(x[t]||'')}))}),{1:LC.green,2:LC.yellow,3:LC.red})}
+  if(K.purpose){b+=H(KL.purpose,2);K.purpose.forEach(function(x){b+=wp(wr(x.label+': ',{b:1,sz:20})+wr(x.value,{sz:20})+(x.tag?wr('  ·  '+x.tag,{b:1,sz:18,c:WGREY}):''))})}
+  if(K.cp){b+=H(KL.cp,2);if(K.cp.interest)b+=wp(wr(KL.their_interest+': ',{b:1,sz:20})+wr(K.cp.interest,{sz:20}));
+    (K.cp.moves||[]).forEach(function(m){if(m.move)b+=wp(wr(KL.their_move+': ',{b:1,sz:20})+wr(m.move,{sz:20}),{ind:300,after:20,keep:1});
+      if(m.argument)b+=wp(wr(KL.their_argument+': ',{b:1,sz:20})+wr(m.argument,{sz:20}),{ind:300,after:20});
+      if(m.reply)b+=wp(wr(KL.our_reply+': ',{b:1,sz:20})+wr(m.reply,{sz:20}),{ind:300,after:20});
+      if(m.internal)b+=wp(wr(KL.internal+' · '+KL.internal_allowance+': ',{b:1,sz:20,c:LC.yellow})+wr(m.internal,{sz:20}),{ind:300,after:80,bdr:LC.yellow})})}
+  return b}
+function docxKitBottom(K,H){var b='';
+  if(kitTests(K)){b+=H(KL.tests,2);
+    if(K.params)b+=wtbl(KL.param_heads,K.params.map(function(x){return [x.name,x.unit||'',x.green||'',x.yellow||'',x.floor||'',x.red||'']}),{2:LC.green,3:LC.yellow,5:LC.red});
+    (K.tests||[]).forEach(function(t){b+=wp(wr(t.label,{b:1,sz:20,c:LC[t.track]}),{bdr:LC[t.track],after:20,keep:1});
+      ['required','forbidden','conditions'].forEach(function(f){(t[f]||[]).forEach(function(x){b+=wp(wr(KL[f]+': ',{b:1,sz:20})+wr(x,{sz:20}),{bdr:LC[t.track],after:20})})})});
+    if(K.undecided)b+=wp(wr(KL.undecided+': ',{b:1,sz:20})+wr(K.undecided.when+(K.undecided.nearest?'. '+KL.nearest+': '+K.undecided.nearest:'')+(K.undecided.missing?'. '+KL.missing+': '+K.undecided.missing:''),{sz:20}),{before:60});
+    if(K.signals){b+=wp(wr(KL.signals,{b:1,sz:20,c:LC.red}),{bdr:LC.red,before:60,after:20,keep:1});
+      K.signals.forEach(function(x){b+=wp(wr(x.signal,{b:1,sz:20})+(x.on?wr('  ·  '+KL.on+x.on,{sz:18,c:WGREY}):''),{bdr:LC.red,after:20});
+        if(x.remedy)b+=wp(wr(KL.remedy+': ',{b:1,sz:20})+wr(x.remedy,{sz:20}),{bdr:LC.red,after:60})})}}
+  if(K.external){b+=H(KL.external,2);K.external.forEach(function(x){x.texts.forEach(function(t,i){b+=wp(wr((x.texts.length>1?x.label+' '+(i+1):x.label)+': ',{b:1,sz:20,c:LC[x.track]})+wr(t,{sz:20}),{bdr:LC[x.track],after:40})})})}
+  return b}
 function todayIso(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
 /* the policy document, exported from the system as it is now, with the decisions approved so far (Inbal, 12.11.2026, 8.3):
    the export date and the status of the playbook on that date, right to left, the ladder and the floor, the related
@@ -1727,7 +1806,9 @@ function buildDocx(){
     if(tags.length)b+=G(tags.join(' · '));
     if(r.unk&&r.unk.length)b+=wp(wr('מה לא ידוע: ',{b:1,sz:20})+wr(r.unk.join(' '),{sz:20}),{bdr:'B8C2BE'});
     if(r.rat)b+=wp(wr(idsToNames(r.rat)));
-    if(r.cp)b+=wp(wr('מה הצד השני ירצה: ',{b:1})+wr(r.cp));
+    var K=kitOf(r);
+    b+=docxKitTop(K,H);
+    if(r.cp&&!K.cp)b+=wp(wr('מה הצד השני ירצה: ',{b:1})+wr(r.cp));
     lanesOf(r).forEach(function(k){var L=r.L[k],src=laneSrcs(L);
       b+=wp(wr(LANE[k][0],{b:1,c:LC[k],sz:24})+wr('  ·  '+(L.areo?'הצעה של Areo':basisText(L))+(isOk(r,k)?'  ·  אושר'+(L.signer?' בידי '+L.signer:'')+(L.at?' ב-'+dmy(L.at):''):'  ·  מחכה לבדיקת עורך דין'),{c:WGREY,sz:20}),{before:160,bdr:LC[k],keep:1});
       b+=wp(wr(L.p),{bdr:LC[k]});
@@ -1744,6 +1825,7 @@ function buildDocx(){
       }
       src.forEach(function(e){b+=wp(wr(shortName(e.s)+(e.c?', סעיף '+e.c:'')+': ',{b:1,sz:20,c:WGREY})+wr(e.q||'',{sz:20,c:WGREY}),{ind:300,after:40})});
     });
+    b+=docxKitBottom(K,H);
     if(r.ig||r.xn||(r.exc&&r.exc.length)){b+=H('במשא ומתן',2);
       if(r.ig)b+=wp(wr('כשהנוסח שלהם שונה מכל העמדות: ',{b:1,sz:20})+wr(r.ig,{sz:20}));
       if(r.xn)b+=wp(wr('ההערה המוכנה לצד השני: ',{b:1,sz:20})+wr(r.xn,{sz:20}));

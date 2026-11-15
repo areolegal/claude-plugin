@@ -266,6 +266,17 @@ textarea:focus{outline:none;border-color:var(--aurora)}
 .opt input{margin-top:5px;accent-color:var(--aurora)}
 .opt b{display:block}.opt span span{font-size:13.5px;color:var(--mist)}
 .prog{display:flex;flex-direction:column;gap:8px}
+/* the steps loader, as in "שאלו את Areo": done steps get a check, the current one a moving bar */
+.plan{display:flex;flex-direction:column;gap:9px;padding:4px 2px;font-size:14px}
+.plan .ps{display:flex;align-items:center;gap:9px;color:var(--mist)}
+.plan .ps svg{width:13px;height:13px;flex:none;color:var(--g)}
+.plan .ps.now{color:var(--ink);font-weight:500}
+.plan .ps .pbar{position:relative;flex:none;width:13px;height:2px;border-radius:2px;background:var(--line);overflow:hidden}
+.plan .ps .pbar::after{content:"";position:absolute;inset:0;background:var(--g)}
+@media (prefers-reduced-motion:no-preference){
+  .plan .ps .pbar::after{animation:pbar 1.1s ease-in-out infinite}@keyframes pbar{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+  .plan .ps{animation:psin .18s ease-out}@keyframes psin{from{opacity:0;transform:translateY(3px)}}}
+.nsteps{margin:0;padding-inline-start:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.55;color:var(--ink)}
 .bar{height:6px;border-radius:6px;background:var(--raised);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--aurora);width:0;transition:width .5s}
 .live{font-size:14px;color:var(--mist);display:flex;gap:8px;align-items:center}
@@ -1375,7 +1386,7 @@ async function openReply(d){
     NR.step='detect';NR.file='התשובה של '+d.counterparty;renderNew();
     try{const mcp=await mcpNs();const res=await mcp.callTool('Gmail','get_message',{messageId:rep.id,messageFormat:'RAW'},{cache:false});const p=res&&res.payload||{};const raw=p.raw||(p.message&&p.message.raw)||'';
       const files=raw?mimeFiles(b64urlToBin(raw)):[];
-      if(files.length){onFile(new File([files[0].bytes],files[0].name,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}));return}
+      if(files.length){onFile(new File([files[0].bytes],files[0].name,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}),rep.id);return}
       NR.step='drop';NR.err='לא מצאנו קובץ Word במייל שלהם. פתחו את המייל וגררו את הקובץ לכאן.';NR.link=rep.url;renderNew();
     }catch(e){NR.step='drop';NR.err='לא הצלחנו לקרוא את המייל מ-Gmail. פתחו אותו וגררו את הקובץ לכאן.';NR.link=rep.url;renderNew()}
   }else{NR.err='';NR.note='התשובה הגיעה ל-Outlook. פתחו את המייל וגררו את הקובץ שלהם לכאן.';NR.link=rep.url;renderNew()}
@@ -1457,27 +1468,20 @@ function gmailBlock(ok){
 }
 
 /* ---------- a draft arrives: a new deal, or the next round of an open one ---------- */
-const NR={step:'drop',file:null,paras:[],det:null,err:'',got:0,ctl:null,target:null};
+const NR={step:'drop',file:null,paras:[],det:null,err:'',target:null};
 const norm=s=>String(s||'').replace(/בע"?מ|בעמ|ltd\.?|inc\.?|["'׳״.,\s-]/gi,'');
 window.__areoNewDraft=()=>openNew(null);
-function openNew(target){Object.assign(NR,{step:'drop',file:null,paras:[],det:null,err:'',note:'',link:'',got:0,annex:[],tender:'no',target:target||null});S.overlay='new';renderNew()}
+function openNew(target){Object.assign(NR,{step:'drop',file:null,fobj:null,gmail:'',paras:[],det:null,err:'',note:'',link:'',annex:[],tender:'no',pol:'',pos:'',kind:'round',target:target||null});S.overlay='new';renderNew()}
 function renderNew(){
   let b='';const td=NR.target&&DEALS.find(x=>x.id===NR.target);
   if(NR.step==='drop')b='<div class="drop" id="drop" tabindex="0" role="button" aria-label="בחירת קובץ"><span>'+IC.upload+'</span><b>'+(td?'גררו לכאן את התשובה של '+esc(td.counterparty):'גררו לכאן את הטיוטה שקיבלתם')+'</b><span class="muted">או לחצו לבחירה. Word בלבד. הקובץ נקרא כאן, בעמוד.</span><input type="file" id="file" accept=".docx" hidden></div>'+(NR.note?'<div class="note" style="color:var(--ink)">'+esc(NR.note)+'</div>':'')+(NR.err?'<div class="note" style="color:var(--r)">'+esc(NR.err)+'</div>':'')+(NR.link?'<a class="btn soft small" href="'+esc(NR.link)+'" target="_blank" rel="noopener">לפתוח את המייל שלהם ↗</a>':'');
-  else if(NR.step==='detect')b='<div class="prog"><div class="live"><span class="pulse"></span>קוראים את '+esc(NR.file)+' ומזהים מה זה...</div><div class="bar"><i style="width:35%"></i></div></div>';
-  else if(NR.step==='confirm'){const dd=NR.det||{},m=dd.match&&DEALS.find(x=>x.id===dd.match);
-    b=(m?'<div style="display:flex;flex-direction:column;gap:8px"><label class="opt"><input type="radio" name="kind" value="round" checked><span><b>תשובה של '+esc(m.counterparty)+' לסבב '+latest(m).n+'</b><span>Areo תשווה לטיוטה ששלחתם, תציג מה הם שינו, ותפתח סבב '+(latest(m).n+1)+'.</span></span></label><label class="opt"><input type="radio" name="kind" value="new"><span><b>עסקה חדשה</b><span>הסכם נפרד, גם אם מול אותו צד.</span></span></label></div>':'')+
-    '<div class="note" style="color:var(--ink)">'+IC.spark+'<span>זיהינו '+NR.paras.length+' פסקאות. בדקו שהפרטים נכונים:</span></div><div class="detect">'+fld('t','סוג ההסכם',dd.type||(m&&m.type))+fld('cp','הצד השני',dd.counterparty||(m&&m.counterparty))+fld('role','אתם',dd.our_role||(m&&m.role))+
-    '<div class="fld"><label for="paper">על הנייר של</label><select id="paper"><option value="theirs"'+(dd.paper!=='ours'?' selected':'')+'>הצד השני</option><option value="ours"'+(dd.paper==='ours'?' selected':'')+'>שלכם (הם העירו)</option></select></div>'+
-    '<div class="fld"><label for="tender">מכרז</label><select id="tender">'+Object.keys(TENDER).map(k=>'<option value="'+k+'"'+(NR.tender===k?' selected':'')+'>'+TENDER[k]+'</option>').join('')+'</select></div>'+
-    '<div class="fld" style="grid-column:1/-1"><label for="pb">לבדוק מול</label><select id="pb"><option value="pb">'+esc(DEALS[0]&&DEALS[0].rounds[0]?DEALS[0].rounds[0].playbook:'המדיניות שלכם')+'</option><option value="none">בלי מדיניות: שיקול הדעת המקצועי של Areo</option></select></div></div>'+
-    (NR.annex&&NR.annex.length?'<div class="note">ההסכם מזכיר '+esc(NR.annex.join(', '))+', ואלה לא נמצאו בקובץ. אפשר להמשיך, וכל החלטה שתלויה בהם תסומן לבדיקה. אם יש לכם אותם, צרפו אותם לקובץ והעלו שוב.</div>':'')+
-    (NR.tender!=='no'?'<div class="note">נראה שההסכם ממכרז. בדקו את השלב בשדה "מכרז": במכרז שכבר הוכרע אפשר לבקש רק הבהרות ותיקוני טעויות, והתוצר הראשון יהיה תזכיר פנימי עם המלצות ולא טיוטה לשליחה.</div>':'')+
-    (dd.note?'<div class="note">'+esc(dd.note)+'</div>':'')+'<div class="mf"><span class="muted" style="font-size:13.5px">הקריאה לוקחת בערך דקה.</span><button class="btn primary" id="go">לקרוא מול המדיניות</button></div>'}
-  else if(NR.step==='read'){const pct=Math.min(96,10+Math.round(NR.got/Math.max(1,NR.paras.length)*86));b='<div class="prog"><div class="live"><span class="pulse"></span>'+(NR.got?'עברנו על '+NR.got+' מתוך '+NR.paras.length+' פסקאות...':'קוראים את ההסכם מתחילתו ועד סופו, מול המדיניות...')+'</div><div class="bar"><i style="width:'+pct+'%"></i></div></div><div class="desk" style="padding:14px;max-height:320px;overflow:hidden"><div class="paper reading" style="font-size:14px;padding:20px 24px">'+NR.paras.slice(0,36).map((t,i)=>'<div class="pp'+(i<NR.got?' read':'')+'">'+esc(t)+'</div>').join('')+'</div></div><div class="mf"><span></span><button class="btn soft" id="stop">לעצור</button></div>'}
+  else if(NR.step==='detect')b='<div class="plan" id="nrplan" role="status" aria-label="מה Areo עושה">'+planSteps()+'</div>';
+  else if(NR.step==='confirm')b=confirmBody();
+  else if(NR.step==='sent')b='<div class="note" style="color:var(--ink)">'+IC.spark+'<span>Areo התחילה לעבוד על הטיוטה, בשיחה שליד המערכת.</span></div>'+
+    '<ol class="nsteps"><li>Areo מוצאת את הקובץ <bdi>'+esc(NR.file||'')+'</bdi> במחשב. אם צריך, היא תשאל בשיחה איפה הוא שמור ותבקש אישור אחד.</li><li>היא מחילה את '+esc(NR.sentPol||'המדיניות')+(NR.pos?', בפוזיציה '+esc(NR.pos):'')+', לפי ההוראות המלאות של הנושא ונותן.</li><li>בסוף העסקה מופיעה כאן, עם קובץ העבודה בעקוב אחר שינויים והעותק למשלוח.</li></ol>'+
+    '<div class="mf"><span></span><button class="btn primary" data-close>סגירה</button></div>';
   openOverlay('<div class="scrim" id="scrim"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="nrt"><div class="mh"><div><h2 id="nrt">'+(td?'התשובה של '+esc(td.counterparty):'טיוטה שקיבלתם')+'</h2><p class="muted" style="font-size:14.5px">'+(td?'Areo תפתח סבב '+(latest(td).n+1)+' ותציג רק מה שהם שינו.':'עסקה חדשה, או תשובה בעסקה קיימת. Areo תזהה לבד.')+'</p></div><button class="iconbtn" data-close aria-label="סגירה">✕</button></div>'+b+'</div></div>');
 }
-const fld=(id,l,v)=>'<div class="fld"><label for="'+id+'">'+l+'</label><input id="'+id+'" value="'+esc(v||'')+'"></div>';
 /* annexes the draft refers to that are not in the file: found before reading, so the lawyer hears it now and not at the end */
 const ANX=/(?:נספח|Annex|Schedule|Exhibit|Appendix)\s+([א-ת]['׳]?|\d+|[A-Z])(?=[\s,.;:)\-]|$)/gi;
 function missingAnnexes(all){const ref=new Map(),has=new Set(),k=x=>x.replace(/׳/g,"'").toLowerCase();
@@ -1488,51 +1492,139 @@ function missingAnnexes(all){const ref=new Map(),has=new Set(),k=x=>x.replace(/�
 function tenderGuess(all){const t=all.join(' ');if(!/מכרז|tender/i.test(t))return 'no';return /(?:^|[\s"'(])(?:זכה|זכתה|זכייה)(?=[\s,.;:)"']|$)|ההצעה הזוכה|הזוכה במכרז|awarded/i.test(t)?'awarded':'bid'}
 const TENDER={no:'לא ממכרז',bid:'ממכרז, לפני הגשת ההצעה',awarded:'ממכרז שכבר הוכרע'};
 async function readDocx(f){const z=await JSZip.loadAsync(f);const x=await z.file('word/document.xml').async('string');const dom=new DOMParser().parseFromString(x,'application/xml'),NS='http://schemas.openxmlformats.org/wordprocessingml/2006/main';return Array.from(dom.getElementsByTagNameNS(NS,'p')).map(p=>Array.from(p.getElementsByTagNameNS(NS,'t')).map(t=>t.textContent).join('').trim()).filter(Boolean)}
-async function onFile(f){
+/* the sides of each agreement type, as in the setup page (SIDES there; a test keeps the two the same) */
+const SIDES=[
+ [/סודיות|NDA/i,['מגלה המידע','מקבל המידע','הסכם הדדי']],
+ [/הפצ/,['הספק (יצרן או יבואן)','המפיץ']],
+ [/Reseller|משווק/i,['הספק','המשווק']],
+ [/ספק לרשת/,['הספק','הרשת']],
+ [/OEM|Private Label|ייצור/i,['היצרן','המזמין (בעל המותג)']],
+ [/זכיינות|זיכיון/,['נותן הזיכיון','הזכיין']],
+ [/סוכנות ביטוח/,['המבטח','סוכן הביטוח']],
+ [/סוכנות|סוכן/,['המרשה','הסוכן']],
+ [/חכיר|ליסינג/,['המחכיר','החוכר']],
+ [/שכירות/,['המשכיר','השוכר']],
+ [/רישיון|רשיון/,['מעניק הרישיון','בעל הרישיון']],
+ [/SaaS|מנוי|ענן/i,['ספק השירות','הלקוח']],
+ [/עיבוד מידע|DPA/i,['בעל השליטה במידע (הלקוח)','מעבד המידע (הספק)']],
+ [/פיתוח/,['המפתח','המזמין']],
+ [/ניסוי קליני/,['היזם (נותן החסות)','המוסד הרפואי','החוקר או ה-CRO']],
+ [/מחקר ממומן/,['הגוף המממן','המוסד המחקרי']],
+ [/העברת חומרים|MTA/i,['המעביר','המקבל']],
+ [/PPA|רכישת חשמל/i,['היצרן','רוכש החשמל']],
+ [/מכרז/,['הגוף המזמין','המציע']],
+ [/קבלן משנה/,['הקבלן הראשי','קבלן המשנה']],
+ [/EPC|הקמה|קבלנות/,['המזמין','הקבלן']],
+ [/תכנון/,['המתכנן','המזמין']],
+ [/ניהול נכס|ניהול מלון/,['בעל הנכס','חברת הניהול']],
+ [/תיווך/,['המתווך','הלקוח']],
+ [/מכר|רכישה/,['המוכר','הקונה']],
+ [/רכש|אספקה|ספק/,['הספק','הרוכש']],
+ [/העסקה/,['המעסיק','העובד']],
+ [/הלוואה|מימון|ליווי פיננסי/,['המלווה','הלווה']],
+ [/השקעה/,['המשקיע','החברה המגייסת']],
+ [/מענק/,['נותן המענק','מקבל המענק']],
+ [/הרשאה/,['נותן ההרשאה','בעל ההרשאה']],
+ [/הפקה/,['המפיק','המזמין']],
+ [/פרסום|שיווק|משפיענים/,['המפרסם','נותן השירות']],
+ [/שיתוף פעולה|מיזם|מייסדים/,['הסכם הדדי','צד מוביל','צד משתתף']],
+ [/הובלה|אחסנה|שילוח|הסעות|אירוח|תמיכה|תחזוקה|בדיקות|מיקור חוץ|ניהול תיקים|שירות|ייעוץ/,['נותן השירות','מקבל השירות']]];
+const SIDES_ANY=['הצד שמספק או נותן','הצד שמקבל או רוכש','הסכם הדדי'];
+const kindOf=t=>{t=String(t||'');for(let i=0;i<SIDES.length;i++)if(SIDES[i][0].test(t))return i;return -1};
+function sidesFor(t){const i=kindOf(t);return i<0?SIDES_ANY.slice():SIDES[i][1].slice()}
+/* the company's policies, from the policy screen of the system: only policies that have positions in them */
+const fromShell=n=>(parent!==window&&parent[n])||window[n]||null;
+function policies(){try{const f=fromShell('__areoPolicies'),b=f?f():null;if(!b)return null;
+  return (b.books||[]).filter(x=>x&&x.key&&x.built!==false&&x.rules>0).map(x=>({key:x.key,type:x.type||'',name:x.name||x.type||x.key,side:x.side||''}))}catch(e){return null}}
+const polLabel=p=>p.name+(p.side?' · '+p.side:'');
+/* which policy fits this draft: the kind of agreement in its title, then its words, never the file name */
+function matchPolicies(pols,paras,hint){
+  const head=paras.slice(0,6).join(' '),body=paras.slice(0,40).join(' ');
+  /* the kind comes from the title first: a clause like "נותן השירותים יספק" must not make a services agreement a supply one */
+  const title=docTitle(paras);
+  const k=[hint,title,paras.slice(0,3).join(' '),head,body].map(kindOf).find(i=>i>=0);
+  const words=p=>(p.type+' '+p.name).replace(/\(|\)/g,' ').split(/[\s,·-]+/).filter(w=>w.length>2&&!/^(הסכם|הסכמי|מדיניות|פלייבוק|חוזה|חוזי|של|עם|החברה|חברה|הצד|הצדדים|כמקבלת|כנותנת|כספקית|כלקוחה)$/.test(w));
+  let best=[],top=0;
+  /* a kind known from the title rules out every policy of another kind: a services policy is never applied to an NDA */
+  pols.forEach(p=>{const same=k!=null&&kindOf(p.type+' '+p.name)===k;if(k!=null&&!same)return;let sc=same?10:0;
+    words(p).forEach(w=>{if(head.includes(w))sc+=3;else if(body.includes(w))sc+=1});if(sc>top){top=sc;best=[p]}else if(sc===top&&sc>0)best.push(p)});
+  return top>=3?best:[]}
+const MUTUAL=/הדדי|mutual/i;
+/* a policy is written for one kind of agreement AND one side of the company: the side comes from the policy, never from a separate question */
+function polSide(p){if(!p)return '';if(p.side)return p.side;return sideIn(p.name,sidesFor(p.type+' '+p.name))}
+const sameSide=(a,b)=>!!(a&&b&&(a===b||sideIn(a,[b])===b||sideIn(b,[a])===a));
+/* how long each step of the loader stays on screen (Neil 15.11: at a third of a second it could not be seen) */
+let STEPMS=950;
+const detectSteps=()=>['קוראים את \u2068'+(NR.file||'הקובץ')+'\u2069','מזהים את סוג ההסכם','מחפשים את המדיניות שמתאימה לו','בודקים אם זו תשובה בעסקה פתוחה'];
+/* each step stays on screen long enough to be read, even when the work itself is instant */
+function planSteps(){const P=detectSteps(),k=Math.min(NR.ps||0,P.length-1);
+  return P.slice(0,k+1).map((t,j)=>j<k?'<div class="ps">'+IC.check+'<span>'+esc(t)+'</span></div>':'<div class="ps now"><span class="pbar"></span><span>'+esc(t)+'…</span></div>').join('')}
+/* only the list changes, so the window does not fade in again on every step */
+const stepTo=async i=>{NR.ps=i;const el=document.getElementById('nrplan');if(el&&NR.step==='detect')el.innerHTML=planSteps();await new Promise(r=>setTimeout(r,STEPMS))};
+/* the line that names the document, not "לכבוד", a date or an address: the first short line in the opening that says what the document is */
+const DOCWORD=/הסכם|התחייבות|כתב |חוזה|נספח|הזמנת|תנאי|agreement|undertaking|NDA|terms/i,NOTTITLE=/^(לכבוד|תאריך|מאת|שלום|\d|To:|Date)/i;
+function docTitle(paras){const top=paras.slice(0,15).map(t=>t.trim()).filter(t=>t.length>3&&t.length<150);
+  return (top.find(t=>DOCWORD.test(t)&&!NOTTITLE.test(t))||top.find(t=>!NOTTITLE.test(t))||'').replace(/^הנדון:?\s*/,'')}
+/* a side written in other words ("החברה כמקבלת השירותים"): every word of the side, without ה at the start or ת/ים at the end, is in the text */
+function sideIn(text,sides){text=String(text||'');if(!text)return '';const core=w=>w.replace(/^ה/,'').replace(/(ים|ות|ת)$/,'');
+  return sides.find(v=>v!=='הסכם הדדי'&&v.replace(/\(.*?\)/g,'').split(/\s+/).filter(w=>w.length>1).every(w=>text.includes(core(w))))||''}
+async function onFile(f,gmail){
   if(!f)return;if(!/\.docx$/i.test(f.name)){NR.err='אפשר להעלות כרגע קובץ Word בלבד (docx).';renderNew();return}
   if(!window.JSZip){NR.err='לא הצלחנו לטעון את קורא הקבצים. רעננו את העמוד ונסו שוב.';renderNew();return}
-  NR.file=f.name;NR.step='detect';renderNew();
+  NR.file=f.name;NR.fobj=f;NR.gmail=gmail||'';NR.step='detect';NR.ps=0;renderNew();
   try{const all=await readDocx(f);NR.annex=missingAnnexes(all);NR.tender=tenderGuess(all);NR.paras=all.slice(0,160)}catch(e){NR.step='drop';NR.err='לא הצלחנו לקרוא את הקובץ. בדקו שזה קובץ Word תקין.';renderNew();return}
   if(!NR.paras.length){NR.step='drop';NR.err='לא מצאנו טקסט בקובץ.';renderNew();return}
-  const sample=await sampler();let det={paper:'theirs'};
-  if(sample){try{det=await sample.json('You read the opening of a contract received in a negotiation. The company using this tool is "'+COMPANY+'". Reply with ONLY a JSON object: {"type": Hebrew contract type like "הסכם שירותים", "counterparty": the other party\'s name, "our_role": the company\'s role in Hebrew like "מקבלת השירותים", "paper": "ours" if this is the company\'s own template with the other side\'s comments, else "theirs"}. Use a short hyphen only.\n\n'+NR.paras.slice(0,30).join('\n'),{modelTier:'quick'})}catch(e){det={paper:'theirs',note:sampleErr(e)}}}
-  else det.note='הזיהוי האוטומטי לא זמין בתצוגה הזו. מלאו את הפרטים.';
-  const open=DEALS.filter(x=>x.status!=='signed'&&x.rounds.length);
-  det.match=NR.target||((open.find(x=>det.counterparty&&norm(x.counterparty)&&(norm(det.counterparty).includes(norm(x.counterparty))||norm(x.counterparty).includes(norm(det.counterparty))))||{}).id)||null;
-  NR.det=det;NR.step='confirm';renderNew();
+  await new Promise(r=>setTimeout(r,STEPMS));await stepTo(1);
+  const pols=policies();let det={title:docTitle(NR.paras)};
+  /* Claude in the page, when this view has it, reads the opening; without it the match below still works */
+  const sample=await sampler();
+  if(sample&&pols&&pols.length){try{const r=await sample.json('You read the opening of a contract received in a negotiation. The company using this tool is "'+COMPANY+'". Its contract policies: '+JSON.stringify(pols.map(p=>({key:p.key,name:p.name,side:p.side})))+'. Reply with ONLY a JSON object: {"type": Hebrew contract type like "הסכם שירותים", "counterparty": the other party\'s name, "policy_key": the key of the policy for this kind of contract, or null when none of them is for this kind of contract, "position": the company\'s side in Hebrew, like "מקבל המידע", or null}. Use a short hyphen only.\n\n'+NR.paras.slice(0,30).join('\n'),{modelTier:'quick'});
+    if(r&&typeof r==='object')Object.assign(det,{type:r.type||'',counterparty:r.counterparty||'',policy_key:r.policy_key||'',position:r.position||''})}catch(e){}}
+  det.pols=pols;
+  await stepTo(2);
+  await stepTo(3);
+  /* an open deal with this counterparty: their reply, the next round */
+  const open=DEALS.filter(x=>x.status!=='signed'&&x.rounds.length),txt=NR.paras.slice(0,40).join(' ');
+  det.match=NR.target||((open.find(x=>(det.counterparty&&norm(x.counterparty)&&(norm(det.counterparty).includes(norm(x.counterparty))||norm(x.counterparty).includes(norm(det.counterparty))))||(x.counterparty&&x.counterparty.length>2&&txt.includes(x.counterparty)))||{}).id)||null;
+  const m=det.match&&DEALS.find(x=>x.id===det.match);
+  /* several policies for this kind, one per side: the side we know (the open deal, Claude's reading, "הדדי" in the title) picks one; otherwise the lawyer does */
+  const byKey=pols&&pols.find(p=>p.key===det.policy_key),cands=byKey?[byKey]:pols?matchPolicies(pols,NR.paras,det.type):[];
+  const hints=[m&&m.role,det.position,MUTUAL.test(det.title)?'הסכם הדדי':''].filter(Boolean);
+  const hit=cands.length===1?cands[0]:cands.find(p=>hints.some(h=>sameSide(h,polSide(p))))||null;
+  det.multi=!hit&&cands.length>1;
+  NR.pol=hit?hit.key:'';
+  NR.det=det;NR.kind='round';NR.step='confirm';renderNew();
 }
-function finalParas(d,r){const out=[];r.paras.forEach(p=>{const x=r.byPara[p.i];const t=x&&x.op!=='accept'?newTextOf(r,x,d):null;out.push(t==null?p.t:t);(r.inserts[p.i]||[]).forEach(y=>{const u=newTextOf(r,y,d);if(u!=null)out.push(u)})});return out}
-async function runRead(){
-  const kindEl=document.querySelector('input[name="kind"]:checked'),asRound=!!(NR.det.match&&(!kindEl||kindEl.value==='round'));
-  const det={type:$('#t').value.trim()||'הסכם',counterparty:$('#cp').value.trim()||'הצד השני',our_role:$('#role').value.trim(),paper:$('#paper').value,usePb:$('#pb').value==='pb',tender:($('#tender')&&$('#tender').value)||'no'};
-  const sample=await sampler();if(!sample){toast('Claude לא זמין בעמוד הזה');return}
-  const base=DEALS.find(x=>x.rounds.length&&x.rounds[0].rules&&x.rounds[0].rules.length),R=det.usePb&&base?base.rounds[0].rules:[];
-  const prevDeal=asRound?DEALS.find(x=>x.id===NR.det.match):null,prevR=prevDeal?latest(prevDeal):null,ours=prevR?finalParas(prevDeal,prevR):null;
-  NR.step='read';NR.got=0;renderNew();
-  const prompt='You are Areo, a senior Israeli commercial lawyer acting for "'+COMPANY+'" ('+det.our_role+'). Apply the company\'s contract policy to the draft we received from '+det.counterparty+'. Make surgical changes inside their wording; never restructure. '+STYLE+'\n\n'+
-   (R.length?'POLICY (id | topic | green = our position | yellow = acceptable fallback | red = red line):\n'+R.map(z=>z.id+' | '+z.title+' | green: '+z.green+' | yellow: '+(z.yellow||'')+' | red: '+(z.red||'')).join('\n'):'No policy: use professional judgement; set rule_id null.')+
-   (ours?'\n\nOUR PREVIOUS DRAFT (what we sent in round '+prevR.n+'):\n'+ours.join('\n')+'\n\nThe new draft is their reply. List what they changed against our draft in "their_changes", and decide only on what they changed or left open.':'')+
-   (det.tender==='awarded'?'\n\nTENDER: this agreement comes from a public tender that was already decided. Change only clarifications and clear errors in the text (a wrong party name, a wrong reference, a missing number). Do not reopen price, scope, term, options or any other substantive term: put each substantive gap against the policy in "internal_comment" with op "comment_only".':det.tender==='bid'?'\n\nTENDER: this is a tender before the bid is submitted. Do not change the text: use op "comment_only" and write each point as a clarification question to the tender committee in "external_comment".':'')+
-   (NR.annex&&NR.annex.length?'\n\nMISSING ANNEXES: the draft refers to '+NR.annex.join(', ')+', which are not in the file. Do not assume what they say; where a decision depends on one, say so in "internal_comment".':'')+
-   '\n\nWhere the draft leaves a deal fact blank or missing (an amount, a date, an address, a signatory), keep or add a bracketed Hebrew placeholder such as [להשלמה: דמי השכירות] in the text. Never invent the fact.'+
-   '\n\nTHE DRAFT WE RECEIVED (index: text):\n'+NR.paras.map((t,i)=>i+': '+t).join('\n')+
-   '\n\nReply with ONLY JSON: {"strategy": one Hebrew paragraph of 3-4 sentences on how to run this round,'+(ours?' "their_changes":[{"para": index, "summary": one Hebrew line}],':'')+' "decisions":[ for EACH paragraph you change, in document order: {"para": index, "op": "replace" (full new paragraph text in "new") or "insert_after" (a new paragraph after "para", text in "new") or "comment_only", "new": text, "topic": short Hebrew topic, "rule_id": policy id or null, "their_track": "green"|"yellow"|"red", "summary": one Hebrew line, "plain_effect": one Hebrew sentence on what the clause now says, "external_comment": a short courteous Hebrew comment to the counterparty explaining the change, "internal_comment": one Hebrew sentence for us only, "lawyer": true if the change rests on judgement rather than a green policy position } ] }. At most 14 decisions. Keep paragraph numbering in the new text.';
-  NR.ctl=new AbortController();
-  try{
-    const out=await sample.json(prompt,{signal:NR.ctl.signal,onText:({text})=>{const m=[...text.matchAll(/"para"\s*:\s*(\d+)/g)].map(x=>+x[1]);const g=m.length?Math.max(...m)+1:0;if(g>NR.got){NR.got=g;renderNew()}}});
-    const paras=NR.paras.map((t,i)=>({i,t:dash(t),k:i===0?'title':/^\d+\.\s/.test(t)?'head':/^\d+\.\d+/.test(t)?'clause':'pre'}));
-    const decisions=(out.decisions||[]).filter(z=>paras[z.para]).map((z,j)=>{const b={id:'A'+j,topic:dash(z.topic),summary:dash(z.summary),plain_effect:dash(z.plain_effect),external_comment:dash(z.external_comment),internal_comment:dash(z.internal_comment),their_track:z.their_track,rule_ids:z.rule_id?[z.rule_id]:[],lawyer:!!z.lawyer};
-      if(z.op==='insert_after')return Object.assign(b,{op:'insert_paragraph',after_para:z.para,text:dash(z.new)});
-      if(z.op==='comment_only')return Object.assign(b,{op:'comment_only',para:z.para});
-      return Object.assign(b,{op:'replace',para:z.para,new_text:dash(z.new)})});
-    paras.forEach(p=>{if(!decisions.some(z=>z.para===p.i&&z.op!=='insert_paragraph'))decisions.push({id:'K'+p.i,op:'accept',para:p.i,reason:'לא שונה'})});
-    const round={source:'page',received:new Date().toISOString().slice(0,10),received_file:NR.file,tender:det.tender,missing_annexes:(NR.annex||[]).slice(),paper:det.paper==='ours'?'הנייר שלכם, עם ההערות שלהם':'הנייר של '+det.counterparty,playbook:R.length?base.rounds[0].playbook:'',strategy:dash(out.strategy),their_changes:(out.their_changes||[]).map(t=>({para:t.para,summary:dash(t.summary)})),open_items:[],concessions:[],rules:R,paras,decisions};
-    let d;
-    if(prevDeal){d=prevDeal;round.n=latest(d).n+1;d.rounds.push(prepRound(d,round))}
-    else d=addDeal({id:'deal_'+Date.now().toString(36),counterparty:det.counterparty,type:det.type,role:det.our_role,company:COMPANY,author:S.who||(base&&base.author)||'',rounds:[Object.assign({n:1},round)]});
-    saveDeal(d);closeOverlay();openDeal(d.id);toast('סבב '+latest(d).n+' מוכן: '+nn(latest(d).changes.length,'שינוי אחד','שינויים'));
-  }catch(e){NR.step='confirm';NR.det=Object.assign({},NR.det,{note:sampleErr(e)});renderNew()}
-}
+function confirmBody(){
+  const dd=NR.det||{},pols=dd.pols,m=dd.match&&DEALS.find(x=>x.id===dd.match);
+  const what=dd.type||dd.title||'';
+  let h='<div class="note" style="color:var(--ink)">'+IC.spark+'<span>'+(what?'זיהינו: <b>'+esc(what)+'</b>'+(dd.counterparty?' מול '+esc(dd.counterparty):''):'קראנו '+NR.paras.length+' פסקאות.')+'</span></div>';
+  if(pols===null)return h+'<div class="note">לא הצלחנו לקרוא את רשימת המדיניות של המערכת. סגרו את החלון ונסו שוב בעוד רגע.</div><div class="mf"><span></span><button class="btn soft" data-close>סגירה</button></div>';
+  if(!pols.length)return h+'<div class="note" style="color:var(--ink)">אין לכם עדיין מדיניות חוזית במערכת. Areo לא מנתחת טיוטה בלי מדיניות שמתאימה לה.</div><div class="mf"><span></span><button class="btn soft" data-close>סגירה</button></div>';
+  if(m)h+='<div style="display:flex;flex-direction:column;gap:8px"><label class="opt"><input type="radio" name="kind" value="round"'+(NR.kind!=='new'?' checked':'')+'><span><b>תשובה של '+esc(m.counterparty)+' לסבב '+latest(m).n+'</b><span>Areo תשווה לטיוטה ששלחתם, תציג מה הם שינו, ותפתח סבב '+(latest(m).n+1)+'.</span></span></label><label class="opt"><input type="radio" name="kind" value="new"'+(NR.kind==='new'?' checked':'')+'><span><b>עסקה חדשה</b><span>הסכם נפרד, גם אם מול אותו צד.</span></span></label></div>';
+  const cur=pols.find(p=>p.key===NR.pol);
+  h+='<div class="detect"><div class="fld" style="grid-column:1/-1"><label for="pb">המדיניות שתוחל</label><select id="pb">'+(cur?'':'<option value="" selected>לבחור מדיניות</option>')+pols.map(p=>'<option value="'+esc(p.key)+'"'+(p.key===NR.pol?' selected':'')+'>'+esc(polLabel(p))+'</option>').join('')+'</select></div></div>';
+  if(!cur&&dd.multi)return h+'<div class="note" style="color:var(--ink)">יש לכם כמה מדיניות להסכמים מהסוג הזה, אחת לכל פוזיציה של החברה. בחרו את המתאימה.</div><div class="mf"><span></span><button class="btn primary" id="go" disabled>להתחיל</button></div>';
+  if(!cur)return h+'<div class="note" style="color:var(--ink)">אין לכם מדיניות קיימת שמתאימה להסכם הזה'+(what?' ('+esc(what)+')':'')+'. Areo לא מנתחת טיוטה בלי מדיניות שמתאימה לה. אם אחת מהמדיניות ברשימה כן מתאימה, בחרו אותה.</div><div class="mf"><span></span><button class="btn soft" data-close>סגירה</button></div>';
+  const side=polSide(cur);
+  h+='<div class="muted" style="font-size:14px">'+(side?'הפוזיציה של '+esc(COMPANY||'החברה')+' במדיניות הזו: <b style="color:var(--ink)">'+esc(side)+'</b>':'המדיניות לא אומרת באיזה צד '+esc(COMPANY||'החברה')+'. Areo תקבע לפי ההסכם.')+'</div>';
+  if(NR.annex&&NR.annex.length)h+='<div class="note">ההסכם מזכיר '+esc(NR.annex.join(', '))+', ואלה לא נמצאו בקובץ. Areo תמשיך, וכל החלטה שתלויה בהם תסומן לבדיקה.</div>';
+  if(NR.tender!=='no')h+='<div class="note">נראה שההסכם ממכרז ('+esc(TENDER[NR.tender])+'). Areo תתייחס לזה: במכרז שכבר הוכרע מבקשים רק הבהרות ותיקוני טעויות.</div>';
+  if(NR.err)h+='<div class="note" style="color:var(--r)">'+esc(NR.err)+'</div>';
+  return h+'<div class="mf"><span class="muted" style="font-size:13.5px">Areo עובדת בשיחה שליד המערכת, לפי ההוראות המלאות של הנושא ונותן.</span><button class="btn primary" id="go">להתחיל</button></div>'}
+/* the work itself is done by the negotiator skill in the conversation: the page only says which file, which policy and which side */
+function runSend(){
+  const dd=NR.det||{},pols=dd.pols||[],pol=pols.find(p=>p.key===NR.pol);if(!pol)return;NR.pos=polSide(pol);
+  const m=dd.match&&NR.kind!=='new'?DEALS.find(x=>x.id===dd.match):null,f=NR.fobj;
+  const req={file_name:NR.file,file_size:f?f.size:null,file_modified:f&&f.lastModified?new Date(f.lastModified).toISOString().slice(0,16):'',source:NR.gmail?'gmail':'upload',gmail_message_id:NR.gmail||'',
+    document_title:(dd.title||'').slice(0,120),agreement_type:dd.type||'',counterparty:dd.counterparty||(m&&m.counterparty)||'',
+    policy:{key:pol.key,type:pol.type,name:pol.name,side:pol.side},position:NR.pos||'',deal_id:m?m.id:'',reply_to_round:m?latest(m).n:null,
+    tender:NR.tender,missing_annexes:(NR.annex||[]).slice(0,8)};
+  const send=fromShell('__areoSend');
+  const pr=send?send({label:'משא ומתן: '+NR.file,kind:'areo_nego_request',request:req}):null;
+  if(!pr){NR.err='לא הצלחנו להעביר את הבקשה ל-Areo. פתחו את המערכת מתוך השיחה של Areo ונסו שוב.';renderNew();return}
+  NR.sentPol=polLabel(pol);NR.err='';NR.step='sent';renderNew();
+  Promise.resolve(pr).catch(()=>{if(S.overlay==='new'){NR.step='confirm';NR.err='השליחה ל-Areo לא הצליחה. אפשר לנסות שוב.';renderNew()}else toast('השליחה ל-Areo לא הצליחה. אפשר לנסות שוב.')})}
 
 /* ---------- Areo writes ---------- */
 async function rewrite(x,tone){
@@ -1606,7 +1698,7 @@ document.addEventListener('pointerdown',e=>{S._editBtn=!!(e.target.closest&&e.ta
 function rerenderOverlay(){if(S.overlay==='finish')finish();else if(S.overlay==='about')about()}
 
 document.addEventListener('click',async e=>{
-  if(e.target.id==='scrim'&&S.overlay){if(S.overlay!=='new'||NR.step!=='read')closeOverlay();return}
+  if(e.target.id==='scrim'&&S.overlay){closeOverlay();return}
   const t=e.target.closest('button,a,tr.click,.dcard,.pp[data-d],.bal,.drop,label.opt');if(t&&t.tagName==='A'&&!t.dataset.close)return;if(!t)return;
   const ds=t.dataset,d=dl(),r=d&&rd();
   if(S.vm&&!t.closest('.vm')){S.vm=false;if(!('mode' in ds)&&!('focus' in ds)){render()}}
@@ -1615,8 +1707,7 @@ document.addEventListener('click',async e=>{
   if('home' in ds){S.view='home';render();scrollTo(0,0);return}
   if('newround' in ds){e.stopPropagation();openNew(ds.newround||null);return}
   if(t.id==='drop'){$('#file').click();return}
-  if(t.id==='go'){runRead();return}
-  if(t.id==='stop'){if(NR.ctl)NR.ctl.abort();return}
+  if(t.id==='go'){runSend();return}
   if('deal' in ds){const inner=e.target.closest('[data-newround]');if(inner){openNew(inner.dataset.newround||null);return}openDeal(ds.deal);return}
   if('theme' in ds){const h=document.documentElement,dark=h.dataset.theme?h.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;h.dataset.theme=dark?'light':'dark';return}
   if('about' in ds){about();return}
@@ -1661,6 +1752,8 @@ document.addEventListener('submit',e=>{const f=e.target.closest('[data-ask]');if
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='file')onFile(t.files[0]);
+  if(t.id==='pb'&&S.overlay==='new'){NR.pol=t.value;NR.err='';renderNew()}
+  if(t.name==='kind'&&S.overlay==='new'){NR.kind=t.value}
   if(t.dataset.item){setBag('items',t.dataset.item,t.checked);about()}
   if(t.dataset.bubble){setMark(t.dataset.bubble,{bubble:t.value});toast('ההערה נשמרה')}
   if(t.dataset.edit&&!S._editBtn)saveEdit(t.dataset.edit,t.value);

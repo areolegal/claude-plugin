@@ -89,65 +89,75 @@ def index_entry_for(index_path,core_path,model,core):
 	for A in F or():
 		if isinstance(A,dict)and(A.get('family_code')or A.get('family_id'))==J and A.get('company_role_code')==K and not A.get('legacy'):return A
 def main(argv=None):
-	for W in(sys.stdout,sys.stderr):
-		try:W.reconfigure(encoding='utf-8',errors='replace')
+	for b in(sys.stdout,sys.stderr):
+		try:b.reconfigure(encoding='utf-8',errors='replace')
 		except(AttributeError,ValueError):pass
-	I=argparse.ArgumentParser(description=__doc__.split('\n')[0]);I.add_argument('model',help='playbook-model.json');I.add_argument('--core',help='playbook-core.json');I.add_argument('--index',help='playbooks/index.json. בלעדיו: האינדקס שמעל תיקיית הגרעין, כשהוא קיים');I.add_argument('--min-skill-version',help='גרסת בונה מינימלית. פלייבוק שנבנה לפניה מדווח כישן');B=I.parse_args(argv)
-	try:D=json.loads(Path(B.model).read_text(encoding='utf-8'))
-	except Exception as M:print('cannot read the model (%s): %s'%(B.model,M));return 2
-	E=None
-	if B.core:
-		try:E=json.loads(Path(B.core).read_text(encoding='utf-8'))
-		except Exception as M:print('cannot read the core (%s): %s'%(B.core,M));return 2
+	J=argparse.ArgumentParser(description=__doc__.split('\n')[0]);J.add_argument('model',help='playbook-model.json');J.add_argument('--core',help='playbook-core.json');J.add_argument('--index',help='playbooks/index.json. בלעדיו: האינדקס שמעל תיקיית הגרעין, כשהוא קיים');J.add_argument('--min-skill-version',help='גרסת בונה מינימלית. פלייבוק שנבנה לפניה מדווח כישן');D=J.parse_args(argv)
+	try:E=json.loads(Path(D.model).read_text(encoding='utf-8'))
+	except Exception as N:print('cannot read the model (%s): %s'%(D.model,N));return 2
+	B=None
+	if D.core:
+		try:B=json.loads(Path(D.core).read_text(encoding='utf-8'))
+		except Exception as N:print('cannot read the core (%s): %s'%(D.core,N));return 2
 	C,F=[],[]
 	for A in TOP:
-		if not nonempty(D.get(A)):C.append('אין %s במודל'%A)
-	X=[A for A in(D.get('scope_summary')or{}).get('contract_families')or()if isinstance(A,dict)];Y={'company_role_code':next((A.get('company_role_code')for A in X if A.get('company_role_code')),None),'family_code':D.get('family_id')}
+		if not nonempty(E.get(A)):C.append('אין %s במודל'%A)
+	c=[A for A in(E.get('scope_summary')or{}).get('contract_families')or()if isinstance(A,dict)];d={'company_role_code':next((A.get('company_role_code')for A in c if A.get('company_role_code')),None),'family_code':E.get('family_id')}
 	for A in MATCH:
-		if not nonempty(D.get(A))and not nonempty((E or{}).get(A))and not nonempty(Y.get(A)):C.append('אין %s במודל ולא בגרעין. בלעדיו האיתור אינו מתאים את הפלייבוק למשפחה ולצד'%A)
+		if not nonempty(E.get(A))and not nonempty((B or{}).get(A))and not nonempty(d.get(A)):C.append('אין %s במודל ולא בגרעין. בלעדיו האיתור אינו מתאים את הפלייבוק למשפחה ולצד'%A)
 	for A in STATUS:
-		if not nonempty(D.get(A)):C.append('אין %s במודל. המעמד מוצג כפי שהוא, ואינו מנוסח מחדש'%A)
+		if not nonempty(E.get(A)):C.append('אין %s במודל. המעמד מוצג כפי שהוא, ואינו מנוסח מחדש'%A)
 		elif A=='status_label'and S is not None:continue
-		elif E is not None and A in E and E.get(A)!=D.get(A):C.append('%s בגרעין "%s" ובמודל "%s". הקורא אינו יודע במי להאמין'%(A,E.get(A),D.get(A)))
-	if'presentation_label'in json.dumps(D,ensure_ascii=False):C.append('presentation_label במודל. התווית היחידה היא status_label')
-	G=D.get('rules')
+		elif B is not None and A in B and B.get(A)!=E.get(A):C.append('%s בגרעין "%s" ובמודל "%s". הקורא אינו יודע במי להאמין'%(A,B.get(A),E.get(A)))
+	if'presentation_label'in json.dumps(E,ensure_ascii=False):C.append('presentation_label במודל. התווית היחידה היא status_label')
+	G=E.get('rules')
 	if not isinstance(G,list)or not G:C.append('אין rules[] במודל: אין ממה להכריע');G=[]
-	J=core_rules_by_id(E)
-	for N in G:
-		if isinstance(N,dict):C+=rule_findings(N,J.get(N.get('rule_id')))
+	H=core_rules_by_id(B)
+	for O in G:
+		if isinstance(O,dict):C+=rule_findings(O,H.get(O.get('rule_id')))
 		else:C.append('כלל שאינו אובייקט ב-rules[]')
-	if E is not None and J:
-		T={A.get('rule_id')for A in G if isinstance(A,dict)}
-		for L in sorted(set(J)-T):C.append('%s: בגרעין ואינו במודל'%L)
-		for L in sorted(T-set(J)):
-			if L:F.append('%s: במודל ואינו בגרעין'%L)
-	if E is not None:C+=evidence_findings(E)
-	if B.min_skill_version:
-		O=str((D.get('produced_with')or{}).get('skill_version')or'')
-		if O and _older(O,B.min_skill_version):F.append('הפלייבוק נבנה בגרסת בונה %s, והמינימום הוא %s. אמור זאת ללקוחה ואל תוריד בשקט'%(O,B.min_skill_version))
-	P=[A.get('rule_id')for A in G if isinstance(A,dict)and _val(A,J.get(A.get('rule_id')),'round1_posture')is None]
-	if P:F.append('אין round1_posture ל-%d כללים (%s). מחזיקים בירוק, ונאמר בסיכום הפנימי'%(len(P),', '.join(str(A)for A in P[:6])))
-	H=[]
+	if B is not None and H:
+		W={A.get('rule_id')for A in G if isinstance(A,dict)}
+		for M in sorted(set(H)-W):C.append('%s: בגרעין ואינו במודל'%M)
+		for M in sorted(W-set(H)):
+			if M:F.append('%s: במודל ואינו בגרעין'%M)
+	if B is not None:C+=evidence_findings(B)
+	try:from playbook import decision_kit as K
+	except ImportError:K=None
+	if K is not None:
+		if B is not None:
+			for P in B.get('clauses')or():
+				if isinstance(P,dict):C+=['%s: %s'%(P.get('id'),A)for A in K.check_core_kit(P.get('decision_kit'))]
+		X=[A for A in G if isinstance(A,dict)and A.get('importance')in K.SUBSTANTIAL];Q=[A.get('rule_id')for A in X if not((H.get(A.get('rule_id'))or{}).get('decision_kit')if B is not None else K.core_kit(A))]
+		if Q:F.append('ערכת ההכרעה חסרה ב-%d כללים מהותיים (%s): מסווגים כמו קודם, מול העמדה והנוסח, ובסיכום הפנימי שורה אחת שמציעה לבנות מחדש את הגרעין ברכיב הפלייבוק'%(len(Q),', '.join(str(A)for A in Q[:6])))
+		Y=[A.get('rule_id')for A in X if not(_val(A,H.get(A.get('rule_id')),'post_checks')or[])]
+		if Y:F.append('כלל קריטי בלי בדיקת תוצאה: %s. נרשם בשורה בסיכום הפנימי, ואין להמציא בדיקה במקומו'%', '.join(str(A)for A in Y[:6]))
+	if D.min_skill_version:
+		R=str((E.get('produced_with')or{}).get('skill_version')or'')
+		if R and _older(R,D.min_skill_version):F.append('הפלייבוק נבנה בגרסת בונה %s, והמינימום הוא %s. אמור זאת ללקוחה ואל תוריד בשקט'%(R,D.min_skill_version))
+	T=[A.get('rule_id')for A in G if isinstance(A,dict)and _val(A,H.get(A.get('rule_id')),'round1_posture')is None]
+	if T:F.append('אין round1_posture ל-%d כללים (%s). מחזיקים בירוק, ונאמר בסיכום הפנימי'%(len(T),', '.join(str(A)for A in T[:6])))
+	I=[]
 	if S is None:F.append('הספרייה המשותפת אינה זמינה, ולכן פער התוויות מול שער המדיניות לא נבדק')
 	else:
-		Q=B.index or(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(B.core))),'index.json')if B.core else None);Z=index_entry_for(Q,B.core,D,E)if Q and os.path.exists(Q)else None;K=S.label_gap(D,B.model,core=E,index_entry=Z)
-		if K['mismatch']:
-			H.append('התווית של שער המדיניות: "%s"'%K['label'])
-			for U in K['mismatch']:H.append('%s: "%s"'%(U,K['stored'][U]))
-			if set(K['mismatch'])-{'model'}:H.append('מציגים ללקוחה את התווית של שער המדיניות, ומציעים לבנות מחדש את הגרעין ברכיב הפלייבוק (build_playbook_core.py ו-register_playbook.py)')
-			else:H.append('רק המודל נושא תווית ישנה. מציגים ללקוחה את התווית של שער המדיניות; המודל מתעדכן בשמירה הבאה שלו ברכיב הפלייבוק')
-	def V():
-		if H:
+		U=D.index or(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(D.core))),'index.json')if D.core else None);e=index_entry_for(U,D.core,E,B)if U and os.path.exists(U)else None;L=S.label_gap(E,D.model,core=B,index_entry=e)
+		if L['mismatch']:
+			I.append('התווית של שער המדיניות: "%s"'%L['label'])
+			for Z in L['mismatch']:I.append('%s: "%s"'%(Z,L['stored'][Z]))
+			if set(L['mismatch'])-{'model'}:I.append('מציגים ללקוחה את התווית של שער המדיניות, ומציעים לבנות מחדש את הגרעין ברכיב הפלייבוק (build_playbook_core.py ו-register_playbook.py)')
+			else:I.append('רק המודל נושא תווית ישנה. מציגים ללקוחה את התווית של שער המדיניות; המודל מתעדכן בשמירה הבאה שלו ברכיב הפלייבוק')
+	def a():
+		if I:
 			print('LABEL MISMATCH')
-			for A in H:print('-',A)
+			for A in I:print('-',A)
 	if C:
 		print('CONTRACT NOT MET')
-		for a in C:print('-',a)
-		for R in F:print('! note:',R)
-		print('%d errors'%len(C));V();return 3
+		for f in C:print('-',f)
+		for V in F:print('! note:',V)
+		print('%d errors'%len(C));a();return 3
 	print('CONTRACT MET')
-	for R in F:print('! note:',R)
-	V();return 0
+	for V in F:print('! note:',V)
+	a();return 0
 def _older(a,b):
 	def C(v):return[int(A)if A.isdigit()else 0 for A in str(v).split('.')]
 	A,B=C(a),C(b);A+=[0]*(len(B)-len(A));B+=[0]*(len(A)-len(B));return A<B
