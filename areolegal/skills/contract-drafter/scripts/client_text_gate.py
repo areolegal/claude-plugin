@@ -7,7 +7,8 @@ CODE_RX=re.compile('(?<![\\w-])(?:R\\d{1,3}|(?:DOC|AGR|REG|MAND|PB|DEAL)-[\\w.]*
 LOCAL_PATH_RX=re.compile('(?<![A-Za-z0-9])[A-Za-z]:[\\\\/](?![\\\\/])\\S{2,}|[\\\\/]Users[\\\\/]|OneDrive|(?<![\\w.])\\.\\./')
 PLAYBOOK_RX=re.compile('פלייבוק|פלי"בוק|\\bplaybook\\b',re.I)
 HOLD_RX=re.compile('ממתי(?:ן|נה|נים|נות)\\s+ל(?:אישור|בדיקת)\\s+(?:של\\s+)?(?:עורך|עורכת|יועץ|היועץ|הממונה)|טעונ?(?:ה|ים|ות|ן)\\s+אישור\\s+(?:של\\s+)?(?:עורך|עורכת|יועץ|היועץ)|טרם\\s+(?:נבדק|אושר)\\w*\\s+(?:ב?יד[יי]|על[\\s-]ידי)\\s+(?:עורך|עורכת|יועץ)|אל\\s+תשלח\\w*\\s+(?:עד|לפני)\\s+(?:ש|אישור)|אין\\s+לשלוח\\s+(?:עד|לפני)\\s+(?:ש|אישור)|\\bpending\\s+(?:lawyer|legal|counsel|attorney)\\s+(?:review|approval)|\\bawait(?:s|ing)\\s+(?:lawyer|legal|counsel|attorney)\\b|\\bnot\\s+(?:yet\\s+)?(?:reviewed|approved)\\s+by\\s+(?:a\\s+)?(?:lawyer|counsel|attorney)\\b|\\bdo\\s+not\\s+send\\s+(?:until|before)\\b',re.I)
-NO_SOURCE_NOTE='AREO לא מצאה מקור מורשה לנקודה זו'
+NO_SOURCE_NOTE='AREO לא מצא מקור מורשה לנקודה זו'
+NO_SOURCE_NOTE_LEGACY='AREO לא מצאה מקור מורשה לנקודה זו',
 NO_SOURCE_NOTE_EN='AREO did not find an approved source for this point'
 STYLE_ONLY='בהתאם ל','יש לציין','please','successfully'
 ANNEX_REF=re.compile('^[A-Z]-\\d{1,2}$')
@@ -31,7 +32,7 @@ def client_text_problems(paths,rtl,docx_text,voice_check=None):
 		for C in CODE_RX.finditer(B):A.append('%s: קוד או מונח פנימי בטקסט: "%s". מנסחים אותו במילים של הלקוח.'%(D,C.group(0)))
 		for C in HOLD_RX.finditer(B)if F==1 else():A.append('%s: נוסח של שער אישור או עצירה: "%s". הטיוטה נמסרת נקייה, אחרי השאלות, בלי המתנה לאישור.'%(D,C.group(0)))
 		if F==0:
-			for J in(NO_SOURCE_NOTE,NO_SOURCE_NOTE_EN):
+			for J in(NO_SOURCE_NOTE,NO_SOURCE_NOTE_EN)+NO_SOURCE_NOTE_LEGACY:
 				if J.lower()in B.lower():A.append('הטיוטה: נוסח פנימי של Areo ("%s") בגוף ההסכם. בגוף ההסכם רק "[להשלמה]"; השורה המלאה נשארת בדף הליווי.'%J)
 			for C in PLAYBOOK_RX.finditer(B):A.append('%s: המילה "%s" אינה נכנסת לטקסט ההסכם.'%(D,C.group(0)))
 		if H:

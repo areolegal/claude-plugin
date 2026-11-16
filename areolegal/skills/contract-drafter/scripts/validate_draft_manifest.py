@@ -17,6 +17,8 @@ def main(path):
 	if B.get('status')=='ReadyForExternal':
 		if B.get('classification')!='external_shareable':A.append('ReadyForExternal requires external_shareable classification')
 		if B.get('unresolved_material_placeholders'):A.append('ReadyForExternal has unresolved material placeholders')
+		if B.get('commercial_marks'):A.append('ReadyForExternal has commercial points left for the client to decide')
+		if B.get('unresolved_template_marks'):A.append('ReadyForExternal has unresolved template alternatives, conditions or notes')
 	if A:print('INVALID');[print('-',A)for A in A];return 1
 	print('VALID');return 0
 if __name__=='__main__':import argparse;ap=argparse.ArgumentParser(description='Validates a draft manifest (status, lineage, classification, placeholders; no approval gates). Exit 0 valid, 1 invalid, 2 usage error.');ap.add_argument('manifest',help='MANIFEST.json');raise SystemExit(main(ap.parse_args().manifest))

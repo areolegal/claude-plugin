@@ -227,7 +227,7 @@ details.payload pre{direction:ltr;text-align:left;background:var(--raised);borde
 'use strict';
 var INIT=/*__AREO_INIT__*/null;
 /* the plugin version, set by the release script; shown small in the header */
-var AREO_VER='1.30.5';
+var AREO_VER='1.30.6';
 /* building "by what is common in the market" and the market comparison search the web. They stay in the page, off,
    until a version turns them on (lib/config.json features.playbook_market_research, passed in INIT.features) */
 var MARKET_ON=!!(INIT&&INIT.features&&INIT.features.playbook_market_research);
@@ -318,7 +318,7 @@ var AGENTS=[
 var AGENTS3=[
  ['המנסח','מנסח טיוטת הסכם מההסכמים שלכם, או לפי המקובל בשוק.','<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'],
  ['מעריך הסיכונים','מעריך את הסיכונים החוזיים בהסכם מסוים.','<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M12 8v5"/><path d="M12 16h.01"/>'],
- ['הנושא ונותן','מחיל את הפלייבוק על הסכם של הצד השני, או על טיוטה שלכם שעברה לצד השני. בלי מדיניות מתאימה, Areo עוצרת ולא מנתחת.','<path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/>']];
+ ['הנושא ונותן','מחיל את הפלייבוק על הסכם של הצד השני, או על טיוטה שלכם שעברה לצד השני. בלי מדיניות מתאימה, Areo עוצר ולא מנתח.','<path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/>']];
 /* the sides of each type, in the words agreements of that type use; mutual only where both sides carry the same duties */
 var SIDE_AUTO='נזהה לפי ההסכמים';
 var SEG_Q=['לא, אותן עמדות מול כולם','כן, יש הבדלים'];
@@ -489,7 +489,7 @@ function clmView(){
   }
   else if(S.step==='clm_done'){
     h='<section class="card"><div class="done-mark" aria-hidden="true">✓</div><h2>ההגדרות נשמרו. בונים את לוח החוזים.</h2>'+
-      '<p class="lead">Areo קוראת עכשיו את ההסכמים. כשהלוח מוכן, הוא ייפתח כאן.</p>'+
+      '<p class="lead">Areo קורא עכשיו את ההסכמים. כשהלוח מוכן, הוא ייפתח כאן.</p>'+
       '<div class="deliver"><div class="next"><div class="t"><b>Areo Workspace | חוזים</b><span>נפתח כשהבנייה מסתיימת</span></div><a class="btn primary" href="'+esc((INIT&&INIT.clm_url)||'#')+'" target="_blank" rel="noopener" style="text-decoration:none;white-space:nowrap">לפתוח את לוח החוזים</a></div></div>'+
       '<details class="payload"><summary>מה נשלח</summary><pre>'+esc(JSON.stringify(clmPayload(),null,2))+'</pre></details>'+
       '<div class="actions"><button type="button" class="btn ghost" data-jump="clm_summary">חזרה</button></div></section>';
@@ -606,7 +606,7 @@ function render(keep){
   else if(S.step==='pb_home'&&EMB){
     var dfe=S.dataFolder&&S.dataFolder.mode==='picked'?S.dataFolder:null,found=dfe&&dfe.books&&dfe.books.length;
     h='<section class="card"><div class="eyebrow">צעד 2 מתוך 3 · פלייבוק</div><h2>בחרו את התיקייה של המחלקה המשפטית</h2>'+
-      '<p class="lead">התיקייה עם ההסכמים שלכם. אם Areo כבר עבדה איתה, נזהה את הפלייבוקים שבה.</p>'+
+      '<p class="lead">התיקייה עם ההסכמים שלכם. אם Areo כבר עבד איתה, נזהה את הפלייבוקים שבה.</p>'+
       pickBox(pickLine('data-dirpick2',false,dfe&&!dfe.reading?dfe:null,dfe&&!dfe.reading&&!found?'<span class="basis">עוד אין בתיקייה פלייבוק. נבנה אותו עכשיו.</span>':''))+
       '<input type="file" id="dirpick2" webkitdirectory directory multiple hidden>'+
       (dfe&&dfe.reading?'<div class="pos"><div class="hd"><b>קוראים את '+esc(dfe.name)+'…</b></div></div>':'')+
@@ -619,7 +619,7 @@ function render(keep){
   }
   else if(S.step==='ob_open'){
     h='<section class="card"><div class="done-mark" aria-hidden="true">✓</div><h2>פותחים את המערכת</h2>'+
-      '<p class="lead">Areo טוענת את הפלייבוקים והעסקאות מהתיקייה '+esc((S.dataFolder&&S.dataFolder.name)||'')+'. בעוד רגע המערכת תתעדכן.</p>'+
+      '<p class="lead">Areo טוען את הפלייבוקים והעסקאות מהתיקייה '+esc((S.dataFolder&&S.dataFolder.name)||'')+'. בעוד רגע המערכת תתעדכן.</p>'+
       '<p class="hint">אם Claude מבקש לאשר גישה לתיקייה, לוחצים אישור (Allow).</p></section>';
   }
   else if(S.step==='pb_home'){
@@ -690,7 +690,7 @@ function render(keep){
       g('לוגו, מיתוג ושפה',esc(S.logo||'')+(S.brand?' · מיתוג: '+esc(S.brand):'')+(needBrand()&&clean(S.website)?' · <span dir="ltr">'+esc(clean(S.website))+'</span>':'')+' · '+(S.lang==='en'?'English':'עברית'),'brand')+
       '</div>'+(rs2&&!rs2.ok?'<div class="note warn">'+rs2.msg+'</div>':'')+
       '<div class="field"><span class="legend">'+W('הרגולטורים העיקריים הרלוונטיים לחברה','הרגולטורים העיקריים הרלוונטיים לארגון')+'</span>'+
-        '<div class="privacy prev"><b>הערכה ראשונית בלבד.</b> הרשימה נגזרת מהתשובות שלכם ואינה ייעוץ משפטי. Areo תאמת אותה בבניית הפרופיל, ואפשר להוסיף או להסיר רגולטור בכל עת.</div>'+
+        '<div class="privacy prev"><b>הערכה ראשונית בלבד.</b> הרשימה נגזרת מהתשובות שלכם ואינה ייעוץ משפטי. Areo יאמת אותה בבניית הפרופיל, ואפשר להוסיף או להסיר רגולטור בכל עת.</div>'+
         '<ul class="regs">'+(regs.length?regs.map(function(x){return '<li><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></li>'}).join(''):'<li><span>מהתשובות לא עלה רגולטור מסוים. אפשר להוסיף אחד כאן למטה.</span></li>')+'</ul>'+
         '<label for="xreg" style="margin-top:6px">רגולטור נוסף הרלוונטי לכם<span class="optional">רשות</span></label><input type="text" id="xreg" value="'+esc(S.xreg)+'" placeholder="למשל: רשות התעופה האזרחית">'+
         '<div class="hint">כמה רגולטורים? מפרידים בפסיק.</div></div>'+
@@ -761,7 +761,7 @@ function render(keep){
   else if(S.step==='pb_upload'&&EMB){
     var pf=S.pb.policyFile;
     h='<section class="card"><div class="eyebrow">צעד 2 מתוך 3 · מדיניות קיימת</div><h2>העלו את מסמך המדיניות</h2>'+
-      '<p class="lead">Areo תהפוך אותו לפלייבוק עובד בלי לשנות אף עמדה. סוגי ההסכמים, הצד והעמדות נקראים מהמסמך עצמו, ולכן אין עוד שאלות.</p>'+
+      '<p class="lead">Areo יהפוך אותו לפלייבוק עובד בלי לשנות אף עמדה. סוגי ההסכמים, הצד והעמדות נקראים מהמסמך עצמו, ולכן אין עוד שאלות.</p>'+
       pickBox(pickLine('data-polpick',true,pf,''))+
       '<input type="file" id="polpick" accept=".doc,.docx,.pdf" hidden>'+
       '<div class="privacy">העמוד קורא רק את שם הקובץ. המסמך נקרא בחשבון ה-Claude שלכם ולא עולה ל-Areo.</div>'+
@@ -832,7 +832,7 @@ function render(keep){
     var up2=S.pb.path==='upload';
     h='<section class="card"><div class="eyebrow">עוד כמה שאלות קצרות</div><h2>לפני שמתחילים</h2>'+
       (S.pb.path==='agreements'?'<div class="field"><button type="button" class="chip" data-tpl aria-pressed="'+(!!S.pb.tpl)+'" style="align-self:flex-start">יש לנו תבנית (נוסח בית) להסכם הזה</button>'+
-        '<div class="hint">'+(S.pb.tpl?'Areo תחפש אותה בתיקייה ותשאל אם לא תמצא. היא תהיה עמדת הפתיחה בכל נושא.':'רשות. אם יש, זה הנתון הכי חשוב: הנוסח שאתם מבקשים כשאין לחץ.')+'</div></div>'+
+        '<div class="hint">'+(S.pb.tpl?'Areo יחפש אותה בתיקייה וישאל אם לא ימצא. היא תהיה עמדת הפתיחה בכל נושא.':'רשות. אם יש, זה הנתון הכי חשוב: הנוסח שאתם מבקשים כשאין לחץ.')+'</div></div>'+
         '<div class="field"><span class="legend">העמדות שלכם שונות מול צדדים שונים?</span>'+chips(SEG_Q,S.pb.seg||SEG_Q[0],'pbseg',false,true)+
         (S.pb.seg===SEG_Q[1]?chips(SEG_BY,S.pb.segBy||[],'pbsegby',true,true)+'<input type="text" id="segFree" value="'+esc(S.pb.segFree||'')+'" placeholder="קבוצה אחרת? כתבו כאן">'+'<div class="hint">אפשר לשנות אחר כך בלשונית המדיניות.</div>':'')+'</div>'+
         '<div class="field"><span class="legend">יש נושאים שאם הצד השני לא זז בהם, עדיף לא לחתום?</span>'+chips(DBK,S.pb.dbk&&S.pb.dbk.length?S.pb.dbk:[DBK[0]],'pbdbk',true,true)+
@@ -851,7 +851,7 @@ function render(keep){
     var g2=function(k,vv,step){return '<div class="grp"><div style="min-width:0"><div class="k">'+k+'</div><div class="v">'+(vv||'<span style="color:var(--faint)">לא צוין</span>')+'</div></div>'+(step?'<button type="button" class="linkbtn" data-jump="'+step+'">עריכה</button>':'')+'</div>'};
     if(EMB&&S.pb.path==='upload'){
       h='<section class="card"><div class="eyebrow">סיכום</div><h2>כך נהפוך את המדיניות לפלייבוק</h2><div class="sum">'+
-        g2('מסמך המדיניות','<bdi>'+esc((S.pb.policyFile&&S.pb.policyFile.name)||'')+'</bdi>','pb_upload')+g2('סוגי ההסכמים','Areo תזהה מהמסמך','')+g2('הצד של החברה','Areo תזהה מהמסמך','')+g2('אופן הבנייה','המרה בלי שינוי עמדות','pb_path')+'</div>'+
+        g2('מסמך המדיניות','<bdi>'+esc((S.pb.policyFile&&S.pb.policyFile.name)||'')+'</bdi>','pb_upload')+g2('סוגי ההסכמים','Areo יזהה מהמסמך','')+g2('הצד של החברה','Areo יזהה מהמסמך','')+g2('אופן הבנייה','המרה בלי שינוי עמדות','pb_path')+'</div>'+
         '<div class="hint">מה שחסר במדיניות או סותר את עצמו יסומן לבדיקה שלכם, ולא ישונה לבד.</div>'+
         '<div class="actions"><button type="button" class="btn ghost" data-jump="pb_upload">חזרה</button><button type="button" class="btn primary" data-pbstart>להתחיל</button></div></section>';
       v.innerHTML=h;rail();return;
@@ -860,7 +860,7 @@ function render(keep){
       (S.pb.path==='agreements'?g2('תיקיית ההסכמים',esc(S.pb.where==='same'?((S.dataFolder&&S.dataFolder.name)||'התיקייה שחיברתם'):((S.pb.picked&&S.pb.picked.name)||'התיקייה שבחרתם')),S.pb.where==='same'?'pb_home':'pb_connect'):'')+
       g2('סוג ההסכמים',esc(S.pb.family||'לפי המסמך שהעליתם')+(S.pb.path==='agreements'&&S.pb.picked&&S.pb.picked.count?' · '+S.pb.picked.count+' קבצים':''),S.pb.path==='market'?'pb_market':(S.pb.path==='agreements'?'pb_types':''))+
       g2('הצד של החברה',esc(S.pb.side),'pb_side')+g2('מחלקות',esc(deps.join(', ')),'pb_side')+g2('אופן הבנייה',esc(how),'pb_extra')+
-      (S.pb.path==='agreements'?g2('השם על ההערות',esc(clean(S.signers[0]&&S.signers[0].name)),'pb_people')+g2('תבנית',S.pb.tpl?'יש, Areo תאתר אותה בתיקייה':'אין','pb_extra')+
+      (S.pb.path==='agreements'?g2('השם על ההערות',esc(clean(S.signers[0]&&S.signers[0].name)),'pb_people')+g2('תבנית',S.pb.tpl?'יש, Areo יאתר אותה בתיקייה':'אין','pb_extra')+
         g2('הבדלים בין צדדים',esc(segText()),'pb_extra')+g2('שוברי עסקה',esc((S.pb.dbk&&S.pb.dbk.length?S.pb.dbk:[DBK[0]]).join(', ')),'pb_extra'):'')+
       (S.pb.concern?g2('מה מטריד אתכם',esc(S.pb.concern),'pb_extra'):'')+'</div>'+
       '<div class="hint">בסוף מקבלים סביבת עבודה שאפשר לחפש בה ולסנן, בתיקייה שלכם. את מסמך המדיניות ב-Word מורידים ממנה בכפתור הייצוא.</div>'+
@@ -923,7 +923,7 @@ function animSteps(sel,fin){
     if(k<li.length){li[k].className='on';k++;setTimeout(tick,900)}else setTimeout(fin,500)};
   tick();
 }
-function segText(){if(S.pb.seg!==SEG_Q[1])return SEG_Q[0];var a=(S.pb.segBy||[]).slice();if(clean(S.pb.segFree))a.push(clean(S.pb.segFree));return a.length?a.join(', '):'כן, Areo תציע קבוצות'}
+function segText(){if(S.pb.seg!==SEG_Q[1])return SEG_Q[0];var a=(S.pb.segBy||[]).slice();if(clean(S.pb.segFree))a.push(clean(S.pb.segFree));return a.length?a.join(', '):'כן, Areo יציע קבוצות'}
 function findPayload(){var pk=S.pb.picked||{};return {label:'חיבור תיקייה',kind:'areo_find_folder',folder_name:clean(pk.name),file_count:pk.count,sample_files:(pk.sample||[]).map(clean)}}
 function pbPayload(){
   var deps=S.pb.deps.concat(clean(S.pb.depsFree)?clean(S.pb.depsFree).split(/\s*,\s*/):[]),pk=S.pb.picked;
@@ -981,7 +981,7 @@ function send(p,label,after){
   /* inside the Areo system the top page sends: it holds the conversation beside the system */
   if(EMB){var ps=null;try{ps=window.parent&&window.parent!==window&&window.parent.__areoSend?window.parent.__areoSend(p):null}catch(e){ps=null}
     var why=function(){try{return window.parent.__areoSendWhy()}catch(e){return ''}};
-    if(ps){ps.then(function(){toast('נשלח ל-Areo. אשרו את השליחה בחלון שנפתח, ו-Areo מתחילה.');after&&after()},function(){showErr('השליחה ל-Areo לא הצליחה. אפשר להעתיק את הפרטים ולהדביק בשיחה.');fallback(p,null,why())});return}
+    if(ps){ps.then(function(){toast('נשלח ל-Areo. אשרו את השליחה בחלון שנפתח, ו-Areo מתחיל.');after&&after()},function(){showErr('השליחה ל-Areo לא הצליחה. אפשר להעתיק את הפרטים ולהדביק בשיחה.');fallback(p,null,why())});return}
     showErr('המערכת לא מחוברת עכשיו לשיחה. אפשר להעתיק את הפרטים ולהדביק בשיחה.');fallback(p,null,why());return}
   if(room){
     var pr;try{pr=room.sendToClaudeSession(p,{deliver:'send',attachPresence:false})}catch(e){pr=Promise.reject(e)}

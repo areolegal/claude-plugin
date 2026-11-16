@@ -1131,7 +1131,7 @@ function askPolicy(){try{var P=window.parent;if(P&&P!==window){if(typeof P.__are
   var e=P.document.querySelector('#fab,#askbtn');if(e){e.click();return}}}catch(x){}openAsk()}
 /* a playbook request sent from this system in the last hours: show it as being built (cleared once a playbook exists) */
 function pbBuilding(){try{var b=JSON.parse(localStorage.getItem('areo-pb-building')||'null');if(!b||!b.at)return null;if(BOOKS.length){localStorage.removeItem('areo-pb-building');return null}return Date.now()-b.at<6*3600*1000?b:null}catch(e){return null}}
-function emptyHtml(){var bb=pbBuilding();if(bb)return '<div class="card" style="margin-top:24px"><h1>הפלייבוק בבנייה</h1><p class="lead">Areo בונה עכשיו את '+esc(bb.family||'הפלייבוק')+', בשיחה שליד המערכת. זה לוקח כ-10 עד 15 דקות. כשיסתיים, הוא יופיע כאן עם העמדות לאישור.</p><p class="lead" style="font-size:14px">אם Areo ביקשה משהו בשיחה, למשל אישור גישה לתיקייה, הבנייה ממשיכה אחרי התשובה. <button type="button" class="linkbtn" data-buildpb style="background:none;border:0;padding:0;color:var(--aurora);font-weight:700;cursor:pointer">להתחיל מחדש</button></p></div>';
+function emptyHtml(){var bb=pbBuilding();if(bb)return '<div class="card" style="margin-top:24px"><h1>הפלייבוק בבנייה</h1><p class="lead">Areo בונה עכשיו את '+esc(bb.family||'הפלייבוק')+', בשיחה שליד המערכת. זה לוקח כ-10 עד 15 דקות. כשיסתיים, הוא יופיע כאן עם העמדות לאישור.</p><p class="lead" style="font-size:14px">אם Areo ביקש משהו בשיחה, למשל אישור גישה לתיקייה, הבנייה ממשיכה אחרי התשובה. <button type="button" class="linkbtn" data-buildpb style="background:none;border:0;padding:0;color:var(--aurora);font-weight:700;cursor:pointer">להתחיל מחדש</button></p></div>';
   return '<div class="card" style="margin-top:24px"><h1>עוד אין פלייבוק</h1><p class="lead">Areo בונה את המדיניות החוזית מההסכמים שלכם: מה מקובל עליכם, איפה אפשר להתגמש ומה לא מסכימים. עונים כאן על כמה שאלות קצרות, ו-Areo עושה את השאר.</p><div style="margin-top:16px"><button type="button" class="btn primary" data-buildpb>לבנות פלייבוק</button></div></div>'}
 /* the playbook steps open inside the system; a page opened on its own goes to them directly */
 function buildPlaybook(){try{if(window.parent&&window.parent!==window&&window.parent.__areoBuildPlaybook&&window.parent.__areoBuildPlaybook())return}catch(e){}location.href='playbook.html'}
@@ -1159,7 +1159,7 @@ function render(){
     var crit2=D.rules.filter(function(r){return r.imp==='critical'||r.imp==='high'}).length,wt=D.rules.filter(topicWaiting).length,ar=D.rules.filter(function(r){return lanesOf(r).some(function(k){return r.L[k].areo})}).length,allOpen=D.rules.every(function(r){return S.open[r.id]});
     h+='<div id="rhead" class="rhead2">'+rulesHead()+'</div>'+segPicker()+'<div class="tools2"><div class="filters" role="group">'+[['all','הכל ('+D.rules.length+')'],['wait','מחכים לאישור ('+wt+')'],['crit','קריטיים וגבוהים ('+crit2+')'],['areo','עם הצעות של Areo ('+ar+')']].map(function(x){return '<button type="button" class="chip" data-f="'+x[0]+'" aria-pressed="'+(S.f===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>'+
       '<div class="r"><button type="button" class="btn soft small" data-all>'+(allOpen?'סגירת הכל':'פתיחת הכל')+'</button></div></div>'+
-      (S.f==='areo'?'<p class="areonote"><b>הצעה של Areo</b> היא עמדה שלא נמצאה בהסכמים שלכם, ולכן Areo כתבה אותה. אחרי שעורך דין אישר אותה, היא חלק מהמדיניות כמו כל עמדה אחרת. טיוטות ממשא ומתן יחליפו אותה בניסיון שלכם.</p>':'')+
+      (S.f==='areo'?'<p class="areonote"><b>הצעה של Areo</b> היא עמדה שלא נמצאה בהסכמים שלכם, ולכן Areo כתב אותה. אחרי שעורך דין אישר אותה, היא חלק מהמדיניות כמו כל עמדה אחרת. טיוטות ממשא ומתן יחליפו אותה בניסיון שלכם.</p>':'')+
       '<div class="rxs" id="list">'+listHtml()+'</div>';
   }
   else if(S.sec==='topic'){
@@ -1198,7 +1198,7 @@ function render(){
     h+='<h1>שאלות פתוחות</h1><p class="lead">מה שהמדיניות לא יכלה להכריע לבד. תשובה בשיחה מעדכנת את המדיניות.</p>'+D.qs.map(function(q){return '<div class="qa"><b>'+esc(q.t)+'</b>'+esc(q.q)+(q.rec?'<div class="rec">'+esc(q.rec)+'</div>':'')+'</div>'}).join('');
   }
   else if(S.sec==='departments'){
-    h+='<h1>מחלקות</h1><p class="lead">מי בחברה אחראי לקיים כל התחייבות בהסכמים מהסוג הזה.</p><div class="card"><h2>עוד לא נקבעו מחלקות</h2><p class="lead">ההסכמים לא מייחסים חיובים למחלקות. אפשר לבחור את המחלקות המעורבות, ו-Areo תשייך אליהן את ההתחייבויות.</p><div class="decide"><button type="button" class="btn soft small" data-demo>לבחור מחלקות</button></div></div>';
+    h+='<h1>מחלקות</h1><p class="lead">מי בחברה אחראי לקיים כל התחייבות בהסכמים מהסוג הזה.</p><div class="card"><h2>עוד לא נקבעו מחלקות</h2><p class="lead">ההסכמים לא מייחסים חיובים למחלקות. אפשר לבחור את המחלקות המעורבות, ו-Areo ישייך אליהן את ההתחייבויות.</p><div class="decide"><button type="button" class="btn soft small" data-demo>לבחור מחלקות</button></div></div>';
   }
   else if(S.sec==='display'){
     var lg=document.documentElement.getAttribute('data-size')==='lg';
@@ -1431,7 +1431,7 @@ function kitBottom(r){var k=kitOf(r),h='',c='';
     k.external.map(function(x){return '<div class="ktr '+KT[x.track]+'"><div class="wlk">'+esc(x.label)+'</div>'+x.texts.map(function(t,i){return '<p>'+(x.texts.length>1?'<b>'+(i+1)+'.</b> ':'')+esc(t)+'</p>'}).join('')+'</div>'}).join('')+'</div></details>';
   return h}
 /* Inbal, 12.11.2026, 8.3: the playbook is a legal decision of the organisation, and the responsibility stays with its counsel */
-var RESP='הפלייבוק הוא החלטה משפטית של הארגון: Areo מביאה את הראיות ואת ההצעה, והאישור והאחריות על העמדות ועל קווי הנסיגה אצל היועץ המשפטי שלכם.';
+var RESP='הפלייבוק הוא החלטה משפטית של הארגון: Areo מביא את הראיות ואת ההצעה, והאישור והאחריות על העמדות ועל קווי הנסיגה אצל היועץ המשפטי שלכם.';
 function times(n){return n===1?'פעם אחת':n+' פעמים'}
 function unkHtml(r){return r.unk&&r.unk.length?'<p class="unk"><b>מה לא ידוע:</b> '+esc(r.unk.join(' '))+'</p>':''}
 /* what happened to this topic in the deals in the folder (metrics.py), plain words; never sent to Areo */
@@ -1471,7 +1471,7 @@ function typedHtml(r){var T=(r.rl||[]).filter(function(x){return D.rules.some(fu
       (x.ok===null||x.ok===undefined?'<div class="rlq"><span class="basis">הצעה של Areo, מחכה לאישור שלכם</span><span class="chips"><button type="button" class="chip'+(pick===true?' on':'')+'" aria-pressed="'+(pick===true)+'" data-rlok="'+esc(key)+'|1">לאשר</button><button type="button" class="chip'+(pick===false?' on':'')+'" aria-pressed="'+(pick===false)+'" data-rlok="'+esc(key)+'|0">לדחות</button></span></div>':'')+'</div>'}).join('')}
 function saveLinks(){var list=Object.keys(S.rlok||{}).map(function(k){var p=k.split('|');return {rule_id:p[0],related_rule_id:p[1],approved:S.rlok[k]}});if(!list.length)return;
   submitReq({label:'סעיפים קשורים ('+list.length+')',kind:'related_confirm',playbook:book().key,links:list,date:new Date().toISOString().slice(0,10)},function(ok){
-    toast(ok?'נשמר. Areo תעדכן את הקישורים בפלייבוק.':'ירד קובץ. שמרו אותו בתיקייה Areo-נתונים.');
+    toast(ok?'נשמר. Areo יעדכן את הקישורים בפלייבוק.':'ירד קובץ. שמרו אותו בתיקייה Areo-נתונים.');
     D.rules.forEach(function(r){(r.rl||[]).forEach(function(x){var k=r.id+'|'+x.id;if(k in S.rlok)x.ok=S.rlok[k]})});S.rlok={};render()})}
 function relatedHtml(r){
   var L=(r.relx||[]).filter(function(x){return D.rules.some(function(y){return y.id===x.id})});
@@ -1566,7 +1566,7 @@ function compareHtml(){
   h+='<p class="cmpins">'+esc(ins)+'</p>';
   var acts='',miss=m.rows.filter(function(x){return !x.q});
   if(m.kind==='same')acts='<div class="cact ok"><b>אין מה לעשות כאן.</b> הנוסח אחיד בכל ההסכמים, והוא כבר העמדה המועדפת במדיניות.</div>';
-  else if(m.kind==='none')acts='<div class="cact"><b>מה אפשר לעשות:</b> לבדוק את העמדות שהציעה Areo ולאשר אותן. <button type="button" class="linkbtn" data-topic="'+cr.id+'">לעמדות בנושא ←</button></div>';
+  else if(m.kind==='none')acts='<div class="cact"><b>מה אפשר לעשות:</b> לבדוק את העמדות שהציע Areo ולאשר אותן. <button type="button" class="linkbtn" data-topic="'+cr.id+'">לעמדות בנושא ←</button></div>';
   else{
     acts='<div class="cact"><b>מה אפשר לעשות כאן</b><ol>';
     if(miss.length)acts+='<li><span>'+(miss.length===1?'בהסכם עם '+esc(shortName(miss[0].s))+' אין סעיף '+esc(cr.t)+'.':miss.length+' הסכמים בלי סעיף '+esc(cr.t)+'.')+(cr.imp==='critical'?' זה נושא קריטי.':'')+' אפשר להכין תיקון להסכם עם הנוסח שבמדיניות.</span><span class="cbtns">'+miss.map(function(x){var sent=S.amend[cr.id+x.s];return sent?'<span class="sentok">✓ נשלח לניסוח: '+esc(shortName(x.s))+'</span>':'<button type="button" class="btn primary small" data-amend="'+cr.id+'|'+x.s+'">להכין תיקון להסכם עם '+esc(shortName(x.s))+'</button>'}).join('')+'</span></li>';
@@ -1613,8 +1613,8 @@ function segmentsHtml(){
   var sug=SEGSUG.filter(function(x){return have.indexOf(x.key)<0});
   return '<div class="rhd"><div><h1>מדיניות לפי סגמנטים</h1><p class="lead">קבוצה היא סוג של צד שמקבל מדיניות אחרת בכמה נושאים, למשל צדדים זרים או גופים ציבוריים. בכל שאר הנושאים חלה המדיניות הרגילה.</p></div><button type="button" class="btn primary" data-segnew>+ קבוצה חדשה</button></div>'+
     '<h2 class="sgtitle">הקבוצות שלכם</h2>'+(gs.length?'<div class="sgl">'+gs.map(segCard).join('')+'</div>':'<div class="sgempty">עוד אין קבוצות. כל הצדדים מקבלים את אותה מדיניות.</div>')+
-    (sug.length?'<h2 class="sgtitle">Areo ממליצה לבדוק</h2><div class="sgl">'+sug.map(function(x){return '<div class="sgc sug"><div class="sgh"><b>'+esc(x.name)+'</b><span class="tg">לא הופיעו בהסכמים שלכם</span></div><p class="sgw">'+esc(x.how)+'</p><p class="sgw"><span>נושאים שכדאי לבדוק:</span> '+Object.keys(x.topics).map(function(id){var r=ruleById(id);return r?esc(r.t):''}).filter(Boolean).join(', ')+'</p><div class="decide"><button type="button" class="btn soft small" data-segsug="'+x.key+'">להגדיר את הקבוצה</button></div></div>'}).join('')+'</div>':'')+
-    (D.seg&&D.seg.checked&&D.seg.checked.length?'<p class="sgnote">Areo בדקה בהסכמים: '+esc(D.seg.checked.join(' '))+'</p>':'');
+    (sug.length?'<h2 class="sgtitle">Areo ממליץ לבדוק</h2><div class="sgl">'+sug.map(function(x){return '<div class="sgc sug"><div class="sgh"><b>'+esc(x.name)+'</b><span class="tg">לא הופיעו בהסכמים שלכם</span></div><p class="sgw">'+esc(x.how)+'</p><p class="sgw"><span>נושאים שכדאי לבדוק:</span> '+Object.keys(x.topics).map(function(id){var r=ruleById(id);return r?esc(r.t):''}).filter(Boolean).join(', ')+'</p><div class="decide"><button type="button" class="btn soft small" data-segsug="'+x.key+'">להגדיר את הקבוצה</button></div></div>'}).join('')+'</div>':'')+
+    (D.seg&&D.seg.checked&&D.seg.checked.length?'<p class="sgnote">Areo בדק בהסכמים: '+esc(D.seg.checked.join(' '))+'</p>':'');
 }
 function openSegEditor(g){S.dr=null;S.ed=null;S.sed=g&&g.id||null;var pick={};if(g)(g.topics||[]).forEach(function(t){pick[t.rid]=t.note||''});
   $('#drawer').innerHTML='<header class="drh"><div><div class="drk">'+(S.sed?'עריכת קבוצה':'קבוצה חדשה')+'</div><h3>מדיניות לקבוצה של צדדים</h3></div><button type="button" class="drx" data-drclose aria-label="סגירה">×</button></header>'+
@@ -1662,7 +1662,7 @@ function apItems(){var out=[];
   waiting().forEach(function(x){var r=x[0],k=x[1],L=r.L[k],cg=S.chg[r.id+k];
     var reason=cg?'שינוי שביקשתם':(L.lr&&L.lr.length)||L.st==='pending_legal_review'?'בדיקה משפטית':L.areo?'הצעה של Areo':'מחכה לאישור';
     var q=(L.lr&&L.lr[0])?L.lr[0]:null;
-    out.push({key:r.id+'|'+k,r:r,k:k,L:L,reason:reason,q:q?q.q:(cg?'בדקו שהשינוי נכון ושלא סותר נושאים קשורים.':L.areo?'אין סעיף כזה בהסכמים שלכם. בדקו שהעמדה שהציעה Areo מתאימה לחברה.':'בדקו שהעמדה מתאימה לחברה.'),refs:q?q.refs:[],cg:cg})});
+    out.push({key:r.id+'|'+k,r:r,k:k,L:L,reason:reason,q:q?q.q:(cg?'בדקו שהשינוי נכון ושלא סותר נושאים קשורים.':L.areo?'אין סעיף כזה בהסכמים שלכם. בדקו שהעמדה שהציע Areo מתאימה לחברה.':'בדקו שהעמדה מתאימה לחברה.'),refs:q?q.refs:[],cg:cg})});
   allSegs().filter(function(g){return !g.draft}).forEach(function(g){g.topics.forEach(function(t){var r=ruleById(t.rid);if(!r||!t.L||t.ok||S.sdec[g.id+t.rid])return;
     out.push({key:'seg:'+g.id+'|'+t.rid,r:r,k:'green',L:t.L.green,seg:g,reason:'קבוצה: '+g.name,q:'בדקו שהעמדה לקבוצה "'+g.name+'" מתאימה. איך מזהים אותה: '+g.how,refs:[]})})});
   return out;
@@ -1707,7 +1707,7 @@ function paperHtml(){var P=D.paper||{},u=P.unknown||[],c=P.counts||{};if(!u.leng
     '<div class="mf"><span class="basis">'+done+' מתוך '+u.length+' סומנו</span><button type="button" class="btn primary small" data-ppsave'+(done?'':' disabled')+'>לשמור ולהכניס למדיניות</button></div></section>'}
 function savePaper(){var u=(D.paper&&D.paper.unknown)||[],list=u.filter(function(x){return S.pp[x.id]}).map(function(x){return {source_id:x.id,name:cut(x.name,80),paper:S.pp[x.id]}});if(!list.length)return;
   var pl={label:'על הנייר של מי ('+list.length+')',kind:'paper_confirm',playbook:book().key,question_id:(D.paper&&D.paper.qid)||'',sources:list,date:new Date().toISOString().slice(0,10)};
-  submitReq(pl,function(ok){toast(ok?'נשמר. Areo תכניס את ההסכמים האלה למדיניות בעדכון הבא.':'ירד קובץ. שמרו אותו בתיקייה Areo-נתונים.');D.paper.unknown=u.filter(function(x){return !S.pp[x.id]});S.pp={};render()})}
+  submitReq(pl,function(ok){toast(ok?'נשמר. Areo יכניס את ההסכמים האלה למדיניות בעדכון הבא.':'ירד קובץ. שמרו אותו בתיקייה Areo-נתונים.');D.paper.unknown=u.filter(function(x){return !S.pp[x.id]});S.pp={};render()})}
 function canChat(){return !!(room&&typeof room.sendToClaudeSession==='function')}
 /* decisions are saved in the page store at once; Areo moves them into the playbook in the folder and marks them taken in */
 var dbx=null,SNAP=[];S.saved={};

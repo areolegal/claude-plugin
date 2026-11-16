@@ -25,7 +25,7 @@ FONT_HE='David'
 FONT_LATIN='Calibri'
 FONT=FONT_HE
 RTL=True
-TXT={'he':{'draft':'טיוטה','stamp':'טיוטה · הופק בתאריך %s','fill':'[להשלים]','defined':' (להלן: "%s")','part1':'מצד אחד;','part2':'מצד שני;','whereas':'הואיל ו','now':'לפיכך הוסכם, הותנה והוצהר בין הצדדים כדלקמן:','definitions':'הגדרות','case_law':' [להשלמה]','annex':'נספח','defs_lead':'בהסכם זה יהיו למונחים הבאים הפירושים שלצידם:','defs_lead_recitals':'בהסכם זה, לרבות במבוא לו, יהיו למונחים הבאים הפירושים שלצידם:','witness':'ולראיה באו הצדדים על החתום:','by':'על ידי: ','not_found':'[לא אותר]','mand':'סעיף שהחוק מחייב: %s','sources':'המקורות שהטיוטה נשענת עליהם','internal':'פנימי. לא נשלח לצד השני.','law':'הדין החל','law_head':['דרג','מקור','סעיפים','סטטוס'],'verified':'אומת','unverified':'טעון אימות','ags':'הסכמים מייצגים שאושרו','ags_head':['הסכם','מפרסם','כיוון'],'page':' · עמוד ','cover':'דף ליווי: ','cover_stamp':'טיוטה · הופק בתאריך %s','trace':'מטריצת עקיבות','trace_head':['סעיף','נושא','מקור','סעיף חובה','עמדת פתיחה'],'own':'ניסוח עצמאי','yes':'כן','no':'לא','removed':'סעיפי חובה שהוסרו לבקשתכם','removed_line':'%s: %s. החשיפה: %s','gaps':'פערים ומגבלות','no_research':'לא בוצע מחקר רגולטורי: נבחר איסוף הסכמים בלבד. הטיוטה אינה נשענת על מיפוי של הדין החל.','research_limits':'המחקר מוגבל למאגר המקורות המאושרים של Areo (רק האתרים והנתיבים שרשומים בו לכל מדינה). הנחיות שלא פורסמו במקורות האלה, או שלא ניתן היה לשלוף אותן, אינן בו.','unverified_line':'טעון אימות: ','case_law_list':'AREO לא מצאה מקור מורשה לנקודה זו. הצעד הבא: להעלות הסכם דומה כמקור, או להשאיר את הנקודה כפי שהיא. סעיפים ','run_risk':'להריץ על הטיוטה הערכת סיכונים לפני שהיא יוצאת?','cover_stamp_plain':'טיוטה · הופק בתאריך %s','src_playbook':'פלייבוק','src_third_party':'פלייבוק ונוסחים של צד שלישי','tp_notice':'הנייר אינו של החברה. המבנה וסדר הסעיפים נלקחו מנוסחים של צד שלישי שעומד באותו צד בהסכם, והעמדה בכל סעיף נלקחה מהפלייבוק. הנוסח נכתב מחדש ואינו מועתק מהנוסחים.','matrix':'מטריצת המקורות','matrix_head':['סעיף','נושא','פלייבוק','נוסחים','עובדות העסקה'],'no_pb':'אין עמדה בפלייבוק','sources_used':'המקורות','pb_line':'פלייבוק: %s','doc_line':'%s. %s','facts':'עובדות העסקה','to_fill':'מה נותר להשלים','loc_meta':'פרטי המסמך והצדדים','loc_recitals':'מבוא','loc_def':'הגדרת "%s"','loc_clause':'סעיף %s','loc_sign':'בלוק החתימות','legal_review':'נקודות בלי מקור מורשה','conditional':'סעיפים מותנים','conditional_line':'סעיף %s: הסעיף נכלל כי %s לא נשלל; אשרו או מחקו.','pb_gaps':'נושאים שאין עליהם עדיין עמדה בפלייבוק','pb_gap_line':'%s (%s)','pb_gaps_answer':'התשובה לשאלת ההשלמה: %s','decisions':'מה הוחלט בטיוטה','notes':'הערות','choices':'מה נבחר ולמה','pb_pending':'טיוטת מדיניות','from_pb':'כן','choice_default':'ברירת המחדל, הנוסח השכיח בהסכמים שלכם','to_fill_count':'%s: %d פרטים פתוחים','concern':'החשש העיקרי שלכם בעסקה','concern_answer':'כלשונכם: %s','concern_clauses':'המענה בטיוטה: סעיפים %s','options':'מוצע כאפשרות, לא נכלל','option_line':'%s: %s','key_dates':'המועדים שיהיו חשובים בהמשך','key_date_clause':' (סעיף %s)','ld_review':'פיצוי מוסכם (סעיף %s): AREO לא מצאה מקור מורשה לנקודה זו (אכיפות הפיצוי המוסכם לפי %s). הצעד הבא: לחבר מקור מהרשימה המאושרת, או להשאיר את הסעיף כפי שהוא.','law_unset':'הדין החל, שטרם נקבע','lead':'הטיוטה מוכנה.','lead_clear':'אין בה פרטים פתוחים.','lead_open':'נשארו %d פרטים להשלים, כ-%d דקות.','next_fill':'הצעד הבא: להשלים את הפרטים המסומנים ברקע צהוב.','next_review':'הצעד הבא: להחליט על סעיפים %s: להעלות מקור, או להשאיר אותם כפי שהם.','next_send':'הצעד הבא: לשלוח לצד השני, או להריץ קודם בדיקת סיכונים.','notice_title':'מאיפה באה הטיוטה','internal_note':'פנימי. לא נשלח לצד השני.'},'en':{'draft':'Draft','stamp':'Draft · Produced on %s','fill':'[to complete]','defined':' (the "%s")','part1':'of the first part;','part2':'of the second part;','whereas':'WHEREAS ','now':'NOW, THEREFORE, the parties agree as follows:','definitions':'Definitions','case_law':' [to be completed]','annex':'Annex','defs_lead':'In this Agreement, the following terms have the meanings set out below:','defs_lead_recitals':'In this Agreement, including the recitals, the following terms have the meanings set out below:','witness':'IN WITNESS WHEREOF, the parties have signed:','by':'By: ','not_found':'[not found]','mand':'Clause required by law: %s','sources':'Sources the draft relies on','internal':'Internal. Not sent to the other side.','law':'Applicable law','law_head':['Rank','Source','Sections','Status'],'verified':'Verified','unverified':'Needs verification','ags':'Approved representative agreements','ags_head':['Agreement','Publisher','Orientation'],'page':' · Page ','cover':'Cover note: ','cover_stamp':'Draft · Produced on %s','trace':'Traceability matrix','trace_head':['Clause','Topic','Source','Mandatory','Opening position'],'own':'Independent drafting','yes':'Yes','no':'No','removed':'Mandatory clauses removed at your request','removed_line':'%s: %s. Exposure: %s','gaps':'Gaps and limits','no_research':'No regulatory research was done: only collecting agreements was chosen. The draft does not rest on a mapping of the applicable law.','research_limits':'The research is limited to the approved-sources repository (only the sites and paths listed for each country). Guidance not published in these sources, or not retrievable, is not in it.','unverified_line':'Needs verification: ','case_law_list':'AREO did not find an approved source for this point. Next step: upload a similar agreement as a source, or keep the point as it is. Clauses ','run_risk':'Run a risk assessment on the draft before it goes out?','cover_stamp_plain':'Draft · Produced on %s','src_playbook':'playbook','src_third_party':'playbook and third-party forms','tp_notice':"This is not the company's paper. The structure and the order of the clauses come from third-party forms in the same position, and the position in each clause comes from the playbook. The wording was written anew and is not copied from the forms.",'matrix':'Source matrix','matrix_head':['Clause','Topic','Playbook','Forms','Deal facts'],'no_pb':'No playbook position','sources_used':'Sources','pb_line':'Playbook: %s','doc_line':'%s. %s','facts':'Deal facts','to_fill':'What is still open','loc_meta':'Document details and parties','loc_recitals':'Recitals','loc_def':'Definition of "%s"','loc_clause':'Clause %s','loc_sign':'Signature block','legal_review':'Points without an approved source','conditional':'Conditional clauses: for your confirmation','conditional_line':'Clause %s: included because %s was not ruled out; confirm or delete.','pb_gaps':'Topics with no settled playbook position yet','pb_gap_line':'%s (%s)','pb_gaps_answer':'Answer to the completion question: %s','decisions':'Decisions','notes':'Notes','choices':'What was chosen and why','pb_pending':'Draft policy','from_pb':'Yes','choice_default':'the default, the most common wording in your agreements','to_fill_count':'%s: %d open details','concern':'Your main concern in this deal','concern_answer':'In your words: %s','concern_clauses':'Where the draft answers it: clauses %s','options':'Offered as an option, not included','option_line':'%s: %s','key_dates':'Dates that will matter later','key_date_clause':' (clause %s)','ld_review':'Liquidated damages (clause %s): AREO did not find an approved source for this point (enforceability under %s). Next step: connect a source from the approved list, or keep the clause as it is.','law_unset':'the governing law, not yet set','lead':'Your draft is ready.','lead_clear':'Nothing is left open.','lead_open':'%d details are left to complete, about %d minutes.','next_fill':'Next step: complete the details marked in yellow.','next_review':'Next step: decide on clauses %s: upload a source, or keep them as they are.','next_send':'Next step: send it to the other side, or run a risk check first.','notice_title':'Where this draft came from','internal_note':'Internal. Not sent to the other side.'}}
+TXT={'he':{'draft':'טיוטה','stamp':'טיוטה · הופק בתאריך %s','fill':'[להשלים]','defined':' (להלן: "%s")','part1':'מצד אחד;','part2':'מצד שני;','whereas':'הואיל ו','now':'לפיכך הוסכם, הותנה והוצהר בין הצדדים כדלקמן:','definitions':'הגדרות','case_law':' [להשלמה]','annex':'נספח','defs_lead':'בהסכם זה יהיו למונחים הבאים הפירושים שלצידם:','defs_lead_recitals':'בהסכם זה, לרבות במבוא לו, יהיו למונחים הבאים הפירושים שלצידם:','witness':'ולראיה באו הצדדים על החתום:','by':'על ידי: ','not_found':'[לא אותר]','mand':'סעיף שהחוק מחייב: %s','sources':'המקורות שהטיוטה נשענת עליהם','internal':'פנימי. לא נשלח לצד השני.','law':'הדין החל','law_head':['דרג','מקור','סעיפים','סטטוס'],'verified':'אומת','unverified':'טעון אימות','ags':'הסכמים מייצגים שאושרו','ags_head':['הסכם','מפרסם','כיוון'],'page':' · עמוד ','cover':'דף ליווי: ','cover_stamp':'טיוטה · הופק בתאריך %s','trace':'מטריצת עקיבות','trace_head':['סעיף','נושא','מקור','סעיף חובה','עמדת פתיחה'],'own':'ניסוח עצמאי','yes':'כן','no':'לא','removed':'סעיפי חובה שהוסרו לבקשתכם','removed_line':'%s: %s. החשיפה: %s','gaps':'פערים ומגבלות','no_research':'לא בוצע מחקר רגולטורי: נבחר איסוף הסכמים בלבד. הטיוטה אינה נשענת על מיפוי של הדין החל.','research_limits':'המחקר מוגבל למאגר המקורות המאושרים של Areo (רק האתרים והנתיבים שרשומים בו לכל מדינה). הנחיות שלא פורסמו במקורות האלה, או שלא ניתן היה לשלוף אותן, אינן בו.','unverified_line':'טעון אימות: ','case_law_list':'AREO לא מצא מקור מורשה לנקודה זו. הצעד הבא: להעלות הסכם דומה כמקור, או להשאיר את הנקודה כפי שהיא. סעיפים ','cover_stamp_plain':'טיוטה · הופק בתאריך %s','src_playbook':'פלייבוק','src_third_party':'פלייבוק ונוסחים של צד שלישי','src_third_party_only':'נוסחים של צד שלישי','tp_notice_nopb':'טיוטה זו נבנתה ללא נייר של החברה: המבנה מנוסחים של צד שלישי שעומד באותו צד בהסכם, והעמדות שאין להן מקור מסומנות להשלמה.','tp_notice':'הנייר אינו של החברה. המבנה וסדר הסעיפים נלקחו מנוסחים של צד שלישי שעומד באותו צד בהסכם, והעמדה בכל סעיף נלקחה מהפלייבוק. הנוסח נכתב מחדש ואינו מועתק מהנוסחים.','matrix':'מטריצת המקורות','matrix_head':['סעיף','נושא','פלייבוק','נוסחים','עובדות העסקה'],'no_pb':'אין עמדה בפלייבוק','sources_used':'המקורות','pb_line':'פלייבוק: %s','doc_line':'%s. %s','facts':'עובדות העסקה','to_fill':'מה נותר להשלים','loc_meta':'פרטי המסמך והצדדים','loc_recitals':'מבוא','loc_def':'הגדרת "%s"','loc_clause':'סעיף %s','loc_sign':'בלוק החתימות','legal_review':'נקודות בלי מקור מורשה','conditional':'סעיפים מותנים','conditional_line':'סעיף %s: הסעיף נכלל כי %s לא נשלל; אשרו או מחקו.','pb_gaps':'נושאים שאין עליהם עדיין עמדה בפלייבוק','pb_gap_line':'%s (%s)','pb_gaps_answer':'התשובה לשאלת ההשלמה: %s','decisions':'מה הוחלט בטיוטה','notes':'הערות','choices':'מה נבחר ולמה','pb_pending':'טיוטת מדיניות','from_pb':'כן','choice_default':'ברירת המחדל, הנוסח השכיח בהסכמים שלכם','to_fill_count':'%s: %d פרטים פתוחים','concern':'החשש העיקרי שלכם בעסקה','concern_answer':'כלשונכם: %s','concern_clauses':'המענה בטיוטה: סעיפים %s','options':'מוצע כאפשרות, לא נכלל','option_line':'%s: %s','key_dates':'המועדים שיהיו חשובים בהמשך','key_date_clause':' (סעיף %s)','ld_review':'פיצוי מוסכם (סעיף %s): AREO לא מצא מקור מורשה לנקודה זו (אכיפות הפיצוי המוסכם לפי %s). הצעד הבא: לחבר מקור מהרשימה המאושרת, או להשאיר את הסעיף כפי שהוא.','law_unset':'הדין החל, שטרם נקבע','lead':'הטיוטה מוכנה.','lead_clear':'אין בה פרטים פתוחים.','lead_open':'נשארו %d פרטים להשלים, כ-%d דקות.','next_fill':'הצעד הבא: להשלים את הפרטים המסומנים ברקע צהוב.','next_review':'הצעד הבא: להחליט על סעיפים %s: להעלות מקור, או להשאיר אותם כפי שהם.','next_send':'הצעד הבא: לשלוח לצד השני.','next_commercial':'הצעד הבא: להכריע בנושאים המסחריים המסומנים בצהוב, ואז לשלוח לצד השני את העותק בלי הסימונים.','notice_title':'מאיפה באה הטיוטה','internal_note':'פנימי. לא נשלח לצד השני.','drivers_title':'השאלות שקבעו את מבנה ההסכם','driver_clauses':'הסעיפים שהשתנו בעקבותיה: %s','adapt_title':'ההתאמות לעסקה הזו','adapt_changed':'שונה','adapt_added':'נוסף','adapt_removed':'הושמט','adapt_chosen':'נבחר נוסח מתוך התבנית','adapt_answer':'בעקבות התשובה "%s"','adapt_source':'מקור הנוסח: %s','adapt_clause':'סעיף %s','adapt_other':'בתבנית','srcw_template_alternative':'חלופה שבתבנית','srcw_client_agreement':'נוסח שלכם מהסכם אחר','srcw_playbook':'עמדה בפלייבוק','srcw_new_wording':'נוסח חדש, אינו מהתבנית','srcw_gap_research':'תוצאת מחקר עומק','commercial_title':'נושאים מסחריים להכרעתכם','commercial_count':'בטיוטה יש %d נושאים מסחריים להכרעתכם, מסומנים בצהוב.','commercial_line':'%s (סעיף %s): %s. מקור הערך: %s','commercial_line_noclause':'%s: %s. מקור הערך: %s','commercial_no_value':'אין ערך מקובל במקורות שנמצאו','vs_default':'ברירת מחדל מההסכמים שלכם','vs_template':'התבנית','vs_agreement':'הסכם קודם שלכם','vs_research':'הסכמים שפורסמו, %d מקורות','vs_none':'לא נקבע בתשובות לעסקה הזו','research_title':'נושאים שהושלמו במחקר עומק','research_lead':'הנוסח בנושאים האלה הוא הצעה של Areo, ואינו מבוסס על המסמכים שלכם.','research_line':'%s (סעיפים %s)','research_weak':'%s: לא נמצאו שלושה מקורות, ולכן הנושא נשאר להשלמה','findings':'ממצאים בתבנית'},'en':{'draft':'Draft','stamp':'Draft · Produced on %s','fill':'[to complete]','defined':' (the "%s")','part1':'of the first part;','part2':'of the second part;','whereas':'WHEREAS ','now':'NOW, THEREFORE, the parties agree as follows:','definitions':'Definitions','case_law':' [to be completed]','annex':'Annex','defs_lead':'In this Agreement, the following terms have the meanings set out below:','defs_lead_recitals':'In this Agreement, including the recitals, the following terms have the meanings set out below:','witness':'IN WITNESS WHEREOF, the parties have signed:','by':'By: ','not_found':'[not found]','mand':'Clause required by law: %s','sources':'Sources the draft relies on','internal':'Internal. Not sent to the other side.','law':'Applicable law','law_head':['Rank','Source','Sections','Status'],'verified':'Verified','unverified':'Needs verification','ags':'Approved representative agreements','ags_head':['Agreement','Publisher','Orientation'],'page':' · Page ','cover':'Cover note: ','cover_stamp':'Draft · Produced on %s','trace':'Traceability matrix','trace_head':['Clause','Topic','Source','Mandatory','Opening position'],'own':'Independent drafting','yes':'Yes','no':'No','removed':'Mandatory clauses removed at your request','removed_line':'%s: %s. Exposure: %s','gaps':'Gaps and limits','no_research':'No regulatory research was done: only collecting agreements was chosen. The draft does not rest on a mapping of the applicable law.','research_limits':'The research is limited to the approved-sources repository (only the sites and paths listed for each country). Guidance not published in these sources, or not retrievable, is not in it.','unverified_line':'Needs verification: ','case_law_list':'AREO did not find an approved source for this point. Next step: upload a similar agreement as a source, or keep the point as it is. Clauses ','cover_stamp_plain':'Draft · Produced on %s','src_playbook':'playbook','src_third_party':'playbook and third-party forms','src_third_party_only':'third-party forms','tp_notice_nopb':"This draft was built without the company's paper: the structure comes from third-party forms in the same position, and positions with no source are marked to complete.",'tp_notice':"This is not the company's paper. The structure and the order of the clauses come from third-party forms in the same position, and the position in each clause comes from the playbook. The wording was written anew and is not copied from the forms.",'matrix':'Source matrix','matrix_head':['Clause','Topic','Playbook','Forms','Deal facts'],'no_pb':'No playbook position','sources_used':'Sources','pb_line':'Playbook: %s','doc_line':'%s. %s','facts':'Deal facts','to_fill':'What is still open','loc_meta':'Document details and parties','loc_recitals':'Recitals','loc_def':'Definition of "%s"','loc_clause':'Clause %s','loc_sign':'Signature block','legal_review':'Points without an approved source','conditional':'Conditional clauses: for your confirmation','conditional_line':'Clause %s: included because %s was not ruled out; confirm or delete.','pb_gaps':'Topics with no settled playbook position yet','pb_gap_line':'%s (%s)','pb_gaps_answer':'Answer to the completion question: %s','decisions':'Decisions','notes':'Notes','choices':'What was chosen and why','pb_pending':'Draft policy','from_pb':'Yes','choice_default':'the default, the most common wording in your agreements','to_fill_count':'%s: %d open details','concern':'Your main concern in this deal','concern_answer':'In your words: %s','concern_clauses':'Where the draft answers it: clauses %s','options':'Offered as an option, not included','option_line':'%s: %s','key_dates':'Dates that will matter later','key_date_clause':' (clause %s)','ld_review':'Liquidated damages (clause %s): AREO did not find an approved source for this point (enforceability under %s). Next step: connect a source from the approved list, or keep the clause as it is.','law_unset':'the governing law, not yet set','lead':'Your draft is ready.','lead_clear':'Nothing is left open.','lead_open':'%d details are left to complete, about %d minutes.','next_fill':'Next step: complete the details marked in yellow.','next_review':'Next step: decide on clauses %s: upload a source, or keep them as they are.','next_send':'Next step: send it to the other side.','next_commercial':'Next step: decide the commercial points highlighted in yellow, then send the other side the copy without the marks.','notice_title':'Where this draft came from','internal_note':'Internal. Not sent to the other side.','drivers_title':'The questions that set the structure of the agreement','driver_clauses':'Clauses changed as a result: %s','adapt_title':'Adjustments for this deal','adapt_changed':'changed','adapt_added':'added','adapt_removed':'left out','adapt_chosen':'wording chosen from the template','adapt_answer':'following the answer "%s"','adapt_source':'source of the wording: %s','adapt_clause':'Clause %s','adapt_other':'In the template','srcw_template_alternative':'an alternative in the template','srcw_client_agreement':'your wording from another agreement','srcw_playbook':'a playbook position','srcw_new_wording':'New wording, not from the template','srcw_gap_research':'deep research result','commercial_title':'Commercial points for your decision','commercial_count':'The draft has %d commercial points for your decision, highlighted in yellow.','commercial_line':'%s (clause %s): %s. Source of the value: %s','commercial_line_noclause':'%s: %s. Source of the value: %s','commercial_no_value':'No accepted value in the sources found','vs_default':'a default from your agreements','vs_template':'the template','vs_agreement':'an earlier agreement of yours','vs_research':'published agreements, %d sources','vs_none':'not set in the answers for this deal','research_title':'Topics completed by deep research','research_lead':"The wording on these topics is Areo's proposal and is not based on your documents.",'research_line':'%s (clauses %s)','research_weak':'%s: three sources were not found, so the topic is left to complete','findings':'Findings in the template'}}
 NORM_RANKS_EN={1:'Primary legislation',2:'Secondary legislation',3:'Binding regulator instruction',4:'Regulator guidance',5:'Staff position or FAQ',6:'Source in process'}
 SCOPES_EN={'agreements':'collecting representative agreements','research':'layered regulatory research','both':'collecting agreements and regulatory research'}
 ORIENT_EN={'לטובת הפוזיציה':'Favours our position','מאוזן':'Balanced','נגד הפוזיציה':'Against our position'}
@@ -103,12 +103,39 @@ def set_fonts(rpr,text='',size=None,bold=False,italic=False):
 	if bold:put_ordered(B,_el('w:bCs'),RPR_ORDER)
 	if italic:put_ordered(B,_el('w:iCs'),RPR_ORDER)
 	if size:put_ordered(B,_el('w:szCs',val=str(int(round(size*2)))),RPR_ORDER)
-def run(p,text,size=11,bold=False,color=INK,italic=False,fill=None,underline=False):
+def run(p,text,size=11,bold=False,color=INK,italic=False,fill=None,underline=False,hl=None):
 	C=italic;A=p.add_run(text);A.font.size=Pt(size);A.bold=bold;A.italic=C;A.underline=underline;A.font.color.rgb=RGBColor.from_string(color);B=A._r.get_or_add_rPr();set_fonts(B,text,size,bold,C)
 	if fill:put_ordered(B,_el('w:shd',val='clear',color='auto',fill=fill),RPR_ORDER)
+	if hl:put_ordered(B,_el('w:highlight',val=hl),RPR_ORDER)
 	if RTL:put_ordered(B,_el('w:rtl'),RPR_ORDER)
 	return A
 GAPS=[]
+RESEARCH_BUBBLE={'he':'תוצאת מחקר עומק: הצעת Areo (לא מבוסס על מסמכי הלקוח)','en':"Deep research result: Areo's proposal (not based on the client's documents)"}
+def commercial_label():from check_draft_integrity import COMMERCIAL_LABEL as A;return A['he'if RTL else'en']
+def rich_marked(p,text,marks,size=11,bold=False,color=INK):
+	J=marks;G=bold;E=color;D=size;A=text;A=s(A)
+	if not J:return rich(p,A,D,G,E)
+	H=[]
+	if'*'in J:H=[(0,len(A))]
+	else:
+		for C in J:
+			C=s(C);B=A.find(C)if C else-1
+			while B>=0 and any(not(B+len(C)<=A or B>=D)for(A,D)in H):B=A.find(C,B+1)
+			if B>=0:H.append((B,B+len(C)))
+	F=0
+	for(K,L)in sorted(H):
+		if K>F:rich(p,A[F:K],D,G,E)
+		I=A[K:L]
+		if GAP_RX.fullmatch(I):GAPS.append(I)
+		run(p,I,D,G or bool(GAP_RX.fullmatch(I)),E,hl='yellow');run(p,' '+commercial_label(),D,False,E,hl='yellow');F=L
+	if F<len(A):rich(p,A[F:],D,G,E)
+	return p
+def research_bubble(doc,p,c):
+	if not c.get('gap_topic')or c.get('_gap_weak'):return
+	A=[A for A in p.runs if A.text]
+	if A:
+		try:doc.add_comment(A,text=RESEARCH_BUBBLE['he'if RTL else'en'],author='Areo',initials='A')
+		except Exception:pass
 LINK='0B5CAD'
 def link(p,url,text=None,size=10,bold=False):
 	B=url;from docx.opc.constants import RELATIONSHIP_TYPE as F;B=(B or'').strip()
@@ -213,22 +240,24 @@ def h1(doc,text,num=''):
 def num_label(num):A=s(num).rstrip('.');return A+'.'if A and A[-1].isalnum()else A
 def needs_review(c):return bool(c.get('needs_legal_review')or c.get('needs_case_law'))
 def clause(doc,c,depth=0):
-	F=depth;C=doc;D=num_label(c.get('number'));E=txt(c,'heading','title');A=txt(c,'text','body')
-	if needs_review(c)and A:A+=tr('case_law')
+	F=depth;A=doc;D=num_label(c.get('number'));E=txt(c,'heading','title');C=txt(c,'text','body')
+	if needs_review(c)and C:C+=tr('case_law')
+	G=c.get('_marks')or[]
 	if F==0:
 		if E:
-			h1(C,E,D.rstrip('.'))
-			if A:rich(para(C,before=0,after=5,indent=.6),A,11)
+			H=h1(A,E,D.rstrip('.'))
+			if C:research_bubble(A,rich_marked(para(A,before=0,after=5,indent=.6),C,G,11),c)
+			else:research_bubble(A,H,c)
 		else:
-			B=para(C,before=8,after=5)
+			B=para(A,before=8,after=5)
 			if D:run(B,'%s '%D,11,True)
-			rich(B,A,11)
+			rich_marked(B,C,G,11);research_bubble(A,B,c)
 	else:
-		B=para(C,before=0,after=4,indent=.6+.6*F)
+		B=para(A,before=0,after=4,indent=.6+.6*F)
 		if D:run(B,'%s '%D,11,True)
 		if E:run(B,s(E)+'. ',11,True)
-		rich(B,A,11)
-	for G in c.get('children')or c.get('subclauses')or[]:clause(C,G,F+1)
+		rich_marked(B,C,G,11);research_bubble(A,B,c)
+	for I in c.get('children')or c.get('subclauses')or[]:clause(A,I,F+1)
 def page_break(doc):A=para(doc,before=0,after=0);run(A,'')._r.append(_el('w:br',type='page'));return A
 def annexes(doc,ans):
 	B=doc
@@ -316,10 +345,10 @@ def concern_gate(d):
 THIRD_PARTY='third_party_paper'
 RESEARCH_IDS=re.compile('^(?:REG|MAND|AGR)-')
 def state4_gate(d,research,approved_sources=None,inc_country=None):
-	A=research;from research_sources import approved_mandatory as H,check,normalise as I,scope_has as J;B=d.get('meta')or{};K=s(B.get('source_mode'))==THIRD_PARTY;L=any(RESEARCH_IDS.match(B)for A in all_clauses(d)for B in clause_sources(A))
+	A=research;from research_sources import approved_mandatory as H,check,normalise as I,scope_has as J;B=d.get('meta')or{};K=s(B.get('source_mode'))==THIRD_PARTY;L=any(RESEARCH_IDS.match(B)for A in all_clauses(d)if not A.get('gap_topic')for B in clause_sources(A))
 	if not(B.get('notice')and not K or d.get('sources')or A or L):return
 	M=B.get('outside_basis')or{};F=[A for A in('no_playbook','no_client_agreements','client_asked')if M.get(A)is not True]
-	if F:raise State4Refused(['ניסוח מבחוץ מותר רק כשללקוח אין פלייבוק ואין הסכמי טיוטה והוא ביקש זאת במפורש. חסר ב-meta.outside_basis: %s.'%', '.join(F)])
+	if F:raise State4Refused(['ניסוח מאפס (מחקר ברשת והסכמים שפורסמו) מותר רק כשאין ללקוח מקור פנימי למשפחה ולצד (פלייבוק או הסכמים), והלקוח אישר יציאה לרשת בסבב השאלות הראשון (client_asked). תבנית שנמצאה בתיקייה מוצעת קודם בנתיב התאמת התבנית (template_offered). טיוטה מפלייבוק שהושלמה במחקר עומק לנושאים חסרים אינה ניסוח מאפס: היא נושאת gap_research, וסעיפיה gap_topic. חסר ב-meta.outside_basis: %s.'%', '.join(F)])
 	if not A:raise State4Refused(['מקור REG-, MAND-, AGR- או sources דורש את קובץ המחקר (--research), שנאסף מהרשימה המאושרת בלבד.'])
 	C,N,N=check(A,stage='draft',approved_sources=approved_sources,inc_country=inc_country);D=I(A)
 	if J(D,'research'):
@@ -329,21 +358,133 @@ def state4_gate(d,research,approved_sources=None,inc_country=None):
 			if'MAND-%s'%E.get('clause_id')not in G:C.append('סעיף חובה %s (%s) לא שובץ באף סעיף בטיוטה. משבצים אותו, או מסירים אותו עם סיבה.'%(E.get('clause_id'),E.get('title')or''))
 	if C:raise State4Refused(C)
 	return D
-def build(d,prof,out,research=None,cover=None,lang=None,approved_sources=None):
-	F=lang;E=prof;C=cover;B=out;global RTL;D=d.get('meta')or{};L=state4_gate(d,research,approved_sources,(E or{}).get('incorporation_country'));public_form_gate(d,E);concern_gate(d);F=s(F)or s(D.get('language'))or s(profile_lang(E))or'he';RTL=not is_en(F);d,H=english_parties(d,E,RTL,s)
-	if H:raise DraftRefused(H)
-	del GAPS[:];A=Document();base(A);title_block(A,D);parties(A,D);recitals(A,d.get('recitals'));definitions(A,d.get('definitions'),bool(d.get('recitals')))
-	for M in d.get('clauses')or[]:clause(A,M)
+def third_party_no_playbook(d):
+	A=d.get('meta')or{}
+	if s(A.get('source_mode'))!=THIRD_PARTY or(d.get('cover')or{}).get('playbook'):return False
+	return not any(B.upper().startswith('PB-')for A in all_clauses(d)for B in clause_sources(A))
+def mark_unsourced(d):
+	if not any(clause_sources(A)for A in all_clauses(d)):return
+	def C(cs,inherited):
+		for A in cs or[]:
+			D=clause_sources(A)or inherited;B=txt(A,'text','body')
+			if B and not D and tr('case_law').strip()not in B and not GAP_RX.search(B):A['text']=B+tr('case_law');A.pop('body',None)
+			C(A.get('children')or A.get('subclauses'),D)
+	C(d.get('clauses'),[])
+	for A in d.get('annexes')or[]:C(A.get('clauses'),[])
+def is_outside(d):A=d.get('meta')or{};B=s(A.get('source_mode'))==THIRD_PARTY;return bool(A.get('notice')and not B or d.get('sources')or any(RESEARCH_IDS.match(B)for A in all_clauses(d)if not A.get('gap_topic')for B in clause_sources(A)))
+def answered_values(d):
+	A=[];C,D=d.get('cover')or{},d.get('variance')or{}
+	for B in C.get('facts')or[]:A.append(s(B.get('fact')if isinstance(B,dict)else B))
+	for E in('answers','drivers'):A+=[s(A)for A in(D.get(E)or{}).values()]
+	for F in(d.get('meta')or{}).get('parties')or[]:A+=[s(F.get(A))for A in('name','reg','address')]
+	return[A for A in A if A]
+def prepare_commercial(d):
+	from check_draft_integrity import COMMERCIAL_NATURE_RX as R,commercial_amounts as S;J=is_outside(d);T=answered_values(d);K='[to complete: %s]'if not RTL else'[להשלים: %s]';I=[]
+	for B in all_clauses(d):
+		A=txt(B,'text','body');L=[A for A in B.get('commercial')or[]if isinstance(A,dict)];H=[];U=[s(A.get('text'))for A in L if s(A.get('text'))]
+		for D in L:
+			M=str(D.get('value_source')or'none')
+			if M=='answer':continue
+			N=bool(D.get('whole'))or s(D.get('text'))==A;C=s(D.get('text'))or('*'if N else'');F=s(D.get('topic'))or s(B.get('heading'))
+			if J and len(D.get('sources')or[])<3 and C and C!='*'and C in A:G=K%F;A=A.replace(C,G,1);C=G
+			H.append('*'if N else C);I.append({'clause':B.get('number'),'topic':F,'value':C if C!='*'else A[:60],'value_source':M,'sources':D.get('sources')or[]})
+		for(O,P)in reversed(S(A)):
+			E=A[O:P]
+			if any(E in A or A in E for A in U if A)or any(E in A for A in T):continue
+			Q=R.search(A);F=s(B.get('heading'))or(Q.group(0)if Q else E)
+			if J:G=K%F;A=A[:O]+G+A[P:];E=G
+			H.append(E);I.append({'clause':B.get('number'),'topic':F,'value':E,'value_source':'none','sources':[]})
+		if A!=txt(B,'text','body'):B['text']=A;B.pop('body',None)
+		if H:B['_marks']=H
+	return I
+def prepare_gap_research(d):
+	D=d.get('gap_research')or{};E={s(A.get('topic')):A for A in D.get('topics')or[]if isinstance(A,dict)};C={}
+	for A in all_clauses(d):
+		B=s(A.get('gap_topic'))
+		if not B:continue
+		C.setdefault(B,[]).append(A.get('number'))
+		if len((E.get(B)or{}).get('sources')or[])<3:A['text']=('[to complete: %s]'if not RTL else'[להשלים: %s]')%B;A.pop('body',None);A['_gap_weak']=True
+	return C
+def _cid(c):return[A for A in(str(c.get('variance_id')or'').split(':')[0],s(c.get('item_id')))if A]
+def apply_drivers(d,drivers):
+	from fill_template import collect_effects as T;J=dict((d.get('variance')or{}).get('drivers')or{});A=T(drivers,J);C=['שאלה מכוננת בלי תשובה ב-variance.drivers: %s. ההשפעות שלה לא הוחלו.'%A for A in A['unanswered']];F={}
+	for B in A['applied']:
+		for D in B['items']:F[D]=B['driver']
+	E=[]
+	def G(cs):
+		D=[]
+		for B in cs or[]:
+			if set(_cid(B))&set(A['omit'])and not set(_cid(B))&set(A['include']):E.append(B);continue
+			for C in('children','subclauses'):
+				if B.get(C):B[C]=G(B[C])
+			D.append(B)
+		return D
+	d['clauses']=G(d.get('clauses'))
+	for B in d.get('annexes')or[]:B['clauses']=G(B.get('clauses'))
+	U=set(A['companions_remove']['definitions']);d['definitions']=[A for A in d.get('definitions')or[]if s(A.get('term'))not in U];V=[s(A).lower()for A in A['companions_remove']['annexes']];d['annexes']=[A for A in d.get('annexes')or[]if not any(B and(B in s(A.get('title')).lower()or B in s(A.get('label')).lower()or B in(s(A.get('label'))+' - '+s(A.get('title'))).lower())for B in V)];K={B for A in all_clauses(d)for B in _cid(A)}
+	for H in all_clauses(d):
+		for L in _cid(H):
+			if L in F and not H.get('driver_id'):H['driver_id']=F[L]
+	for D in A['include']:
+		if D not in K:C.append('התשובה "%s: %s" מחייבת סעיף (%s), והוא אינו בטיוטה. מנסחים אותו, עם variance_id.'%(A['why'].get(D,('',''))[0],A['why'].get(D,('',''))[1],D))
+	for(M,N)in A['variant'].items():
+		O=[A.get('number')for A in all_clauses(d)if str(A.get('variance_id')or'').startswith(M+':')and str(A.get('variance_id'))!='%s:%s'%(M,N)]
+		if O:C.append('סעיף %s בנוסח אחר מזה שהתשובה בחרה (%s).'%(', '.join(map(str,O)),N))
+	W=' '.join(txt(A,'text','body')for A in all_clauses(d))+' '+' '.join(txt(A,'text','definition')for A in d.get('definitions')or[]);X={s(A.get('term'))for A in d.get('definitions')or[]}
+	for I in A['companions_add']['definitions']:
+		if I not in X and not re.search('["“”״]%s["“”״]'%re.escape(I),W):C.append('ההגדרה "%s" נדרשת לפי התשובה ואינה בטיוטה.'%I)
+	for P in A['companions_add']['annexes']:
+		if not any(s(P).lower()in(s(A.get('label'))+' '+s(A.get('title'))).lower()for A in d.get('annexes')or[]):C.append('הנספח "%s" נדרש לפי התשובה ואינו בטיוטה.'%P)
+	if C:raise DraftRefused(C)
+	Y=renumber_json(d)if E else{};Q=d.setdefault('cover',{})
+	if not Q.get('drivers'):
+		R=[]
+		for B in A['applied']:S=[num_label(A.get('number')).rstrip('.')for A in all_clauses(d)if set(_cid(A))&set(B['items'])and A.get('number')];S+=[s(A.get('heading'))or s(A.get('text'))[:40]for A in E if set(_cid(A))&set(B['items'])];R.append({'question':B['question'],'answer':B['answer'],'clauses_changed':S})
+		Q['drivers']=R
+	return{'answers':J,'applied':A['applied'],'items_present':sorted(K),'items_omitted':sorted({B for A in E for B in _cid(A)}),'renumbered':Y}
+XREF_JSON_RX=re.compile("((?:סעיף|סעיפים|ס['׳]|clause|clauses|section|sections)\\s+)(\\d+(?:\\.\\d+)*)",re.I)
+def renumber_json(d):
+	B={}
+	def F(cs,prefix):
+		G=prefix;D=0
+		for A in cs or[]:
+			E=s(A.get('number')).rstrip('.')
+			if not re.fullmatch('\\d+(?:\\.\\d+)*',E or''):continue
+			D+=1;C='%s.%d'%(G,D)if G else str(D)
+			if C!=E:B[E]=C
+			A['number']=C;F(A.get('children')or A.get('subclauses'),C)
+	F(d.get('clauses'),'')
+	if not B:return B
+	def G(t):return XREF_JSON_RX.sub(lambda m:m.group(1)+B.get(m.group(2),m.group(2)),t)if isinstance(t,str)else t
+	for D in all_clauses(d):
+		for A in('text','body','heading'):
+			if D.get(A):D[A]=G(D[A])
+	for E in d.get('definitions')or[]:
+		for A in('text','definition'):
+			if E.get(A):E[A]=G(E[A])
+	H=d.get('cover')or{};C=H.get('main_concern')
+	if isinstance(C,dict)and C.get('clauses'):I=C['clauses']if isinstance(C['clauses'],list)else[C['clauses']];C['clauses']=[B.get(num_label(A).rstrip('.'),A)for A in I]
+	for A in H.get('key_dates')or[]:
+		if isinstance(A,dict)and A.get('clause'):A['clause']=B.get(s(A['clause']).rstrip('.'),A['clause'])
+	return B
+def build(d,prof,out,research=None,cover=None,lang=None,approved_sources=None,drivers=None,clean_copy=None):
+	K=drivers;H=lang;F=clean_copy;E=prof;C=cover;B=out;global RTL;D=d.get('meta')or{};Q=state4_gate(d,research,approved_sources,(E or{}).get('incorporation_country'));public_form_gate(d,E);H=s(H)or s(D.get('language'))or s(profile_lang(E))or'he';RTL=not is_en(H);d,L=english_parties(d,E,RTL,s)
+	if L:raise DraftRefused(L)
+	R=apply_drivers(d,K)if K else None
+	if third_party_no_playbook(d):mark_unsourced(d)
+	concern_gate(d);S=prepare_gap_research(d);M=prepare_commercial(d);del GAPS[:];A=Document();base(A);title_block(A,D);parties(A,D);recitals(A,d.get('recitals'));definitions(A,d.get('definitions'),bool(d.get('recitals')))
+	for T in d.get('clauses')or[]:clause(A,T)
 	annexes(A,d.get('annexes'));signatures(A,d.get('signatures'),D);footer(A,D)
 	if not RTL:mixed_direction(A)
-	A.save(B);from build_template_registry import docx_text as I;from check_draft_integrity import count_placeholders as N;J=N(I(B,limit=400000)[0])
-	if C:write_cover(C,d,L,J)
-	K=client_text_problems((B,C),RTL,I,_voice_check)
-	if K:
-		for G in(B,C):
-			if G and os.path.exists(G):os.remove(G)
-		raise DraftRefused(K)
-	return{'out':B,'rtl':RTL,'clauses':len(d.get('clauses')or[]),'definitions':len(d.get('definitions')or[]),'annexes':len(d.get('annexes')or[]),'placeholders':J,'cover':C or''}
+	A.save(B);from build_template_registry import docx_text as N;from check_draft_integrity import count_commercial_marks as U,count_placeholders as V;O=N(B,limit=400000)[0];I=V(O);G=U(O);d.setdefault('meta',{})['commercial_marks']=G
+	if C:write_cover(C,d,Q,I,commercial=M,marks=G,gap_topics=S)
+	P=client_text_problems((B,C),RTL,N,_voice_check)
+	if P:
+		for J in(B,C):
+			if J and os.path.exists(J):os.remove(J)
+		raise DraftRefused(P)
+	if F:from fill_template import strip_commercial_marks as W;W(B,F)
+	X={'placeholders':I,'commercial_marks':G,'commercial':M,'driver_effects':R,'gap_research':d.get('gap_research')or None,'clean_copy':os.path.basename(F)if F else None};io.open(os.path.splitext(B)[0]+'.report.json','w',encoding='utf-8').write(json.dumps(X,ensure_ascii=False,indent=2));return{'out':B,'rtl':RTL,'clauses':len(d.get('clauses')or[]),'definitions':len(d.get('definitions')or[]),'annexes':len(d.get('annexes')or[]),'placeholders':I,'commercial_marks':G,'cover':C or''}
 def open_items(d):
 	E=[]
 	def A(where,*B):
@@ -364,20 +505,20 @@ def key_date_lines(cv,lang=None):
 		else:B=s(A)
 		if B:C.append(B)
 	return C
-def write_cover(path,d,r=None,gaps=None):
-	E=gaps;D=d.get('meta')or{};B=d.get('cover')or{};P=s(D.get('source_mode'))==THIRD_PARTY;A=Document();base(A);run(para(A,after=2),tr('cover')+s(B.get('title')or txt(D,'title','doc_type')or tr('draft')),16,True,NAVY)
-	if r is not None:from research_sources import normalise as Q;r=Q(r);L=tr('cover_stamp')%produced_on(D)
-	else:L=tr('cover_stamp_plain')%produced_on(D)
-	run(para(A,after=6),L,9.5,False,INK_SOFT);F=[A for A in all_clauses(d)if needs_review(A)];M=[A for A in all_clauses(d)if A.get('condition')];H=tr('lead');I=(E or 0)+len(F)+len(M)
-	if I:
-		H+=' '+tr('lead_open')%(I,5*max(1,-(-I//5)))
-		if E:J=tr('next_fill')
-		else:J=tr('next_review')%', '.join(num_label(A.get('number')).rstrip('.')for A in F+M)
-	else:H+=' '+tr('lead_clear');J=tr('next_send')
-	run(para(A,after=2),H,12,True,INK);run(para(A,after=10),J,11,False,NAVY);G=txt(D,'notice')
-	if P and not G:G=tr('tp_notice')
-	if G:h1(A,tr('notice_title'));N=para(A,before=0,after=10);ppr_put(N,_el('w:shd',val='clear',color='auto',fill='F5F7F9'));run(N,G,10,False,NAVY)
-	def R():
+def write_cover(path,d,r=None,gaps=None,commercial=None,marks=0,gap_topics=None):
+	H=marks;E=gaps;D=d.get('meta')or{};B=d.get('cover')or{};R=s(D.get('source_mode'))==THIRD_PARTY;A=Document();base(A);run(para(A,after=2),tr('cover')+s(B.get('title')or txt(D,'title','doc_type')or tr('draft')),16,True,NAVY)
+	if r is not None:from research_sources import normalise as S;r=S(r);N=tr('cover_stamp')%produced_on(D)
+	else:N=tr('cover_stamp_plain')%produced_on(D)
+	run(para(A,after=6),N,9.5,False,INK_SOFT);F=[A for A in all_clauses(d)if needs_review(A)];O=[A for A in all_clauses(d)if A.get('condition')];I=tr('lead');J=(E or 0)+len(F)+len(O)
+	if J:
+		I+=' '+tr('lead_open')%(J,5*max(1,-(-J//5)))
+		if E:K=tr('next_fill')
+		else:K=tr('next_review')%', '.join(num_label(A.get('number')).rstrip('.')for A in F+O)
+	else:I+=' '+tr('lead_clear');K=tr('next_commercial')if H else tr('next_send')
+	run(para(A,after=2),I,12,True,INK);run(para(A,after=10),K,11,False,NAVY);G=txt(D,'notice')
+	if R and not G:G=tr('tp_notice_nopb')if third_party_no_playbook(d)else tr('tp_notice')
+	if G:h1(A,tr('notice_title'));P=para(A,before=0,after=10);ppr_put(P,_el('w:shd',val='clear',color='auto',fill='F5F7F9'));run(P,G,10,False,NAVY)
+	def T():
 		if r is not None:trace_matrix(A,d,r);sources_section(A,d,r)
 		else:source_matrix(A,d,B)
 	def C(title,lines,size=10.5):
@@ -385,15 +526,21 @@ def write_cover(path,d,r=None,gaps=None):
 		if not B:return
 		h1(A,title)
 		for C in B:rich(para(A,after=2,indent=.5),C,size)
-	O,S=concern_refs(d)
-	if O:C(tr('concern'),[tr('concern_answer')%O,tr('concern_clauses')%', '.join(S)])
+	Q,U=concern_refs(d)
+	if Q:C(tr('concern'),[tr('concern_answer')%Q,tr('concern_clauses')%', '.join(U)])
+	C(tr('drivers_title'),driver_lines(B.get('drivers')));C(tr('adapt_title'),adaptation_lines(B.get('adaptations')))
+	if H:
+		h1(A,tr('commercial_title'));para(A,tr('commercial_count')%H,10.5,True,INK,after=4)
+		for L in commercial_lines(commercial):rich(para(A,after=2,indent=.5),L,10.5)
+	if(d.get('gap_research')or{}).get('topics'):
+		h1(A,tr('research_title'));para(A,tr('research_lead'),10.5,False,INK,after=4)
+		for L in research_lines(d.get('gap_research'),gap_topics):rich(para(A,after=2,indent=.5),L,10.5)
 	C(tr('choices'),choice_lines(B));C(tr('key_dates'),key_date_lines(B));C(tr('to_fill_count')%(tr('to_fill'),E)if E else tr('to_fill'),['%s: %s'%(A,', '.join(B))for(A,B)in open_items(d)])
 	if F:C(tr('legal_review'),[tr('case_law_list')+', '.join(num_label(A.get('number')).rstrip('.')for A in F)])
-	C(tr('conditional'),[tr('conditional_line')%(num_label(A.get('number')).rstrip('.'),s(A.get('condition')))for A in all_clauses(d)if A.get('condition')]);K=[tr('pb_gap_line')%(s(A.get('topic')),s(A.get('reason')))if isinstance(A,dict)else s(A)for A in B.get('playbook_gaps')or[]]
-	if K and B.get('playbook_gaps_answer'):K.append(tr('pb_gaps_answer')%s(B.get('playbook_gaps_answer')))
-	C(tr('pb_gaps'),K);C(tr('options'),[tr('option_line')%(s(A.get('title')),s(A.get('reason')))if isinstance(A,dict)else s(A)for A in B.get('options')or[]]);C(tr('decisions'),[s(A)for A in B.get('decisions')or[]]);C(tr('notes'),[s(A)for A in B.get('notes')or[]]+ld_notes(d));R()
+	C(tr('conditional'),[tr('conditional_line')%(num_label(A.get('number')).rstrip('.'),s(A.get('condition')))for A in all_clauses(d)if A.get('condition')]);M=[tr('pb_gap_line')%(s(A.get('topic')),s(A.get('reason')))if isinstance(A,dict)else s(A)for A in B.get('playbook_gaps')or[]]
+	if M and B.get('playbook_gaps_answer'):M.append(tr('pb_gaps_answer')%s(B.get('playbook_gaps_answer')))
+	C(tr('pb_gaps'),M);C(tr('options'),[tr('option_line')%(s(A.get('title')),s(A.get('reason')))if isinstance(A,dict)else s(A)for A in B.get('options')or[]]);C(tr('decisions'),[s(A)for A in B.get('decisions')or[]]);C(tr('notes'),[s(A)for A in B.get('notes')or[]]+ld_notes(d));T()
 	if r is not None:research_gaps(A,d,r)
-	para(A,tr('run_risk'),10.5,True,INK,before=14)
 	if not RTL:mixed_direction(A)
 	A.save(path)
 def choice_lines(cv,lang=None):
@@ -402,6 +549,47 @@ def choice_lines(cv,lang=None):
 		if isinstance(A,dict):D=s(A.get('why'))or(E['choice_default']if A.get('default')else'');C=': '.join(A for A in(s(A.get('question')),s(A.get('answer')))if A);B.append(C+(('. 'if C and not C.endswith('.')else' ')+D if D else''))
 		elif s(A):B.append(s(A))
 	return[A for A in B if A]
+def driver_lines(drivers):
+	C=[]
+	for A in drivers or[]:
+		if not isinstance(A,dict):
+			if s(A):C.append(s(A))
+			continue
+		E,F=s(A.get('question')),s(A.get('answer'));B=' '.join(A for A in(E,F)if A)
+		if B and not B.endswith('.'):B+='.'
+		D=[s(A)for A in A.get('clauses_changed')or[]if s(A)]
+		if D:B+=' '+tr('driver_clauses')%', '.join(D)
+		if B:C.append(B)
+	return C
+def adaptation_lines(ads):
+	D=[]
+	for A in ads or[]:
+		if not isinstance(A,dict):continue
+		E=tr('adapt_clause')%s(A.get('clause'))if A.get('clause')else s(A.get('text'))or tr('adapt_other')
+		if A.get('change')=='removed'and A.get('clause')and s(A.get('text')):E+=' ("%s")'%s(A.get('text'))[:50]
+		B='%s: %s'%(E,tr('adapt_'+str(A.get('change')or'changed')))
+		if s(A.get('answer')):B+=', '+tr('adapt_answer')%s(A.get('answer'))
+		C=str(A.get('source')or'')
+		if C and A.get('change')!='removed':B+='. '+tr('adapt_source')%tr('srcw_'+C)if'srcw_'+C in TXT['he']else''
+		D.append(B)
+	return D
+def commercial_lines(items):
+	C=[]
+	for A in items or[]:
+		B=s(A.get('value')or A.get('text'))
+		if not B or GAP_RX.fullmatch(B)or B.startswith(('[להשלים','[to complete')):B=tr('commercial_no_value')
+		D=str(A.get('value_source')or'none');E=tr('vs_research')%len(A.get('sources')or[])if D=='research'else tr('vs_'+D)if'vs_'+D in TXT['he']else tr('vs_none');F=s(A.get('topic'))or B
+		if A.get('clause'):C.append(tr('commercial_line')%(F,num_label(A['clause']).rstrip('.'),B,E))
+		else:C.append(tr('commercial_line_noclause')%(F,B,E))
+	return C
+def research_lines(gr,clauses_by_topic=None):
+	C=[]
+	for A in(gr or{}).get('topics')or[]:
+		if not isinstance(A,dict):continue
+		B=s(A.get('topic'));D=[A for A in A.get('sources')or[]]
+		if len(D)<3:C.append(tr('research_weak')%B);continue
+		E=[num_label(A).rstrip('.')for A in A.get('clauses')or(clauses_by_topic or{}).get(B)or[]];F=tr('research_line')%(B,', '.join(E))if E else B;G=['%s, %s'%(s(A.get('title')),s(A.get('url')))if isinstance(A,dict)and A.get('url')else s(A.get('title')if isinstance(A,dict)else A)for A in D];C.append(F+': '+'; '.join(A for A in G if A))
+	return C
 def ld_notes(d):
 	from check_draft_integrity import LD_RX;import governing_law as C;A=[num_label(A.get('number')).rstrip('.')for A in all_clauses(d)if A.get('number')and LD_RX.search(txt(A,'text','body'))]
 	if not A:return[]
@@ -461,22 +649,24 @@ def research_gaps(doc,d,r):
 		para(B,tr('research_limits'),10.5,False,INK,after=3)
 		for A in[A for A in r.get('law')or[]if not A.get('verified')]:E=para(B,after=3,indent=.5);run(E,tr('unverified_line'),10.5,True);link(E,A.get('url'),s(A.get('instrument')),10.5)
 def main():
-	B=argparse.ArgumentParser();B.add_argument('--draft',required=True);B.add_argument('--profile');B.add_argument('--out',required=True);B.add_argument('--research',help='מצב 4: קובץ המחקר שאושר. בלעדיו טיוטת מצב 4 אינה נבנית');B.add_argument('--cover',help='דף ליווי, בכל מצב: במצב 4 עם מטריצת עקיבות מול המחקר, ובלי מחקר עם מטריצת המקורות (פלייבוק, נוסחים, עובדות העסקה)');B.add_argument('--lang',choices=('he','en'),help='שפת הטיוטה; בלעדיו: meta.language, ואחריו deliverable_language בפרופיל');B.add_argument('--approved-sources',help='מצב 4: מקורות-מאושרים.json (ברירת מחדל: משתנה הסביבה AREO_APPROVED_SOURCES, ואחריו העותק שבתוסף, lib/מקורות-מאושרים.json). בלי רשימה תקפה, טיוטה ממחקר רגולטורי נעצרת בקוד 2');B.add_argument('--force',action='store_true',help='לדרוס טיוטה או דף ליווי קיימים (הרצה חוזרת אחרי תיקון)');A=B.parse_args();from build_template_registry import guard_out as F;G=[A.draft,A.profile,A.research,A.approved_sources];F(A.out,G,A.force)
-	if A.cover:F(A.cover,G+[A.out],A.force)
-	H=json.load(io.open(A.draft,encoding='utf-8'));D={}
+	B=argparse.ArgumentParser();B.add_argument('--draft',required=True);B.add_argument('--profile');B.add_argument('--out',required=True);B.add_argument('--research',help='מצב ז: קובץ המחקר שאושר. בלעדיו טיוטת מצב ז אינה נבנית');B.add_argument('--cover',help='דף ליווי, בכל מצב: במצב ז עם מטריצת עקיבות מול המחקר, ובלי מחקר עם מטריצת המקורות (פלייבוק, נוסחים, עובדות העסקה)');B.add_argument('--lang',choices=('he','en'),help='שפת הטיוטה; בלעדיו: meta.language, ואחריו deliverable_language בפרופיל');B.add_argument('--approved-sources',help='מצב ז: מקורות-מאושרים.json (ברירת מחדל: משתנה הסביבה AREO_APPROVED_SOURCES, ואחריו העותק שבתוסף, lib/מקורות-מאושרים.json). בלי רשימה תקפה, טיוטה ממחקר רגולטורי נעצרת בקוד 2');B.add_argument('--force',action='store_true',help='לדרוס טיוטה או דף ליווי קיימים (הרצה חוזרת אחרי תיקון)');B.add_argument('--drivers',help='drivers.json של המשפחה והצד: התשובות ב-variance.drivers מוחלות על הטיוטה (סעיפים תלויים, הגדרות ונספחים), ודף הליווי מקבל את פרק השאלות');B.add_argument('--clean-copy',help='עותק לצד השני, בלי סימוני הנושאים המסחריים (הערכים נשארים)');A=B.parse_args();from build_template_registry import guard_out as D;E=[A.draft,A.profile,A.research,A.approved_sources,A.drivers];D(A.out,E,A.force);D(os.path.splitext(A.out)[0]+'.report.json',E)
+	if A.cover:D(A.cover,E+[A.out],A.force)
+	if A.clean_copy:D(A.clean_copy,E+[A.out,A.cover],A.force)
+	H=json.load(io.open(A.draft,encoding='utf-8'));F={}
 	if A.profile:
-		try:D=json.load(io.open(A.profile,encoding='utf-8'))
-		except(OSError,ValueError):D={}
+		try:F=json.load(io.open(A.profile,encoding='utf-8'))
+		except(OSError,ValueError):F={}
 	I=json.load(io.open(A.research,encoding='utf-8'))if A.research else None;from research_sources import ApprovedSourcesMissing as J
-	try:C=build(H,D,A.out,I,A.cover,A.lang,A.approved_sources)
-	except J as E:print('הטיוטה לא נבנתה. סירוב: %s'%E);sys.exit(2)
-	except DraftRefused as E:
+	try:K=json.load(io.open(A.drivers,encoding='utf-8'))if A.drivers else None;C=build(H,F,A.out,I,A.cover,A.lang,A.approved_sources,K,A.clean_copy)
+	except J as G:print('הטיוטה לא נבנתה. סירוב: %s'%G);sys.exit(2)
+	except DraftRefused as G:
 		print('הטיוטה לא נבנתה:')
-		for K in E.args[0]:print('  חוסם: '+K)
+		for L in G.args[0]:print('  חוסם: '+L)
 		sys.exit(1)
 	print('הטיוטה נבנתה: %s'%C['out']);print('סעיפים ראשיים: %d · הגדרות: %d · נספחים: %d · כיווניות: %s'%(C['clauses'],C['definitions'],C['annexes'],'RTL'if C['rtl']else'LTR'))
 	if C['placeholders']:print('פרטים להשלים שסומנו בצהוב: %d. הם של הלקוח, רשומים בדף הליווי ובהודעת המסירה, ואינם עוצרים את המסירה.'%C['placeholders'])
+	if C.get('commercial_marks'):print('נושאים מסחריים שסומנו בצהוב: %d. הם להכרעת הלקוח, נספרים בנפרד מהפרטים להשלים, ונכתבים בדף הליווי ובהודעת המסירה. טיוטה שנשארו בה סימונים אינה נשלחת לצד השני כמו שהיא (--clean-copy).'%C['commercial_marks'])
 	if C['cover']:print('דף הליווי נבנה: %s'%C['cover'])
-	import governing_law as L
-	if not L.code((H.get('meta')or{}).get('governing_law')):print('אזהרה: meta.governing_law חסר או לא מוכר. הדין החל נשאל לפני הניסוח (SKILL.md), ואינו מונח. Warning: meta.governing_law is missing or unknown. Ask for the governing law; never assume it.')
+	import governing_law as M
+	if not M.code((H.get('meta')or{}).get('governing_law')):print('אזהרה: meta.governing_law חסר או לא מוכר. הדין החל נשאל לפני הניסוח (SKILL.md), ואינו מונח. Warning: meta.governing_law is missing or unknown. Ask for the governing law; never assume it.')
 if __name__=='__main__':main()

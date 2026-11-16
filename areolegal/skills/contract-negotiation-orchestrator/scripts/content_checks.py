@@ -805,7 +805,7 @@ def review_high_risk(out,theirs,decisions,state,core,mode=None,labels=None):
 			for C in SECTOR_LAW.finditer(I or''):
 				if C.group(0).lower()not in K.lower():A='הפניה לחקיקה',C.group(0)[:40]
 				break
-		if A:finding(out,'NO_APPROVED_SOURCE','AREO לא מצאה מקור מורשה לנקודה זו: %s (%s, "%s"). הצעד הבא: להוסיף לתיקיית ההסכמים של החברה הסכם שמסדיר אותה, או לאשר עמדה בפלייבוק. / AREO did not find an approved source for this point: %s (%s). Next step: add to the company\'s agreements folder an agreement that covers it, or confirm a position in the playbook'%(A[0],J,A[1],HIGH_RISK_EN.get(A[0],A[0]),J),F[0].get('id')if F else'para %d'%B,blocking=False)
+		if A:finding(out,'NO_APPROVED_SOURCE','AREO לא מצא מקור מורשה לנקודה זו: %s (%s, "%s"). הצעד הבא: להוסיף לתיקיית ההסכמים של החברה הסכם שמסדיר אותה, או לאשר עמדה בפלייבוק. / AREO did not find an approved source for this point: %s (%s). Next step: add to the company\'s agreements folder an agreement that covers it, or confirm a position in the playbook'%(A[0],J,A[1],HIGH_RISK_EN.get(A[0],A[0]),J),F[0].get('id')if F else'para %d'%B,blocking=False)
 def review_law_coverage(out,decisions,state,core,mode=None):
 	B=core;B=B if isinstance(B,dict)else{}
 	for A in B.get('clauses')or B.get('rules')or[]:
@@ -813,7 +813,7 @@ def review_law_coverage(out,decisions,state,core,mode=None):
 		D=A.get('id')or A.get('rule_id')or'?';C=A.get('no_source_note');F=bool(A.get('no_approved_source'))or any(isinstance(A,dict)and A.get('no_approved_source')for A in A.get('statutory_override')or[])
 		if not F:continue
 		if not isinstance(C,str)or not C.strip():C=next((A.get('no_source_note')for A in A.get('statutory_override')or[]if isinstance(A,dict)and A.get('no_source_note')),'')
-		E=A.get('title')or A.get('topic_name')or D;finding(out,'NO_APPROVED_SOURCE','AREO לא מצאה מקור מורשה לנקודה זו: %s. %sהצעד הבא: להוסיף לפלייבוק את המקור המאושר, או לאשר עמדה בפלייבוק. / AREO did not find an approved source for this point: %s'%(E,C.strip()+' 'if C else'',E),D,blocking=False)
+		E=A.get('title')or A.get('topic_name')or D;finding(out,'NO_APPROVED_SOURCE','AREO לא מצא מקור מורשה לנקודה זו: %s. %sהצעד הבא: להוסיף לפלייבוק את המקור המאושר, או לאשר עמדה בפלייבוק. / AREO did not find an approved source for this point: %s'%(E,C.strip()+' 'if C else'',E),D,blocking=False)
 def review_definitions(out,theirs,decisions,state,mode=None,labels=None):
 	H=decisions;E=state;D=labels;C=theirs;E=E or{};L=mode!='work'
 	for A in H:

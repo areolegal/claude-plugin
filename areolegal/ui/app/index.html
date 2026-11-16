@@ -277,6 +277,60 @@ p{margin:0}
 .nsteps{margin:0;padding-inline-start:18px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.55}
 .nreq{white-space:pre-line;padding:10px 12px;border-radius:var(--r2);background:var(--sub);font-size:13px;line-height:1.6}
 @media (max-width:560px){.ntwo,.nbase{grid-template-columns:1fr}}
+.nroutes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.nroute{display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:start;padding:14px 14px;border:1px solid var(--line2);border-radius:var(--r1);background:var(--panel);font:inherit;color:var(--ink);cursor:pointer;min-height:76px}
+.nroute:hover{background:var(--hover)}
+.nroute b{font-weight:500;font-size:14.5px;line-height:1.4}.nroute small{font-size:12px;color:var(--ink3);line-height:1.5}
+.nroute.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.nchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.nchips input{flex:1 1 150px;width:auto!important;min-width:0}
+.fld .nchips{margin-top:2px}.fld>.ddw+.nchips{margin-top:8px}
+.nchip{height:32px;padding:0 12px;border:1px solid var(--line2);border-radius:var(--r2);background:var(--panel);font:inherit;font-size:13px;color:var(--ink);cursor:pointer;white-space:nowrap}
+.nchip:hover{background:var(--hover)}
+.nchip.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);font-weight:500}
+.btn.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.nacts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ninfo{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r2);background:var(--sub);font-size:13px;line-height:1.5}.ninfo span{flex:1;min-width:0}
+.nnf,.nmk,.natt{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:var(--r2);border:1px solid var(--line2);font-size:13px;line-height:1.6;margin-top:8px}
+.nnf{background:var(--ats);border-color:var(--atb)}
+.nmk{background:var(--gs2);border-color:var(--gb)}
+.natt .drop{margin-top:0}
+.nnone{font-size:13px;color:var(--ink3)}
+.ntpl{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r2);margin-bottom:8px}
+.ncb{display:flex;gap:9px;align-items:flex-start;cursor:pointer;font-weight:400;color:var(--ink)}
+.ncb input,.nd .ncb input[type=checkbox]{width:16px!important;height:16px;min-height:0!important;padding:0!important;margin:3px 0 0;accent-color:var(--g);flex:none}
+.ncb span{display:flex;flex-direction:column;gap:1px;min-width:0}.ncb b{font-weight:500;font-size:13.5px;overflow-wrap:anywhere}.ncb small{font-size:12px;color:var(--ink3);line-height:1.5}
+.ncb.row{padding:9px 12px;border-bottom:1px solid var(--line)}.ncb.row:last-child{border-bottom:0}.ncb.row.on{background:var(--gs2)}
+.ngap{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:var(--r2);background:var(--sub);font-size:13px;line-height:1.6}
+.ngap ul{margin:0;padding-inline-start:18px}.ngap .mut{color:var(--ink3)}
+.nqs{display:flex;flex-direction:column;gap:12px}
+.nq{display:flex;flex-direction:column;gap:6px}
+.nq.sub{padding-inline-start:14px;border-inline-start:2px solid var(--gb)}
+.nql{font-size:13.5px;color:var(--ink);line-height:1.5}
+.nqh{font-size:12px;color:var(--ink3);line-height:1.5}
+.nqo{display:flex;flex-wrap:wrap;gap:6px}
+.nqo.ex{flex-direction:column}
+.nqb{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:start;min-height:32px;padding:6px 12px;border:1px solid var(--line2);border-radius:var(--r2);background:var(--panel);font:inherit;font-size:13px;color:var(--ink);cursor:pointer;line-height:1.5}
+.nqb:hover{background:var(--hover)}.nqb small{font-size:12px;color:var(--ink3)}
+.nqb.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);font-weight:500}
+.nqs .lnk{align-self:flex-start}
+.nrvl{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r2)}
+.nrv{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}.nrv:last-child{border-bottom:0}
+.nrv.sub{padding-inline-start:26px}
+.nrv.off .nrvq b{text-decoration:line-through;color:var(--ink3)}
+.nrvq{display:flex;flex-direction:column;gap:2px}.nrvq b{font-weight:500;font-size:13.5px;line-height:1.5}.nrvq small{font-size:12px;color:var(--ink3)}
+.nrva,.nrvm,.nrvf{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.nrvm span{font-size:12.5px;color:var(--ink2)}
+.nrvf input{flex:1 1 200px;width:auto!important}
+.nrvadd{margin:0;padding-inline-start:18px;font-size:13px}
+.ncnt{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ncnt>div{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r2)}
+.ncnt b{font-size:22px;font-weight:500;line-height:1.2}.ncnt span{font-size:12.5px;color:var(--ink2)}
+.nadl{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r2)}
+.nad{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}.nad:last-child{border-bottom:0}
+.nadt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:13px;line-height:1.5}.nadt b{font-weight:500}.nadt small{font-size:12px;color:var(--ink3)}
+.ntag{font-size:11.5px;padding:2px 8px;border-radius:var(--r3);background:var(--atp);color:var(--at);white-space:nowrap}
+.ndlegal{font-size:11.5px;color:var(--ink3);line-height:1.6;border-top:1px solid var(--line);padding-top:10px;margin:2px 0 0}
+@media (max-width:560px){.nroutes,.ncnt{grid-template-columns:1fr}}
 
 /* ---------- שאלו את Areo: a floating button, and a panel that opens from it ---------- */
 .fab{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));inset-inline-end:max(16px,env(safe-area-inset-left,0px));z-index:35;display:flex;align-items:center;gap:9px;height:44px;padding:0;padding-inline-start:6px;padding-inline-end:16px;border:0;border-radius:22px;background:var(--ink);color:var(--onink);font:inherit;font-size:13.5px;font-weight:500;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.18);transition:transform .15s,box-shadow .15s}
@@ -390,7 +444,7 @@ body.focus .fab .ftx{display:none}
 /* the client's own details, written by build_app.py from Areo-נתונים */
 const SHELL=/*__AREO_SHELL__*/null;
 /* the plugin version, set by the release script; shown small at the foot of the sidebar */
-const AREO_VER='1.30.5';
+const AREO_VER='1.30.6';
 const SH=Object.assign({company:'',lang:'he',today:'',products:['areolegal'],folders:[],templates:[],people:[],org:{},built_at:''},SHELL||{});
 /* contract management is a separate product: without it there is no tab, no link and no word about it */
 const HASCLM=(SH.products||[]).indexOf('areo-clm')>=0;
@@ -837,11 +891,15 @@ settingsEl.addEventListener('click',e=>{
 settingsEl.addEventListener('change',e=>{if(e.target.id==='pme'){PREFS.me=e.target.value.trim();savePrefs();try{const w=FRAMES.nego.contentWindow;w.__areoSetWho&&w.__areoSetWho(PREFS.me)}catch(err){}stoast('השם נשמר')}});
 gearBtn.addEventListener('click',()=>{location.hash=current()==='settings'?'today':'settings'});
 
-/* ---------- הסכם חדש: the form picks the playbook, the base and the counterparty; the drafter in the plugin writes ---------- */
-/* the company's templates (Areo-נתונים/תבניות and the template registry), and the sides we take, from the playbooks and the repository */
-const TEMPLATES=(SH.templates||[]).filter(t=>t&&t.name);
-const nrm=s=>String(s||'').replace(/["'׳״]/g,'').replace(/^הסכמי?\s+/,'').trim().toLowerCase();
-const tplMatch=(x,t)=>!x.type||x.type===t.type||(nrm(x.type)&&(nrm(x.type)===nrm(t.name)||nrm(t.name).indexOf(nrm(x.type))>=0||nrm(x.type).indexOf(nrm(t.name))>=0));
+/* ---------- הסכם חדש (Inbal v8, ch.2א and ch.9): the window opens on the route question, then the shared fields and the
+   steps of the chosen route. What was found in the folder comes from SH.drafter (build_app.py drafter_data: families,
+   sides, templates with file and date, playbooks with their missing topics, agreements per family and side, the saved
+   questions models), and from the repository when contract management is open. The window sends a request; the drafter
+   in the plugin writes. No document of the client passes through here: names, sizes and answers only. ---------- */
+const DR=Object.assign({families:[],roles:{},playbooks:[],agreements:[],templates:[],sets:[],models:[],requests:[]},SH.drafter||{});
+/* a family name, without quotes and without the generic "הסכם/הסכמי" in front, for matching what the client types */
+const fnorm=s=>String(s||'').replace(/["'׳״]/g,'').replace(/^הסכמי?\s+/,'').replace(/\s+/g,' ').trim().toLowerCase();
+const famEq=(a,b)=>{a=fnorm(a);b=fnorm(b);if(!a||!b)return false;return a===b||(a.length>=3&&b.length>=3&&(a.indexOf(b)>=0||b.indexOf(a)>=0))};
 let ND=null;
 /* the request queue: kept in this page's own store (shared by everyone who opens it), so the plugin can pick requests up from Claude.
    In a local copy without the store it falls back to this browser. */
@@ -852,7 +910,7 @@ function reqsSaveLocal(){try{localStorage.setItem(RQKEY,JSON.stringify(REQS))}ca
 /* later, never inside this script's first run: the store answers synchronously when there is none */
 /* contract management reads the same requests, to show a draft as "בניסוח" and then "מוכנה" */
 window.__areoReqs=()=>REQS;
-function reqsChanged(){setTimeout(()=>{if(current()==='today')renderToday()},0)}
+function reqsChanged(){setTimeout(()=>{if(current()==='today')renderToday();ndWatch()},0)}
 (async()=>{try{RQDB=window.claude&&claude.use?await claude.use('db'):null}catch(e){RQDB=null}
   if(RQDB){try{RQDB.collection('requests').onSnapshot(sn=>{REQS=sn.docs.map(d=>Object.assign({id:d.id},d.data())).filter(r=>r.kind==='draft_new').sort((a,b)=>String(b.created).localeCompare(String(a.created)));reqsChanged()},()=>{RQDB=null;REQS=reqsLocal();reqsChanged()})}catch(e){RQDB=null}}
   if(!RQDB){REQS=reqsLocal();reqsChanged()}})();
@@ -880,7 +938,7 @@ window.__areoSend=p=>chatSend(p);window.__areoSendWhy=()=>SENDWHY||ROOMMODE;
 /* for the screens: true when the task went to Areo; otherwise the screen says what to do */
 /* for the negotiation screen: the company's policies, read from the policy screen (null while it is still loading) */
 window.__areoPolicies=()=>{try{const w=FRAMES.policy&&FRAMES.policy.contentWindow;return w&&w.__areoBooks?w.__areoBooks():null}catch(e){return null}};
-window.__areoAsk=p=>{const s=chatSend(p);if(!s)return false;s.then(()=>stoast('Areo התחילה לעבוד. ההתקדמות מופיעה בשיחה שליד המערכת.'),()=>stoast('השליחה ל-Areo לא הצליחה. אפשר לנסות שוב.'));return true};
+window.__areoAsk=p=>{const s=chatSend(p);if(!s)return false;s.then(()=>stoast('Areo התחיל לעבוד. ההתקדמות מופיעה בשיחה שליד המערכת.'),()=>stoast('השליחה ל-Areo לא הצליחה. אפשר לנסות שוב.'));return true};
 async function addRequest(rec){
   if(RQDB){try{await RQDB.collection('requests').add(rec);return true}catch(e){if(e&&e.code==='quota_exceeded'){stoast('התור מלא. אפשר למחוק בקשות ישנות.');return false}}}
   const id='l'+Date.now();REQS.unshift(Object.assign({id},rec));reqsSaveLocal();reqsChanged();
@@ -890,119 +948,330 @@ async function addRequest(rec){
 async function cancelRequest(id){
   if(RQDB&&!String(id).startsWith('l')){try{await RQDB.doc('requests/'+id).update({status:'cancelled',cancelled:new Date().toISOString()});return}catch(e){stoast('לא הצלחנו לבטל. אפשר לנסות שוב.');return}}
   const r=REQS.find(x=>x.id===id);if(r){r.status='cancelled';reqsSaveLocal();reqsChanged()}}
-function ndData(){let M=null,BK=null;if(HASCLM){try{M=FRAMES.clm.contentWindow.__areoMeta()}catch(e){}}try{BK=FRAMES.policy.contentWindow.__areoBooks()}catch(e){}
-  const types=[];
-  (BK&&BK.books||[]).forEach(b=>{if(!b)return;const t=types.find(x=>x.type===b.type);if(t){if(b.side&&t.sides.indexOf(b.side)<0)t.sides.push(b.side);return}types.push({type:b.type,key:b.key||'',name:b.name,built:!!b.built,date:b.date||'',sides:b.side?[b.side]:[]})});
-  (M&&M.families||[]).forEach(f=>{const t=types.find(x=>x.type===f.type);if(t){if(f.role&&t.sides.indexOf(f.role)<0)t.sides.push(f.role);return}types.push({type:f.type,name:f.label||f.type,built:!!f.playbook,date:'',sides:f.role?[f.role]:[]})});
-  if(!types.length)types.push({type:'',name:'הסכם',built:false,date:'',sides:[]});
-  const cps=[...new Set([].concat(M?M.ags.map(a=>a.cp):[],(read('nego')||{deals:[]}).deals.map(d=>d.cp)).filter(Boolean))];
-  return {M,BK,types,cps}}
-function openNew(){const {types}=ndData();ND={type:types[0].type,side:'',cp:'',base:'',tpl:'',ag:'',file:'',terms:'',err:'',done:false};drawNew()}
+function ndFrames(){let M=null,BK=null;if(HASCLM){try{M=FRAMES.clm.contentWindow.__areoMeta()}catch(e){}}try{BK=FRAMES.policy.contentWindow.__areoBooks()}catch(e){}return {M,BK}}
+/* the client's families, as suggestions only (never a closed list): from the folder, the policy screen and the repository */
+function ndFams(){const out=DR.families.map(f=>({name:f.name,aliases:(f.aliases||[]).slice()}));
+  const add=n=>{n=String(n||'').trim();if(n&&!out.some(f=>[f.name].concat(f.aliases).some(x=>famEq(x,n))))out.push({name:n,aliases:[]})};
+  const {M,BK}=ndFrames();(BK&&BK.books||[]).forEach(b=>b&&add(b.name));(M&&M.families||[]).forEach(f=>add(f.label||f.type));return out}
+function ndFam(){const t=String(ND.typeName||'').trim();if(!t)return null;return ndFams().find(f=>[f.name].concat(f.aliases).some(x=>famEq(x,t)))||null}
+const inFam=(fam,name)=>!!fam&&!!name&&[fam.name].concat(fam.aliases).some(x=>famEq(x,name));
+function sideEq(a,b){a=String(a||'').trim();b=String(b||'').trim();if(!a||!b)return false;const R=DR.roles||{};return fnorm(R[a]||a)===fnorm(R[b]||b)}
+/* a source with no side recorded fits every side; with a side, only the side the client chose */
+const sideOk=x=>!ND.side.trim()||!(x.side||x.role)||sideEq(ND.side,x.side)||sideEq(ND.side,x.role);
+/* the sides found for the family, in playbooks, agreements, templates and saved models. Never inferred, never preselected */
+function ndSides(fam){if(!fam)return [];const out=[];const add=s=>{s=String(s||'').trim();if(s&&!out.some(x=>sideEq(x,s)))out.push(s)};
+  DR.playbooks.forEach(p=>(inFam(fam,p.family)||(p.aliases||[]).some(a=>inFam(fam,a)))&&add(p.side));
+  DR.agreements.forEach(a=>inFam(fam,a.family)&&add(a.side));DR.templates.forEach(t=>inFam(fam,t.family)&&add(t.side));DR.models.forEach(m=>inFam(fam,m.family)&&add(m.side));
+  const {M,BK}=ndFrames();(BK&&BK.books||[]).forEach(b=>b&&inFam(fam,b.name)&&add(b.side));(M&&M.families||[]).forEach(f=>inFam(fam,f.label||f.type)&&add(f.role));return out}
+/* what the folder holds for this family and side: the playbook, the number of agreements, the templates */
+function ndFound(){const fam=ndFam();const {M,BK}=ndFrames();
+  const pbs=fam?DR.playbooks.filter(p=>(inFam(fam,p.family)||(p.aliases||[]).some(a=>inFam(fam,a)))&&sideOk(p)):[];
+  if(fam&&!pbs.length&&BK&&BK.books)BK.books.filter(b=>b&&b.built&&inFam(fam,b.name)&&sideOk({side:b.side})).forEach(b=>pbs.push({key:b.key||b.type||'',family:b.name,side:b.side||'',gaps:[],status:''}));
+  let ag=fam?DR.agreements.filter(a=>inFam(fam,a.family)&&sideOk(a)).reduce((s,a)=>s+(+a.count||0),0):0;
+  if(fam&&M&&M.ags){const n=M.ags.filter(a=>{const f=(M.families||[]).find(x=>x.type===a.type);return inFam(fam,f?(f.label||f.type):a.type)&&sideOk({side:a.role})}).length;ag=Math.max(ag,n)}
+  const tpls=fam?DR.templates.filter(x=>inFam(fam,x.family)&&sideOk(x)):[];
+  return {fam,pb:pbs[0]||null,ag,tpls}}
+/* the templates the window offers in the template route: found for the family and side; without any, the unsorted ones in the folder; and what was attached now */
+function ndTplList(f){let L=f.tpls.slice();if(!L.length)L=DR.templates.filter(x=>!x.family);
+  ND.att.forEach(a=>{if(!L.some(x=>x.file===a.name))L.push({file:a.name,date:'',att:true})});return L}
+const setKey=a=>a.slice().sort().join('|');
+/* the saved questions model (drivers.json) for this family and side, or for the selected template set */
+function ndModel(f){if(!f.fam||!ND.side.trim())return null;const ms=DR.models.filter(m=>inFam(f.fam,m.family)&&(!(m.side||m.role)||sideEq(ND.side,m.side)||sideEq(ND.side,m.role)));
+  if(ND.route==='template'){if(!ND.tplSel.length)return null;const k=setKey(ND.tplSel);return ms.find(m=>m.set&&m.set.length&&setKey(m.set)===k)||(ND.tplSel.length===1?ms.find(m=>!(m.set&&m.set.length)):null)||null}
+  return ms.find(m=>!(m.set&&m.set.length))||null}
+/* two templates or more: one question that picks between them, on what tells them apart, or "which one fits" */
+function ndSetQ(){if(ND.tplSel.length<2)return null;const k=setKey(ND.tplSel);const s=DR.sets.find(x=>setKey(x.templates||[])===k&&x.question&&(x.options||[]).length);
+  if(s)return {id:'__set',question:s.question,kind:'choice',options:s.options.map(o=>({value:o.template||o.label,label:o.label}))};
+  return {id:'__set',question:'איזו מהן מתאימה לעסקה הזו?',kind:'choice',options:ND.tplSel.map(n=>({value:n,label:n.replace(/\.(docx?|dotx)$/i,'')}))}}
+const CPT=[['individual','יחיד'],['company','תאגיד'],['public_body','גוף ציבורי'],['foreign','צד זר']];
+const NDKEY='areo-nd-form';
+function ndBlank(){return {step:'form',route:'',typeName:'',side:'',cp:'',cpType:'',concern:'',special:'',src:'',mk:false,gap:false,tplSel:[],tplChoice:'',att:[],attOpen:false,
+  ans:{},qa:{},rv:{ok:{},del:{},rename:{},merge:{},add:[],editing:'',merging:'',all:false},err:'',done:false,sent:false,track:null,answered:false}}
+/* what was filled is kept in this browser until it is sent, so "רענון" (the system is built again) does not lose it */
+function ndKeep(){if(!ND||ND.done)return;try{const k={};['route','typeName','side','cp','cpType','concern','special','src','mk','gap','tplSel','tplChoice','att','ans','rv'].forEach(x=>k[x]=ND[x]);k.at=Date.now();localStorage.setItem(NDKEY,JSON.stringify(k))}catch(e){}}
+function ndForget(){try{localStorage.removeItem(NDKEY)}catch(e){}}
+function ndRestore(){try{const k=JSON.parse(localStorage.getItem(NDKEY)||'null');if(k&&k.at&&Date.now()-k.at<2*864e5){delete k.at;return k}}catch(e){}return null}
+function openNew(){ND=Object.assign(ndBlank(),ndRestore()||{});drawNew()}
 function closeNew(){const sc=document.getElementById('ndscrim');sc&&sc.remove();ND=null}
-function ndBaseTxt(){return ND.base==='template'?'על בסיס התבנית "'+ND.tpl+'"':ND.base==='ag'?'על בסיס ההסכם הקודם "'+ND.ag+'"':ND.base==='up'?'על בסיס הקובץ "'+ND.file+'", שיצורף בשיחה':'בלי תבנית, לפי הפלייבוק בלבד'}
-function ndRequest(t,pb){const sideTxt=String(ND.side||t.sides[0]||'').trim();
-  return 'Areo, לנסח '+t.name.replace(/^הסכמי /,'הסכם ')+' חדש מול '+(ND.cp||'[הצד שכנגד]')+'.'+(sideTxt?'\nהצד שלנו: '+sideTxt+'.':'')+'\n'+ndBaseTxt()+(pb?', לפי הפלייבוק "'+t.name+'"':'')+'.'+(ND.terms.trim()?'\nתנאים עיקריים: '+ND.terms.trim():'')+'\nלשמור את הטיוטה בתיקיית העבודה.'}
-/* the request the system hands to Areo; the same record is kept in the page's store (see addRequest) */
-function ndSubmit(b){
-  const {types}=ndData(),t=types.find(x=>x.type===ND.type)||types[0];
-  ND.err=!ND.cp.trim()?'כתבו את שם הצד שכנגד.':ND.base==='up'&&!ND.file?'בחרו את ההסכם שעליו לבסס.':'';
-  if(ND.err){drawNew();const f=document.querySelector(ND.cp.trim()?'#ndscrim .drop':'#nd-cp');f&&f.focus();return}
-  b.disabled=true;
-  const rec={kind:'draft_new',status:'pending',created:new Date().toISOString(),by:PREFS.me||firstName()||'',
-    label:t.name.replace(/^הסכמי /,'הסכם ')+' חדש מול '+ND.cp.trim(),type:ND.type,type_name:t.name,side:ND.side||'',counterparty:ND.cp.trim(),
-    base:ND.base==='template'?{kind:'template',name:ND.tpl}:ND.base==='ag'?{kind:'agreement',name:ND.ag}:ND.base==='up'?{kind:'upload',name:ND.file}:{kind:'playbook'},
-    playbook:t.built?t.name:'',terms:ND.terms.trim(),request_text:ndRequest(t,t.built)};
+/* the requests the window follows: the page's store, and the ones the drafter wrote back to the folder (a local system) */
+function ndReqs(){const L=REQS.slice();(DR.requests||[]).forEach(r=>{if(!L.some(x=>x.created===r.created&&x.label===r.label))L.push(r)});return L}
+function ndTracked(){return ND&&ND.track?ndReqs().find(r=>r.created===ND.track.created&&r.label===ND.track.label)||null:null}
+/* a request that came back with questions: the window opens on its form (from "מבט על", or when the system opens on a new agreement) */
+function openAnswers(id){const r=ndReqs().find(x=>x.id===id);if(!r)return;ND=Object.assign(ndBlank(),{done:true,sent:true,track:{created:r.created,label:r.label},route:r.route||''});drawNew()}
+window.__areoDraftAnswers=openAnswers;
+const ndLabel=()=>{const t=ND.typeName.trim().replace(/^הסכמי /,'הסכם ')||'הסכם';return ND.route==='template'?t+' מתבנית, מול '+ND.cp.trim():t+' חדש מול '+ND.cp.trim()};
+const cptLabel=v=>(CPT.find(x=>x[0]===v)||['',''])[1];
+/* the questions of the saved model after the one-time review: deleted and merged ones out, renamed ones in the new words, added ones last */
+function ndReviewed(m){if(!m)return [];const R=ND.rv,gone=id=>R.del[id]||R.merge[id];
+  const L=m.questions.filter(q=>!gone(q.id)&&!(q.when&&gone(q.when.id))).map(q=>R.rename[q.id]&&R.rename[q.id].trim()?Object.assign({},q,{question:R.rename[q.id].trim()}):q);
+  return L.concat(m.data||[],R.add.map((t,i)=>({id:'new'+(i+1),question:t,kind:'text'})))}
+function ndReviewChanges(m){const R=ND.rv,ch=[];if(!m)return ch;
+  m.questions.forEach(q=>{const t=(R.rename[q.id]||'').trim();if(R.del[q.id])ch.push({op:'delete',id:q.id});else if(R.merge[q.id])ch.push({op:'merge',ids:[R.merge[q.id],q.id]});else if(t&&t!==q.question)ch.push({op:'rename',id:q.id,question:t})});
+  R.add.forEach(t=>ch.push({op:'add',question:t}));return ch}
+const ndOpts=q=>{let o=(q.options||[]).map(x=>x&&typeof x==='object'?{value:String(x.value!=null?x.value:x.label),label:String(x.label!=null?x.label:x.value),excerpt:x.excerpt||''}:{value:String(x),label:String(x),excerpt:''});
+  if(!o.length&&q.kind==='yes_no')o=[{value:'yes',label:'כן',excerpt:''},{value:'no',label:'לא',excerpt:''}];return o};
+const ndShown=(q,A)=>!q.when||String(A[q.when.id]==null?'':A[q.when.id])===String(q.when.value);
+/* one question, by the kind of variable: buttons for a fact or an alternative (with a short excerpt), a field with the earlier value as a suggestion, a drafter's note as small help text */
+function ndQ(q,A){const id=String(q.id),v=A[id],o=ndOpts(q),k=q.kind||'';
+  const h='<div class="nq'+(q.when?' sub':'')+'" data-q="'+esc(id)+'"><span class="nql" id="ql-'+esc(id)+'">'+esc(q.question)+'</span>'+(q.help?'<small class="nqh">'+esc(q.help)+'</small>':'');
+  if(o.length&&k!=='text'&&k!=='open')return h+'<div class="nqo'+(q.excerpts?' ex':'')+'" role="radiogroup" aria-labelledby="ql-'+esc(id)+'">'+o.map(x=>{const on=v!=null&&String(v)===x.value;
+    return '<button type="button" class="nqb'+(on?' on':'')+'" role="radio" aria-checked="'+on+'" data-qa="'+esc(id)+'" data-qv="'+esc(x.value)+'"><span>'+esc(x.label)+'</span>'+(x.excerpt?'<small>'+esc(x.excerpt)+'</small>':'')+'</button>'}).join('')+'</div></div>';
+  const sug=String(q.suggestion||'');
+  return h+'<input data-qt="'+esc(id)+'" aria-labelledby="ql-'+esc(id)+'" value="'+esc(v==null?'':v)+'"'+(k==='number'||k==='number_threshold'?' inputmode="decimal"':'')+(sug?' placeholder="'+esc('הצעה: '+sug)+'"':'')+' autocomplete="off">'+
+    (sug&&!v?'<button type="button" class="lnk nqs" data-qs="'+esc(id)+'" data-qv="'+esc(sug)+'">להשתמש בהצעה: '+esc(sug)+'</button>':'')+'</div>'}
+const ndQs=(items,A)=>items.filter(q=>ndShown(q,A)).map(q=>ndQ(q,A)).join('');
+/* only the answers of questions that are shown: a follow-up whose trigger was changed back is not sent */
+function ndVisible(items,A){const out={};items.forEach(q=>{if(!ndShown(q,A))return;const v=A[q.id];if(v!=null&&String(v).trim()!=='')out[q.id]=typeof v==='string'?v.trim():v});return out}
+/* the playbook topics with no position, or a thin one (drafter-main.md, "פלייבוק דל"): up to 8 by name, above that a summary */
+function ndGaps(pb){const g=(pb&&pb.gaps)||[];if(!g.length)return '';
+  const why=x=>x.reason==='none'?'אין עמדה בפלייבוק':x.reason==='thin'?(x.n===1?'רק דוגמה אחת בהסכמים שלכם':!x.n?'אין דוגמאות בהסכמים שלכם':'רק '+x.n+' דוגמאות בהסכמים שלכם'):'העמדה נשענת על מדגם דל';
+  const head='לטיוטה חסרה עמדה '+(g.length===1?'בנושא אחד':'ב-'+g.length+' נושאים')+(g.length>8?'. החשובים שבהם:':':');
+  const list=g.length<=8?g.map(x=>'<li>'+esc(x.topic)+' <span class="mut">('+why(x)+')</span></li>').join(''):g.slice(0,5).map(x=>'<li>'+esc(x.topic)+'</li>').join('')+'<li class="mut">ועוד '+(g.length-5)+'. הרשימה המלאה בדף הליווי.</li>';
+  return '<div class="fld"><span>נושאים שחסרים בפלייבוק</span><div class="ngap"><p>'+head+'</p><ul>'+list+'</ul>'+
+    '<label class="ncb"><input type="checkbox" data-ndc="gap"'+(ND.gap?' checked':'')+'><span><b>להשלים במחקר עומק</b><small>נחקור ברשת רק את הנושאים האלה, ממקורות מהרשימה המאושרת בלבד. המסמכים שלכם לא נשלחים לשום מקום. כל תוצאה תסומן בטיוטה.</small></span></label></div></div>'}
+/* the one-time review of the questions Areo learned (shown only while the saved model is not approved) */
+function ndReview(m){if(!m||m.approved||!m.questions.length)return '';const R=ND.rv,qt=id=>{const q=m.questions.find(x=>x.id===id);return q?(R.rename[id]||q.question):''};
+  const rows=m.questions.map(q=>{const id=q.id,off=R.del[id]||R.merge[id],ok=!off&&(R.ok[id]||R.all),txt=R.rename[id]!=null?R.rename[id]:q.question;
+    const others=m.questions.filter(x=>x.id!==id&&!R.del[x.id]&&!R.merge[x.id]);
+    return '<div class="nrv'+(off?' off':'')+(q.when?' sub':'')+'" data-rv="'+esc(id)+'"><div class="nrvq">'+(R.editing===id?'<input data-rvt="'+esc(id)+'" value="'+esc(txt)+'" aria-label="הנוסח של השאלה">':'<b>'+esc(txt)+'</b>')+
+      (q.affects&&q.affects.length?'<small>משפיעה על: '+esc(q.affects.join(', '))+'</small>':'')+(R.merge[id]?'<small>תאוחד עם: '+esc(qt(R.merge[id]))+'</small>':'')+(R.del[id]?'<small>תימחק</small>':'')+'</div>'+
+      '<div class="nrva">'+(off?'<button type="button" class="lnk" data-rva="undo" data-id="'+esc(id)+'">לבטל</button>':
+        '<button type="button" class="btn sm'+(ok?' on':'')+'" aria-pressed="'+!!ok+'" data-rva="ok" data-id="'+esc(id)+'">לאשר</button><button type="button" class="btn sm ghost" data-rva="edit" data-id="'+esc(id)+'">לשנות נוסח</button><button type="button" class="btn sm ghost" data-rva="del" data-id="'+esc(id)+'">למחוק</button>'+(others.length?'<button type="button" class="btn sm ghost" data-rva="merge" data-id="'+esc(id)+'">לאחד עם...</button>':''))+'</div>'+
+      (R.merging===id&&!off?'<div class="nrvm"><span>לאחד עם:</span>'+others.map(x=>'<button type="button" class="nchip" data-rvm="'+esc(id)+'" data-to="'+esc(x.id)+'">'+esc(R.rename[x.id]||x.question)+'</button>').join('')+'</div>':'')+'</div>'}).join('');
+  return '<div class="fld"><span>השאלות ש-Areo למד '+(ND.route==='template'?'מהתבנית':'מההסכמים שלכם')+'</span><small>מאשרים פעם אחת. בפעם הבאה Areo ישתמש בהן בלי לשאול שוב.</small><div class="nrvl">'+rows+'</div>'+
+    (R.add.length?'<ul class="nrvadd">'+R.add.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>':'')+
+    '<div class="nrvf"><input data-rvadd value="" placeholder="שאלה נוספת על עובדה בעסקה" aria-label="שאלה נוספת"><button type="button" class="btn sm ghost" data-rva="add">להוסיף שאלה</button><button type="button" class="btn sm'+(R.all?' on':'')+'" aria-pressed="'+!!R.all+'" data-rva="all">לאשר הכול</button></div></div>'}
+/* the base, in one line, by the order of precedence (playbook, the company's agreements, from scratch) */
+function ndBaseLine(f){const n=f.ag?(f.ag===1?'הסכם אחד':f.ag+' הסכמים'):'';
+  if(f.pb)return 'הפלייבוק <b>'+esc(f.pb.family||ND.typeName)+'</b>'+(f.ag?' '+andTxt(f.ag)+' מהסוג':'')+'. כל סעיף יעמוד בעמדה המועדפת שלכם.';
+  if(f.ag)return '<b>'+n+' מהסוג</b>. המבנה והנוסח מההסכמים, ומה שמשתנה ביניהם נשאל.';
+  if(ND.src==='none'&&ND.mk)return '<b>מאפס, עם מחקר ברשת</b>. כל נושא מסחרי יסומן לבדיקה שלכם.';
+  return ''}
+/* "פלייבוק והסכם אחד", "פלייבוק ו-3 הסכמים": the Hebrew "and" joins a word directly and a number with a hyphen */
+const andTxt=n=>n===1?'והסכם אחד':'ו-'+n+' הסכמים';
+function ndFoundTxt(f){return f.pb&&f.ag?'פלייבוק '+andTxt(f.ag):f.pb?'פלייבוק':f.ag===1?'הסכם אחד':f.ag+' הסכמים'}
+/* route 1: "do you have a playbook or agreements of this type?", with what the folder holds next to each answer */
+function ndRoute1(f){const found=!!(f.pb||f.ag),what=ndFoundTxt(f),tn=ND.typeName.trim()||'הסכם מהסוג הזה';
+  if(found){ND.src='have';ND.srcAuto=true}else if(ND.srcAuto){ND.src='';ND.srcAuto=false}
+  const opt=(k,l,sub,can)=>'<label class="nopt'+(ND.src===k?' on':'')+(can?'':' dis')+'"><input type="radio" name="ndsrc" value="'+k+'"'+(ND.src===k?' checked':'')+(can?'':' disabled')+'><span><b>'+l+'</b><small>'+sub+'</small></span></label>';
+  let h='<div class="fld"><span id="nd-srcl">יש לכם פלייבוק או הסכמים מהסוג הזה?</span><div class="nbase" role="radiogroup" aria-labelledby="nd-srcl">'+
+    opt('have','יש פלייבוק או הסכמים',found?'נמצאו בתיקייה: '+what:'בתיקייה המחוברת, או קבצים שתצרפו',true)+
+    opt('none','אין פלייבוק או הסכמים',found?'נמצאו אצלכם '+what+' מהסוג, והטיוטה תיבנה מהם':'ננסח מאפס, עם מחקר ברשת',!found)+'</div>';
+  if(!found&&ND.src==='have')h+='<div class="nnf" role="status"><p>לא מצאנו פלייבוק או הסכמים מהסוג בתיקייה.</p><div class="nacts"><button type="button" class="btn sm" data-ndact="connect">לחבר תיקייה</button><button type="button" class="btn sm" data-ndact="attach">אצרף הסכמים או פלייבוק</button><button type="button" class="btn sm ghost" data-ndact="research">אין לי, לנסח ממחקר</button></div></div>';
+  if(!found&&ND.src==='none')h+='<div class="nmk"><p>לנסח מאפס: נחקור ברשת את הרגולציה שחלה על '+esc(tn)+' ונאסוף הסכמים דומים שפורסמו, ממקורות מהרשימה המאושרת בלבד. המסמכים שלכם לא נשלחים לשום מקום. להתחיל?</p>'+
+    '<div class="nacts"><button type="button" class="btn sm'+(ND.mk?' on':'')+'" aria-pressed="'+ND.mk+'" data-ndact="mkok">להתחיל</button><button type="button" class="btn sm ghost" data-ndact="attach">אעלה הסכמים או פלייבוק</button></div></div>';
+  h+='</div>';
+  if(f.tpls.length)h+='<div class="ninfo"><span>מצאנו תבנית ל'+esc(tn)+'.</span><button type="button" class="lnk" data-ndact="totpl">להתאים את התבנית במקום</button></div>';
+  return h}
+/* route 2: "which template should we adapt?", the templates found with file name and date, several may be checked */
+function ndRoute2(f){const L=ndTplList(f);
+  let h='<div class="fld"><span id="nd-tpll">איזו תבנית להתאים?</span>'+(L.length?'<div class="ntpl" role="group" aria-labelledby="nd-tpll">'+L.map(x=>{const on=ND.tplSel.includes(x.file);
+      return '<label class="ncb row'+(on?' on':'')+'"><input type="checkbox" data-ndtpl="'+esc(x.file)+'"'+(on?' checked':'')+'><span><b>'+esc(x.file)+'</b><small>'+(x.att?'נבחרה עכשיו מהמחשב':x.date?'מ-'+dmy(x.date):'')+'</small></span></label>'}).join('')+'</div>'
+    :'<p class="nnone">לא מצאנו בתיקייה תבנית מהסוג הזה ובצד הזה.</p>')+
+    '<div class="nacts"><button type="button" class="btn sm" data-ndact="tplatt" aria-expanded="'+ND.attOpen+'">אצרף תבנית</button><button type="button" class="btn sm ghost" data-ndact="notpl">אין לי תבנית</button></div>'+
+    (ND.attOpen?'<div class="natt"><p>שמרו את קובץ התבנית בתיקייה המחוברת, ולחצו "רענון". אפשר גם לבחור אותו כאן: Areo רואה רק את שם הקובץ ואת הגודל, ומאתר אותו בתיקייה.</p>'+
+      '<label class="drop" tabindex="0"><span>גררו לכאן את התבנית, או לחצו לבחירה</span><small>Word. הקובץ נשאר אצלכם, ולא עובר לשרת של Areo.</small><input type="file" data-ndfile="tpl" accept=".docx,.dotx,.doc" hidden></label>'+
+      '<div class="nacts"><button type="button" class="btn sm ghost" data-ndact="refresh">רענון</button></div></div>':'')+'</div>';
+  const sq=ndSetQ();if(sq){if(!sq.options.some(o=>o.value===ND.tplChoice))ND.tplChoice='';h+='<div class="fld"><span>הבחירה בין התבניות</span>'+ndQ(sq,{__set:ND.tplChoice})+'</div>'}else ND.tplChoice='';
+  return h}
+/* the checks before sending: one message at a time, at the field */
+function ndCheck(f,handoff){
+  if(!ND.typeName.trim())return ['כתבו את סוג ההסכם.','#nd-type'];
+  if(!ND.side.trim())return ['בחרו או כתבו את הצד שלכם בהסכם.','#nd-side'];
+  if(!ND.cp.trim())return ['כתבו את שם הצד שכנגד.','#nd-cp'];
+  if(!ND.cpType)return ['בחרו את סוג הצד שכנגד.','[data-cpt]'];
+  if(!handoff&&ND.route==='new'&&!(f.pb||f.ag)){if(!ND.src)return ['בחרו אם יש לכם פלייבוק או הסכמים מהסוג.','input[name="ndsrc"]'];
+    if(ND.src==='have')return ['בחרו איך להמשיך: לחבר תיקייה, לצרף הסכמים או פלייבוק, או לנסח ממחקר.','[data-ndact="connect"]'];
+    if(!ND.mk)return ['כדי לנסח מאפס, לחצו "להתחיל" ואשרו את המחקר ברשת.','[data-ndact="mkok"]']}
+  if(!handoff&&ND.route==='template'){if(!ND.tplSel.length)return ['סמנו תבנית אחת לפחות, או בחרו "אצרף תבנית" או "אין לי תבנית".','[data-ndtpl],[data-ndact="tplatt"]'];
+    if(ND.tplSel.length>1&&!ND.tplChoice)return ['בחרו איזו מהתבניות מתאימה לעסקה הזו.','[data-qa="__set"]']}
+  if(!ND.concern.trim())return ['כתבו מה הכי מדאיג אתכם בעסקה הזו, גם במשפט אחד.','#nd-concern'];
+  return null}
+/* the request record (page-requests.md): the same record goes to the chat and to the page's queue */
+function ndRecord(f,extra){const tn=ND.typeName.trim(),m=ndModel(f),rec={kind:'draft_new',status:'pending',created:new Date().toISOString(),by:PREFS.me||firstName()||'',
+    label:ndLabel(),route:ND.route,type:(f.pb&&f.pb.key)||(f.fam&&f.fam.name)||tn,type_name:tn,side:ND.side.trim(),counterparty:ND.cp.trim(),counterparty_type:ND.cpType,
+    playbook:f.pb?(f.pb.family||tn):'',main_concern:ND.concern.trim(),terms:ND.special.trim()};
+  if(ND.route==='new'){rec.source_answer=(f.pb||f.ag)?'have':ND.src||'';rec.template_offered=!!f.tpls.length;
+    rec.base=f.pb?{kind:'playbook'}:f.ag?{kind:'agreement'}:(ND.src==='none'&&ND.mk)?{kind:'market'}:null}
+  else{const sel=ND.tplSel.slice();rec.template=sel;if(sel.length>1)rec.template_choice=ND.tplChoice;rec.base={kind:'template',name:sel.length>1?ND.tplChoice:(sel[0]||'')};
+    const att=ND.att.filter(a=>sel.includes(a.name));if(att.length)rec.template_attached=att.map(a=>({file_name:a.name,file_size:a.size,file_modified:a.modified}))}
+  const A=m?ndVisible(ndReviewed(m),ND.ans):{};
+  if(m&&!m.approved&&m.questions.length)rec.drivers_review={approved:true,changes:ndReviewChanges(m)};
+  if(f.pb&&(f.pb.gaps||[]).length)A.gap_research=!!ND.gap;
+  if(Object.keys(A).length)rec.answers=A;
+  Object.assign(rec,extra||{});rec.request_text=ndText(rec);return rec}
+function ndText(r){const b=r.base||{};const base=r.route==='template'?'על בסיס התבנית "'+(b.name||'')+'"':b.kind==='playbook'?'לפי הפלייבוק "'+r.playbook+'"':b.kind==='agreement'?'מההסכמים שלנו מהסוג':b.kind==='market'?'מאפס, עם מחקר ברשת (אושר)':r.source_action==='connect_folder'?'לחבר קודם את התיקייה עם ההסכמים':r.source_action==='attach'?'אצרף הסכמים או פלייבוק בשיחה':'';
+  return 'Areo, '+(r.route==='template'?'להתאים תבנית ל'+r.type_name:'לנסח '+r.type_name.replace(/^הסכמי /,'הסכם ')+' חדש')+' מול '+r.counterparty+(r.counterparty_type?' ('+cptLabel(r.counterparty_type)+')':'')+'.\nהצד שלנו: '+r.side+'.'+(base?'\n'+base+'.':'')+
+    '\nמה הכי מדאיג: '+r.main_concern+(r.terms?'\nמה מיוחד בעסקה: '+r.terms:'')+'\nלשמור את הטיוטה בתיקיית העבודה.'}
+/* "לנסח" / "להתאים את התבנית", and the hand-offs that continue in the chat (connect a folder, attach sources) */
+function ndSubmit(b,extra){const f=ndFound();const e=ndCheck(f,!!extra);
+  if(e){ND.err=e[0];drawNew();const el=document.querySelector('#ndscrim '+e[1].split(',')[0]);el&&el.focus&&el.focus({preventScroll:false});return}
+  b.disabled=true;const rec=ndRecord(f,extra);ND.track={created:rec.created,label:rec.label};ND.handoff=extra&&extra.source_action||'';
   const sent=chatSend({label:'ניסוח: '+rec.label,kind:'areo_draft_request',request:rec});
   if(sent){rec.sent_to_chat=true;ND.sent=true;sent.catch(()=>{if(ND){ND.sent=false;if(ND.done)drawNew()}})}
-  addRequest(rec).then(ok=>{if(!ok){b.disabled=false;return}if(!ND)return;ND.done=true;drawNew()})}
-function drawNew(){
-  const {M,types,cps}=ndData();const t=types.find(x=>x.type===ND.type)||types[0];
-  /* a template whose family matches no type in the list is offered for every type */
-  const anyMatch=TEMPLATES.some(x=>types.some(y=>tplMatch(x,y)));
-  const tpls=TEMPLATES.filter(x=>!anyMatch||tplMatch(x,t)),ags=M?M.ags.filter(a=>a.type===ND.type):[];
-  const can={template:tpls.length>0,ag:ags.length>0,up:true,pb:!!t.built};
-  if(!ND.base||!can[ND.base])ND.base=can.template?'template':can.ag?'ag':can.pb?'pb':'up';
-  if(ND.base==='template'&&!tpls.some(x=>x.name===ND.tpl))ND.tpl=(tpls[0]||{}).name||'';
-  if(ND.base==='ag'&&!ags.some(a=>a.title===ND.ag))ND.ag=(ags[0]||{}).title||'';
-  const sides=t.sides;if(sides.length&&!sides.includes(ND.side))ND.side=sides[0];
-  let sc=document.getElementById('ndscrim'),fresh=false;
-  if(!sc){fresh=true;sc=document.createElement('div');sc.className='ndscrim';sc.id='ndscrim';sc.setAttribute('dir','rtl');sc.setAttribute('lang','he');document.body.appendChild(sc);
-    sc.addEventListener('click',e=>{if(e.target===sc)closeNew()});
-    sc.addEventListener('input',e=>{const k=e.target.dataset.nd;if(!k||k==='file')return;ND[k]=e.target.value;if(k==='cp'&&ND.err&&ND.cp.trim()){ND.err='';const er=sc.querySelector('.ederr');er&&(er.hidden=true)}});
-    sc.addEventListener('change',e=>{const el=e.target;
-      if(el.name==='ndbase'){ND.base=el.value;ND.err='';ND._focus='input[name="ndbase"][value="'+el.value+'"]';drawNew();return}
-      const k=el.dataset.nd;if(!k)return;
-      if(k==='file'){ND.file=(el.files&&el.files[0]||{}).name||'';el.value='';ND.err='';ND._focus='.drop';drawNew();return}
-      ND[k]=el.value;if(k==='type'){ND._focus='#dd-nd-type';drawNew()}});
-    /* a file dropped on the upload box: only its name is kept; the file itself is never read or sent from here */
-    sc.addEventListener('dragover',e=>{const d=e.target.closest&&e.target.closest('.drop');if(!d)return;e.preventDefault();d.classList.add('over')});
-    sc.addEventListener('dragleave',e=>{const d=e.target.closest&&e.target.closest('.drop');d&&d.classList.remove('over')});
-    sc.addEventListener('drop',e=>{const d=e.target.closest&&e.target.closest('.drop');if(!d)return;e.preventDefault();const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f){ND.file=f.name;ND.err='';ND._focus='.drop';drawNew()}});
-    sc.addEventListener('click',e=>{const b=e.target.closest('[data-ndact]');if(!b)return;const a=b.dataset.ndact;
-      if(a==='close')closeNew();
-      else if(a==='go')ndSubmit(b);
-      else if(a==='queue'){closeNew();location.hash='today';setTimeout(()=>{const el=document.getElementById('b-areo');el&&el.scrollIntoView({block:'start',behavior:'smooth'})},250)}
-      else if(a==='clm'){closeNew();openIn('clm','agreements','')}
-      else if(a==='back'){ND.done=false;drawNew()}
-      else if(a==='pbopen'){const k=b.dataset.book;closeNew();if(k){try{FRAMES.policy.contentWindow.__areoBook(k)}catch(err){}}openIn('policy','overview','')}
-      else if(a==='buildpb'){closeNew();openIn('policy','overview','')}});}
-  const top=sc.scrollTop;
-  const X='<button type="button" class="x" data-ndact="close" aria-label="סגירה">'+IC2.x+'</button>';
-  const from=ND.base==='template'?'את התבנית מהתיקייה':ND.base==='ag'?'את ההסכם הקודם מהתיקייה':ND.base==='up'?'את הקובץ שבחרתם, אחרי שתצרפו אותו בשיחה':'את הפלייבוק';
+  addRequest(rec).then(ok=>{if(!ok){b.disabled=false;return}ndForget();if(!ND)return;ND.done=true;ND.seen='';drawNew()})}
+/* the answers to the questions form the drafter wrote back: to the chat, and into the request, so the queue has them too */
+/* the questions form the drafter wrote back (page-requests.md, questions): the deal questions, and, when Areo built the
+   questions model only after the request was sent, questions.review {items, approved:false}: the learned questions, shown
+   for the one-time approval in the same form (deleted and merged ones leave the form, renamed ones change, added ones join) */
+function ndForm(r){const q=(r&&r.questions)||{},items=q.items||[],rvw=q.review;
+  const rm=rvw&&!rvw.approved&&(rvw.items||[]).length?{approved:false,questions:rvw.items,data:items}:null;
+  return {rm:rm,shown:rm?ndReviewed(rm):items}}
+function ndAnswer(b){const r=ndTracked();if(!r)return;const F=ndForm(r);const A=Object.assign({},r.answers||{},ndVisible(F.shown,ND.qa));
+  const dr=F.rm?{approved:true,changes:ndReviewChanges(F.rm)}:null;
+  b.disabled=true;const msg={label:'ניסוח: '+r.label,kind:'areo_draft_answers',request:{label:r.label,created:r.created},answers:A};if(dr)msg.drivers_review=dr;
+  const sent=chatSend(msg);
+  ND.answered=true;ND.sent=!!sent;if(sent)sent.catch(()=>{if(ND){ND.sent=false;drawNew()}});
+  const at=new Date().toISOString();
+  (async()=>{if(RQDB&&r.id&&!String(r.id).startsWith('l')&&!r.from_file){try{await RQDB.doc('requests/'+r.id).update(dr?{answers:A,answered:at,drivers_review:dr}:{answers:A,answered:at});return}catch(e){}}
+    const x=REQS.find(y=>y.id===r.id);if(x){x.answers=A;x.answered=at;if(dr)x.drivers_review=dr;reqsSaveLocal();reqsChanged()}})();
+  drawNew()}
+function ndOpen(what,clause){const r=ndTracked(),res=(r&&r.result)||{};const file=what==='cover'?res.cover:res.file;
+  const s=chatSend({label:what==='cover'?'פתיחת דף הליווי':'פתיחת הטיוטה',kind:'areo_draft_open',request:{label:r?r.label:'',created:r?r.created:''},what:what==='cover'?'cover':'draft',file:file||'',clause:clause||''});
+  if(s){stoast('Areo פותח את הקובץ בשיחה שליד המערכת.',4000);s.catch(()=>stoast('השליחה ל-Areo לא הצליחה. הקובץ שמור בתיקייה: '+String(file||'').split(/[\\/]/).pop(),6000))}
+  else stoast('הקובץ שמור בתיקייה: '+(String(file||'').split(/[\\/]/).pop()||'תיקיית העבודה'),6000)}
+const LEGAL='<p class="ndlegal">אין לראות בתוצרי המערכת מסמכים משפטיים מחייבים או סופיים. מדובר בתוצרי AI אשר אינם מהווים ייעוץ משפטי, ויש לבדוק אותם בידי עורך דין לפני שמסתמכים עליהם.</p>';
+const ADSRC={template_alternative:'חלופה בתבנית',client_agreement:'הסכם אחר שלכם',playbook:'הפלייבוק',new_wording:'נוסח חדש'};
+const ADCH={added:'נוסף',omitted:'הושמט',changed:'שונה',removed:'הושמט',modified:'שונה',chosen:'נבחר נוסח מתוך התבנית'};
+/* after the window sent: the status as in "מבט על", the one questions form when it comes back, and the draft at the end */
+function ndAfter(sc,X){const r=ndTracked(),st=r?r.status:'pending',name=s=>String(s||'').split(/[\\/]/).pop();
+  const dlg=(t,p,body)=>'<div class="nd" role="dialog" aria-modal="true" aria-label="טיוטת הסכם חדש"><div class="mh"><div><h2>'+t+'</h2>'+(p?'<p>'+p+'</p>':'')+'</div>'+X+'</div><div class="mbd">'+body+LEGAL+'</div></div>';
   const toClm=HASCLM?'<button type="button" class="btn" data-ndact="clm">לראות בניהול חוזים</button>':'';
-  if(ND.done&&ND.sent){
-    sc.innerHTML='<div class="nd" role="dialog" aria-modal="true" aria-label="טיוטת הסכם חדש"><div class="mh"><div><h2>Areo מנסחת עכשיו</h2></div>'+X+'</div><div class="mbd">'+
-      '<ol class="nsteps"><li>Areo פותחת '+from+', ומנסחת על הנייר שלכם.</li><li>אם יחסר פרט, היא תשאל עליו בשיחה שליד המערכת.</li><li>הטיוטה נשמרת בתיקייה, והבקשה מסומנת כאן כמוכנה, עם שם הקובץ.</li></ol>'+
-      '<div class="fld"><span>מה ביקשתם</span><div class="nreq">'+esc(ndRequest(t,t.built))+'</div></div>'+
-      '<div class="mf"><button type="button" class="btn ghost" data-ndact="close">סגירה</button>'+toClm+'<button type="button" class="btn pri" data-ndact="queue">לראות ב"מבט על"</button></div></div></div>';
-    return}
-  if(ND.done){
-    sc.innerHTML='<div class="nd" role="dialog" aria-modal="true" aria-label="טיוטת הסכם חדש"><div class="mh"><div><h2>הבקשה נכנסה לתור</h2></div>'+X+'</div><div class="mbd">'+
-      '<ol class="nsteps"><li>בפעם הבאה שתבקשו מ-Areo ב-Claude לנסח משהו, או תכתבו "Areo, תריץ את הבקשות", הוא יראה שהבקשה מחכה ויציע להריץ אותה.</li><li>הדרפטר פותח '+from+', ומנסח על הנייר שלכם.</li><li>הטיוטה נשמרת בתיקיית העבודה, והבקשה מסומנת כאן כמוכנה, עם שם הקובץ.</li></ol>'+
-      '<div class="fld"><span>מה ביקשתם</span><div class="nreq">'+esc(ndRequest(t,t.built))+'</div><small>הבקשה מופיעה ב"מבט על", תחת "ממתין ל-Areo". אפשר לבטל אותה שם עד שהיא רצה.</small></div>'+
-      '<div class="mf"><button type="button" class="btn ghost" data-ndact="close">סגירה</button>'+toClm+'<button type="button" class="btn pri" data-ndact="queue">לראות את התור</button></div></div></div>';
-    return}
-  const SP='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0c.6 4.2 3.2 7 8 8-4.8 1-7.4 3.8-8 8-.6-4.2-3.2-7-8-8 4.8-1 7.4-3.8 8-8z"/></svg>';
-  const pbLine=t.built?'<div class="npb">'+SP+'<span>ינוסח לפי הפלייבוק <b>'+esc(t.name)+'</b>'+(t.date?' מ-'+dmy(t.date):'')+'. כל סעיף יעמוד בעמדה המועדפת שלכם.</span><button type="button" class="lnk" data-ndact="pbopen" data-book="'+esc(t.key||'')+'">לפלייבוק</button></div>'
-    :'<div class="npb no"><span>לסוג הזה עוד אין פלייבוק. הטיוטה תישען על הבסיס שתבחרו בלבד.</span><button type="button" class="lnk" data-ndact="buildpb">לבנות פלייבוק</button></div>';
-  const opt=(k,l,sub)=>'<label class="nopt'+(ND.base===k?' on':'')+(can[k]?'':' dis')+'"><input type="radio" name="ndbase" value="'+k+'"'+(ND.base===k?' checked':'')+(can[k]?'':' disabled')+'><span><b>'+l+'</b><small>'+sub+'</small></span></label>';
-  sc.innerHTML='<div class="nd'+(fresh?' in':'')+'" role="dialog" aria-modal="true" aria-label="טיוטת הסכם חדש"><div class="mh"><div><h2>טיוטת הסכם חדש</h2><p>Areo מנסחת על הנייר שלכם, לפי הפלייבוק של סוג ההסכם.</p></div>'+X+'</div><div class="mbd">'+
-    '<div class="ntwo"><div class="fld"><label for="nd-type">סוג ההסכם</label><select id="nd-type" data-nd="type">'+types.map(x=>'<option value="'+esc(x.type)+'"'+(x.type===ND.type?' selected':'')+'>'+esc(x.name)+' · '+(x.built?'יש פלייבוק':'בלי פלייבוק')+'</option>').join('')+'</select></div>'+
-      '<div class="fld"><label for="nd-side">הצד שלנו</label>'+(sides.length?'<select id="nd-side" data-nd="side">'+sides.map(x=>'<option'+(x===ND.side?' selected':'')+'>'+esc(x)+'</option>').join('')+'</select>':'<input id="nd-side" data-nd="side" value="'+esc(ND.side)+'" placeholder="למשל: מקבלת השירותים" autocomplete="off">')+'</div></div>'+
-    pbLine+
-    '<div class="fld"><label for="nd-cp">הצד שכנגד</label><div class="ddw"><input id="nd-cp" data-nd="cp" value="'+esc(ND.cp)+'" placeholder="שם החברה, או בחירה מהצדדים במאגר" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="nd-cpl"><div class="ddl" id="nd-cpl" role="listbox" hidden></div></div></div>'+
-    '<div class="fld"><span id="nd-basel">על מה לבסס</span><div class="nbase" role="radiogroup" aria-labelledby="nd-basel">'+
-      opt('template','תבנית של החברה',tpls.length?nn(tpls.length,'תבנית אחת','תבניות')+' בתיקיית התבניות':'אין תבנית לסוג הזה')+
-      opt('ag','הסכם קודם מהמאגר',ags.length?nn(ags.length,'הסכם אחד','הסכמים')+' מהסוג הזה':'אין הסכם קודם מהסוג הזה')+
-      opt('up','להעלות הסכם','הסכם שלא נמצא במאגר')+
-      opt('pb','רק הפלייבוק',t.built?'בלי נוסח בסיס':'אין פלייבוק לסוג הזה')+'</div>'+
-      (ND.base==='template'?'<select data-nd="tpl" aria-label="התבנית">'+tpls.map(x=>'<option'+(x.name===ND.tpl?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select><small>מתוך תיקיית התבניות</small>':'')+
-      (ND.base==='ag'?'<select data-nd="ag" aria-label="ההסכם הקודם">'+ags.map(a=>'<option value="'+esc(a.title)+'"'+(a.title===ND.ag?' selected':'')+'>'+esc(a.title)+(a.signed?' · נחתם '+dmy(a.signed):'')+'</option>').join('')+'</select><small>Areo תשמור על המבנה והנוסח, ותחליף את הפרטים של הצד שכנגד</small>':'')+
-      (ND.base==='up'?'<label class="drop" tabindex="0">'+(ND.file?'<b>'+esc(ND.file)+'</b><small>לחצו כדי להחליף קובץ</small>':'<span>גררו לכאן את ההסכם, או לחצו לבחירה</span><small>Word או PDF. הקובץ נשאר אצלכם, ולא עובר לשרת של Areo.</small>')+'<input type="file" data-nd="file" accept=".doc,.docx,.pdf" hidden></label>':'')+
-    '</div>'+
-    '<div class="fld"><label for="nd-terms">תנאים עיקריים <span class="mut" style="font-weight:400">(לא חובה)</span></label><textarea id="nd-terms" data-nd="terms" placeholder="למשל: תמורה חודשית של 12,000 ש&quot;ח, תקופה של שנה, תחילה ב-1.12.2026">'+esc(ND.terms)+'</textarea></div>'+
-    '<p class="ederr" role="alert"'+(ND.err?'':' hidden')+'>'+esc(ND.err)+'</p>'+
-    '<div class="mf"><button type="button" class="btn ghost" data-ndact="close">ביטול</button><button type="button" class="btn pri" data-ndact="go">לנסח</button></div>'+
-    '</div></div>';
-  ddEnhance(sc);
+  const pillTxt=(t,k)=>'<span class="dst'+(k?' '+k:'')+'"><i class="pulse'+(k?'':' on')+'"></i>'+t+'</span>';
+  if(r&&st==='questions'&&!r.answers&&!ND.answered){const F=ndForm(r);
+    sc.innerHTML=dlg('שאלות לעסקה','Areo קרא את המקורות. ענו כאן, ו-Areo ממשיך לנסח עד הטיוטה.',
+      '<div class="fld"><span>מה ביקשתם</span><div class="nreq">'+esc(r.label)+'</div></div>'+ndReview(F.rm)+'<div class="nqs">'+ndQs(F.shown,ND.qa)+'</div>'+
+      '<div class="mf"><button type="button" class="btn ghost" data-ndact="close">אחר כך</button><button type="button" class="btn pri" data-ndact="answer">לנסח את הטיוטה</button></div>');return}
+  if(r&&st==='done'){const res=r.result||{},ad=res.adaptations||[],n1=+res.to_complete||0,n2=+res.commercial||0;
+    sc.innerHTML=dlg('הטיוטה מוכנה',esc(name(res.file)),
+      '<div class="ncnt"><div><b>'+n1+'</b><span>פרטים להשלים</span></div><div><b>'+n2+'</b><span>נושאים מסחריים להכרעה</span></div></div>'+
+      (ad.length?'<div class="fld"><span>ההתאמות לעסקה הזו</span><div class="nadl">'+ad.map(a=>'<div class="nad"><div class="nadt"><span><b>'+esc(a.clause||'')+'</b>'+(a.change?' · '+esc(ADCH[a.change]||a.change):'')+'</span>'+(a.summary?'<span>'+esc(a.summary)+'</span>':'')+
+        '<small>'+(a.answer?'בעקבות: '+esc(a.answer)+' · ':'')+'מקור: '+esc(ADSRC[a.source]||a.source||'')+'</small></div>'+(a.source==='new_wording'||a.new_wording?'<span class="ntag">נוסח חדש, אינו מהתבנית</span>':'')+
+        (a.clause?'<button type="button" class="btn sm ghost" data-ndopen="draft" data-clause="'+esc(a.clause)+'">לפתוח בטיוטה</button>':'')+'</div>').join('')+'</div></div>':'')+
+      '<div class="mf"><button type="button" class="btn ghost" data-ndact="close">סגירה</button>'+(res.cover?'<button type="button" class="btn" data-ndopen="cover">לפתוח את דף הליווי</button>':'')+'<button type="button" class="btn pri" data-ndopen="draft">לפתוח את הטיוטה</button></div>');return}
+  if(r&&st==='failed'){sc.innerHTML=dlg('לא הצליחה',esc(r.error||''),'<div class="mf"><button type="button" class="btn ghost" data-ndact="close">סגירה</button><button type="button" class="btn pri" data-ndact="queue">לראות ב"מבט על"</button></div>');return}
+  const req='<div class="fld"><span>מה ביקשתם</span><div class="nreq">'+esc(r&&r.request_text||r&&r.label||ND.track&&ND.track.label||'')+'</div></div>';
+  if(ND.answered){sc.innerHTML=dlg(ND.sent?'Areo ממשיך לנסח':'התשובות נשמרו','',(ND.sent?pillTxt('Areo עובד עליה',''):'')+
+      '<ol class="nsteps">'+(ND.sent?'<li>Areo מחיל כל תשובה על כל הסעיפים שתלויים בה, ומנסח עד הטיוטה.</li>':'<li>בפעם הבאה שתכתבו ל-Areo ב-Claude, או תכתבו "Areo, תריץ את הבקשות", הוא ימשיך מהתשובות האלה.</li>')+'<li>הטיוטה ודף הליווי יופיעו כאן כשהם מוכנים.</li></ol>'+
+      '<div class="mf"><button type="button" class="btn ghost" data-ndact="close">סגירה</button><button type="button" class="btn pri" data-ndact="queue">לראות ב"מבט על"</button></div>');return}
+  const ho=ND.handoff==='connect_folder'?'<li>Areo מבקש בשיחה שליד המערכת גישה לתיקייה עם ההסכמים, ומחפש בה שוב.</li>':ND.handoff==='attach'?'<li>צרפו את ההסכמים או את הפלייבוק בשיחה שליד המערכת, ו-Areo ממשיך מהם.</li>':'';
+  if(ND.sent){const working=st==='working';
+    sc.innerHTML=dlg('Areo מנסח עכשיו','',pillTxt(working?'Areo עובד עליה':'נשלחה ל-Areo','')+'<ol class="nsteps">'+ho+'<li>Areo קורא את המקורות, ומנסח על הנייר שלכם.</li><li>אם יחסרו פרטים, Areo יחזיר לכאן טופס שאלות אחד.</li><li>הטיוטה נשמרת בתיקייה, והבקשה מסומנת כאן כמוכנה, עם שם הקובץ.</li></ol>'+req+
+      '<div class="mf"><button type="button" class="btn ghost" data-ndact="close">סגירה</button>'+toClm+'<button type="button" class="btn pri" data-ndact="queue">לראות ב"מבט על"</button></div>');return}
+  sc.innerHTML=dlg('הבקשה נכנסה לתור','',
+    '<ol class="nsteps"><li>בפעם הבאה שתבקשו מ-Areo ב-Claude לנסח משהו, או תכתבו "Areo, תריץ את הבקשות", הוא יראה שהבקשה מחכה ויציע להריץ אותה.</li>'+ho+'<li>אם יחסרו פרטים, Areo יחזיר לכאן טופס שאלות אחד.</li><li>הטיוטה נשמרת בתיקיית העבודה, והבקשה מסומנת כאן כמוכנה, עם שם הקובץ.</li></ol>'+req.replace('</div></div>','</div><small>הבקשה מופיעה ב"מבט על", תחת "ממתין ל-Areo". אפשר לבטל אותה שם עד שהיא רצה.</small></div>')+
+    '<div class="mf"><button type="button" class="btn ghost" data-ndact="close">סגירה</button>'+toClm+'<button type="button" class="btn pri" data-ndact="queue">לראות את התור</button></div>')}
+/* a redraw keeps the focus and the caret where they were */
+function ndFocusKey(sc){const a=document.activeElement;if(!a||!sc.contains(a))return null;
+  const k=a.id?'#'+a.id:['data-nd','data-qt','data-rvt','data-rvadd','data-qa','data-ndtpl','data-cpt','data-side','data-ndact'].map(n=>a.hasAttribute(n)?'['+n+'="'+String(a.getAttribute(n)).replace(/"/g,'\\"')+'"]'+(n==='data-qa'?'[data-qv="'+String(a.getAttribute('data-qv')).replace(/"/g,'\\"')+'"]':''):'').find(Boolean);
+  return k?{k,s:a.selectionStart,e:a.selectionEnd}:null}
+let ndTimer=0;
+const ndSoon=()=>{clearTimeout(ndTimer);ndTimer=setTimeout(()=>{if(ND&&!ND.done)drawNew()},380)};
+function drawNew(){
+  let sc=document.getElementById('ndscrim'),fresh=false;
+  if(!sc){fresh=true;sc=document.createElement('div');sc.className='ndscrim';sc.id='ndscrim';sc.setAttribute('dir','rtl');sc.setAttribute('lang','he');document.body.appendChild(sc);ndBind(sc)}
+  const top=sc.scrollTop,fk=ndFocusKey(sc);
+  const X='<button type="button" class="x" data-ndact="close" aria-label="סגירה">'+IC2.x+'</button>';
+  if(ND.done){const tr=ndTracked();ND.seen=tr?tr.status+(tr.answers?'+a':''):'';ndAfter(sc,X);sc.scrollTop=top;ndRefocus(sc,fk);return}
+  const f=ndFound(),fam=f.fam,sides=ndSides(fam),m=ND.route?ndModel(f):null;
+  const route=(k,l,sub)=>'<button type="button" class="nroute'+(ND.route===k?' on':'')+'" role="radio" aria-checked="'+(ND.route===k)+'" data-route="'+k+'"><b>'+l+'</b><small>'+sub+'</small></button>';
+  let h='<div class="nd'+(fresh?' in':'')+'" role="dialog" aria-modal="true" aria-label="טיוטת הסכם חדש"><div class="mh"><div><h2>טיוטת הסכם חדש</h2><p>Areo מנסח על הנייר שלכם, מהמקורות שלכם.</p></div>'+X+'</div><div class="mbd">'+
+    '<div class="fld"><span id="nd-routel">מה רוצים לעשות?</span><div class="nroutes" role="radiogroup" aria-labelledby="nd-routel">'+
+      route('new','ניסוח הסכם חדש','מהפלייבוק או מההסכמים שלכם, ובלעדיהם ממחקר ברשת')+route('template','התאמת תבנית הסכם לסיטואציה חוזית','תבנית שיש לכם, מותאמת לעסקה הזו')+'</div></div>';
+  if(ND.route){
+    h+='<div class="fld"><label for="nd-type">סוג ההסכם</label><div class="ddw"><input id="nd-type" data-nd="typeName" value="'+esc(ND.typeName)+'" placeholder="למשל: הסכם שירותים, או כל סוג אחר" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="nd-typel"><div class="ddl" id="nd-typel" role="listbox" hidden></div></div></div>'+
+      '<div class="fld"><span id="nd-sidel">הצד שלנו</span><div class="nchips" role="radiogroup" aria-labelledby="nd-sidel">'+sides.map(s=>{const on=sideEq(ND.side,s);return '<button type="button" class="nchip'+(on?' on':'')+'" role="radio" aria-checked="'+on+'" data-side="'+esc(s)+'">'+esc(s)+'</button>'}).join('')+
+        '<input id="nd-side" data-nd="side" value="'+(sides.some(s=>sideEq(ND.side,s))?'':esc(ND.side))+'" placeholder="'+(sides.length?'צד אחר':'למשל: מקבלת השירותים')+'" autocomplete="off" aria-label="הצד שלנו"></div></div>'+
+      '<div class="fld"><label for="nd-cp">הצד שכנגד</label><div class="ddw"><input id="nd-cp" data-nd="cp" value="'+esc(ND.cp)+'" placeholder="שם החברה או האדם, או בחירה מהצדדים במאגר" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="nd-cpl"><div class="ddl" id="nd-cpl" role="listbox" hidden></div></div>'+
+        '<div class="nchips" role="radiogroup" aria-label="סוג הצד שכנגד">'+CPT.map(([v,l])=>'<button type="button" class="nchip'+(ND.cpType===v?' on':'')+'" role="radio" aria-checked="'+(ND.cpType===v)+'" data-cpt="'+v+'">'+l+'</button>').join('')+'</div></div>';
+    h+=ND.route==='new'?ndRoute1(f):ndRoute2(f);
+    const bl=ND.route==='new'?ndBaseLine(f):'';
+    const SP='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0c.6 4.2 3.2 7 8 8-4.8 1-7.4 3.8-8 8-.6-4.2-3.2-7-8-8 4.8-1 7.4-3.8 8-8z"/></svg>';
+    if(bl)h+='<div class="npb">'+SP+'<span>על מה לבסס: '+bl+'</span>'+(f.pb&&f.pb.key?'<button type="button" class="lnk" data-ndact="pbopen" data-book="'+esc(f.pb.key)+'">לפלייבוק</button>':'')+'</div>';
+    if(f.pb)h+=ndGaps(f.pb);
+    if(m){h+=ndReview(m);const items=ndReviewed(m);if(items.length)h+='<div class="fld"><span>השאלות לעסקה</span><small>התשובות קובעות אילו סעיפים נכנסים ובאיזה נוסח.</small><div class="nqs">'+ndQs(items,ND.ans)+'</div></div>'}
+    h+='<div class="fld"><label for="nd-concern">מה הכי מדאיג אתכם בעסקה הזו?</label><textarea id="nd-concern" data-nd="concern" placeholder="במשפט או שניים, במילים שלכם">'+esc(ND.concern)+'</textarea></div>'+
+      '<div class="fld"><label for="nd-special">מה מיוחד בעסקה הזו? <span class="mut" style="font-weight:400">(לא חובה)</span></label><textarea id="nd-special" data-nd="special" placeholder="למשל: תמורה חודשית של 12,000 ש&quot;ח, תקופה של שנה, תחילה ב-1.12.2026">'+esc(ND.special)+'</textarea></div>'+
+      '<p class="ederr" role="alert"'+(ND.err?'':' hidden')+'>'+esc(ND.err)+'</p>'+
+      '<div class="mf"><button type="button" class="btn ghost" data-ndact="cancel">ביטול</button><button type="button" class="btn pri" data-ndact="go">'+(ND.route==='template'?'להתאים את התבנית':'לנסח')+'</button></div>'}
+  else h+='<div class="mf"><button type="button" class="btn ghost" data-ndact="cancel">ביטול</button></div>';
+  h+=LEGAL+'</div></div>';
+  sc.innerHTML=h;
   sc.scrollTop=top;
-  /* after a redraw the focus goes back where it was, without scrolling and without opening a list */
-  if(ND._focus){const el=sc.querySelector(ND._focus);el&&el.focus({preventScroll:true});ND._focus=null}
-  else if(fresh)setTimeout(()=>{const el=sc.querySelector('#dd-nd-type')||sc.querySelector('#nd-cp');el&&el.focus({preventScroll:true})},40);
+  if(ND._focus){const el=sc.querySelector(ND._focus);el&&el.focus({preventScroll:true});ND._focus=null}else ndRefocus(sc,fk);
+  if(fresh&&!fk)setTimeout(()=>{const el=sc.querySelector(ND.route?'#nd-type':'.nroute');el&&el.focus({preventScroll:true})},40);
   const dz=sc.querySelector('.drop');if(dz)dz.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();dz.querySelector('input').click()}});
-  /* counterparty: free text, with the counterparties already in the repository as suggestions, shown on a click or while typing */
-  const ci=sc.querySelector('#nd-cp'),cl=sc.querySelector('#nd-cpl');
-  const showCp=()=>{const q=ci.value.trim();const L=cps.filter(c=>!q||c.includes(q)).slice(0,8);
-    cl.innerHTML=L.map(c=>'<button type="button" class="ddo" role="option" data-cp="'+esc(c)+'"><span class="dl">'+esc(c)+'</span><small>במאגר</small></button>').join('');
-    cl.hidden=!L.length||(L.length===1&&L[0]===q);ci.setAttribute('aria-expanded',String(!cl.hidden))};
-  ci.addEventListener('click',showCp);ci.addEventListener('input',showCp);
-  ci.addEventListener('keydown',e=>{if(e.key==='ArrowDown'){e.preventDefault();if(cl.hidden)showCp();const o=cl.querySelector('.ddo');o&&o.focus()}else if(e.key==='Escape'&&!cl.hidden){e.stopPropagation();cl.hidden=true;ci.setAttribute('aria-expanded','false')}});
-  cl.addEventListener('keydown',e=>{const os=[...cl.querySelectorAll('.ddo')],i=os.indexOf(document.activeElement);if(e.key==='ArrowDown'){e.preventDefault();(os[i+1]||os[0]).focus()}else if(e.key==='ArrowUp'){e.preventDefault();i<=0?ci.focus():os[i-1].focus()}else if(e.key==='Escape'){e.stopPropagation();cl.hidden=true;ci.focus()}});
-  cl.addEventListener('click',e=>{const o=e.target.closest('[data-cp]');if(!o)return;e.stopPropagation();ci.value=o.dataset.cp;ND.cp=ci.value;cl.hidden=true;ci.setAttribute('aria-expanded','false');if(ND.err){ND.err='';const er=sc.querySelector('.ederr');er&&(er.hidden=true)}ci.focus()});
-  if(!sc.__cpOut){sc.__cpOut=1;sc.addEventListener('click',e=>{const l=sc.querySelector('#nd-cpl');if(l&&!e.target.closest('#nd-cp')&&!e.target.closest('#nd-cpl'))l.hidden=true})}
+  if(ND.route){ndCombo(sc,'#nd-type','#nd-typel',()=>ndFams().map(x=>x.name),'אצלכם',v=>{ND.typeName=v;ndKeep();ND._focus='#nd-type';drawNew()});
+    const {M}=ndFrames();const cps=[...new Set([].concat(M&&M.ags?M.ags.map(a=>a.cp):[],(read('nego')||{deals:[]}).deals.map(d=>d.cp)).filter(Boolean))];
+    ndCombo(sc,'#nd-cp','#nd-cpl',()=>cps,'במאגר',v=>{ND.cp=v;ndKeep();if(ND.err){ND.err='';const er=sc.querySelector('.ederr');er&&(er.hidden=true)}})}
 }
+function ndRefocus(sc,fk){if(!fk)return;const el=sc.querySelector(fk.k);if(!el)return;el.focus({preventScroll:true});try{if(fk.s!=null&&el.setSelectionRange)el.setSelectionRange(fk.s,fk.e)}catch(e){}}
+/* free text with suggestions, shown on a click or while typing (the agreement type and the counterparty) */
+function ndCombo(sc,inSel,lSel,list,tag,pick){const ci=sc.querySelector(inSel),cl=sc.querySelector(lSel);if(!ci||!cl)return;
+  const show=()=>{const q=ci.value.trim();const L=list().filter(c=>!q||c.includes(q)||famEq(c,q)).slice(0,8);
+    cl.innerHTML=L.map(c=>'<button type="button" class="ddo" role="option" data-pick="'+esc(c)+'"><span class="dl">'+esc(c)+'</span><small>'+tag+'</small></button>').join('');
+    cl.hidden=!L.length||(L.length===1&&L[0]===q);ci.setAttribute('aria-expanded',String(!cl.hidden))};
+  ci.addEventListener('click',show);ci.addEventListener('input',show);
+  ci.addEventListener('keydown',e=>{if(e.key==='ArrowDown'){e.preventDefault();if(cl.hidden)show();const o=cl.querySelector('.ddo');o&&o.focus()}else if(e.key==='Escape'&&!cl.hidden){e.stopPropagation();cl.hidden=true;ci.setAttribute('aria-expanded','false')}});
+  cl.addEventListener('keydown',e=>{const os=[...cl.querySelectorAll('.ddo')],i=os.indexOf(document.activeElement);if(e.key==='ArrowDown'){e.preventDefault();(os[i+1]||os[0]).focus()}else if(e.key==='ArrowUp'){e.preventDefault();i<=0?ci.focus():os[i-1].focus()}else if(e.key==='Escape'){e.stopPropagation();cl.hidden=true;ci.focus()}});
+  cl.addEventListener('click',e=>{const o=e.target.closest('[data-pick]');if(!o)return;e.stopPropagation();ci.value=o.dataset.pick;cl.hidden=true;ci.setAttribute('aria-expanded','false');pick(o.dataset.pick)})}
+function ndBind(sc){
+  sc.addEventListener('click',e=>{if(e.target===sc)closeNew();const l=sc.querySelectorAll('.ddl');l.forEach(x=>{const w=x.parentNode;if(!e.target.closest||!w.contains(e.target))x.hidden=true})});
+  sc.addEventListener('input',e=>{const t=e.target;
+    if(t.dataset.nd){const k=t.dataset.nd;ND[k]=t.value;if(ND.err){ND.err='';const er=sc.querySelector('.ederr');er&&(er.hidden=true)}ndKeep();if(k==='typeName'||k==='side')ndSoon();return}
+    if(t.dataset.qt!=null){const A=ND.done?ND.qa:ND.ans,had=String(A[t.dataset.qt]||'')!=='';A[t.dataset.qt]=t.value;ndKeep();if(had!==(t.value!==''))ndSoon();return}
+    if(t.dataset.rvt!=null){ND.rv.rename[t.dataset.rvt]=t.value;ndKeep()}});
+  sc.addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&t.dataset&&(t.dataset.rvt!=null||t.hasAttribute('data-rvadd'))){e.preventDefault();if(t.dataset.rvt!=null){ND.rv.editing='';drawNew()}else sc.querySelector('[data-rva="add"]').click()}});
+  sc.addEventListener('change',e=>{const t=e.target;
+    if(t.name==='ndsrc'){ND.src=t.value;ND.srcAuto=false;ND.err='';ND._focus='input[name="ndsrc"][value="'+t.value+'"]';ndKeep();drawNew();return}
+    if(t.dataset.ndc==='gap'){ND.gap=t.checked;ndKeep();return}
+    if(t.dataset.ndtpl!=null){const n=t.dataset.ndtpl;ND.tplSel=t.checked?ND.tplSel.concat(ND.tplSel.includes(n)?[]:[n]):ND.tplSel.filter(x=>x!==n);ND.err='';ND._focus='[data-ndtpl="'+n.replace(/"/g,'\\"')+'"]';ndKeep();drawNew();return}
+    if(t.dataset.ndfile){const fl=t.files&&t.files[0];t.value='';if(fl)ndAttach(fl);return}
+    if(t.dataset.rvt!=null){ND.rv.editing='';ndKeep();drawNew()}});
+  sc.addEventListener('dragover',e=>{const d=e.target.closest&&e.target.closest('.drop');if(!d)return;e.preventDefault();d.classList.add('over')});
+  sc.addEventListener('dragleave',e=>{const d=e.target.closest&&e.target.closest('.drop');d&&d.classList.remove('over')});
+  sc.addEventListener('drop',e=>{const d=e.target.closest&&e.target.closest('.drop');if(!d)return;e.preventDefault();const fl=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(fl)ndAttach(fl)});
+  sc.addEventListener('click',e=>{if(!ND)return;
+    const rt=e.target.closest('[data-route]');if(rt){ND.route=rt.dataset.route;ND.err='';ND._focus='[data-route="'+ND.route+'"]';ndKeep();drawNew();return}
+    const sd=e.target.closest('[data-side]');if(sd){ND.side=sd.dataset.side;ND.err='';ND._focus='[data-side="'+sd.dataset.side.replace(/"/g,'\\"')+'"]';ndKeep();drawNew();return}
+    const ct=e.target.closest('[data-cpt]');if(ct){ND.cpType=ct.dataset.cpt;ND.err='';ND._focus='[data-cpt="'+ct.dataset.cpt+'"]';ndKeep();drawNew();return}
+    const qa=e.target.closest('[data-qa]');if(qa){const id=qa.dataset.qa,v=qa.dataset.qv;if(id==='__set')ND.tplChoice=v;else{const A=ND.done?ND.qa:ND.ans;A[id]=v}ND.err='';ND._focus='[data-qa="'+id.replace(/"/g,'\\"')+'"][data-qv="'+v.replace(/"/g,'\\"')+'"]';ndKeep();drawNew();return}
+    const qs=e.target.closest('[data-qs]');if(qs){const A=ND.done?ND.qa:ND.ans;A[qs.dataset.qs]=qs.dataset.qv;ND._focus='[data-qt="'+qs.dataset.qs.replace(/"/g,'\\"')+'"]';ndKeep();drawNew();return}
+    const rv=e.target.closest('[data-rva]');if(rv){const R=ND.rv,id=rv.dataset.id,a=rv.dataset.rva;
+      if(a==='ok')R.ok[id]=!R.ok[id];else if(a==='edit'){R.editing=R.editing===id?'':id;ND._focus=R.editing?'[data-rvt="'+id+'"]':null}else if(a==='del'){R.del[id]=true;R.merging=''}
+      else if(a==='merge')R.merging=R.merging===id?'':id;else if(a==='undo'){delete R.del[id];delete R.merge[id]}else if(a==='all')R.all=!R.all;
+      else if(a==='add'){const i=sc.querySelector('[data-rvadd]'),t=i&&i.value.trim();if(t)R.add.push(t);ND._focus='[data-rvadd]'}
+      ndKeep();drawNew();return}
+    const rm=e.target.closest('[data-rvm]');if(rm){ND.rv.merge[rm.dataset.rvm]=rm.dataset.to;ND.rv.merging='';ndKeep();drawNew();return}
+    const op=e.target.closest('[data-ndopen]');if(op){ndOpen(op.dataset.ndopen,op.dataset.clause||'');return}
+    const b=e.target.closest('[data-ndact]');if(!b)return;const a=b.dataset.ndact;
+    if(a==='close')closeNew();
+    else if(a==='cancel'){ndForget();closeNew()}
+    else if(a==='go')ndSubmit(b);
+    else if(a==='answer')ndAnswer(b);
+    else if(a==='connect')ndSubmit(b,{source_action:'connect_folder'});
+    else if(a==='attach')ndSubmit(b,{source_action:'attach'});
+    else if(a==='research'){ND.src='none';ND.err='';ND._focus='[data-ndact="mkok"]';ndKeep();drawNew()}
+    else if(a==='mkok'){ND.mk=!ND.mk;ND.err='';ND._focus='[data-ndact="mkok"]';ndKeep();drawNew()}
+    else if(a==='totpl'){ND.route='template';ND.err='';ND._focus='[data-route="template"]';ndKeep();drawNew()}
+    else if(a==='notpl'){ND.route='new';ND.tplSel=[];ND.tplChoice='';ND.attOpen=false;ND.err='';ND._focus='[data-route="new"]';ndKeep();drawNew()}
+    else if(a==='tplatt'){ND.attOpen=!ND.attOpen;ND._focus='[data-ndact="tplatt"]';drawNew()}
+    else if(a==='refresh'){ndKeep();const s=chatSend({label:'רענון התבניות',kind:'areo_draft_refresh'});
+      if(s){stoast('Areo סורק שוב את התיקייה ופותח את החלון מחדש. מה שמילאתם נשמר.',6000);s.catch(()=>stoast('השליחה ל-Areo לא הצליחה. אפשר לנסות שוב.'))}
+      else stoast('כתבו בשיחה: "Areo, לרענן את התבניות של הסכם חדש". מה שמילאתם נשמר.',7000)}
+    else if(a==='queue'){closeNew();location.hash='today';setTimeout(()=>{const el=document.getElementById('b-areo');el&&el.scrollIntoView({block:'start',behavior:'smooth'})},250)}
+    else if(a==='clm'){closeNew();openIn('clm','agreements','')}
+    else if(a==='pbopen'){const k=b.dataset.book;closeNew();if(k){try{FRAMES.policy.contentWindow.__areoBook(k)}catch(err){}}openIn('policy','overview','')}});
+}
+/* a template chosen from the computer: only its name, size and date are read here, never its content */
+function ndAttach(fl){const a={name:fl.name,size:fl.size||0,modified:fl.lastModified?new Date(fl.lastModified).toISOString().slice(0,10):''};
+  ND.att=ND.att.filter(x=>x.name!==a.name).concat([a]);if(!ND.tplSel.includes(a.name))ND.tplSel=ND.tplSel.concat([a.name]);ND.err='';ND._focus='[data-ndtpl="'+a.name.replace(/"/g,'\\"')+'"]';ndKeep();drawNew()}
+/* the window follows its request: when the drafter writes back questions or the draft, it changes by itself */
+function ndWatch(){if(!ND||!ND.done)return;const r=ndTracked();const st=r?r.status+(r.answers?'+a':''):'';if(st!==ND.seen)drawNew()}
 document.getElementById('newdoc').addEventListener('click',openNew);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ND&&!document.querySelector('#ndscrim .ddl:not([hidden])'))closeNew()});
+/* the system opened on a new agreement (--start draft): a request that came back with questions opens on its form, otherwise the window opens fresh */
+function ndStart(){const q=ndReqs().find(r=>r.status==='questions'&&!r.answers&&r.questions&&(r.questions.items||[]).length);if(q)openAnswers(q.id);else openNew()}
 
 /* ---------- מבט על ---------- */
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1019,16 +1288,16 @@ function item(attrs,title,sub,pk,pt,w){
 }
 /* the person's name as the screens write it, without the title and the role */
 const pname=x=>String(x||'').replace(/^עו"ד\s*/,'').split(',')[0].trim();
-const RQST={pending:['ממתינה להרצה',''],working:['Areo עובדת עליה','on'],done:['הטיוטה מוכנה','ok'],failed:['לא הצליחה','r']};
+const RQST={pending:['ממתינה להרצה',''],working:['Areo עובד עליה','on'],questions:['מחכה לתשובות שלכם',''],done:['הטיוטה מוכנה','ok'],failed:['לא הצליחה','r']};
 function areoBlock(){
   const L=REQS.filter(r=>r.status!=='cancelled');if(!L.length)return '';
-  const open=L.filter(r=>r.status==='pending'||r.status==='working').length;
+  const open=L.filter(r=>r.status==='pending'||r.status==='working'||r.status==='questions').length;
   return '<section class="panel" id="b-areo"><div class="phd"><span>ממתין ל-Areo <span class="m">'+open+'</span></span><span class="m">בקשות שנשלחו מכאן</span></div>'+
-    L.slice(0,6).map(r=>{const st=RQST[r.status]||RQST.pending;const base=r.base&&r.base.kind==='template'?'לפי התבנית '+r.base.name:r.base&&r.base.kind==='agreement'?'על בסיס '+r.base.name:r.base&&r.base.kind==='upload'?'על בסיס הקובץ '+r.base.name:'לפי הפלייבוק';
+    L.slice(0,6).map(r=>{const st=RQST[r.status==='questions'&&r.answers?'working':r.status]||RQST.pending;const base=r.base&&r.base.kind==='market'?'מאפס, עם מחקר ברשת':r.base&&r.base.kind==='template'?'לפי התבנית '+r.base.name:r.base&&r.base.kind==='agreement'&&!r.base.name?'מההסכמים שלכם':r.base&&r.base.kind==='agreement'?'על בסיס '+r.base.name:r.base&&r.base.kind==='upload'?'על בסיס הקובץ '+r.base.name:r.base?'לפי הפלייבוק':'הסכם חדש';
       const file=r.status==='done'&&r.result&&r.result.file?String(r.result.file).split(/[\\/]/).pop():'';
       return '<div class="drow"><div class="nm"><b>'+esc(r.label||'בקשת ניסוח')+'</b><span>'+esc(base+' · נשלחה '+dmy(r.created)+(r.by?' · '+r.by:'')+(file?' · '+file:'')+(r.status==='failed'&&r.error?' · '+r.error:''))+'</span></div>'+
         '<span class="dst'+(st[1]==='ok'?' ok':st[1]==='r'?' r':'')+'"><i class="pulse'+(st[1]==='on'?' on':'')+'"></i>'+st[0]+'</span>'+
-        (r.status==='pending'?'<button type="button" class="lnk danger" data-cancelreq="'+esc(r.id)+'">לבטל</button>':'<span></span>')+'</div>'}).join('')+'</section>';
+        (r.status==='questions'&&!r.answers?'<button type="button" class="btn sm" data-ndans="'+esc(r.id)+'">לענות</button>':r.status==='pending'?'<button type="button" class="lnk danger" data-cancelreq="'+esc(r.id)+'">לבטל</button>':'<span></span>')+'</div>'}).join('')+'</section>';
 }
 function actWhen(at){const d=asDate(at);if(!d)return '';const n=new Date();return d.toDateString()===n.toDateString()&&String(at).length>10?'היום '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'):dmy(at)}
 function renderToday(){
@@ -1051,13 +1320,13 @@ function renderToday(){
   });
   if(P&&P.waiting) mine.push(item('data-open="policy" data-a="approve"',nn(P.waiting,'עמדה אחת במדיניות מחכה לאישור שלך','עמדות במדיניות מחכות לאישור שלך'),P.book+(P.wtopics.length?' · '+P.wtopics.join(', '):''),'dec','לאישור',''));
   if(P&&P.oq) mine.push(item('data-open="policy" data-a="overview" data-b="q"',nn(P.oq,'שאלה פתוחה שהמדיניות לא הכריעה','שאלות פתוחות שהמדיניות לא הכריעה'),P.book,'dec','שאלה פתוחה',''));
-  if(C&&C.review) mine.push(item('data-open="clm" data-a="approve"',nn(C.review,'פרט אחד מההסכמים מחכה לאישור','פרטים מההסכמים מחכים לאישור'),'ניהול חוזים · מה Areo חילצה ומחכה לעין שלך','dec','לאישור',''));
+  if(C&&C.review) mine.push(item('data-open="clm" data-a="approve"',nn(C.review,'פרט אחד מההסכמים מחכה לאישור','פרטים מההסכמים מחכים לאישור'),'ניהול חוזים · מה Areo חילץ ומחכה לעין שלך','dec','לאישור',''));
   /* dates */
   let dates=[],late=0;
   if(C){ late=C.tasks.filter(t=>t.days<0).length;
     dates=C.tasks.filter(t=>t.days<=90).slice(0,5).map(t=>'<button type="button" class="li" data-open="clm" data-a="tasks" style="grid-template-columns:minmax(0,1fr) auto"><div class="dt">'+dayBox(t.due)+'<div class="nm"><b>'+esc(t.label)+'</b><span>'+esc([t.cp,t.ours?'עלינו':'עליהם'].filter(Boolean).join(' · '))+'</span></div></div>'+pill(t.days<=7?'red':'wait',inDays(t.days))+'</button>'); }
   /* with the other side */
-  const theirs=N?N.deals.filter(d=>d.st==='wait').map(d=>item('data-open="nego" data-a="'+esc(d.id)+'"',d.cp,'סבב '+d.round+' נשלח. מחכים לתשובה שלהם. Areo תזהה אותה במייל.','wait','נשלח','')):[];
+  const theirs=N?N.deals.filter(d=>d.st==='wait').map(d=>item('data-open="nego" data-a="'+esc(d.id)+'"',d.cp,'סבב '+d.round+' נשלח. מחכים לתשובה שלהם. Areo יזהה אותה במייל.','wait','נשלח','')):[];
   const signed=N?N.deals.filter(d=>d.st==='signed').length:0;
 
   const who=(C&&C.who)||(N&&N.who)||(P&&(P.who||P.approver))||'';
@@ -1148,6 +1417,7 @@ function drawOrg(company,who){
 }
 todayEl.addEventListener('click',e=>{
   const cr=e.target.closest('[data-cancelreq]');if(cr){cancelRequest(cr.dataset.cancelreq);return}
+  const na=e.target.closest('[data-ndans]');if(na){openAnswers(na.dataset.ndans);return}
   /* my tasks act on contract management's own task list: its status (done), its task drawer, its new-task drawer */
   const td=e.target.closest('[data-tdone]');if(td){let ok=false;try{const w=FRAMES.clm.contentWindow,id=td.dataset.tdone;ok=!!(w.__areoTaskStatus?w.__areoTaskStatus(id):w.__areoTaskDone&&w.__areoTaskDone(id))}catch(x){}
     if(ok){td.classList.add('on');stoast('המשימה סומנה כבוצעה.');setTimeout(renderToday,350)}else openIn('clm','tasks');return}
@@ -1377,7 +1647,7 @@ async function ask(q){
   if(!c){c={id:String(Date.now()),title:q.length>48?q.slice(0,48)+'…':q,at:Date.now(),tab:current(),turns:[]};CHATS.unshift(c);CUR=c.id}
   c.turns.push({role:'user',content:q});const a={role:'assistant',content:'',pending:true};c.turns.push(a);
   askin.value='';askin.style.height='';
-  if(!SAMPLE){Object.assign(a,localFallback(q,'תשובה מהמדיניות בלבד. כדי לענות מכל המסכים, Areo צריכה אישור לשאול את Claude.'),{pending:false});saveChats();drawAsk();return}
+  if(!SAMPLE){Object.assign(a,localFallback(q,'תשובה מהמדיניות בלבד. כדי לענות מכל המסכים, Areo צריך אישור לשאול את Claude.'),{pending:false});saveChats();drawAsk();return}
   PLAN=plan(q);
   ASKCTL=new AbortController();thinking(true);drawAsk();
   const cx=ctx();
@@ -1435,7 +1705,7 @@ else if(!SH.start&&location.hash!=='#playbook'){let tries=0;const chk=()=>{tries
   if(active){try{localStorage.setItem('areo-onboard-done','1')}catch(e){}return}
   openFlow('setup')};setTimeout(chk,400)}
 else if(SH.start==='playbook'||location.hash==='#playbook')window.__areoBuildPlaybook();
-else if(SH.start==='draft')setTimeout(()=>{try{openNew()}catch(e){}},300);
+else if(SH.start==='draft')setTimeout(()=>{try{ndStart()}catch(e){}},600);
 else if(SH.start==='nego'){location.hash='nego';const f=FRAMES.nego,go=()=>{try{f.contentWindow.__areoNewDraft&&f.contentWindow.__areoNewDraft()}catch(e){}};
   if(f&&f.classList.contains('ready'))go();else if(f)f.addEventListener('load',()=>setTimeout(go,150),{once:true})}
 setTimeout(()=>order.slice(1).forEach(make),APPS[first]?400:0);

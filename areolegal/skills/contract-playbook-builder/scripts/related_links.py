@@ -73,7 +73,7 @@ def derive(model,extract=None,pairs=None):
 		for F in D['related_links']:
 			if not(F.get('kind')and F.get('direction')and F.get('action')):Y.append(('LINK_INCOMPLETE','%s→%s: קישור בלי סוג, כיוון או כלל פעולה'%(D['rule_id'],F.get('related_rule_id'))))
 	Z=sum(1 for A in B for B in A['related_links']if B.get('approved')is None);P=E.setdefault('validation_queue',[]);P[:]=[A for A in P if not(isinstance(A,dict)and A.get('kind')=='related_confirm'and A.get('status')!='closed')]
-	if Z:P.append({'id':'Q-RELATED','kind':'related_confirm','scope':'playbook','rule_id':'GLOBAL','topic':'סעיפים קשורים','severity':'בינונית','question':'Areo מציעה %d קישורים בין נושאים מהקטלוג המשפטי או מההסכמים שלכם. לאשר?'%Z,'why':'קישור שאושר מחייב את הנושא ונותן לטפל בשני הנושאים יחד. קישור שגוי מייצר התראות מיותרות, ולכן כל הצעה מחכה לאישור שלכם פעם אחת.','recommendation':'לעבור על הקישורים בלשונית המדיניות, בכל נושא תחת "סעיפים קשורים", ולאשר או לדחות.','answered':False})
+	if Z:P.append({'id':'Q-RELATED','kind':'related_confirm','scope':'playbook','rule_id':'GLOBAL','topic':'סעיפים קשורים','severity':'בינונית','question':'Areo מציע %d קישורים בין נושאים מהקטלוג המשפטי או מההסכמים שלכם. לאשר?'%Z,'why':'קישור שאושר מחייב את הנושא ונותן לטפל בשני הנושאים יחד. קישור שגוי מייצר התראות מיותרות, ולכן כל הצעה מחכה לאישור שלכם פעם אחת.','recommendation':'לעבור על הקישורים בלשונית המדיניות, בכל נושא תחת "סעיפים קשורים", ולאשר או לדחות.','answered':False})
 	return E,Y
 def main(argv=None):
 	sys.stdout.reconfigure(encoding='utf-8');C=argparse.ArgumentParser(description=__doc__.split('\n')[0]);C.add_argument('--model',required=True);C.add_argument('--extract');C.add_argument('--dry-run',action='store_true');A=C.parse_args(argv)

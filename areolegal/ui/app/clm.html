@@ -923,7 +923,7 @@ function requests(){
 function draftsPanel(){
   const L=requests();if(!L.length)return '';
   const busy=L.some(r=>r.status!=='done'&&r.status!=='failed');
-  return '<section class="panel drafts"><div class="phd"><span>בניסוח <span class="tcount">'+L.length+'</span></span><span class="m">'+(busy?'Areo שומרת את הטיוטה בתיקיית העבודה':'טיוטות שהוכנו ונשמרו בתיקיית העבודה')+'</span></div>'+
+  return '<section class="panel drafts"><div class="phd"><span>בניסוח <span class="tcount">'+L.length+'</span></span><span class="m">'+(busy?'Areo שומר את הטיוטה בתיקיית העבודה':'טיוטות שהוכנו ונשמרו בתיקיית העבודה')+'</span></div>'+
    L.slice(0,8).map(r=>{const b=r.base||{},base=b.kind==='template'?'לפי התבנית '+(b.name||''):b.kind==='agreement'?'על בסיס '+(b.name||''):'לפי הפלייבוק בלבד';
      const file=r.result&&r.result.file?String(r.result.file).split(/[\\/]/).pop():'',when=r.created?fmt(String(r.created).slice(0,10)):'';
      const meta=[r.type_name||'',r.side||'',base,r.playbook&&b.kind!=='playbook'?'פלייבוק '+r.playbook:''].filter(Boolean).join(' · ');
@@ -1307,7 +1307,7 @@ function render(){
   try{const nv=$('#nav'),on=nv.querySelector('[aria-pressed=true]');if(on&&nv.scrollWidth>nv.clientWidth){const r=on.getBoundingClientRect(),b=nv.getBoundingClientRect();if(r.left<b.left||r.right>b.right)nv.scrollLeft+=r.left<b.left?r.left-b.left-16:r.right-b.right+16}}catch(e){}
   $('#foot').innerHTML='<span>'+(D.meta.built?'עודכן '+fmt(D.meta.built)+' · ':'')+nn(D.meta.files||0,'קובץ אחד','קבצים')+'</span><span>'+(DB?'נשמר לכל הצוות':'נשמר בדפדפן הזה')+'</span>';
   const V={overview:vOverview,agreements:vAgreements,nego:vNego,cps:vCps,timeline:vTimeline,tasks:vTasks,policy:vPolicy,approve:vApprove}[S.view]||vOverview;
-  $('#view').innerHTML=EMPTY?'<section class="hero" id="empty"><span class="eb">ניהול חוזים</span><h1>עוד אין הסכמים במאגר.</h1><p class="lead">Areo קוראת את ההסכמים החתומים שבתיקייה, ובונה מהם לוח אחד: מועדים, חידושים, אחראים ומשימות.</p><p><button class="btn primary" data-act="clmbuild">לבנות את המאגר</button></p></section>':V();
+  $('#view').innerHTML=EMPTY?'<section class="hero" id="empty"><span class="eb">ניהול חוזים</span><h1>עוד אין הסכמים במאגר.</h1><p class="lead">Areo קורא את ההסכמים החתומים שבתיקייה, ובונה מהם לוח אחד: מועדים, חידושים, אחראים ומשימות.</p><p><button class="btn primary" data-act="clmbuild">לבנות את המאגר</button></p></section>':V();
 }
 document.addEventListener('click',e=>{
   const cpth=e.target.closest('[data-copypath]');if(cpth){const p=cpth.dataset.copypath;try{navigator.clipboard.writeText(p).then(()=>toast('הנתיב הועתק: '+p),()=>toast(p))}catch(x){toast(p)}return}
@@ -1375,7 +1375,7 @@ document.addEventListener('click',e=>{
      '<p class="muted" style="font-size:14px;margin:0">אחר כך לחצו "לעדכן את המאגר". ההסכם ייקרא, יקבל משימות ויושווה לפלייבוק.</p>'+
      '<div style="display:flex;gap:10px"><button class="btn primary" data-act="clmbuild">לעדכן את המאגר</button><button class="btn soft" data-close>סגירה</button></div></div>')}
   else if(act==='clmbuild'){let ok=false;try{ok=!!(window.parent&&window.parent!==window&&window.parent.__areoAsk&&window.parent.__areoAsk({label:'ניהול חוזים: לעדכן את המאגר',kind:'areo_clm_request',action:EMPTY?'build':'update'}))}catch(e){}
-    toast(ok?'Areo מעדכנת את המאגר. הלוח יתעדכן כשהיא תסיים.':'כדי לעדכן את המאגר, כתבו ל-Areo: ניהול חוזים')}
+    toast(ok?'Areo מעדכן את המאגר. הלוח יתעדכן כשהוא יסיים.':'כדי לעדכן את המאגר, כתבו ל-Areo: ניהול חוזים')}
   else if(act==='timeline'){S.view='timeline';persist();closeDrawer();render();scrollTo(0,0)}
   else if(act==='savetask')saveTask();
   else if(act==='ready'){let ok=false;try{ok=!!(window.parent&&window.parent!==window&&window.parent.__areoBuildPlaybook&&window.parent.__areoBuildPlaybook())}catch(e){}if(!ok)toast('לבניית פלייבוק: לשונית מדיניות, "לבנות פלייבוק"')}

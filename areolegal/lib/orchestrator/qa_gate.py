@@ -496,7 +496,7 @@ def check_legal_review(state,decisions,core,mode):
 	B=decisions;F,C=[],[];D=state or{};G=B.get('decisions',[])if isinstance(B,dict)else B or[];A=[]
 	for E in[A.get('clause_id')for A in D.get('clauses')or()if A.get('legal_review_required')]+[A.get('id')for A in G if isinstance(A,dict)and A.get('legal_review_required')]:
 		if E and E not in A:A.append(E)
-	if A:H=D.get('numbering_map')or{};C.append(_f('NO_APPROVED_SOURCE','AREO לא מצאה מקור מורשה לנקודה זו: %s. הצעד הבא: להוסיף לתיקיית ההסכמים של החברה הסכם שמסדיר אותה, או לאשר עמדה בפלייבוק. אינו מעכב את המשלוח'%', '.join(H.get(A)or A for A in A),','.join(A)))
+	if A:H=D.get('numbering_map')or{};C.append(_f('NO_APPROVED_SOURCE','AREO לא מצא מקור מורשה לנקודה זו: %s. הצעד הבא: להוסיף לתיקיית ההסכמים של החברה הסכם שמסדיר אותה, או לאשר עמדה בפלייבוק. אינו מעכב את המשלוח'%', '.join(H.get(A)or A for A in A),','.join(A)))
 	if not D.get('clauses'):(F if mode=='send'else C).append(_f('STATE_NO_CLAUSES','קובץ המצב חסר או בלי סעיפים. השער במצב משלוח צריך את קובץ המצב של הסבב: הריצו קודם negotiation_state.py write עם קובץ ההכרעות, ואחריו את השער עם --deal (או --state)'))
 	return F,C
 def _our_ins_mark(p,author):A=p.find(W+'pPr/'+W+'rPr');B=A.find(W+'ins')if A is not None else None;return B is not None and B.get(W+'author')==author

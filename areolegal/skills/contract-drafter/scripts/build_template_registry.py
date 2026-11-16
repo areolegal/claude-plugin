@@ -279,6 +279,39 @@ def on_company_paper(body,names,regs):
 	D=_norm_name(A)
 	if any(A in D for A in B):return True
 	E=re.sub('\\D','',A);return any(A in E for A in regs)
+VERSION_SIM=.9
+_SIM_WORD=re.compile('[A-Za-z\u0590-\u05ff]+')
+def _sim_words(text,limit=4000):return[A.lower()for A in _SIM_WORD.findall(PLACEHOLDER.sub(' ',text or''))][:limit]
+def similarity(a,b):
+	import difflib as D;B,C=_sim_words(a),_sim_words(b)
+	if not B or not C:return .0
+	A=D.SequenceMatcher(None,B,C,autojunk=False)
+	if A.real_quick_ratio()<VERSION_SIM or A.quick_ratio()<VERSION_SIM:return A.quick_ratio()
+	return A.ratio()
+def version_clusters(idxs,bodies):
+	C=bodies;A=[]
+	for B in idxs:
+		for D in A:
+			if any(similarity(C.get(B,''),C.get(A,''))>=VERSION_SIM for A in D):D.append(B);break
+		else:A.append([B])
+	return A
+def _short_lines(body):
+	B=[]
+	for C in(body or'').splitlines():
+		A=re.sub('\\s+',' ',PLACEHOLDER.sub(' ',C)).strip(' .:;-');A=re.sub('^\\d+(?:\\.\\d+)*\\.?\\s*','',A)
+		if 3<=len(A)<=80 and _SIM_WORD.search(A):B.append(A)
+	return B
+def distinguishing(members,bodies):
+	C=members;B={A:_short_lines(bodies.get(A,''))for A in C};D={}
+	for A in C:E={D.lower()for C in C if C!=A for D in B[C]};F=[A for A in B[A]if A.lower()not in E];D[A]={'title':B[A][0]if B[A]else'','unique_headings':list(dict.fromkeys(F))[:5]}
+	return D
+def template_set_driver(n,members,docs,dist,lang):
+	G=members;D=dist;E,H,F=[],{},[]
+	for(J,A)in enumerate(G,1):
+		B=docs[A];C=D[A]['title']or os.path.splitext(B['file'])[0]
+		if[A for A in E if A['label']==C]:C='%s (%s)'%(C,os.path.splitext(B['file'])[0])
+		I='t%d'%J;E.append({'value':I,'label':C});H[I]={'template':B['file']};F.append({'doc':B['file'],'title':D[A]['title'],'unique_headings':D[A]['unique_headings']})
+	K=all(A['unique_headings']for A in F);return{'id':'TS%d'%n,'question':'Which of these templates fits this deal?'if lang=='en'else'איזו מהתבניות מתאימה לעסקה הזו?','kind':'choice','options':E,'threshold':None,'source':'template','evidence':F,'effects':H,'follow_ups':[],'priority':{'clauses':len(G),'exposure':'high'},'derivable_from':None,'distinguishing_clear':K}
 def classify(text,tracked,comments,name):
 	A=text;C=[];E=[A.strip()[:200]for A in A.splitlines()if A.strip()][:3]
 	if AMEND.search(os.path.splitext(name)[0])or any(AMEND.search(A)for A in E):return'amendment',['הכותרת או שם הקובץ מזהים תיקון להסכם']
@@ -290,61 +323,78 @@ def classify(text,tracked,comments,name):
 	if D:return'signed',['אותר תאריך חתימה']
 	C.append('לא אותרו שדות למילוי ולא אותר תאריך חתימה');return'unclassified',C
 def main():
-	G=argparse.ArgumentParser();G.add_argument('--folders',nargs='+',required=True);G.add_argument('--out',required=True);G.add_argument('--playbook',help='playbook-model.json: company_role_code של המשפחה שלו קובע את התפקיד');G.add_argument('--role',nargs='+',help='הצד שבו עומדת החברה, כפי שמסר המשתמש: קוד (customer, receiving, processor ...) או תווית (לקוח, מקבל, מעבד ...), לכל המסמכים, או משפחה=תפקיד למשפחה אחת. גובר על הפלייבוק ועל ספירת מילים');G.add_argument('--profile',help='פרופיל-לקוח.json: שם החברה ומספר הרישום, לבדיקה שהמסמך על נייר החברה');G.add_argument('--company',nargs='+',help='שמות נוספים של החברה (שם באנגלית, שם קודם)');G.add_argument('--approved',nargs='+',help='שמות קבצים שהמשתמש אישר כתבנית, גם כשאינם על נייר החברה');C=G.parse_args();guard_out(C.out,[C.playbook,C.profile]);W,X=company_markers(C.profile,C.company);q={os.path.basename(A)for A in C.approved or[]};r=parse_roles(C.role);s=playbook_roles(C.playbook)if C.playbook and os.path.exists(C.playbook)else[];A,F,Y=[],[],{}
-	for t in C.folders:
-		for(D,Q,J,h)in scan_items(t,F):
+	H=argparse.ArgumentParser();H.add_argument('--folders',nargs='+',required=True);H.add_argument('--out',required=True);H.add_argument('--playbook',help='playbook-model.json: company_role_code של המשפחה שלו קובע את התפקיד');H.add_argument('--role',nargs='+',help='הצד שבו עומדת החברה, כפי שמסר המשתמש: קוד (customer, receiving, processor ...) או תווית (לקוח, מקבל, מעבד ...), לכל המסמכים, או משפחה=תפקיד למשפחה אחת. גובר על הפלייבוק ועל ספירת מילים');H.add_argument('--profile',help='פרופיל-לקוח.json: שם החברה ומספר הרישום, לבדיקה שהמסמך על נייר החברה');H.add_argument('--company',nargs='+',help='שמות נוספים של החברה (שם באנגלית, שם קודם)');H.add_argument('--approved',nargs='+',help='שמות קבצים שהמשתמש אישר כתבנית, גם כשאינם על נייר החברה');H.add_argument('--chosen',nargs='+',help='נתיב התאמת התבנית (פרק 7, כלל 0): התבניות שהלקוח בחר או צירף. נחשבות מאושרות על ידו גם כשאינן על נייר החברה, ויחד הן ערכת התבניות של המשפחה והצד (גרסאות כמעט זהות: נשמרת המאוחרת)');C=H.parse_args();guard_out(C.out,[C.playbook,C.profile]);b,c=company_markers(C.profile,C.company);n={os.path.basename(A)for A in C.chosen or[]};A1={os.path.basename(A)for A in C.approved or[]}|n;A2=parse_roles(C.role);A3=playbook_roles(C.playbook)if C.playbook and os.path.exists(C.playbook)else[];A,I,d,e=[],[],{},{}
+	for A4 in C.folders:
+		for(D,T,L,o)in scan_items(A4,I):
 			if True:
-				try:u=os.path.getsize(J)
+				try:A5=os.path.getsize(L)
 				except OSError:continue
-				R=D.lower().endswith('.pdf')
-				if R:(E,i),Z,j=pdf_text(J),False,False
-				else:(E,Z,j),i=read_text(J),''
-				if not E.strip():F.append({'file':D,'folder':Q,'why':i or('PDF סרוק, בלי שכבת טקסט'if R else'לא ניתן היה לקרוא טקסט מהמסמך')});continue
-				a=hashlib.sha256(E[:20000].encode('utf-8','ignore')).hexdigest()[:16]
-				if a in Y:A[Y[a]].setdefault('duplicates',[]).append(D);continue
-				v,w=is_contract(E,D,os.path.splitext(D)[1].lower())
-				if not v:F.append({'file':D,'folder':Q,'why':w,'excluded':True});continue
-				L=E
-				if J.lower().endswith('.docx'):L='\n'.join(docx_paragraphs(J))or E
-				b,k=classify(L,Z,j,D);O,x,S=pick_family(D,E[:800],E[:20000]);T,l,y=resolve_role(O,E[:20000],r,s);H={'file':D,'folder':Q,'bytes':u,'doc_class':b,'class_reason':k,'family':O,'family_candidates':x,'family_basis':S,'company_role_candidates':y,'company_role':T,'company_role_basis':l,'mutuality':mutuality(D,'\n'.join(L.splitlines()[:3])),'language':language(E),'doc_date':datetime.fromtimestamp(os.path.getmtime(J)).strftime('%Y-%m-%d'),'approved_current':False,'format':'pdf'if R else os.path.splitext(D)[1].lower().lstrip('.'),'company_paper':on_company_paper(L,W,X)and h.get('paper')!='counterparty','user_approved':D in q};H.update(h)
-				if b=='template':
-					c=blank_parties(L)
-					if c:H['blank_parties']=c
-					m,z=paper_owner(D,L,c,T,l)
-					if m:H['paper_owner'],H['paper_owner_basis']=m,z
-				if R:H['selectable_as_template']=False;H['format_note']='PDF: נקרא לסיווג ולמבנה, ואינו נבחר כתבנית. לתבנית יש לשמור אותו כ-docx'
-				if Z:P=docx_revisions(J);H['revisions']={'authors':sorted(set(list(P['authors_ins'])+list(P['authors_del']))),'insertions':P['n_ins'],'deletions':P['n_del'],'base_text_chars':len(P['base_text']),'markup_side':'לא ידוע, טעון שאלה למשתמש','note':'מי שסימן את השינויים הוא מי שמנסח את עמדתו. אם המחברים הם אנשי החברה, המרקאפ הוא העמדה שלנו והנוסח שאחרי קבלת השינויים הוא לשון הבית; טקסט הבסיס הוא אז הנייר של הצד שכנגד ואינו התבנית שלנו. אם המחברים הם הצד שכנגד, ההפך. אין להסיק מהשמות: יש לשאול את המשתמש.','house_text_is':'לא ידוע עד שתיקבע זהות המחברים'}
-				if b=='unclassified'or not O or S.endswith('טעון אישור'):F.append({'file':D,'folder':Q,'why':'; '.join(k+([]if O else['לא זוהתה משפחת הסכם'])+([S]if O and S.endswith('טעון אישור')else[]))})
-				Y[a]=len(A);A.append(H)
-	n={}
-	for(U,B)in enumerate(A):
+				U=D.lower().endswith('.pdf')
+				if U:(G,p),f,q=pdf_text(L),False,False
+				else:(G,f,q),p=read_text(L),''
+				if not G.strip():I.append({'file':D,'folder':T,'why':p or('PDF סרוק, בלי שכבת טקסט'if U else'לא ניתן היה לקרוא טקסט מהמסמך')});continue
+				g=hashlib.sha256(G[:20000].encode('utf-8','ignore')).hexdigest()[:16]
+				if g in d:A[d[g]].setdefault('duplicates',[]).append(D);continue
+				A6,A7=is_contract(G,D,os.path.splitext(D)[1].lower())
+				if not A6:I.append({'file':D,'folder':T,'why':A7,'excluded':True});continue
+				M=G
+				if L.lower().endswith('.docx'):M='\n'.join(docx_paragraphs(L))or G
+				h,r=classify(M,f,q,D);Q,A8,V=pick_family(D,G[:800],G[:20000]);W,s,A9=resolve_role(Q,G[:20000],A2,A3);J={'file':D,'folder':T,'bytes':A5,'doc_class':h,'class_reason':r,'family':Q,'family_candidates':A8,'family_basis':V,'company_role_candidates':A9,'company_role':W,'company_role_basis':s,'mutuality':mutuality(D,'\n'.join(M.splitlines()[:3])),'language':language(G),'doc_date':datetime.fromtimestamp(os.path.getmtime(L)).strftime('%Y-%m-%d'),'approved_current':False,'format':'pdf'if U else os.path.splitext(D)[1].lower().lstrip('.'),'company_paper':on_company_paper(M,b,c)and o.get('paper')!='counterparty','user_approved':D in A1}
+				if D in n:J['client_chosen']=True
+				J.update(o)
+				if h=='template':
+					i=blank_parties(M)
+					if i:J['blank_parties']=i
+					t,AA=paper_owner(D,M,i,W,s)
+					if t:J['paper_owner'],J['paper_owner_basis']=t,AA
+				if U:J['selectable_as_template']=False;J['format_note']='PDF: נקרא לסיווג ולמבנה, ואינו נבחר כתבנית. לתבנית יש לשמור אותו כ-docx'
+				if f:R=docx_revisions(L);J['revisions']={'authors':sorted(set(list(R['authors_ins'])+list(R['authors_del']))),'insertions':R['n_ins'],'deletions':R['n_del'],'base_text_chars':len(R['base_text']),'markup_side':'לא ידוע, טעון שאלה למשתמש','note':'מי שסימן את השינויים הוא מי שמנסח את עמדתו. אם המחברים הם אנשי החברה, המרקאפ הוא העמדה שלנו והנוסח שאחרי קבלת השינויים הוא לשון הבית; טקסט הבסיס הוא אז הנייר של הצד שכנגד ואינו התבנית שלנו. אם המחברים הם הצד שכנגד, ההפך. אין להסיק מהשמות: יש לשאול את המשתמש.','house_text_is':'לא ידוע עד שתיקבע זהות המחברים'}
+				if h=='unclassified'or not Q or V.endswith('טעון אישור'):I.append({'file':D,'folder':T,'why':'; '.join(r+([]if Q else['לא זוהתה משפחת הסכם'])+([V]if Q and V.endswith('טעון אישור')else[]))})
+				d[g]=len(A);e[len(A)]=M;A.append(J)
+	u={}
+	for(E,B)in enumerate(A):
 		if not B['family']:continue
-		T=(B['company_role_candidates']or['לא צוין'])[0];M=B['family'],T,B['language'],B.get('mutuality');n.setdefault(M,[]).append(U)
-	def d(i):B=A[i];return B['format']!='pdf'and(B['user_approved']or B['company_paper']is True and B.get('paper_owner')!='counterparty')
-	V=[]
-	for(M,I)in n.items():
-		for U in I:
-			B=A[U]
-			if B['doc_class']in('template','signed')and not d(U):
+		W=(B['company_role_candidates']or['לא צוין'])[0];F=B['family'],W,B['language'],B.get('mutuality');u.setdefault(F,[]).append(E)
+	def j(i):B=A[i];return B['format']!='pdf'and(B['user_approved']or B['company_paper']is True and B.get('paper_owner')!='counterparty')
+	X,Y=[],[]
+	for(F,K)in u.items():
+		for E in K:
+			B=A[E]
+			if B['doc_class']in('template','signed')and not j(E):
 				B['not_approved_reason']='PDF'if B['format']=='pdf'else'טופס של הצד שכנגד: '+B['paper_owner_basis']if B.get('paper_owner')=='counterparty'else'לא נמסר שם החברה (--profile), ולכן לא נבדק שהמסמך על נייר החברה'if B['company_paper']is None else'שם החברה אינו בבלוק הצדדים: נייר של צד שלישי'
 				if B.get('paper_owner')=='company':B['not_approved_reason']+='; הצד שפרטיו ריקים בפתיח הוא הצד שכנגד, ולכן ייתכן שזו תבנית של החברה'
-				if B['doc_class']=='template'and B['format']!='pdf':F.append({'file':B['file'],'folder':B['folder'],'why':'טופס עם שדות למילוי שלא נבחר כתבנית מאושרת: '+B['not_approved_reason']+'. אם המשתמש מאשר אותו כתבנית, הרץ שוב עם --approved'})
-		if not any(d(A)for A in I):V.append({'family':M[0],'role':M[1],'language':M[2],'mutuality':M[3],'documents':[A[B]['file']for B in I]})
-		I=[A for A in I if d(A)];e=[B for B in I if A[B]['doc_class']=='template'];N=e or[B for B in I if A[B]['doc_class']=='signed'];f='template'if e else'signed'if N else None
-		if not N:N=[B for B in I if A[B].get('revisions')];f='redline_base'if N else None
-		if not N:continue
-		K=max(N,key=lambda i:A[i]['doc_date']);A[K]['approved_current_basis']=f;A[K]['approved_by']='company_paper'if A[K]['company_paper']else'user'
-		if f=='redline_base':A[K]['approved_current_note']='אין בתיקייה תבנית נקייה ואין הסכם חתום, והבסיס נגזר ממסמך redline. **אין להשתמש בו כלשון בית לפני שנקבע מי סימן את השינויים.** אם אנשי החברה סימנו, לשון הבית היא הנוסח שאחרי קבלת השינויים, וטקסט הבסיס הוא נייר הצד שכנגד. אם הצד שכנגד סימן, ההפך. שאל את המשתמש שאלה אחת: מי הם מחברי השינויים שבמסמך, אנשי החברה או הצד שכנגד.';A[K]['requires_user_answer']='מי סימן את השינויים במסמך'
-		A[K]['approved_current']=True
-		if not e:A[K]['derived_from_signed']=True
-	A0={'meta':{'generated_at':datetime.now().strftime('%Y-%m-%d'),'last_updated':datetime.now().strftime('%Y-%m-%d'),'folders':list(C.folders),'playbook_used':bool(C.playbook and os.path.exists(C.playbook)),'company_paper_checked':bool(W or X),'third_party_paper_only':V,'note':'מרשם נגזר. הרכיב מציג אותו למשתמש ומבקש אישור לפני הסתמכות.'},'documents':A,'review_queue':F};os.makedirs(os.path.dirname(os.path.abspath(C.out)),exist_ok=True);io.open(C.out,'w',encoding='utf-8').write(json.dumps(A0,ensure_ascii=False,indent=1));g={}
-	for B in A:g[B['doc_class']]=g.get(B['doc_class'],0)+1
+				if B['doc_class']=='template'and B['format']!='pdf':I.append({'file':B['file'],'folder':B['folder'],'why':'טופס עם שדות למילוי שלא נבחר כתבנית מאושרת: '+B['not_approved_reason']+'. אם המשתמש מאשר אותו כתבנית, הרץ שוב עם --approved'})
+		if not any(j(A)for A in K):X.append({'family':F[0],'role':F[1],'language':F[2],'mutuality':F[3],'documents':[A[B]['file']for B in K]})
+		K=[A for A in K if j(A)];v=[B for B in K if A[B].get('client_chosen')];S=v or[B for B in K if A[B]['doc_class']=='template'];P=S or[B for B in K if A[B]['doc_class']=='signed'];Z=('client_chosen'if v else'template')if S else'signed'if P else None
+		if S:
+			AB=version_clusters(S,e);N=[]
+			for a in AB:
+				a=sorted(a,key=lambda i:(A[i]['doc_date'],A[i]['file']),reverse=True);w=a[0]
+				for x in a[1:]:A[x]['superseded_by']=A[w]['file'];A[x]['superseded_reason']='גרסה כמעט זהה של תבנית מאוחרת יותר'
+				N.append(w)
+			for E in N:A[E]['approved_current']=True;A[E]['approved_current_basis']=Z;A[E]['approved_by']='client_chosen'if A[E].get('client_chosen')else'company_paper'if A[E]['company_paper']else'user'
+			if len(N)>1:
+				AC=distinguishing(N,e);k=len(Y)+1
+				for E in N:A[E]['template_set']='TS%d'%k
+				Y.append({'id':'TS%d'%k,'family':F[0],'role':F[1],'language':F[2],'mutuality':F[3],'templates':[A[B]['file']for B in N],'driver':template_set_driver(k,N,A,AC,F[2])})
+			continue
+		if not P:P=[B for B in K if A[B].get('revisions')];Z='redline_base'if P else None
+		if not P:continue
+		O=max(P,key=lambda i:A[i]['doc_date']);A[O]['approved_current_basis']=Z;A[O]['approved_by']='company_paper'if A[O]['company_paper']else'user'
+		if Z=='redline_base':A[O]['approved_current_note']='אין בתיקייה תבנית נקייה ואין הסכם חתום, והבסיס נגזר ממסמך redline. **אין להשתמש בו כלשון בית לפני שנקבע מי סימן את השינויים.** אם אנשי החברה סימנו, לשון הבית היא הנוסח שאחרי קבלת השינויים, וטקסט הבסיס הוא נייר הצד שכנגד. אם הצד שכנגד סימן, ההפך. שאל את המשתמש שאלה אחת: מי הם מחברי השינויים שבמסמך, אנשי החברה או הצד שכנגד.';A[O]['requires_user_answer']='מי סימן את השינויים במסמך'
+		A[O]['approved_current']=True
+		if not S:A[O]['derived_from_signed']=True
+	AD={'meta':{'generated_at':datetime.now().strftime('%Y-%m-%d'),'last_updated':datetime.now().strftime('%Y-%m-%d'),'folders':list(C.folders),'playbook_used':bool(C.playbook and os.path.exists(C.playbook)),'company_paper_checked':bool(b or c),'third_party_paper_only':X,'note':'מרשם נגזר. הרכיב מציג אותו למשתמש ומבקש אישור לפני הסתמכות.'},'documents':A,'template_sets':Y,'review_queue':I};os.makedirs(os.path.dirname(os.path.abspath(C.out)),exist_ok=True);io.open(C.out,'w',encoding='utf-8').write(json.dumps(AD,ensure_ascii=False,indent=1));l={}
+	for B in A:l[B['doc_class']]=l.get(B['doc_class'],0)+1
 	print('נסרקו %d מסמכים ייחודיים'%len(A))
-	for(A1,A2)in sorted(g.items(),key=lambda x:-x[1]):print('  %-20s %d'%(A1,A2))
-	print('תבניות מאושרות שנקבעו: %d'%sum(1 for A in A if A['approved_current']));o=sum(1 for A in A if A['format']=='pdf')
-	if o:print('PDF שנקראו ונרשמו: %d (אינם נבחרים כתבנית)'%o)
-	if not(W or X):print('שים לב: לא נמסר שם החברה (--profile), ולכן אף מסמך לא נבחר כתבנית מאושרת')
-	elif V:print('צירופים בלי אף מסמך על נייר החברה: %d'%len(V))
-	A3=sum(1 for A in F if A.get('excluded'));print('בתור בדיקה: %d, מתוכם %d הוצאו (לא חוזי, תוצר של Areo או תיקיית הנתונים)'%(len(F),A3));A4=[A for A in F if not A.get('excluded')]
-	for p in A4[:20]:print('  לא נקרא: %s (%s)'%(p['file'],p['why']))
+	for(AE,AF)in sorted(l.items(),key=lambda x:-x[1]):print('  %-20s %d'%(AE,AF))
+	print('תבניות מאושרות שנקבעו: %d'%sum(1 for A in A if A['approved_current']));y=[A for A in A if A.get('superseded_by')]
+	if y:print('גרסאות קודמות שהוחלפו בגרסה מאוחרת: %d'%len(y))
+	for m in Y:print('ערכת תבניות (%s, %s): %s'%(m['family'],m['role'],', '.join(m['templates'])))
+	z=sum(1 for A in A if A['format']=='pdf')
+	if z:print('PDF שנקראו ונרשמו: %d (אינם נבחרים כתבנית)'%z)
+	if not(b or c):print('שים לב: לא נמסר שם החברה (--profile), ולכן אף מסמך לא נבחר כתבנית מאושרת')
+	elif X:print('צירופים בלי אף מסמך על נייר החברה: %d'%len(X))
+	AG=sum(1 for A in I if A.get('excluded'));print('בתור בדיקה: %d, מתוכם %d הוצאו (לא חוזי, תוצר של Areo או תיקיית הנתונים)'%(len(I),AG));AH=[A for A in I if not A.get('excluded')]
+	for A0 in AH[:20]:print('  לא נקרא: %s (%s)'%(A0['file'],A0['why']))
 if __name__=='__main__':main()

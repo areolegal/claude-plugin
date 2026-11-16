@@ -25,6 +25,9 @@ AGREEMENT_SOURCE_ORDER='רגולטור','גוף ציבורי','הליך תחרו
 FORBIDDEN_AGREEMENT_SOURCES='משרד עורכי דין','אתר משפטי','מאגר מסחרי'
 COMMERCIAL_REPOSITORY_HOSTS='lawinsider.com','lawdepot.com','rocketlawyer.com','legalzoom.com','docracy.com','legaltemplates.net','contractstandards.com','onecle.com'
 VERBATIM_OK='רגולטור','גוף ציבורי'
+AGREEMENT_LAYERS=tuple(A for A in AGREEMENT_SOURCE_ORDER if A!='אחר')
+MIN_MARKET=3
+FEW_AGREEMENTS={'he':{'line':'נמצאו %d הסכמים שפורסמו, פחות משלושה. אפשר לנסח לפי מה שנמצא (סעיפי החובה, והנושאים המסחריים נשארים פתוחים), או להעלות הסכמים. הטיוטה לא תוצג כמבוססת על מה שמקובל בשוק.','options':['לנסח לפי מה שנמצא','אעלה הסכמים']},'en':{'line':'We found %d published agreements, fewer than three. We can draft from what we found (the mandatory clauses, with the commercial points left open), or you can upload agreements. The draft will not be presented as based on market practice.','options':['Draft from what we found','I will upload agreements']}}
 ORIENTATIONS='לטובת הפוזיציה','מאוזן','נגד הפוזיציה'
 NOT_FOUND='[לא אותר]'
 def _parts(url):
@@ -136,68 +139,105 @@ def normalise(research):
 	if D and not A.get('scope'):B,C=bool(A.get('agreements')),bool(A.get('law'));A['scope']='both'if B and C else'agreements'if B else'research'if C else''
 	A.setdefault('approvals',{});return A
 def scope_has(research,part):A=research.get('scope');return A=='both'or A==part
-def check(research,stage='brief',approved_sources=None,inc_country=None):
-	R=approved_sources;import governing_law as S;C=normalise(research);B,G=[],[];J={'law':[],'agreements':[],'mandatory':[]}
-	if C.get('scope')not in SCOPES:B.append('לא נבחר היקף העבודה (scope): agreements, research או both.')
-	if not C.get('consent_at'):B.append('אין תיעוד לבקשה המפורשת של הלקוח לנסח מבחוץ (consent_at). ניסוח מבחוץ רק כשאין ללקוח פלייבוק ואין הסכמי טיוטה, והוא ביקש זאת במפורש.')
-	if not(C.get('company_role')or'').strip():B.append('הפוזיציה של המשתמש (company_role) חסרה. היא נשאלת, ולעולם אינה מוסקת.')
-	H=C.get('law')or[]
-	if scope_has(C,'research'):
+def applies_when_problems(src,client_names=()):
+	B=src.get('applies_when')
+	if B in(None,[],''):return[]
+	F=[B]if isinstance(B,(dict,str))else B
+	if not isinstance(F,list):return['applies_when אינו רשימת תנאים']
+	C=[]
+	for A in F:
+		A={'fact':A}if isinstance(A,str)else A
+		if not isinstance(A,dict)or not str(A.get('fact')or'').strip():C.append('תנאי בלי fact (התנאי העובדתי, בשפה כללית)');continue
+		E=str(A.get('derivable_from')or'')
+		if E and not re.match('^(?:profile|request)\\.[\\w.]+$',E):C.append('derivable_from אינו profile.<שדה> או request.<שדה>: %s'%E)
+		G=' '.join(str(A.get(B)or'')for B in('fact','question'))
+		for D in client_names or():
+			if D and len(str(D))>2 and str(D)in G:C.append('התנאי מזכיר את הלקוח (%s): applies_when נכתב בשפה כללית, בלי עובדות הלקוח'%D)
+	return C
+def conditional_mandatory(research):
+	B=normalise(research);F={A.get('row',B+1):A for(B,A)in enumerate(B.get('law')or[])};C={}
+	for D in B.get('mandatory_clauses')or[]:
+		A=(F.get(D.get('source_row'))or{}).get('applies_when')or[];A=[A]if isinstance(A,(dict,str))else A;E=[str(A.get('fact')if isinstance(A,dict)else A).strip()for A in A if A]
+		if E:C[D.get('clause_id')]=E
+	return C
+def market_accepted(n_agreements):return int(n_agreements or 0)>=MIN_MARKET
+def market_status(research,lang='he'):A=len(approved_agreements(research));C=FEW_AGREEMENTS['en'if str(lang or'he')[:2]=='en'else'he'];B=A<MIN_MARKET;return{'approved_agreements':A,'market_based':not B,'line':C['line']%A if B else None,'options':list(C['options'])if B else[]}
+def check(research,stage='brief',approved_sources=None,inc_country=None,client_names=()):
+	T=approved_sources;import governing_law as U;A=normalise(research);B,F=[],[];J={'law':[],'agreements':[],'mandatory':[]}
+	if A.get('scope')not in SCOPES:B.append('לא נבחר היקף העבודה (scope): agreements, research או both.')
+	if not A.get('consent_at'):B.append('אין תיעוד לכך שהלקוח אישר יציאה לרשת (consent_at). ניסוח מבחוץ רק כשאין ללקוח פלייבוק ואין הסכמים מהסוג, אחרי שתבנית שנמצאה בתיקייה הוצעה קודם, וכשהלקוח אישר בסבב השאלות הראשון יציאה לרשת. מחקר עומק לנושאים שחסרים בפלייבוק אינו דורש את האישור הזה.')
+	if not(A.get('company_role')or'').strip():B.append('הפוזיציה של המשתמש (company_role) חסרה. היא נשאלת, ולעולם אינה מוסקת.')
+	H=A.get('law')or[]
+	if scope_has(A,'research'):
 		if not H:B.append('נבחר מחקר רגולטורי, ואין אף מקור דין.')
-		require_approved_sources(R)
-		if not C.get('jurisdiction'):B.append('הדין החל (jurisdiction) לא נקבע. הוא נקבע לפני המחקר: מהמשתמש, מנייר הבית, או בשאלה אחת עם המלצה לפי מדינת ההתאגדות שבפרופיל, והמחקר נערך בתוכו.')
-		T=S.code(C.get('jurisdiction'))or S.code(inc_country);K=0
-		for(E,A)in enumerate(H):
-			D=[];U=A.get('instrument')or'שורה %d'%(E+1);V=law_source_problem(A.get('url'),A.get('jurisdiction'),R)
-			if V:B.append('מקור דין %d (%s): %s'%(E+1,U,V));D.append('מקור אסור')
-			L=A.get('rank')
-			if L not in NORM_RANKS:B.append('מקור דין %d (%s): חסר דרג במדרג הנורמטיבי (1 עד 6).'%(E+1,U))
+		require_approved_sources(T)
+		if not A.get('jurisdiction'):B.append('הדין החל (jurisdiction) לא נקבע. הוא נקבע לפני המחקר: מהמשתמש, מנייר הבית, או בשאלה אחת עם המלצה לפי מדינת ההתאגדות שבפרופיל, והמחקר נערך בתוכו.')
+		V=U.code(A.get('jurisdiction'))or U.code(inc_country);K=0
+		for(E,C)in enumerate(H):
+			D=[];P=C.get('instrument')or'שורה %d'%(E+1);W=law_source_problem(C.get('url'),C.get('jurisdiction'),T)
+			if W:B.append('מקור דין %d (%s): %s'%(E+1,P,W));D.append('מקור אסור')
+			L=C.get('rank')
+			if L not in NORM_RANKS:B.append('מקור דין %d (%s): חסר דרג במדרג הנורמטיבי (1 עד 6).'%(E+1,P))
 			else:
 				if L<K:B.append('השורות אינן ממוינות לפי המדרג: מקור %d בדרג %d אחרי דרג %d.'%(E+1,L,K))
 				K=max(K,L)
-			if not A.get('verified'):D.append('טעון אימות')
-			if not(A.get('jurisdiction')or'').strip():D.append('תחום שיפוט לא צוין')
-			elif T and not applies_within(A.get('jurisdiction'),T):D.append('דין זר')
-			for Z in('published_original','published_last'):
-				if A.get(Z)in(None,'',NOT_FOUND):D.append('תאריך לא אותר');break
+			if not C.get('verified'):D.append('טעון אימות')
+			if not(C.get('jurisdiction')or'').strip():D.append('תחום שיפוט לא צוין')
+			elif V and not applies_within(C.get('jurisdiction'),V):D.append('דין זר')
+			for d in('published_original','published_last'):
+				if C.get(d)in(None,'',NOT_FOUND):D.append('תאריך לא אותר');break
+			for e in applies_when_problems(C,client_names):B.append('מקור דין %d (%s): %s'%(E+1,P,e))
+			if C.get('applies_when'):D.append('חל רק בתנאים')
 			J['law'].append(D)
-		a={A.get('row',B+1):A for(B,A)in enumerate(H)}
-		for M in C.get('mandatory_clauses')or[]:
-			D=[];A=a.get(M.get('source_row'));O=M.get('clause_id')or'?'
-			if A is None:B.append('סעיף חובה %s: אין שורת מקור %s במחקר.'%(O,M.get('source_row')))
+		f={A.get('row',B+1):A for(B,A)in enumerate(H)}
+		for M in A.get('mandatory_clauses')or[]:
+			D=[];C=f.get(M.get('source_row'));Q=M.get('clause_id')or'?'
+			if C is None:B.append('סעיף חובה %s: אין שורת מקור %s במחקר.'%(Q,M.get('source_row')))
 			else:
-				if not A.get('verified'):B.append('סעיף חובה %s נשען על מקור שלא אומת (שורה %s).'%(O,M.get('source_row')))
-				if A.get('rank')not in MANDATORY_ALLOWED_RANKS:B.append('סעיף חובה %s נשען על מקור בדרג %s. סעיף חובה רק מדרגים 1 עד 3; מדרגים 4 ו-5 נגזר סעיף מומלץ.'%(O,A.get('rank')))
+				if not C.get('verified'):B.append('סעיף חובה %s נשען על מקור שלא אומת (שורה %s).'%(Q,M.get('source_row')))
+				if C.get('rank')not in MANDATORY_ALLOWED_RANKS:B.append('סעיף חובה %s נשען על מקור בדרג %s. סעיף חובה רק מדרגים 1 עד 3; מדרגים 4 ו-5 נגזר סעיף מומלץ.'%(Q,C.get('rank')))
 			J['mandatory'].append(D)
-		b={A.get('source_row')for A in C.get('mandatory_clauses')or[]}
-		for(E,A)in enumerate(H):
-			c=A.get('row',E+1)
-			if A.get('mandatory')and A.get('verified')and A.get('rank')in MANDATORY_ALLOWED_RANKS and c not in b:B.append('מקור %d (%s) סומן כמחייב סעיף חובה, ולא נגזר ממנו סעיף חובה.'%(E+1,A.get('instrument')or''))
-		if C.get('layers_checked'):G.append('שכבות שנבדקו: '+', '.join(C['layers_checked']))
-		G.append('המחקר מוגבל למאגר המקורות המאושרים. נקודה שאין לה מקור מורשה מסומנת: AREO לא מצאה מקור מורשה לנקודה זו.')
-	elif H:G.append('נבחר איסוף הסכמים בלבד, ולכן מקורות הדין שבקובץ אינם חלק מהתוצר.')
-	I=C.get('agreements')or[]
-	if scope_has(C,'agreements'):
+		g={A.get('source_row')for A in A.get('mandatory_clauses')or[]}
+		for(E,C)in enumerate(H):
+			h=C.get('row',E+1)
+			if C.get('mandatory')and C.get('verified')and C.get('rank')in MANDATORY_ALLOWED_RANKS and h not in g:B.append('מקור %d (%s) סומן כמחייב סעיף חובה, ולא נגזר ממנו סעיף חובה.'%(E+1,C.get('instrument')or''))
+		if A.get('layers_checked'):F.append('שכבות שנבדקו: '+', '.join(A['layers_checked']))
+		N=A.get('research_plan')
+		if isinstance(N,dict)and N.get('layers'):
+			X=[str((A or{}).get('layer')if isinstance(A,dict)else A).strip()for A in N['layers']]
+			if any(not A or A=='None'for A in X):B.append('מפת המחקר (research_plan): שכבה בלי שם.')
+			Y=[B for B in X if B and B not in(A.get('layers_checked')or[])]
+			if Y:F.append('שכבות במפת המחקר שלא נבדקו: '+', '.join(Y))
+		elif N is not None:B.append('מפת המחקר (research_plan) בלי שכבות.')
+		else:F.append('אין מפת מחקר (research_plan): הרוויה לא נמדדה מול מפת שכבות.')
+		F.append('המחקר מוגבל למאגר המקורות המאושרים. נקודה שאין לה מקור מורשה מסומנת: AREO לא מצא מקור מורשה לנקודה זו.')
+	elif H:F.append('נבחר איסוף הסכמים בלבד, ולכן מקורות הדין שבקובץ אינם חלק מהתוצר.')
+	I=A.get('agreements')or[]
+	if scope_has(A,'agreements'):
+		i=len(approved_agreements(A))
+		if i<MIN_MARKET:
+			F.append(market_status(A)['line']);Z=set((A.get('agreements_search')or{}).get('layers_attempted')or[])
+			if A.get('research_plan')is not None and not set(AGREEMENT_LAYERS)<=Z:B.append('נמצאו פחות משלושה הסכמים, ולא תועד ניסיון בכל שכבות החיפוש המותרות (agreements_search.layers_attempted): '+', '.join(A for A in AGREEMENT_LAYERS if A not in Z))
 		if len(I)>MAX_AGREEMENTS:B.append('%d הסכמים. התקרה היא %d.'%(len(I),MAX_AGREEMENTS))
-		elif len(I)<MIN_AGREEMENTS:G.append('נמצאו %d הסכמים רלוונטיים, פחות מ-%d.%s'%(len(I),MIN_AGREEMENTS,' הסיבה: '+C['agreements_shortfall_reason']if C.get('agreements_shortfall_reason')else''))
-		e=C.get('company_role')or'';W={A.get('clause_id')for A in C.get('mandatory_clauses')or[]}
-		for(E,F)in enumerate(I):
-			D=[];N=F.get('title')or'הסכם %d'%(E+1);d,f=_parts(F.get('url'))
-			if not d:B.append('הסכם %d (%s) בלי קישור.'%(E+1,N))
-			P=F.get('orientation')
-			if P not in ORIENTATIONS:B.append('הסכם %d (%s): חסר כיוון ביחס לפוזיציה.'%(E+1,N))
-			elif P=='נגד הפוזיציה':B.append('הסכם %d (%s) מסווג "נגד הפוזיציה" ואינו נכלל.'%(E+1,N))
-			if P in ORIENTATIONS and not(F.get('orientation_reason')or'').strip():D.append('חסר נימוק לכיוון')
-			X=agreement_source_problem(F)
-			if X:B.append('הסכם %d (%s): %s.'%(E+1,N,X))
-			Q=F.get('source_type')or'אחר'
-			if Q=='אחר':D.append('מקור לא מסווג: ודאו שאינו אתר משרד עורכי דין או מאגר מסחרי')
-			D.append('מותר כלשונו, בציון המקור'if Q in VERBATIM_OK else'מבנה, נושאים ועמדות בלבד')
-			if Q=='הליך תחרותי ציבורי':D.append('נכתב לטובת הגוף הציבורי המזמין');D.append('לעיון בלבד, אלא אם החברה היא הגוף המזמין')
-			Y=[A for A in F.get('missing_mandatory')or[]if W and A not in W]
-			if Y:D.append('סעיפי חובה לא מוכרים: '+', '.join(Y))
+		elif len(I)<MIN_AGREEMENTS:F.append('נמצאו %d הסכמים רלוונטיים, פחות מ-%d.%s'%(len(I),MIN_AGREEMENTS,' הסיבה: '+A['agreements_shortfall_reason']if A.get('agreements_shortfall_reason')else''))
+		k=A.get('company_role')or'';a={A.get('clause_id')for A in A.get('mandatory_clauses')or[]}
+		for(E,G)in enumerate(I):
+			D=[];O=G.get('title')or'הסכם %d'%(E+1);j,l=_parts(G.get('url'))
+			if not j:B.append('הסכם %d (%s) בלי קישור.'%(E+1,O))
+			R=G.get('orientation')
+			if R not in ORIENTATIONS:B.append('הסכם %d (%s): חסר כיוון ביחס לפוזיציה.'%(E+1,O))
+			elif R=='נגד הפוזיציה':B.append('הסכם %d (%s) מסווג "נגד הפוזיציה" ואינו נכלל.'%(E+1,O))
+			if R in ORIENTATIONS and not(G.get('orientation_reason')or'').strip():D.append('חסר נימוק לכיוון')
+			b=agreement_source_problem(G)
+			if b:B.append('הסכם %d (%s): %s.'%(E+1,O,b))
+			S=G.get('source_type')or'אחר'
+			if S=='אחר':D.append('מקור לא מסווג: ודאו שאינו אתר משרד עורכי דין או מאגר מסחרי')
+			D.append('מותר כלשונו, בציון המקור'if S in VERBATIM_OK else'מבנה, נושאים ועמדות בלבד')
+			if S=='הליך תחרותי ציבורי':D.append('נכתב לטובת הגוף הציבורי המזמין');D.append('לעיון בלבד, אלא אם החברה היא הגוף המזמין')
+			c=[A for A in G.get('missing_mandatory')or[]if a and A not in a]
+			if c:D.append('סעיפי חובה לא מוכרים: '+', '.join(c))
 			J['agreements'].append(D)
-	return B,J,G
+	return B,J,F
 def approved_mandatory(research):return[A for A in normalise(research).get('mandatory_clauses')or[]if A.get('status')!='הוסר']
 def approved_agreements(research):A=normalise(research);B=set(str(A)for A in(A.get('approvals')or{}).get('removed_agreements')or[]);return[A for A in A.get('agreements')or[]if str(A.get('no'))not in B]
 MONTHS_EN='January','February','March','April','May','June','July','August','September','October','November','December'

@@ -48,33 +48,45 @@ def derive(texts):
 	return E
 def doc_role(d):return d.get('company_role')or(d.get('company_role_candidates')or[None])[0]
 def main():
-	D=argparse.ArgumentParser();D.add_argument('--registry',required=True);D.add_argument('--out',required=True);D.add_argument('--all-documents',action='store_true',help='לגזור מכל המסמכים החוזיים ולא רק מהתבניות המאושרות');D.add_argument('--family',help='משפחת ההסכם של העסקה (family במרשם, או שם או כינוי שלה)');D.add_argument('--role',help='התפקיד של החברה בעסקה: company_role_code (<תפקיד החברה>) או תווית המרשם');A=D.parse_args();guard_out(A.out,[A.registry]);T=json.load(io.open(A.registry,encoding='utf-8'));C=T.get('documents',[])
-	if not A.all_documents:C=[A for A in C if A.get('approved_current')]
-	U=len(C)
-	if A.family:C=[B for B in C if family_matches(B.get('family'),[A.family])]
-	I=normalize_role(A.role)if A.role else None
-	if I:C=[A for A in C if doc_role(A)==I]
-	if U and not C:print('אין במרשם מסמכים של המשפחה והתפקיד שנמסרו (--family, --role). ערכים לא נגזרו, ויש לשאול את המשתמש.');sys.exit(2)
-	if not C:print('אין מסמכים לגזירה. יש להריץ תחילה את build_template_registry.py.');sys.exit(2)
-	G=[]
-	for E in C:
-		J=os.path.join(E.get('folder',''),E['file'])
-		if J.lower().endswith('.docx'):V='base'if E.get('approved_current_basis')=='redline_base'else'final';K=' '.join(docx_paragraphs(J,limit=20000,mode=V))
-		else:K=io.open(J,encoding='utf-8',errors='ignore').read()
-		if K:G.append((E['file'],E.get('family'),normalize(K),doc_role(E)))
-	L=[]
-	for H in G:
-		if(H[1],H[3])not in L:L.append((H[1],H[3]))
-	B=[]
-	for(O,P)in L:Q=[A for A in G if(A[1],A[3])==(O,P)];B.append({'family':O,'company_role':P,'documents_scanned':len(Q),'parameters':derive(Q)})
-	R=B[0]['parameters']if len(B)==1 else[];W={'generated_at':date.today().isoformat(),'documents_scanned':len(G),'family':A.family or(B[0]['family']if len(B)==1 else None),'company_role':I or(B[0]['company_role']if len(B)==1 else None),'groups':B,'scope':'כל המסמכים החוזיים'if A.all_documents else'תבניות מאושרות בלבד','source':'נגזר מהניירות של הלקוח, אינו ברירת מחדל כללית','method':'לכל פרמטר עוגן נושאי, והערך נחפש רק בחלון שסביבו. ערך שאותר מחוץ להקשרו אינו נספר.','parameters':R,'mixed_groups_note':None if len(B)<=1 else'ההסכמים שייכים ליותר ממשפחה אחת או מתפקיד אחד של החברה, ולכן אין ערך אחד לכל פרמטר. הרץ שוב עם --family ו---role של העסקה, או קרא את הצירוף המתאים ב-groups.','usage_rule':'ערך נגזר מוצג למשתמש לאישור או לשינוי, ואינו נכנס לטיוטה בלי אישור. ערך שסטטוסו שנוי או מופע יחיד מוצג כשאלה ולא כברירת מחדל. כשקיים פלייבוק, עמדת הפלייבוק גוברת על הערך הנגזר. הפיזור בין ההסכמים חשוב לא פחות מהערך השכיח: פיזור רחב מעיד שאין לחברה עמדה אחידה, וזה עצמו ממצא.'};M=os.path.dirname(os.path.abspath(A.out))
-	if M and not os.path.isdir(M):os.makedirs(M)
-	io.open(A.out,'w',encoding='utf-8').write(json.dumps(W,ensure_ascii=False,indent=2));print('נגזרו ברירות מחדל מ-%d מסמכים'%len(G))
-	if len(B)>1:
-		print('  שים לב: %d צירופים של משפחה ותפקיד. הרץ עם --family ו---role של העסקה:'%len(B))
-		for N in B:print('    %s / %s: %d מסמכים'%(N['family']or'לא זוהתה',N['company_role']or'לא צוין',N['documents_scanned']))
-	for F in R:
-		S=''
-		if F.get('distribution')and len(F['distribution'])>1:S='  פיזור: '+', '.join('%s (%d)'%(A['value'],A['documents'])for A in F['distribution'][:4])
-		print('  %-26s %-8s %-22s%s'%(F['parameter'],F['value']or'לא נגזר',F.get('support',''),S))
+	E=argparse.ArgumentParser();E.add_argument('--registry',required=True);E.add_argument('--out',required=True);E.add_argument('--all-documents',action='store_true',help='לגזור מכל המסמכים החוזיים ולא רק מהתבניות המאושרות');E.add_argument('--family',help='משפחת ההסכם של העסקה (family במרשם, או שם או כינוי שלה)');E.add_argument('--role',help='התפקיד של החברה בעסקה: company_role_code (<תפקיד החברה>) או תווית המרשם');E.add_argument('--drivers',help='drivers.json של המשפחה והצד: ברירות המחדל רק מההסכמים שבפלח של התשובות');E.add_argument('--answers',help='התשובות לשאלות המכוננות: {"D1": "yes"}, או קובץ ערכים או טיוטה עם variance.drivers');E.add_argument('--answer',action='append',default=[],help='תשובה אחת, D1=yes (אפשר כמה)');A=E.parse_args();guard_out(A.out,[A.registry,A.drivers,A.answers]);Z=json.load(io.open(A.registry,encoding='utf-8'));B=Z.get('documents',[]);D=None
+	if A.drivers:
+		import drivers_lib as L;a=L.load(A.drivers);M=L.load_answers(A.answers)if A.answers else{}
+		for b in A.answer or[]:
+			T,f,c=b.partition('=')
+			if T.strip():M[T.strip()]=c.strip()
+		N=L.segment_files(a,M)
+		if N is not None:D={'answers':M,'files':N};B=[A for A in B if A.get('file')in set(N)]
+	if not A.all_documents and D is None:B=[A for A in B if A.get('approved_current')]
+	d=len(B)
+	if A.family:B=[B for B in B if family_matches(B.get('family'),[A.family])]
+	J=normalize_role(A.role)if A.role else None
+	if J:B=[A for A in B if doc_role(A)==J]
+	if D is not None and len(B)<2:
+		D.update(documents=len(B),open_question=True);O={'generated_at':date.today().isoformat(),'documents_scanned':len(B),'family':A.family,'company_role':J,'segment':D,'groups':[],'source':'נגזר מהניירות של הלקוח, אינו ברירת מחדל כללית','parameters':[{'parameter':A,'unit':B,'question':C,'value':None,'status':'פלח קטן מדי, שאלה פתוחה','open_question':True,'note':'בפלח של התשובות יש פחות משני הסכמים: אין ברירת מחדל, והפרמטר נשאל'}for(A,D,E,B,C)in PARAMS]};F=os.path.dirname(os.path.abspath(A.out))
+		if F and not os.path.isdir(F):os.makedirs(F)
+		io.open(A.out,'w',encoding='utf-8').write(json.dumps(O,ensure_ascii=False,indent=2));print('בפלח של התשובות יש %d הסכמים, פחות משניים: אין ברירות מחדל, וכל פרמטר נשאל כשאלה פתוחה.'%len(B));return
+	if D is not None:D.update(documents=len(B),open_question=False)
+	if d and not B:print('אין במרשם מסמכים של המשפחה והתפקיד שנמסרו (--family, --role). ערכים לא נגזרו, ויש לשאול את המשתמש.');sys.exit(2)
+	if not B:print('אין מסמכים לגזירה. יש להריץ תחילה את build_template_registry.py.');sys.exit(2)
+	I=[]
+	for G in B:
+		P=os.path.join(G.get('folder',''),G['file'])
+		if P.lower().endswith('.docx'):e='base'if G.get('approved_current_basis')=='redline_base'else'final';Q=' '.join(docx_paragraphs(P,limit=20000,mode=e))
+		else:Q=io.open(P,encoding='utf-8',errors='ignore').read()
+		if Q:I.append((G['file'],G.get('family'),normalize(Q),doc_role(G)))
+	R=[]
+	for K in I:
+		if(K[1],K[3])not in R:R.append((K[1],K[3]))
+	C=[]
+	for(U,V)in R:W=[A for A in I if(A[1],A[3])==(U,V)];C.append({'family':U,'company_role':V,'documents_scanned':len(W),'parameters':derive(W)})
+	X=C[0]['parameters']if len(C)==1 else[];O={'generated_at':date.today().isoformat(),'documents_scanned':len(I),'segment':D,'family':A.family or(C[0]['family']if len(C)==1 else None),'company_role':J or(C[0]['company_role']if len(C)==1 else None),'groups':C,'scope':'ההסכמים שבפלח של התשובות'if D else'כל המסמכים החוזיים'if A.all_documents else'תבניות מאושרות בלבד','source':'נגזר מהניירות של הלקוח, אינו ברירת מחדל כללית','method':'לכל פרמטר עוגן נושאי, והערך נחפש רק בחלון שסביבו. ערך שאותר מחוץ להקשרו אינו נספר.','parameters':X,'mixed_groups_note':None if len(C)<=1 else'ההסכמים שייכים ליותר ממשפחה אחת או מתפקיד אחד של החברה, ולכן אין ערך אחד לכל פרמטר. הרץ שוב עם --family ו---role של העסקה, או קרא את הצירוף המתאים ב-groups.','usage_rule':'ערך נגזר מוצג למשתמש לאישור או לשינוי, ואינו נכנס לטיוטה בלי אישור. ערך שסטטוסו שנוי או מופע יחיד מוצג כשאלה ולא כברירת מחדל. כשקיים פלייבוק, עמדת הפלייבוק גוברת על הערך הנגזר. הפיזור בין ההסכמים חשוב לא פחות מהערך השכיח: פיזור רחב מעיד שאין לחברה עמדה אחידה, וזה עצמו ממצא.'};F=os.path.dirname(os.path.abspath(A.out))
+	if F and not os.path.isdir(F):os.makedirs(F)
+	io.open(A.out,'w',encoding='utf-8').write(json.dumps(O,ensure_ascii=False,indent=2));print('נגזרו ברירות מחדל מ-%d מסמכים%s'%(len(I),' (בפלח של התשובות)'if D else''))
+	if len(C)>1:
+		print('  שים לב: %d צירופים של משפחה ותפקיד. הרץ עם --family ו---role של העסקה:'%len(C))
+		for S in C:print('    %s / %s: %d מסמכים'%(S['family']or'לא זוהתה',S['company_role']or'לא צוין',S['documents_scanned']))
+	for H in X:
+		Y=''
+		if H.get('distribution')and len(H['distribution'])>1:Y='  פיזור: '+', '.join('%s (%d)'%(A['value'],A['documents'])for A in H['distribution'][:4])
+		print('  %-26s %-8s %-22s%s'%(H['parameter'],H['value']or'לא נגזר',H.get('support',''),Y))
 if __name__=='__main__':main()

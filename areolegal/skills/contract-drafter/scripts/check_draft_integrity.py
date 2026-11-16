@@ -4,7 +4,7 @@ import argparse,io,json,os,re,sys
 from collections import Counter,OrderedDict
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from build_template_registry import docx_text,docx_paragraphs,guard_out
-from client_text_gate import CODE_RX,HOLD_RX,NO_SOURCE_NOTE,NO_SOURCE_NOTE_EN
+from client_text_gate import CODE_RX,HOLD_RX,NO_SOURCE_NOTE,NO_SOURCE_NOTE_EN,NO_SOURCE_NOTE_LEGACY
 from derive_deal_defaults import CUR
 try:sys.stdout.reconfigure(encoding='utf-8')
 except(AttributeError,ValueError):pass
@@ -28,34 +28,44 @@ def _coverage(needle,hay):
 INCLUDE_ANS='include','לכלול','yes','כן','כן, להוסיף','yes, add it','include it'
 EXCLUDE_ANS='exclude','לא לכלול','no','לא','לא, בלי הסעיף','no, leave it out','leave it out'
 def check_variance(text,draft_json,vmap,rep):
-	H=vmap;G=draft_json;I=(G or{}).get('variance')or{};F,S=I.get('answers')or{},I.get('overrides')or{};J=set(I.get('defaults')or[]);P=_vtoks(text);Q=set()
+	I=draft_json;E=vmap;G=(I or{}).get('variance')or{};H,T=G.get('answers')or{},G.get('overrides')or{};J=set(G.get('defaults')or[]);P=_vtoks(text);Q=set()
 	def K(cs):
 		for A in cs or[]:
 			B=str(A.get('variance_id')or'')
 			if B:Q.add(B.split(':')[0])
 			K(A.get('children')or A.get('subclauses'))
-	K((G or{}).get('clauses'))
-	for C in(G or{}).get('annexes')or[]:K(C.get('clauses'))
+	K((I or{}).get('clauses'))
+	for C in(I or{}).get('annexes')or[]:K(C.get('clauses'))
+	U={B:A for(B,A)in(G.get('drivers')or{}).items()if A not in(None,'')};V={A.get('id'):A for A in E.get('drivers')or[]if isinstance(A,dict)};W=E.get('dependent_on')or{}
+	def R(item):
+		A=item.get('driver_id')or W.get(item.get('id'));B=set()
+		while A and A not in B:
+			B.add(A)
+			if A in U:return True
+			A=next(iter(((V.get(A)or{}).get('ask_when')or{}).keys()),None)
+		return False
 	D=[]
-	for B in H.get('optional_clauses')or[]:
+	for B in E.get('optional_clauses')or[]:
 		A=B['id']
 		if B.get('askable')is False:continue
-		L=str(F.get(A,'')).lower();M=A in Q or _coverage(_vtoks(B.get('wording')),P)>=.9;R=bool(B.get('core'))and A not in F and A not in J
-		if R:L='include'
-		if A not in F and A not in J and not R:
+		if R(B):continue
+		L=str(H.get(A,'')).lower();M=A in Q or _coverage(_vtoks(B.get('wording')),P)>=.9;S=bool(B.get('core'))and A not in H and A not in J
+		if S:L='include'
+		if A not in H and A not in J and not S:
 			if M:D.append('%s (%s): בטיוטה, בלי תשובה ובלי ברירת מחדל'%(A,B.get('heading')))
 			else:D.append('%s (%s): לא נשאל ולא נקבע בברירת מחדל'%(A,B.get('heading')))
 		elif L in INCLUDE_ANS and not M:D.append('%s (%s): התשובה לכלול, והסעיף אינו בטיוטה'%(A,B.get('heading')))
 		elif L in EXCLUDE_ANS and M:D.append('%s (%s): התשובה לא לכלול, והסעיף בטיוטה'%(A,B.get('heading')))
-	for C in H.get('alternative_wordings')or[]:
+	for C in E.get('alternative_wordings')or[]:
 		if C.get('askable')is False:continue
-		if C['id']not in F and C['id']not in J:D.append('%s (%s): נוסח חלופי בלי תשובה ובלי ברירת מחדל'%(C['id'],C.get('heading')))
+		if R(C):continue
+		if C['id']not in H and C['id']not in J:D.append('%s (%s): נוסח חלופי בלי תשובה ובלי ברירת מחדל'%(C['id'],C.get('heading')))
 	if D:rep.add('חוסם','מפת השונות','סעיף אופציונלי או נוסח חלופי שאינו נשען על תשובה של הלקוח או על ברירת מחדל',D[:10])
 	N=[]
-	for E in H.get('constants')or[]:
-		if E['id']in S:continue
-		T=re.sub('\\{\\{F\\d+\\}\\}',' ',E.get('text_template')or E.get('text')or'');O=_coverage(_vtoks(T),P)
-		if O<.97:N.append('%s (%s): %s (%.0f%% מהנוסח נמצא)'%(E['id'],E.get('heading'),'נשמט'if O<.6 else'שונה',O*100))
+	for F in E.get('constants')or[]:
+		if F['id']in T:continue
+		X=re.sub('\\{\\{F\\d+\\}\\}',' ',F.get('text_template')or F.get('text')or'');O=_coverage(_vtoks(X),P)
+		if O<.97:N.append('%s (%s): %s (%.0f%% מהנוסח נמצא)'%(F['id'],F.get('heading'),'נשמט'if O<.6 else'שונה',O*100))
 	if N:rep.add('חוסם','מפת השונות','סעיף קבוע, שזהה בכל ההסכמים של הלקוח, שונה או נשמט בשקט. שינוי במכוון נרשם ב-variance.overrides עם הסיבה',N[:10])
 def check_case_law(sources,rep,connector=False):
 	if connector:return
@@ -78,10 +88,11 @@ def draft_clause_sources(dj):
 	A=_leaf_sources(dj.get('clauses'),[],[])
 	for B in dj.get('annexes')or[]:A+=_leaf_sources((B or{}).get('clauses'),[],[])
 	return A
+def _no_gap(cs):return[dict(A,children=_no_gap(A.get('children')))for A in cs or[]if isinstance(A,dict)and not A.get('gap_topic')]
 def is_outside_draft(dj):
-	A=dj.get('meta')or{}
-	if dj.get('sources')or any(B.upper().startswith(('REG-','MAND-','AGR-'))for(C,A)in draft_clause_sources(dj)for B in A):return True
-	return bool(A.get('notice'))and A.get('source_mode')!='third_party_paper'
+	A=dj;B=A.get('meta')or{};C=dict(A,clauses=_no_gap(A.get('clauses')),annexes=[dict(A,clauses=_no_gap((A or{}).get('clauses')))for A in A.get('annexes')or[]])
+	if A.get('sources')or any(B.upper().startswith(('REG-','MAND-','AGR-'))for(C,A)in draft_clause_sources(C)for B in A):return True
+	return bool(B.get('notice'))and B.get('source_mode')!='third_party_paper'
 def check_hold_and_codes(sources,rep,cover_names):
 	D=cover_names;B=rep
 	try:from common.voice_check import check_text as E
@@ -92,7 +103,7 @@ def check_hold_and_codes(sources,rep,cover_names):
 		G=sorted({A.group(0)for A in HOLD_RX.finditer(C)})if A in D else[]
 		if G:B.add('חוסם','שער אישור','%s: נוסח של עצירה או של אישור עורך דין. הטיוטה נמסרת נקייה, בלי המתנה לאישור'%A,G[:6])
 		if A not in D:
-			H=[A for A in(NO_SOURCE_NOTE,NO_SOURCE_NOTE_EN)if A.lower()in C.lower()]
+			H=[A for A in(NO_SOURCE_NOTE,NO_SOURCE_NOTE_EN)+NO_SOURCE_NOTE_LEGACY if A.lower()in C.lower()]
 			if H:B.add('חוסם','דליפת נוסח פנימי','%s: השורה הפנימית של Areo בגוף ההסכם, שעלול להגיע לצד השני. בגוף ההסכם רק "[להשלמה]"; השורה המלאה בדף הליווי'%A,H)
 		if E and A in D:
 			I=[A['term']for A in E(C,'document')if not re.match('^[A-Z]-\\d{1,2}$',A['term'])]
@@ -101,25 +112,26 @@ def check_sources_shown(dj,cover_text,rep):
 	G=cover_text;A=rep;H=dj.get('cover')or{};B={}
 	for C in H.get('documents')or[]:
 		if isinstance(C,dict)and C.get('no')is not None:B[str(C.get('no'))]=(C.get('title')or'').strip()
-	P=((H.get('playbook')or{}).get('name')or'').strip();L=draft_clause_sources(dj);M,I,D={},[],[]
+	O=((H.get('playbook')or{}).get('name')or'').strip();L=draft_clause_sources(dj);M,I,D={},[],[]
 	for(J,N)in L:
 		if not N:D.append(J)
-		for Q in N:
-			K=Q.upper()
+		for P in N:
+			K=P.upper()
 			if K.startswith('DOC-'):M.setdefault(K[4:],[]).append(J)
 			elif K.startswith('PB-'):I.append(J)
 	for(E,F)in sorted(M.items()):
 		if not B.get(E):A.add('חוסם','מקור גלוי','סעיפים %s נשענים על נוסח %s, ואין לו שם ב-cover.documents. דף הליווי חייב לומר על איזה הסכם הסעיף נשען'%(', '.join(F[:6]),E),F[:10])
 		elif G is not None and B[E]not in G:A.add('חוסם','מקור גלוי','שם ההסכם "%s" אינו מופיע בדף הליווי, והסעיפים %s נשענים עליו'%(B[E],', '.join(F[:6])),F[:10])
-	if I and not P:A.add('חוסם','מקור גלוי','סעיפים נשענים על הפלייבוק, ואין cover.playbook.name. דף הליווי חייב לומר על איזה פלייבוק',I[:10])
+	if I and not O:A.add('חוסם','מקור גלוי','סעיפים נשענים על הפלייבוק, ואין cover.playbook.name. דף הליווי חייב לומר על איזה פלייבוק',I[:10])
 	if D and any(A for(B,A)in L):
-		R=' '.join(str(A)for A in H.get('notes')or[]);O=(G or'')+' '+R
-		if NO_SOURCE_NOTE not in O and NO_SOURCE_NOTE_EN not in O:A.add('אזהרה','מקור גלוי','לסעיפים %s אין מקור. סעיף כזה נשען על מקור, או שדף הליווי אומר "%s" ומציע צעד הבא אחד; לא ממלאים מהזיכרון'%(', '.join(D[:8]),NO_SOURCE_NOTE),D[:12])
+		Q=' '.join(str(A)for A in H.get('notes')or[]);R=(G or'')+' '+Q
+		if not any(A.lower()in R.lower()for A in(NO_SOURCE_NOTE,NO_SOURCE_NOTE_EN)+NO_SOURCE_NOTE_LEGACY):A.add('אזהרה','מקור גלוי','לסעיפים %s אין מקור. סעיף כזה נשען על מקור, או שדף הליווי אומר "%s" ומציע צעד הבא אחד; לא ממלאים מהזיכרון'%(', '.join(D[:8]),NO_SOURCE_NOTE),D[:12])
 def check_outside_basis(dj,cover_text,rep):
 	D=cover_text;A=rep
 	if not is_outside_draft(dj):return
 	B=dj.get('meta')or{};E=B.get('outside_basis')or{};C=[A for A in('no_playbook','no_client_agreements','client_asked')if E.get(A)is not True]
-	if C:A.add('חוסם','ניסוח מבחוץ','טיוטה שנבנתה מהסכמים ברשת ומפרקטיקת שוק מותרת רק כשאין ללקוח פלייבוק, אין הסכמים, והוא ביקש זאת במפורש. חסר ב-meta.outside_basis: %s'%', '.join(C),C)
+	if C:A.add('חוסם','ניסוח מבחוץ','טיוטה שנבנתה מהסכמים ברשת ומפרקטיקת שוק מותרת רק כשאין ללקוח פלייבוק ואין הסכמים מהסוג, והלקוח אישר יציאה לרשת בסבב השאלות הראשון (client_asked). טיוטה מפלייבוק שהושלמה במחקר עומק לנושאים חסרים נושאת gap_research ואינה נחסמת כאן. חסר ב-meta.outside_basis: %s'%', '.join(C),C)
+	if not isinstance(E.get('template_offered'),bool):A.add('אזהרה','ניסוח מבחוץ','meta.outside_basis.template_offered חסר: תבנית שנמצאה בתיקייה מוצעת קודם בנתיב התאמת התבנית, והשדה מתעד אם הוצעה ונדחתה')
 	if not(B.get('notice')or'').strip():A.add('חוסם','ניסוח מבחוץ','הטיוטה נבנתה מבחוץ, ואין meta.notice שאומר זאת בדף הליווי בבירור')
 	elif D is not None and(B.get('notice')or'').strip()[:25]not in D:A.add('אזהרה','ניסוח מבחוץ','ה-notice שאומר שהטיוטה נבנתה מבחוץ אינו מופיע בדף הליווי')
 _NUM_RX=re.compile('\\d[\\d,./-]*\\d|\\d')
@@ -198,11 +210,112 @@ CLAUSE_NUM_RX=re.compile('^(?:סעיף\\s+)?(\\d+(?:\\.\\d+)*)\\s*[:\\.\\)]\\s|^
 DEF_SCOPE_RX=re.compile('לרבות\\s+במבוא|ובמבוא\\s+לו|including\\s+(?:in\\s+)?the\\s+recitals',re.I)
 def clause_num(p):A=CLAUSE_NUM_RX.match(p.strip());return A.group(1)or A.group(2)if A else None
 PLACEHOLDER_RX=re.compile('\\[(?:להשלים|to\\s+complete)[^\\[\\]\\n]*\\]|\\[[^\\[\\]\\n]{0,80}\\]|_{3,}|X{3,}|\\bTBD\\b|\\bLorem ipsum\\b|<[^>\\n]{0,30}>',re.I)
-NON_GAP_LABELS='טעון בדיקה משפטית','needs legal review','להשלמה','to be completed',NO_SOURCE_NOTE.lower(),NO_SOURCE_NOTE_EN.lower(),'לא אותר','not found','not used','reserved','intentionally left blank','intentionally omitted','deleted','בוטל','נמחק','שמור'
+NON_GAP_LABELS=('טעון בדיקה משפטית','needs legal review','להשלמה','to be completed',NO_SOURCE_NOTE.lower(),NO_SOURCE_NOTE_EN.lower())+tuple(A.lower()for A in NO_SOURCE_NOTE_LEGACY)+('לא אותר','not found','not used','reserved','intentionally left blank','intentionally omitted','deleted','בוטל','נמחק','שמור')
 MONEY_RX=re.compile(CUR+'\\s*([\\d,]+(?:\\.\\d+)?)|([\\d,]{4,}(?:\\.\\d+)?)\\s*'+CUR)
 DATE_RX=re.compile('\\b(\\d{1,2})[./](\\d{1,2})[./](\\d{2,4})\\b')
 EMDASH_RX=re.compile('[—–]')
 STALE_RX=re.compile('(?:להסכם|הסכם)\\s+[א-ת]{2,}\\s+מיום\\s+\\d{1,2}\\.\\d{1,2}\\.\\d{4}')
+NOTE_CUE="(?:הערה|הערות|הנחיה|הנחיות|הסבר|למנסח|לתשומת\\s+לב|שים\\s+לב|לידיעת|note|notes|ntd|drafting|drafter['’]?s?|guidance|instructions?|comment|explanatory)"
+NOTE_RX=re.compile('\\[\\s*'+NOTE_CUE+'(?![\\w])[^\\[\\]\\n]*\\]|<<\\s*'+NOTE_CUE+'(?![\\w])[^<>\\n]*>>|\\(\\s*'+NOTE_CUE+'\\s*[:\\-][^()\\n]*\\)',re.I)
+DRAFTER_CUE_RX=re.compile('^\\s*(?:'+NOTE_CUE+'(?![\\w])|יש\\s+(?:למלא|להשלים|לציין|לבחור|למחוק|להוסיף|להתאים)|(?:insert|complete|fill\\s+in|specify|select|delete|tailor|adapt)\\s)',re.I)
+ACTION_RX=re.compile('(?<![א-ת])(?:ו?לשלוח|שלחו|להעביר\\s+(?:ל|את)|לאשר|אשרו|לחתום|לעקוף|להתעלם|לדלג|לא\\s+לבדוק)|\\b(?:send|forward|e-?mail|approve|sign|bypass|ignore|skip|override|disregard)\\b',re.I)
+_HE_COND='(?:אם\\s|ככל\\s+ש|רק\\s+אם\\s|רק\\s+כאשר\\s|במקרה\\s+ש|כאשר\\s|לשימוש\\s|לכלול\\s|סעיף\\s+(?:אופציונלי|מותנה|רשות)|אופציונלי|רשות(?![א-ת])|ככל\\s+שרלוונטי|רלוונטי\\s+רק|לפי\\s+הצורך)'
+_EN_COND='(?:only\\s+if|if\\s+applicable|as\\s+applicable|where\\s+applicable|if\\s+relevant|applicable\\s+only|use\\s+(?:only\\s+)?(?:if|where|when)|include\\s+(?:only\\s+)?(?:if|where|when)|optional|if|where|when)(?![A-Za-z])'
+COND_RX=re.compile('\\[\\s*(?:'+_HE_COND+'|'+_EN_COND+')[^\\[\\]\\n]*\\]|\\(\\s*(?:אופציונלי|רשות|ככל\\s+שרלוונטי|אם\\s+רלוונטי|optional|if\\s+applicable|where\\s+applicable|if\\s+relevant)\\s*\\)',re.I)
+SELECT_RX=re.compile('[\\[\\(]\\s*(?:(?:מחק(?:ו|י)?|יש\\s+למחוק|למחוק)\\s+את\\s+(?:ה)?מיותר|(?:בחר(?:ו|י)?|יש\\s+לבחור|לבחור)\\s+[^\\[\\]()\\n]{0,40}|delete\\s+(?:as\\s+)?(?:appropriate|applicable|whichever)[^\\[\\]()\\n]{0,30}|strike\\s+(?:out\\s+)?(?:whichever|as)[^\\[\\]()\\n]{0,30}|select\\s+(?:one|as\\s+applicable)[^\\[\\]()\\n]{0,20}|choose\\s+one[^\\[\\]()\\n]{0,20})\\s*[\\])]',re.I)
+BRACKET_GROUP_ALT_RX=re.compile('\\[[^\\[\\]\\n]+\\](?:\\s*(?:או|/|or)\\s*\\[[^\\[\\]\\n]+\\])+',re.I)
+SINGLE_BRACKET_RX=re.compile('\\[([^\\[\\]\\n]+)\\]')
+AND_OR_RX=re.compile('ו/או|and/or|או/ו|\\d+/\\d+',re.I)
+OPT_HEAD_RX=re.compile("\\s*[\\[(]?\\s*(?:חלופה|אפשרות|option|alternative)\\s*(?:[א-ת]['׳]?|\\d+|[A-Z])?\\s*[\\])]?\\s*[:.)\\-]\\s+",re.I)
+def slash_options(content,loose=False):
+	B=AND_OR_RX.sub(lambda m:m.group(0).replace('/','\x00'),content);A=re.split('\\s*/\\s*'+('|\\s+(?:או|or)\\s+'if loose else''),B,flags=re.I);A=[A.replace('\x00','/').strip()for A in A]
+	if len(A)>=2 and all(A):return A
+def template_mark_hits(paras):
+	C=[]
+	for F in paras or[]:
+		B=F or'';G=bool(SELECT_RX.search(B))
+		for A in SELECT_RX.finditer(B):C.append(('alternative',A.group(0)))
+		for A in BRACKET_GROUP_ALT_RX.finditer(B):C.append(('alternative',A.group(0)))
+		for A in SINGLE_BRACKET_RX.finditer(B):
+			D=A.group(1)
+			if NOTE_RX.fullmatch(A.group(0))or COND_RX.fullmatch(A.group(0)):continue
+			if D.strip().lower().startswith(('להשלים','to complete')):continue
+			if slash_options(D,G):C.append(('alternative',A.group(0)))
+		E=re.match('^\\s*(?:סעיף\\s+)?\\d+(?:\\.\\d+)*\\.?\\s*',B)
+		if OPT_HEAD_RX.match(B,E.end()if E else 0):C.append(('alternative',B[:60]))
+		for A in COND_RX.finditer(B):C.append(('conditional',A.group(0)))
+		for A in NOTE_RX.finditer(B):C.append(('note',A.group(0)))
+	return C
+COMMERCIAL_LABEL={'he':'(נושא מסחרי)','en':'(commercial point)'}
+COMMERCIAL_LABEL_RX=re.compile('\\(\\s*(?:נושא\\s+מסחרי|commercial\\s+point)\\s*\\)',re.I)
+COMMERCIAL_NATURE_RX=re.compile('תמור|מחיר|תשלום|תשלומי|שכר|עמל|דמי\\s|תעריף|הנח(?:ה|ות)|כמו(?:ת|יות)|היקף|תקופ|חידוש|הארכ|רמ(?:ת|ות)\\s+(?:ה)?שירות|זמן\\s+תגובה|זמני\\s+תגובה|לוח\\s+(?:ה)?זמנים|מועד\\s+(?:ה)?אספקה|אספק|תקר|אחריות|שיפוי|פיצוי|ערבו|ביטוח|קנס|\\b(?:price|prices|pricing|fees?|consideration|payment|payments|compensation|commission|rates?|discount|quantit(?:y|ies)|volume|term|renewal|extension|service\\s+levels?|response\\s+times?|timelines?|delivery|cap|liability|indemnit\\w*|guarantee|insurance|penalt\\w*|minimum)\\b',re.I)
+AMOUNT_RX=re.compile(CUR+'\\s*\\d[\\d,]*(?:\\.\\d+)?|(?<![\\d.,])\\d[\\d,]*(?:\\.\\d+)?\\s*(?:'+CUR+')')
+PERCENT_RX=re.compile('(?<![\\d.,])\\d+(?:[.,]\\d+)?\\s*(?:%|אחוז(?:ים)?\\b|per\\s?cent\\b)',re.I)
+def count_commercial_marks(text):return len(COMMERCIAL_LABEL_RX.findall(text or''))
+def commercial_amounts(text):
+	B=[A.span()for A in AMOUNT_RX.finditer(text or'')]+[A.span()for A in PERCENT_RX.finditer(text or'')];B.sort();A=[]
+	for(C,D)in B:
+		if A and C<A[-1][1]:A[-1]=A[-1][0],max(D,A[-1][1])
+		else:A.append((C,D))
+	return A
+AREO_BUBBLES='נוסח חדש, אינו מהתבנית','New wording, not from the template','תוצאת מחקר עומק: הצעת Areo (לא מבוסס על מסמכי הלקוח)',"Deep research result: Areo's proposal (not based on the client's documents)"
+def docx_leftover_notes(path):
+	import zipfile as I;C=[]
+	try:
+		with I.ZipFile(path)as B:
+			D=B.namelist();F=B.read('word/document.xml').decode('utf-8','ignore')if'word/document.xml'in D else'';G=set(re.findall('<w:commentReference\\b[^>]*w:id="(\\d+)"',F))
+			if G and'word/comments.xml'in D:
+				J=B.read('word/comments.xml').decode('utf-8','ignore')
+				for(K,E)in re.findall('<w:comment\\b[^>]*w:id="(\\d+)"[^>]*>(.*?)</w:comment>',J,re.S):
+					if K not in G:continue
+					A=re.sub('\\s+',' ',re.sub('<[^>]+>','',''.join(re.findall('<w:t[^>]*>(.*?)</w:t>',E,re.S)))).strip()
+					if A and not any(A.startswith(B)for B in AREO_BUBBLES):C.append(('comment',A[:120]))
+			H=set(re.findall('<w:footnoteReference\\b[^>]*w:id="(\\d+)"',F))
+			if H and'word/footnotes.xml'in D:
+				L=B.read('word/footnotes.xml').decode('utf-8','ignore')
+				for(M,E)in re.findall('<w:footnote\\b[^>]*w:id="(-?\\d+)"[^>]*>(.*?)</w:footnote>',L,re.S):
+					if M not in H:continue
+					A=re.sub('\\s+',' ',''.join(re.findall('<w:t[^>]*>(.*?)</w:t>',E,re.S))).strip()
+					if A and(DRAFTER_CUE_RX.search(A)or NOTE_RX.search(A)):C.append(('footnote',A[:120]))
+	except Exception:pass
+	return C
+TEMPLATE_TAG_KINDS=('חלופה_','alternative'),('תנאי_','conditional')
+def template_note_texts(template_path):
+	A=template_path;B=[]
+	if not A:return B
+	C=A if os.path.isdir(A)else os.path.dirname(os.path.abspath(A));D=[os.path.join(C,'skeleton.json')]
+	if os.path.isdir(A):D+=[os.path.join(C,A,'skeleton.json')for A in sorted(os.listdir(C))]
+	for E in D:
+		if not os.path.isfile(E):continue
+		try:F=json.load(io.open(E,encoding='utf-8'))
+		except(OSError,ValueError):continue
+		B+=[str(A.get('text')or'')for A in F.get('drafter_notes')or[]if isinstance(A,dict)and A.get('text')]
+	return B
+def _norm_note(s):return re.sub('[\\s\\[\\]():\\-]+',' ',str(s or'')).strip().lower()
+def is_template_note(text,notes):
+	A=_norm_note(text)
+	if len(A)<4:return False
+	for C in notes or():
+		B=_norm_note(C)
+		if len(B)>=4 and(B==A or B in A or A in B or B[:100]==A[:100]):return True
+	return False
+def check_template_marks(paras,text,rep,docx_path=None,template_notes=()):
+	C=docx_path;B=template_mark_hits(paras)
+	for G in TEMPLATE_TAG_RX.finditer(text or''):
+		for(I,A)in TEMPLATE_TAG_KINDS:
+			if G.group(1).startswith(I):B.append((A,G.group(0)))
+	D=[]
+	if C and str(C).lower().endswith('.docx'):
+		for(H,E)in docx_leftover_notes(C):
+			if H=='comment'and not is_template_note(E,template_notes):D.append(E);continue
+			B.append(('note','%s: %s'%('הערה בבועה'if H=='comment'else'הערת שוליים',E)))
+	if D:rep.add('אזהרה','סימוני תבנית','בטיוטה יש בועות שאינן של Areo ואינן הערה למנסח מהתבנית (למשל הערה של עורך הדין). הן אינן חוסמות; לפני שליחה לצד השני, ודאו שהן אמורות להישאר',list(dict.fromkeys(re.sub('\\s+',' ',A).strip()[:100]for A in D))[:10])
+	F={}
+	for(A,J)in B:F.setdefault(A,[]).append(re.sub('\\s+',' ',J).strip()[:100])
+	K={'alternative':'חלופה מהתבנית שלא הוכרעה נשארה בטיוטה. ההכרעה בטופס השאלות, והנוסח שנבחר בלבד נכנס','conditional':'סימון של סעיף מותנה נשאר בטיוטה. הסעיף נכלל או נשמט לפי התשובה, והסימון לעולם אינו נשאר','note':'הערה למנסח מהתבנית נשארה בטיוטה. הערות התבנית הן מידע בלבד, ואף אחת מהן אינה נכנסת לטיוטה'}
+	for A in('alternative','conditional','note'):
+		if F.get(A):rep.add('חוסם','סימוני תבנית',K[A],list(dict.fromkeys(F[A]))[:10])
+	return len(B)
 class Report:
 	def __init__(A):A.items=[]
 	def add(A,level,area,msg,detail=None):A.items.append({'level':level,'area':area,'message':msg,'detail':detail or[]})
@@ -408,49 +521,123 @@ def check_style(text,rep,hebrew,paras=None,template_paras=None):
 		elif C:A.add('חוסם','סגנון','%d מקפים ארוכים במסמך עברי. יש להחליף בפסיק, בנקודה או בנקודתיים'%C)
 	I=[A.group(0)for A in STALE_RX.finditer(text)]
 	if I:A.add('מידע','שמות תקדים','הפניות להסכמים אחרים בגוף המסמך. יש לוודא שאינן שריד מתבנית',list(dict.fromkeys(I))[:12])
+def _clause_ids(dj):
+	B=set()
+	def C(cs):
+		for A in cs or[]:
+			if not isinstance(A,dict):continue
+			for D in(str(A.get('variance_id')or'').split(':')[0],str(A.get('item_id')or'')):
+				if D:B.add(D)
+			E=str(A.get('variance_id')or'')
+			if':'in E:B.add(E)
+			C(A.get('children')or A.get('subclauses'))
+	C((dj or{}).get('clauses'))
+	for A in(dj or{}).get('annexes')or[]:C((A or{}).get('clauses'))
+	return B
+def check_drivers(drivers,dj,text,rep,vmap=None,report=None):
+	M=text;H=rep;E=report;D=dj;from fill_template import collect_effects as Z;D=D or{};a=dict((D.get('variance')or{}).get('drivers')or D.get('drivers_answers')or{});A=Z(drivers,a);N=_clause_ids(D);O=(E or{}).get('driver_effects')or{};I,T=set(O.get('items_present')or[]),set(O.get('items_omitted')or[]);b=bool(D.get('clauses'))or bool(E);U=_vtoks(M);c={A.get('id'):A for A in(vmap or{}).get('optional_clauses')or[]};d={A.get('id'):A for A in(vmap or{}).get('alternative_wordings')or[]}
+	def P(item):
+		A=item;B=str(A).partition('/')[2]or A
+		if(A in T or B in T)and A not in I and B not in I:return False
+		if A in N or A in I or B in I:return True
+		C=(c.get(A)or{}).get('wording')
+		if C:return _coverage(_vtoks(C),U)>=.9
+		return False if b else None
+	def C(item):B,C=A['why'].get(item,('',''));return'%s: %s'%(B,C)if B else item
+	Q=[C(A)for A in A['omit']if P(A)];R=[C(A)for A in A['include']if P(A)is False];V=[C(A)for A in A['include']if P(A)is None];B=['שאלה מכוננת בלי תשובה: %s'%A for A in A['unanswered']];B+=list(O.get('unapplied')or[])
+	for(J,F)in A['variant'].items():
+		S='%s:%s'%(J,F)
+		if any(A.startswith(J+':')and A!=S for A in N):B.append('%s: נבחר נוסח אחר מזה שבתשובה'%C(J));continue
+		e=(d.get(J)or{}).get('variants')or[];W=[A for A in e if A.get('variant')==F]
+		if W and S not in N and S not in I and _coverage(_vtoks(W[0].get('text')),U)<.9:B.append('%s: הנוסח שנבחר אינו בטיוטה'%C(J))
+	for(f,F)in A['data'].items():
+		if str(F).strip()and re.sub('[,\\s]','',str(F))not in re.sub('[,\\s]','',M):B.append('%s: הערך "%s" אינו בטיוטה'%(C(f),F))
+	if A['template']and E is not None and E.get('template_choice')and os.path.basename(str(A['template']))!=E.get('template_choice'):B.append('התבנית שנבחרה בתשובה (%s) אינה התבנית שמולאה (%s)'%(A['template'],E.get('template_choice')))
+	X=collect_definitions(M)
+	for G in A['companions_add']['definitions']:
+		if G not in X:B.append('ההגדרה "%s" נדרשת לפי התשובה ואינה בטיוטה'%G)
+	K=[]
+	for G in A['companions_remove']['definitions']:
+		if G in X:K.append('ההגדרה "%s" נשארה, והסעיף שלה הושמט (%s)'%(G,C('definitions:'+G)))
+	Y=(M or'').lower()
+	for L in A['companions_remove']['annexes']:
+		if re.search('(?:נספח|annex|schedule|exhibit)[^\\n]{0,40}'+re.escape(str(L).lower()),Y):K.append('הנספח "%s" נשאר, והסעיף שלו הושמט'%L)
+	for L in A['companions_add']['annexes']:
+		if str(L).lower()not in Y:B.append('הנספח "%s" נדרש לפי התשובה ואינו בטיוטה'%L)
+	if Q:H.add('חוסם','שאלות מכוננות','סעיף תלוי נכלל בניגוד לתשובה',Q[:10])
+	if R:H.add('חוסם','שאלות מכוננות','סעיף תלוי נשמט אף שהתשובה מחייבת אותו',R[:10])
+	if B:H.add('חוסם','שאלות מכוננות','השפעה של תשובה שלא הוחלה',B[:10])
+	if K:H.add('חוסם','שאלות מכוננות','הגדרה, נספח או הפניה שנותרו בלי הסעיף שלהם',K[:10])
+	if V:H.add('אזהרה','שאלות מכוננות','לא ניתן לוודא שסעיף שהתשובה מחייבת נמצא בטיוטה: אין לו מזהה (variance_id) ואין נוסח במפת השונות',V[:10])
+	return not(Q or R or B or K)
+COMMERCIAL_CLAIM_RX=re.compile('(\\d+)\\s+נושאים\\s+מסחריים|(\\d+)\\s+commercial\\s+points?',re.I)
+def check_commercial(text,rep,cover_paths=(),external=False):
+	C=rep;A=count_commercial_marks(text);D=[]
+	for B in cover_paths or[]:
+		if not os.path.isfile(B):continue
+		F=docx_text(B,limit=400000)[0]if B.lower().endswith('.docx')else io.open(B,encoding='utf-8',errors='ignore').read()
+		for E in COMMERCIAL_CLAIM_RX.finditer(F):
+			G=int(next(A for A in E.groups()if A))
+			if G!=A:D.append('%s: "%s" (בטיוטה %d)'%(os.path.basename(B),E.group(0).strip(),A))
+	if D:C.add('חוסם','נושאים מסחריים','מספר הנושאים המסחריים בדף הליווי שונה מהמספר בטיוטה',D[:10])
+	if A and external:C.add('חוסם','נושאים מסחריים','בעותק שיוצא לצד השני נשארו %d סימונים של נושא מסחרי. העותק לצד השני נבנה בלי הסימונים (--clean-copy), אחרי שהלקוח הכריע'%A)
+	elif A:C.add('מידע','נושאים מסחריים','%d נושאים מסחריים מסומנים להכרעת הלקוח. הטיוטה אינה ReadyForExternal עד שהוכרעו, והעותק לצד השני נבנה בלעדיהם'%A)
+	return A
 def main():
-	D=argparse.ArgumentParser();D.add_argument('draft');D.add_argument('--json');D.add_argument('--strict',action='store_true',help='אזהרה נחשבת ממצא חוסם');D.add_argument('--template',help='master.docx שממנו מולאה הטיוטה: מקף ארוך בנוסח המאושר הוא אזהרה ולא חוסם');D.add_argument('--profile',help='פרופיל-לקוח.json: האם החברה גוף ציבורי (שאריות של טופס ציבורי)');D.add_argument('--draft-json',help='draft.json של הטיוטה (או קובץ הערכים של התבנית): meta.counterparty_public_body ו-meta.company_role_code');D.add_argument('--counterparty-public-body',action='store_true',help='הצד שכנגד גוף ציבורי (כשאין draft.json, למשל בטיוטה שמולאה מתבנית)');D.add_argument('--role',help='company_role_code של החברה מהפלייבוק (bidder, contracting_authority, service_provider ...)');D.add_argument('--cover',nargs='+',help='דף הליווי והסיכום (docx, md, txt): הספירה שבהם מול הטיוטה');D.add_argument('--keep-public-form',action='store_true',help='המשתמש ביקש במפורש סעיף מטופס של גוף ציבורי: הממצא יורד לרמת מידע');D.add_argument('--variance-map',help='variance-map.json של המשפחה: עקיבות של סעיפים אופציונליים, נוסחים חלופיים וקבועים (דורש --draft-json)');D.add_argument('--deal-card',help='כרטיס העסקה: קובץ הטיוטה (cover.facts, meta.parties), negotiation_state.json של העסקה, או {"facts": [...]}: כל עובדה בו חייבת להופיע בטיוטה');D.add_argument('--core',help='playbook-core.json שבשימוש: כל כלל Required מכוסה בטיוטה, ואף מזהה כלל אינו בטקסט שהלקוח רואה');D.add_argument('--case-law-connector',action='store_true',help='מחבר פסיקה סגור שהלקוח חיבר זמין בהרצה (כלל 1.1). בלעדיו, אזכור פסיקה בטיוטה או בדף הליווי הוא ממצא חוסם');A=D.parse_args()
+	D=argparse.ArgumentParser();D.add_argument('draft');D.add_argument('--json');D.add_argument('--strict',action='store_true',help='אזהרה נחשבת ממצא חוסם');D.add_argument('--template',help='master.docx שממנו מולאה הטיוטה: מקף ארוך בנוסח המאושר הוא אזהרה ולא חוסם');D.add_argument('--profile',help='פרופיל-לקוח.json: האם החברה גוף ציבורי (שאריות של טופס ציבורי)');D.add_argument('--draft-json',help='draft.json של הטיוטה (או קובץ הערכים של התבנית): meta.counterparty_public_body ו-meta.company_role_code');D.add_argument('--counterparty-public-body',action='store_true',help='הצד שכנגד גוף ציבורי (כשאין draft.json, למשל בטיוטה שמולאה מתבנית)');D.add_argument('--role',help='company_role_code של החברה מהפלייבוק (bidder, contracting_authority, service_provider ...)');D.add_argument('--cover',nargs='+',help='דף הליווי והסיכום (docx, md, txt): הספירה שבהם מול הטיוטה');D.add_argument('--keep-public-form',action='store_true',help='המשתמש ביקש במפורש סעיף מטופס של גוף ציבורי: הממצא יורד לרמת מידע');D.add_argument('--variance-map',help='variance-map.json של המשפחה: עקיבות של סעיפים אופציונליים, נוסחים חלופיים וקבועים (דורש --draft-json)');D.add_argument('--deal-card',help='כרטיס העסקה: קובץ הטיוטה (cover.facts, meta.parties), negotiation_state.json של העסקה, או {"facts": [...]}: כל עובדה בו חייבת להופיע בטיוטה');D.add_argument('--core',help='playbook-core.json שבשימוש: כל כלל Required מכוסה בטיוטה, ואף מזהה כלל אינו בטקסט שהלקוח רואה');D.add_argument('--drivers',help='drivers.json של המשפחה והצד (עם --draft-json, שבו variance.drivers): חוסם סעיף תלוי בניגוד לתשובה, סעיף שנשמט אף שהתשובה מחייבת, השפעה שלא הוחלה, והגדרה או נספח שנותרו בלי הסעיף שלהם');D.add_argument('--report',help='דוח המילוי (<טיוטה>.report.json). ברירת מחדל: הקובץ שליד הטיוטה, כשקיים');D.add_argument('--external',action='store_true',help='העותק שיוצא לצד השני: סימון של נושא מסחרי שנשאר בו חוסם');D.add_argument('--case-law-connector',action='store_true',help='מחבר פסיקה סגור שהלקוח חיבר זמין בהרצה (כלל 1.1). בלעדיו, אזכור פסיקה בטיוטה או בדף הליווי הוא ממצא חוסם');A=D.parse_args()
 	if A.json:guard_out(A.json,[A.draft,A.template,A.profile,A.draft_json,A.deal_card,A.core]+list(A.cover or[]))
-	O=None
+	R=None
 	if A.profile:
-		try:O=json.load(io.open(A.profile,encoding='utf-8-sig'))
+		try:R=json.load(io.open(A.profile,encoding='utf-8-sig'))
 		except(OSError,ValueError):print('הפרופיל לא נקרא: %s'%A.profile);sys.exit(2)
-	I,J=None,A.role
+	J,K=None,A.role
 	if A.draft_json:
-		I,R=draft_facts(A.draft_json)
-		if I is None:print('קובץ הטיוטה לא נקרא: %s'%A.draft_json);sys.exit(2)
-		J=J or R
-	if A.counterparty_public_body:I=True
+		J,X=draft_facts(A.draft_json)
+		if J is None:print('קובץ הטיוטה לא נקרא: %s'%A.draft_json);sys.exit(2)
+		K=K or X
+	if A.counterparty_public_body:J=True
 	if not os.path.isfile(A.draft):print('הקובץ לא נמצא: %s'%A.draft);sys.exit(2)
 	if A.draft.lower().endswith('.docx'):C=docx_text(A.draft,limit=400000)[0];E=docx_paragraphs(A.draft,limit=20000)
 	else:C=io.open(A.draft,encoding='utf-8',errors='ignore').read();E=C.split('\n')
 	if not C.strip():print('לא הופק טקסט מהמסמך.');sys.exit(2)
-	P=len(re.findall('[א-ת]',C))>len(re.findall('[A-Za-z]',C));B=Report();check_definitions(C,B);check_crossrefs(E,C,B);check_annexes(E,C,B);L=check_placeholders(C,B)
-	if A.cover:check_cover_counts(A.cover,L,B)
-	check_template_tags(C,B);check_mechanisms(E,C,B,J);check_public_form(E,B,O,A.keep_public_form,I,J);check_amounts_dates(C,B);G=[(os.path.basename(A.draft),C)]
+	S=len(re.findall('[א-ת]',C))>len(re.findall('[A-Za-z]',C));B=Report();check_definitions(C,B);check_crossrefs(E,C,B);check_annexes(E,C,B);M=check_placeholders(C,B)
+	if A.cover:check_cover_counts(A.cover,M,B)
+	check_template_tags(C,B);check_mechanisms(E,C,B,K);check_public_form(E,B,R,A.keep_public_form,J,K);check_amounts_dates(C,B);G=[(os.path.basename(A.draft),C)]
 	for H in A.cover or[]:
 		if os.path.isfile(H):G.append((os.path.basename(H),docx_text(H,limit=400000)[0]if H.lower().endswith('.docx')else io.open(H,encoding='utf-8',errors='ignore').read()))
-	check_case_law(G,B,A.case_law_connector);M={os.path.basename(A)for A in A.cover or[]};check_hold_and_codes(G,B,M);F=None
+	check_case_law(G,B,A.case_law_connector);N={os.path.basename(A)for A in A.cover or[]};check_hold_and_codes(G,B,N);F=None
 	if A.draft_json and os.path.isfile(A.draft_json):
 		try:F=json.load(io.open(A.draft_json,encoding='utf-8-sig'))
 		except(OSError,ValueError):F=None
-	if isinstance(F,dict)and F.get('clauses'):Q=' '.join(B for(A,B)in G if A in M)if M else None;check_sources_shown(F,Q,B);check_outside_basis(F,Q,B)
+	if isinstance(F,dict)and F.get('clauses'):T=' '.join(B for(A,B)in G if A in N)if N else None;check_sources_shown(F,T,B);check_outside_basis(F,T,B)
 	if A.deal_card:check_deal_card(A.deal_card,C,B)
 	if A.core:check_core(A.core,C,F,G,B)
 	if A.variance_map:
-		try:S=json.load(io.open(A.variance_map,encoding='utf-8'));T=json.load(io.open(A.draft_json,encoding='utf-8'))if A.draft_json else{}
+		try:O=json.load(io.open(A.variance_map,encoding='utf-8'));P=json.load(io.open(A.draft_json,encoding='utf-8'))if A.draft_json else{}
 		except(OSError,ValueError):print('מפת השונות או קובץ הטיוטה לא נקראו: %s'%A.variance_map);sys.exit(2)
-		check_variance(C,T,S,B)
-	N=None
+		check_variance(C,P,O,B)
+	Q=None
 	if A.template:
 		if not os.path.isfile(A.template):print('התבנית לא נמצאה: %s'%A.template);sys.exit(2)
-		N=docx_paragraphs(A.template,limit=20000)
-	check_time_bounds(E,B,N);check_style(C,B,P,E,N);print('בדיקת שלמות: %s'%os.path.basename(A.draft));U={'חוסם':0,'אזהרה':1,'מידע':2}
-	for K in sorted(B.items,key=lambda x:U.get(x['level'],3)):
-		print('  [%s] %s: %s'%(K['level'],K['area'],K['message']))
-		for V in K['detail'][:8]:print('        %s'%V)
+		Q=docx_paragraphs(A.template,limit=20000)
+	check_time_bounds(E,B,Q);check_style(C,B,S,E,Q);check_template_marks(E,C,B,A.draft,template_note_texts(A.template));U=check_commercial(C,B,A.cover or[],A.external)
+	if A.drivers:
+		I=A.report or os.path.splitext(A.draft)[0]+'.report.json'
+		try:Y=json.load(io.open(A.drivers,encoding='utf-8'));P=json.load(io.open(A.draft_json,encoding='utf-8'))if A.draft_json else{};O=json.load(io.open(A.variance_map,encoding='utf-8'))if A.variance_map else None;Z=json.load(io.open(I,encoding='utf-8'))if os.path.isfile(I)else None
+		except(OSError,ValueError):print('drivers.json, קובץ הטיוטה או הדוח לא נקראו: %s'%A.drivers);sys.exit(2)
+		check_drivers(Y,P,C,B,O,Z)
+	I=A.report or os.path.splitext(A.draft)[0]+'.report.json'
+	if os.path.isfile(I):
+		try:V=json.load(io.open(I,encoding='utf-8'))
+		except(OSError,ValueError):V={}
+		W=(V or{}).get('dangling_references')or[]
+		if W:B.add('חוסם','הפניות','הפניה לסעיף שהושמט בטיוטה הזו נשארה בנוסח. יש לנסח מחדש את הסעיף המפנה (replace_clauses) ולהריץ את המילוי שוב',['סעיף %s: %s'%(A.get('ref'),A.get('context'))for A in W if isinstance(A,dict)][:10])
+	print('בדיקת שלמות: %s'%os.path.basename(A.draft));a={'חוסם':0,'אזהרה':1,'מידע':2}
+	for L in sorted(B.items,key=lambda x:a.get(x['level'],3)):
+		print('  [%s] %s: %s'%(L['level'],L['area'],L['message']))
+		for b in L['detail'][:8]:print('        %s'%b)
 	if not B.items:print('  לא נמצאו ממצאים.')
-	print('סיכום: %d חוסמים, %d אזהרות, %d מצייני חוסר'%(len(B.blocking()),len(B.warnings()),L))
-	if A.json:io.open(A.json,'w',encoding='utf-8').write(json.dumps({'file':os.path.basename(A.draft),'hebrew':P,'findings':B.items,'placeholders':L,'blocking':len(B.blocking()),'warnings':len(B.warnings())},ensure_ascii=False,indent=2))
-	W=len(B.blocking())or A.strict and len(B.warnings());sys.exit(1 if W else 0)
+	print('סיכום: %d חוסמים, %d אזהרות, %d מצייני חוסר, %d נושאים מסחריים'%(len(B.blocking()),len(B.warnings()),M,U))
+	if A.json:io.open(A.json,'w',encoding='utf-8').write(json.dumps({'file':os.path.basename(A.draft),'hebrew':S,'findings':B.items,'placeholders':M,'commercial_marks':U,'blocking':len(B.blocking()),'warnings':len(B.warnings())},ensure_ascii=False,indent=2))
+	c=len(B.blocking())or A.strict and len(B.warnings());sys.exit(1 if c else 0)
 if __name__=='__main__':main()
